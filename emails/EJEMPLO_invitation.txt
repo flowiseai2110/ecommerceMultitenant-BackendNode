@@ -1,0 +1,29 @@
+═══════════════════════════════════════════════════════════════
+                    INVITACIÓN A MI TIENDA DEMO
+═══════════════════════════════════════════════════════════════
+
+¡Hola!
+
+admin@mitienda.com te ha invitado a unirte a "Mi Tienda Demo".
+
+Mensaje del invitador:
+"Bienvenido al equipo! Te esperamos para gestionar juntos la tienda."
+
+───────────────────────────────────────────────────────────────
+TU ROL: ADMIN
+───────────────────────────────────────────────────────────────
+
+Para aceptar la invitación, haz clic en el siguiente enlace:
+
+http://localhost:4200/register/invite/abc123xyz
+
+───────────────────────────────────────────────────────────────
+⚠️  IMPORTANTE: Esta invitación expira el domingo, 2 de febrero de 2026, 15:30
+───────────────────────────────────────────────────────────────
+
+Si no esperabas esta invitación, puedes ignorar este correo.
+No se realizará ninguna acción en tu cuenta.
+
+---
+Enviado por el equipo de Mi Tienda Demo
+© 2026 Todos los derechos reservados

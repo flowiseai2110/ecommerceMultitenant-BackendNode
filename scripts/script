@@ -1,0 +1,62 @@
+
+-- ============================================
+-- MÓDULO: TIENDA
+-- ============================================
+
+CREATE TABLE tiendas (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nombre VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) NOT NULL UNIQUE,
+    descripcion TEXT,
+    logo_url VARCHAR(500),
+    banner_url VARCHAR(500),
+    whatsapp_numero VARCHAR(20),
+    email VARCHAR(100),
+    direccion TEXT,
+    
+    -- Datos para facturación electrónica
+    ruc VARCHAR(20),
+    razon_social VARCHAR(200),
+    razon_comercial VARCHAR(200),
+    direccion_fiscal TEXT,
+    
+    -- Ubicación
+    ubigeo VARCHAR(8),
+    
+    -- Configuración general
+    moneda VARCHAR(3) DEFAULT 'PEN',
+    tipo_negocio VARCHAR(50) DEFAULT 'productos',
+    activo BOOLEAN DEFAULT true,
+    
+    -- Auditoría
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    usuario_registro VARCHAR(100),
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    usuario_actualizacion VARCHAR(100),
+    
+    CONSTRAINT fk_tienda_ubigeo FOREIGN KEY (ubigeo) REFERENCES ubigeos(codigo)
+);
+ 
+
+COMMENT ON TABLE tiendas IS 'Tiendas/negocios de los emprendedores';
+
+-- ============================================
+-- TABLA: TIENDA CONFIGURACIONES
+-- ============================================
+
+CREATE TABLE tienda_configuraciones (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tienda_id UUID NOT NULL,
+    clave VARCHAR(100) NOT NULL,
+    valor JSONB,
+    categoria VARCHAR(50),
+    
+    -- Auditoría
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    usuario_registro VARCHAR(100),
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    usuario_actualizacion VARCHAR(100),
+    
+    CONSTRAINT fk_config_tienda FOREIGN KEY (tienda_id) REFERENCES tiendas(id) ON DELETE CASCADE,
+    CONSTRAINT uq_tienda_clave UNIQUE (tienda_id, clave)
+);

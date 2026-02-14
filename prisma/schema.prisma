@@ -1,0 +1,443 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model persona {
+  id                    BigInt    @id @default(autoincrement())
+  dni                   String
+  nombre                String
+  apellidoPaterno       String
+  apellidoMaterno       String
+  email                 String?
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro")
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion")
+}
+
+// ============================================
+// MÓDULO: UBIGEO
+// ============================================
+
+model ubigeos {
+  id                String   @id @default(uuid()) @db.Uuid
+  codigo            String   @unique @db.VarChar(8)
+  tipo              String?  @db.VarChar(50)
+  nombre            String?  @db.VarChar(100)
+  codigoPadre       String?  @map("codigo_padre") @db.VarChar(8)
+  activo            Boolean  @default(true)
+}
+
+// ============================================
+// MÓDULO: ENUMERADOS
+// ============================================
+
+model enumerados {
+  id                String    @id @default(uuid()) @db.Uuid
+  tipo              String    @db.VarChar(50)
+  codigo            String    @db.VarChar(50)
+  valor             String    @db.VarChar(100)
+  descripcion       String?   @db.Text
+  orden             Int       @default(0)
+  color             String?   @db.VarChar(20)
+  icono             String?   @db.VarChar(50)
+  metadata          Json?     @db.JsonB
+  activo            Boolean   @default(true)
+
+  @@unique([tipo, codigo], name: "uq_enumerado_tipo_codigo")
+}
+
+// ============================================
+// MÓDULO: USUARIOS - TIENDAS (Multi-tenant)
+// ============================================
+
+model usuario_tiendas {
+  id                    String    @id @default(uuid()) @db.Uuid
+  userId                String    @map("user_id") @db.Uuid  // ID del usuario de Supabase Auth
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  rol                   String    @default("viewer") @db.VarChar(50) // owner, admin, editor, viewer
+  activo                Boolean   @default(true)
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  // Relación con tienda
+  tienda                tiendas   @relation(fields: [tiendaId], references: [id])
+
+  @@unique([userId, tiendaId], name: "uq_usuario_tienda")
+}
+
+model invitaciones {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  email                 String    @db.VarChar(100)
+  rol                   String    @default("viewer") @db.VarChar(50) // owner, admin, editor, viewer
+  token                 String    @unique @db.VarChar(100)
+  estado                String    @default("pendiente") @db.VarChar(20) // pendiente, aceptada, expirada, cancelada
+  fechaExpiracion       DateTime  @map("fecha_expiracion") @db.Timestamptz
+  mensaje               String?   @db.Text
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  // Relación con tienda
+  tienda                tiendas   @relation(fields: [tiendaId], references: [id])
+
+  @@index([email], name: "idx_invitacion_email")
+  @@index([tiendaId], name: "idx_invitacion_tienda")
+}
+
+// ============================================
+// MÓDULO: TIENDA
+// ============================================
+
+model tiendas {
+  id                    String    @id @default(uuid()) @db.Uuid
+  nombre                String    @db.VarChar(100)
+  slug                  String    @unique @db.VarChar(100)
+  descripcion           String?   @db.Text
+  logoUrl               String?   @map("logo_url") @db.VarChar(500)
+  bannerUrl             String?   @map("banner_url") @db.VarChar(500)
+  whatsappNumero        String?   @map("whatsapp_numero") @db.VarChar(20)
+  email                 String?   @db.VarChar(100)
+  direccion             String?   @db.Text
+
+  // Datos para facturación electrónica
+  ruc                   String?   @db.VarChar(20)
+  razonSocial           String?   @map("razon_social") @db.VarChar(200)
+  razonComercial        String?   @map("razon_comercial") @db.VarChar(200)
+  direccionFiscal       String?   @map("direccion_fiscal") @db.Text
+
+  // Ubicación
+  ubigeo                String?   @db.VarChar(8)
+
+  // Configuración general
+  moneda                String?   @default("PEN") @db.VarChar(3)
+  tipoNegocio           String?   @default("productos") @map("tipo_negocio") @db.VarChar(50)
+  activo                Boolean   @default(true)
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  // Relaciones
+  usuarios              usuario_tiendas[]
+  invitaciones          invitaciones[]
+}
+
+model tienda_configuraciones {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  clave                 String    @db.VarChar(100)
+  valor                 Json?     @db.JsonB
+  categoria             String?   @db.VarChar(50)
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  @@unique([tiendaId, clave], name: "uq_tienda_clave")
+}
+
+// ============================================
+// MÓDULO: CATEGORÍAS
+// ============================================
+
+model categorias {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  categoriaPadreId      String?   @map("categoria_padre_id") @db.Uuid
+  nombre                String    @db.VarChar(100)
+  slug                  String    @db.VarChar(100)
+  descripcion           String?   @db.Text
+  imagenUrl             String?   @map("imagen_url") @db.VarChar(500)
+  orden                 Int       @default(0)
+  activo                Boolean   @default(true)
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+}
+
+// ============================================
+// MÓDULO: PRODUCTOS
+// ============================================
+
+model productos {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  categoriaId           String?   @map("categoria_id") @db.Uuid
+  nombre                String    @db.VarChar(200)
+  slug                  String    @db.VarChar(200)
+  descripcion           String?   @db.Text
+  descripcionCorta      String?   @map("descripcion_corta") @db.VarChar(500)
+  sku                   String?   @db.VarChar(50)
+  precioBase            Decimal   @map("precio_base") @db.Decimal(10, 2)
+  precioOferta          Decimal?  @map("precio_oferta") @db.Decimal(10, 2)
+  precioCosto           Decimal?  @map("precio_costo") @db.Decimal(10, 2)
+  stock                 Int       @default(0)
+  stockAlerta           Int       @default(5) @map("stock_alerta")
+  unidad                String?   @default("pieza") @db.VarChar(20)
+  activo                Boolean   @default(true)
+  destacado             Boolean   @default(false)
+  esServicio            Boolean   @default(false) @map("es_servicio")
+  etiquetas             String[]
+  metadata              Json?     @db.JsonB
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  // Relaciones
+  variantes             producto_variantes[]
+  imagenes              producto_imagenes[]
+}
+
+// ============================================
+// MÓDULO: PRODUCTO VARIANTES
+// ============================================
+
+model producto_variantes {
+  id                    String    @id @default(uuid()) @db.Uuid
+  productoId            String    @map("producto_id") @db.Uuid
+  nombre                String    @db.VarChar(100)
+  sku                   String?   @db.VarChar(50)
+  precio                Decimal?  @db.Decimal(10, 2)
+  stock                 Int       @default(0)
+  atributos             Json?     @db.JsonB
+  activo                Boolean   @default(true)
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  // Relaciones
+  producto              productos @relation(fields: [productoId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// MÓDULO: PRODUCTO IMÁGENES
+// ============================================
+
+model producto_imagenes {
+  id                    String    @id @default(uuid()) @db.Uuid
+  productoId            String    @map("producto_id") @db.Uuid
+  varianteId            String?   @map("variante_id") @db.Uuid
+  url                   String    @db.VarChar(500)
+  textoAlternativo      String?   @map("texto_alternativo") @db.VarChar(200)
+  orden                 Int       @default(0)
+  esPrincipal           Boolean   @default(false) @map("es_principal")
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  // Relaciones
+  producto              productos @relation(fields: [productoId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// MÓDULO: PRODUCTO ATRIBUTOS
+// ============================================
+
+model producto_atributos {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  nombre                String    @db.VarChar(50)
+  valores               String[]
+  aplicaA               String?   @map("aplica_a") @db.VarChar(50)
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+}
+
+// ============================================
+// MÓDULO: CLIENTES
+// ============================================
+
+model clientes {
+  id                        String    @id @default(uuid()) @db.Uuid
+  tiendaId                  String    @map("tienda_id") @db.Uuid
+  whatsappNumero            String    @map("whatsapp_numero") @db.VarChar(20)
+  nombre                    String?   @db.VarChar(100)
+  email                     String?   @db.VarChar(100)
+  tipoDocumento             String?   @map("tipo_documento") @db.VarChar(10)
+  numeroDocumento           String?   @map("numero_documento") @db.VarChar(20)
+  direccionPredeterminada   String?   @map("direccion_predeterminada") @db.Text
+  ubigeo                    String?   @db.VarChar(8)
+  notas                     String?   @db.Text
+  totalPedidos              Int       @default(0) @map("total_pedidos")
+  totalGastado              Decimal   @default(0) @map("total_gastado") @db.Decimal(12, 2)
+  ultimoPedidoFecha         DateTime? @map("ultimo_pedido_fecha") @db.Timestamptz
+
+  // Auditoría
+  fechaRegistro             DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro           String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion        DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion      String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  // Relaciones
+  pedidos                   pedidos[]
+
+  @@unique([tiendaId, whatsappNumero], name: "uq_cliente_whatsapp")
+}
+
+// ============================================
+// MÓDULO: PEDIDOS
+// ============================================
+
+model pedidos {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  clienteId             String?   @map("cliente_id") @db.Uuid
+  numeroPedido          String    @map("numero_pedido") @db.VarChar(20)
+  estado                String    @default("pendiente") @db.VarChar(50)
+  subtotal              Decimal   @default(0) @db.Decimal(10, 2)
+  descuentoMonto        Decimal   @default(0) @map("descuento_monto") @db.Decimal(10, 2)
+  costoEnvio            Decimal   @default(0) @map("costo_envio") @db.Decimal(10, 2)
+  total                 Decimal   @default(0) @db.Decimal(10, 2)
+  metodoPago            String?   @map("metodo_pago") @db.VarChar(50)
+  estadoPago            String    @default("pendiente") @map("estado_pago") @db.VarChar(50)
+  referenciaPago        String?   @map("referencia_pago") @db.VarChar(100)
+  metodoEnvio           String?   @map("metodo_envio") @db.VarChar(50)
+  direccionEnvio        String?   @map("direccion_envio") @db.Text
+  notas                 String?   @db.Text
+  origen                String    @default("web") @db.VarChar(20)
+  fechaConfirmado       DateTime? @map("fecha_confirmado") @db.Timestamptz
+  fechaEntregado        DateTime? @map("fecha_entregado") @db.Timestamptz
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  // Relaciones
+  cliente               clientes? @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  detalles              pedido_detalles[]
+  historialEstados      pedido_historial_estados[]
+
+  @@unique([tiendaId, numeroPedido], name: "uq_numero_pedido")
+  @@index([tiendaId], name: "idx_pedidos_tienda")
+  @@index([clienteId], name: "idx_pedidos_cliente")
+}
+
+// ============================================
+// MÓDULO: PEDIDO DETALLES
+// ============================================
+
+model pedido_detalles {
+  id                    String    @id @default(uuid()) @db.Uuid
+  pedidoId              String    @map("pedido_id") @db.Uuid
+  productoId            String?   @map("producto_id") @db.Uuid
+  varianteId            String?   @map("variante_id") @db.Uuid
+  productoNombre        String    @map("producto_nombre") @db.VarChar(200)
+  varianteNombre        String?   @map("variante_nombre") @db.VarChar(100)
+  cantidad              Int       @default(1)
+  precioUnitario        Decimal   @map("precio_unitario") @db.Decimal(10, 2)
+  descuento             Decimal   @default(0) @db.Decimal(10, 2)
+  total                 Decimal   @db.Decimal(10, 2)
+
+  // Relaciones
+  pedido                pedidos   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@index([pedidoId], name: "idx_detalles_pedido")
+}
+
+// ============================================
+// MÓDULO: PEDIDO HISTORIAL ESTADOS
+// ============================================
+
+model pedido_historial_estados {
+  id                    String    @id @default(uuid()) @db.Uuid
+  pedidoId              String    @map("pedido_id") @db.Uuid
+  estado                String    @db.VarChar(50)
+  notas                 String?   @db.Text
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+
+  // Relaciones
+  pedido                pedidos   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@index([pedidoId], name: "idx_historial_pedido")
+}
+
+// ============================================
+// MÓDULO: MÉTODOS DE PAGO
+// ============================================
+
+model metodos_pago {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  nombre                String    @db.VarChar(50)
+  tipo                  String    @db.VarChar(50)
+  instrucciones         String?   @db.Text
+  cuentaInfo            Json?     @map("cuenta_info") @db.JsonB
+  activo                Boolean   @default(true)
+  orden                 Int       @default(0)
+}
+
+// ============================================
+// MÓDULO: ZONAS DE ENVÍO
+// ============================================
+
+model zonas_envio {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  nombre                String    @db.VarChar(100)
+  costoEnvio            Decimal   @default(0) @map("costo_envio") @db.Decimal(10, 2)
+  envioGratisMinimo     Decimal?  @map("envio_gratis_minimo") @db.Decimal(10, 2)
+  diasEstimados         Int?      @map("dias_estimados")
+  activo                Boolean   @default(true)
+
+  // Relaciones
+  ubigeos               zona_envio_ubigeos[]
+
+  @@index([tiendaId], name: "idx_zonas_tienda")
+  @@index([tiendaId, activo], name: "idx_zonas_activo")
+}
+
+// ============================================
+// MÓDULO: ZONA ENVÍO UBIGEOS (Intermedia)
+// ============================================
+
+model zona_envio_ubigeos {
+  id                    String    @id @default(uuid()) @db.Uuid
+  zonaEnvioId           String    @map("zona_envio_id") @db.Uuid
+  ubigeo                String    @db.VarChar(8)
+
+  // Relaciones
+  zonaEnvio             zonas_envio @relation(fields: [zonaEnvioId], references: [id], onDelete: Cascade)
+
+  @@unique([zonaEnvioId, ubigeo], name: "uq_zona_ubigeo")
+  @@index([zonaEnvioId], name: "idx_zona_ubigeos_zona")
+  @@index([ubigeo], name: "idx_zona_ubigeos_ubigeo")
+}
+
+
+
