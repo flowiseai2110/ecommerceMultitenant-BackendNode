@@ -20,7 +20,16 @@ const productosService = new GenericService(productosRepository, {
     variantes: true,
     imagenes: true
   },
-  searchFields: ["nombre", "descripcion", "descripcionCorta", "slug"]
+  searchFields: ["nombre", "descripcion", "descripcionCorta", "slug", "sku"],
+  includePresets: {
+    imagenPrincipal: {
+      imagenes: {
+        where: { esPrincipal: true },
+        take: 1
+      }
+    }
+  },
+  excludeFieldsInList: ["fechaRegistro", "usuarioRegistro", "fechaActualizacion", "usuarioActualizacion"]
 });
 const productosController = new GenericController(productosService, "Producto");
 

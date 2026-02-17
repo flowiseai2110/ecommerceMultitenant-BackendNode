@@ -14,6 +14,10 @@ class GenericService {
     this.defaultInclude = options.include || undefined;
     // Campos en los que buscar con ?search=texto
     this.searchFields = options.searchFields || ["nombre"];
+    // Presets de include para ?include=nombrePreset
+    this.includePresets = options.includePresets || {};
+    // Campos a excluir en listados (findAll) para reducir payload
+    this.excludeFieldsInList = options.excludeFieldsInList || [];
   }
 
   /**
@@ -22,17 +26,49 @@ class GenericService {
    * @returns {Promise<{data: Array, meta: Object}>}
    */
   async findAll(query = {}) {
-    const { page, limit, orderBy, ...filters } = query;
+    const { page, limit, orderBy, include, ...filters } = query;
+
+    // Resolver include: si hay un preset configurado, usarlo; sino el default
+    const resolvedInclude = (include && this.includePresets[include])
+      ? this.includePresets[include]
+      : this.defaultInclude;
 
     const options = {
       page: parseInt(page) || undefined,
       limit: parseInt(limit) || undefined,
       orderBy: this.parseOrderBy(orderBy),
       where: this.buildWhereClause(filters),
-      include: this.defaultInclude
+      include: resolvedInclude
     };
 
-    return await this.repository.findAll(options);
+    const result = await this.repository.findAll(options);
+
+    // Excluir campos innecesarios del listado para reducir payload
+    if (this.excludeFieldsInList.length > 0) {
+      result.data = result.data.map(record => this.stripFields(record, this.excludeFieldsInList));
+    }
+
+    return result;
+  }
+
+  /**
+   * Elimina campos de un objeto y sus relaciones anidadas (arrays)
+   * @param {Object} obj - Objeto a limpiar
+   * @param {string[]} fields - Campos a eliminar
+   * @returns {Object}
+   */
+  stripFields(obj, fields) {
+    const cleaned = { ...obj };
+    for (const field of fields) {
+      delete cleaned[field];
+    }
+    // Limpiar también en relaciones anidadas (arrays de objetos)
+    for (const key of Object.keys(cleaned)) {
+      if (Array.isArray(cleaned[key]) && cleaned[key].length > 0 && typeof cleaned[key][0] === "object") {
+        cleaned[key] = cleaned[key].map(item => this.stripFields(item, fields));
+      }
+    }
+    return cleaned;
   }
 
   /**

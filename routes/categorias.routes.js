@@ -14,7 +14,10 @@ import {
 
 // Crear instancias de las capas
 const categoriasRepository = new GenericRepository(prisma.categorias, "Categoria");
-const categoriasService = new GenericService(categoriasRepository, { enableAudit: true });
+const categoriasService = new GenericService(categoriasRepository, {
+  enableAudit: true,
+  excludeFieldsInList: ["fechaRegistro", "usuarioRegistro", "fechaActualizacion", "usuarioActualizacion"]
+});
 const categoriasController = new GenericController(categoriasService, "Categoria");
 
 const router = Router();
