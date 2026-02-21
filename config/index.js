@@ -20,9 +20,11 @@ export const config = {
     max: parseInt(process.env.RATE_LIMIT_MAX) || 100 // máximo 100 requests por ventana
   },
 
-  // CORS
+  // CORS - soporta múltiples orígenes separados por coma
   cors: {
-    origin: process.env.CORS_ORIGIN || "*",
+    origin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
+      : "*",
     credentials: process.env.CORS_CREDENTIALS === "true"
   },
 
