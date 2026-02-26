@@ -23,18 +23,22 @@ class GenericRepository {
       limit = config.pagination.defaultLimit,
       where = {},
       orderBy = { id: "desc" },
-      include = undefined
+      include = undefined,
+      select = undefined
     } = options;
 
     // Limitar el máximo de registros por página
     const take = Math.min(limit, config.pagination.maxLimit);
     const skip = (page - 1) * take;
 
+    // select e include son mutuamente excluyentes en Prisma
+    const projection = select ? { select } : { include };
+
     const [data, total] = await Promise.all([
       this.model.findMany({
         where,
         orderBy,
-        include,
+        ...projection,
         skip,
         take
       }),
@@ -61,11 +65,13 @@ class GenericRepository {
    * @returns {Promise<Object>}
    */
   async findById(id, options = {}) {
-    const { include = undefined } = options;
+    const { include = undefined, select = undefined } = options;
+
+    const projection = select ? { select } : { include };
 
     const record = await this.model.findUnique({
       where: { id },
-      include
+      ...projection
     });
 
     if (!record) {

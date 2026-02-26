@@ -22,9 +22,9 @@ export const config = {
 
   // CORS - soporta múltiples orígenes separados por coma
   cors: {
-    origin: process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
-      : "*",
+    origin: !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN.trim() === "*"
+      ? "*"
+      : process.env.CORS_ORIGIN.split(",").map(o => o.trim()),
     credentials: process.env.CORS_CREDENTIALS === "true"
   },
 
@@ -44,12 +44,11 @@ export const config = {
   // Frontend URL (para links en emails)
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:4200",
 
-  // AWS SES (para emails en producción)
-  aws: {
-    region: process.env.AWS_REGION || "us-east-1",
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    sesFromEmail: process.env.AWS_SES_FROM_EMAIL || "noreply@tudominio.com"
+  // Email - Resend
+  resend: {
+    apiKey: process.env.RESEND_API_KEY,
+    fromEmail: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
+    devToEmail: process.env.RESEND_DEV_TO_EMAIL // email de redirección en desarrollo (free tier)
   },
 
   // Imágenes por defecto por folder

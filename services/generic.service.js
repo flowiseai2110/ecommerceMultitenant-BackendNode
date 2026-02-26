@@ -10,13 +10,16 @@ class GenericService {
     this.repository = repository;
     // Habilitar auditoría por defecto
     this.enableAudit = options.enableAudit !== false;
-    // Include por defecto para relaciones
+    // Include por defecto para relaciones (findById)
     this.defaultInclude = options.include || undefined;
     // Campos en los que buscar con ?search=texto
     this.searchFields = options.searchFields || ["nombre"];
     // Presets de include para ?include=nombrePreset
     this.includePresets = options.includePresets || {};
-    // Campos a excluir en listados (findAll) para reducir payload
+    // select para listados (findAll) — excluye campos innecesarios directo en DB
+    // Si se proporciona listSelect, tiene prioridad sobre excludeFieldsInList
+    this.listSelect = options.listSelect || null;
+    // Campos a excluir en listados (fallback legacy — se ignora si listSelect está definido)
     this.excludeFieldsInList = options.excludeFieldsInList || [];
   }
 
@@ -33,18 +36,22 @@ class GenericService {
       ? this.includePresets[include]
       : this.defaultInclude;
 
-    const options = {
+    // Si hay listSelect definido, usarlo como select (más eficiente que stripFields)
+    // select e include son mutuamente excluyentes — listSelect tiene prioridad
+    const resolvedSelect = this.listSelect || null;
+
+    const queryOptions = {
       page: parseInt(page) || undefined,
       limit: parseInt(limit) || undefined,
       orderBy: this.parseOrderBy(orderBy),
       where: this.buildWhereClause(filters),
-      include: resolvedInclude
+      ...(resolvedSelect ? { select: resolvedSelect } : { include: resolvedInclude })
     };
 
-    const result = await this.repository.findAll(options);
+    const result = await this.repository.findAll(queryOptions);
 
-    // Excluir campos innecesarios del listado para reducir payload
-    if (this.excludeFieldsInList.length > 0) {
+    // Fallback: stripFields en memoria solo si no hay listSelect (compatibilidad)
+    if (!resolvedSelect && this.excludeFieldsInList.length > 0) {
       result.data = result.data.map(record => this.stripFields(record, this.excludeFieldsInList));
     }
 

@@ -89,18 +89,20 @@ function getPermisosPorRol(rolCodigo) {
 router.get("/me/profile", authMiddleware, async (req, res, next) => {
   try {
     const userId = req.user.id;
-    console.log("userId-->",userId);
     // Obtener las tiendas del usuario con sus roles
     const usuarioTiendas = await prisma.usuario_tiendas.findMany({
       where: {
         userId: userId,
         activo: true
       },
-      include: {
-        tienda: true
+      select: {
+        tiendaId: true,
+        rol: true,
+        tienda: {
+          select: { id: true, nombre: true, slug: true, descripcion: true, logoUrl: true, activo: true }
+        }
       }
     });
-    console.log("DLQ->usuarioTiendas--->",usuarioTiendas);
     // Obtener roles desde enumerados (con cache)
     const rolesEnumerados = await getRolesUsuario();
 
@@ -109,7 +111,7 @@ router.get("/me/profile", authMiddleware, async (req, res, next) => {
       user: {
         id: req.user.id,
         email: req.user.email,
-        nombre: req.user.user_metadata?.nombre || req.user.user_metadata?.full_name || null,
+        nombre: req.user.metadata?.nombre || req.user.metadata?.full_name || null,
         tiendas: usuarioTiendas.map(ut => {
           const detalleRol = rolesEnumerados.find(e => e.id === ut.rol);
           const rolCodigo = detalleRol?.codigo || "viewer";
@@ -158,8 +160,12 @@ router.get("/:userId/profile", authMiddleware, async (req, res, next) => {
         userId: userId,
         activo: true
       },
-      include: {
-        tienda: true
+      select: {
+        tiendaId: true,
+        rol: true,
+        tienda: {
+          select: { id: true, nombre: true, slug: true, descripcion: true, logoUrl: true, activo: true }
+        }
       }
     });
 
@@ -171,7 +177,7 @@ router.get("/:userId/profile", authMiddleware, async (req, res, next) => {
       user: {
         id: req.user.id,
         email: req.user.email,
-        nombre: req.user.user_metadata?.nombre || req.user.user_metadata?.full_name || null,
+        nombre: req.user.metadata?.nombre || req.user.metadata?.full_name || null,
         tiendas: usuarioTiendas.map(ut => {
           const detalleRol = rolesEnumerados.find(e => e.id === ut.rol);
           const rolCodigo = detalleRol?.codigo || "viewer";

@@ -1,14 +1,7 @@
+import { Resend } from "resend";
 import { config } from "../config/index.js";
 import { logger } from "../config/logger.js";
-import fs from "fs/promises";
-import path from "path";
 
-/**
- * Servicio de Email
- * Por ahora guarda en archivos, luego se puede integrar con AWS SES
- */
-
-// URL base del frontend para las invitaciones
 const FRONTEND_URL = config.frontendUrl || "http://localhost:4200";
 
 /**
@@ -135,122 +128,72 @@ function generateInvitationEmailHTML({ tiendaNombre, tiendaLogo, invitadorEmail,
 }
 
 /**
- * Genera el texto plano del email (para clientes que no soportan HTML)
- */
-function generateInvitationEmailText({ tiendaNombre, invitadorEmail, rol, mensaje, token, fechaExpiracion }) {
-  const acceptUrl = `${FRONTEND_URL}/register/invite/${token}`;
-  const fechaExp = new Date(fechaExpiracion).toLocaleDateString("es-PE", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-
-  return `
-═══════════════════════════════════════════════════════════════
-                    INVITACIÓN A ${tiendaNombre.toUpperCase()}
-═══════════════════════════════════════════════════════════════
-
-¡Hola!
-
-${invitadorEmail} te ha invitado a unirte a "${tiendaNombre}".
-
-${mensaje ? `Mensaje del invitador:\n"${mensaje}"\n` : ""}
-───────────────────────────────────────────────────────────────
-TU ROL: ${rol.toUpperCase()}
-───────────────────────────────────────────────────────────────
-
-Para aceptar la invitación, haz clic en el siguiente enlace:
-
-${acceptUrl}
-
-───────────────────────────────────────────────────────────────
-⚠️  IMPORTANTE: Esta invitación expira el ${fechaExp}
-───────────────────────────────────────────────────────────────
-
-Si no esperabas esta invitación, puedes ignorar este correo.
-No se realizará ninguna acción en tu cuenta.
-
----
-Enviado por el equipo de ${tiendaNombre}
-© ${new Date().getFullYear()} Todos los derechos reservados
-  `.trim();
-}
-
-/**
- * Envía email de invitación
- * Por ahora guarda en archivo, luego se integra con AWS SES
+ * Envía email de invitación usando Resend
  */
 export async function sendInvitationEmail(invitacion, tienda, invitadorEmail) {
+  const acceptUrl = `${FRONTEND_URL}/register/invite/${invitacion.token}`;
+  const rol = invitacion.rolCodigo || invitacion.rol;
+
   const emailData = {
     tiendaNombre: tienda.nombre,
     tiendaLogo: tienda.logoUrl,
-    invitadorEmail: invitadorEmail,
-    rol: invitacion.rolCodigo || invitacion.rol,
+    invitadorEmail,
+    rol,
     mensaje: invitacion.mensaje,
     token: invitacion.token,
     fechaExpiracion: invitacion.fechaExpiracion
   };
 
-  const htmlContent = generateInvitationEmailHTML(emailData);
-  const textContent = generateInvitationEmailText(emailData);
-
-  // TODO: Integrar con AWS SES
-  // Por ahora, guardamos en archivo para desarrollo
-  if (config.nodeEnv === "development") {
-    const emailsDir = path.join(process.cwd(), "emails");
-
-    try {
-      await fs.mkdir(emailsDir, { recursive: true });
-
-      const timestamp = Date.now();
-      const baseFilename = `invitation_${invitacion.email.replace("@", "_at_")}_${timestamp}`;
-
-      // Guardar HTML
-      await fs.writeFile(
-        path.join(emailsDir, `${baseFilename}.html`),
-        htmlContent,
-        "utf-8"
-      );
-
-      // Guardar texto plano
-      await fs.writeFile(
-        path.join(emailsDir, `${baseFilename}.txt`),
-        textContent,
-        "utf-8"
-      );
-
-      logger.info(`📧 Email de invitación guardado en: emails/${baseFilename}.html`);
-
-      return {
-        success: true,
-        messageId: `dev-${timestamp}`,
-        savedTo: `emails/${baseFilename}.html`
-      };
-    } catch (error) {
-      logger.error("Error guardando email:", error);
-      throw error;
-    }
+  // Sin API key configurada: solo loggear el link
+  if (!config.resend.apiKey || config.resend.apiKey.startsWith("re_xxx")) {
+    logger.warn("⚠️  RESEND_API_KEY no configurada. Configura tu API key en .env");
+    logger.info(`📧 [DEV] Invitación para: ${invitacion.email}`);
+    logger.info(`🔗 [DEV] Link de aceptación: ${acceptUrl}`);
+    return { success: false, reason: "RESEND_API_KEY not configured" };
   }
 
-  // En producción, usar AWS SES
-  // return await sendWithAWSSES(invitacion.email, htmlContent, textContent, tienda.nombre);
+  const isDev = config.nodeEnv !== "production";
+  const devToEmail = config.resend.devToEmail;
 
-  logger.warn("⚠️ Email no enviado: AWS SES no configurado");
-  return { success: false, reason: "AWS SES not configured" };
+  // En desarrollo con free tier: redirigir al email del desarrollador
+  const toEmail = isDev && devToEmail ? devToEmail : invitacion.email;
+  const subject = isDev && devToEmail
+    ? `[DEV → ${invitacion.email}] ${invitadorEmail} te invitó a unirte a ${tienda.nombre}`
+    : `${invitadorEmail} te invitó a unirte a ${tienda.nombre}`;
+
+  if (isDev && devToEmail) {
+    logger.info(`📧 [DEV] Email redirigido de ${invitacion.email} → ${devToEmail}`);
+    logger.info(`🔗 [DEV] Link de aceptación: ${acceptUrl}`);
+  }
+
+  const resend = new Resend(config.resend.apiKey);
+
+  const { data, error } = await resend.emails.send({
+    from: config.resend.fromEmail,
+    to: toEmail,
+    subject,
+    html: generateInvitationEmailHTML(emailData)
+  });
+
+  if (error) {
+    logger.error("❌ Error enviando email con Resend:", error);
+    throw new Error(`Error al enviar email: ${error.message}`);
+  }
+
+  logger.info(`📧 Email enviado a ${toEmail} | ID: ${data.id}`);
+  return { success: true, messageId: data.id };
 }
 
 /**
  * Genera datos del email sin enviarlo (útil para preview)
  */
 export function previewInvitationEmail(invitacion, tienda, invitadorEmail) {
+  const rol = invitacion.rolCodigo || invitacion.rol;
   const emailData = {
     tiendaNombre: tienda.nombre,
     tiendaLogo: tienda.logoUrl,
-    invitadorEmail: invitadorEmail,
-    rol: invitacion.rolCodigo || invitacion.rol,
+    invitadorEmail,
+    rol,
     mensaje: invitacion.mensaje,
     token: invitacion.token,
     fechaExpiracion: invitacion.fechaExpiracion
@@ -259,12 +202,8 @@ export function previewInvitationEmail(invitacion, tienda, invitadorEmail) {
   return {
     to: invitacion.email,
     subject: `${invitadorEmail} te invitó a unirte a ${tienda.nombre}`,
-    html: generateInvitationEmailHTML(emailData),
-    text: generateInvitationEmailText(emailData)
+    html: generateInvitationEmailHTML(emailData)
   };
 }
 
-export default {
-  sendInvitationEmail,
-  previewInvitationEmail
-};
+export default { sendInvitationEmail, previewInvitationEmail };

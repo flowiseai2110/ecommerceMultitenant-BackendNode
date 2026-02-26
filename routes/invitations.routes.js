@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { z } from "zod";
 import { prisma } from "../config/prisma.js";
 import { config } from "../config/index.js";
+import { logger } from "../config/logger.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { NotFoundError, ValidationError, ForbiddenError } from "../utils/errors.js";
@@ -47,7 +48,7 @@ router.get(
       // Verificar que el usuario tiene acceso a la tienda
       const usuarioTienda = await prisma.usuario_tiendas.findFirst({
         where: {
-          userId: req.user.sub,
+          userId: req.user.id,
           tiendaId: tiendaId,
           activo: true
         }
@@ -127,7 +128,7 @@ router.post(
       // Verificar que el usuario tiene permiso para invitar
       const usuarioTienda = await prisma.usuario_tiendas.findFirst({
         where: {
-          userId: req.user.sub,
+          userId: req.user.id,
           tiendaId: tiendaId,
           activo: true
         }
@@ -191,7 +192,7 @@ router.post(
           fechaExpiracion: getExpirationDate(7),
           estado: "pendiente",
           fechaRegistro: new Date(),
-          usuarioRegistro: req.user.email || req.user.sub
+          usuarioRegistro: req.user.email || req.user.id
         },
         include: {
           tienda: {
@@ -200,12 +201,17 @@ router.post(
         }
       });
 
-      // Enviar email de invitación
-      const emailResult = await sendInvitationEmail(
-        { ...invitacion, rolCodigo: rol },
-        tienda,
-        req.user.email || req.user.sub
-      );
+      // Enviar email de invitación (error de email no cancela la creación)
+      let emailResult = { success: false };
+      try {
+        emailResult = await sendInvitationEmail(
+          { ...invitacion, rolCodigo: rol },
+          tienda,
+          req.user.email || req.user.id
+        );
+      } catch (emailError) {
+        logger.error("Error enviando email de invitación:", emailError.message);
+      }
 
       res.status(201).json({
         success: true,
@@ -246,7 +252,7 @@ router.post(
       // Verificar permisos
       const usuarioTienda = await prisma.usuario_tiendas.findFirst({
         where: {
-          userId: req.user.sub,
+          userId: req.user.id,
           tiendaId: invitacion.tiendaId,
           activo: true
         }
@@ -278,7 +284,7 @@ router.post(
           token: generateInvitationToken(),
           fechaExpiracion: getExpirationDate(7),
           fechaActualizacion: new Date(),
-          usuarioActualizacion: req.user.email || req.user.sub
+          usuarioActualizacion: req.user.email || req.user.id
         },
         include: {
           tienda: {
@@ -290,12 +296,17 @@ router.post(
       // Obtener código del rol
       const rolCodigo = await getCodigoRol(invitacionActualizada.rol);
 
-      // Reenviar email
-      const emailResult = await sendInvitationEmail(
-        { ...invitacionActualizada, rolCodigo },
-        tienda,
-        req.user.email || req.user.sub
-      );
+      // Reenviar email (error de email no cancela el reenvío)
+      let emailResult = { success: false };
+      try {
+        emailResult = await sendInvitationEmail(
+          { ...invitacionActualizada, rolCodigo },
+          tienda,
+          req.user.email || req.user.id
+        );
+      } catch (emailError) {
+        logger.error("Error reenviando email de invitación:", emailError.message);
+      }
 
       res.json({
         success: true,
@@ -335,7 +346,7 @@ router.delete(
       // Verificar permisos
       const usuarioTienda = await prisma.usuario_tiendas.findFirst({
         where: {
-          userId: req.user.sub,
+          userId: req.user.id,
           tiendaId: invitacion.tiendaId,
           activo: true
         }
@@ -360,7 +371,7 @@ router.delete(
         data: {
           estado: "cancelada",
           fechaActualizacion: new Date(),
-          usuarioActualizacion: req.user.email || req.user.sub
+          usuarioActualizacion: req.user.email || req.user.id
         }
       });
 
@@ -613,7 +624,7 @@ router.post(
       // Verificar si ya está en la tienda
       const yaEnTienda = await prisma.usuario_tiendas.findFirst({
         where: {
-          userId: req.user.sub,
+          userId: req.user.id,
           tiendaId: invitacion.tiendaId
         }
       });
@@ -625,12 +636,12 @@ router.post(
       // Crear relación usuario-tienda (rol ya está como UUID)
       await prisma.usuario_tiendas.create({
         data: {
-          userId: req.user.sub,
+          userId: req.user.id,
           tiendaId: invitacion.tiendaId,
           rol: invitacion.rol, // UUID del rol
           activo: true,
           fechaRegistro: new Date(),
-          usuarioRegistro: req.user.email || req.user.sub
+          usuarioRegistro: req.user.email || req.user.id
         }
       });
 
@@ -640,7 +651,7 @@ router.post(
         data: {
           estado: "aceptada",
           fechaActualizacion: new Date(),
-          usuarioActualizacion: req.user.email || req.user.sub
+          usuarioActualizacion: req.user.email || req.user.id
         }
       });
 

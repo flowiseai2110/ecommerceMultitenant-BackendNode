@@ -16,20 +16,54 @@ import {
 const productosRepository = new GenericRepository(prisma.productos, "Producto");
 const productosService = new GenericService(productosRepository, {
   enableAudit: true,
+  // findById trae variantes e imágenes completas
   include: {
-    variantes: true,
-    imagenes: true
+    variantes: {
+      where: { activo: true },
+      select: { id: true, nombre: true, sku: true, precio: true, stock: true, atributos: true, activo: true }
+    },
+    imagenes: {
+      orderBy: { orden: "asc" },
+      select: { id: true, url: true, textoAlternativo: true, orden: true, esPrincipal: true }
+    }
   },
   searchFields: ["nombre", "descripcion", "descripcionCorta", "slug", "sku"],
   includePresets: {
-    imagenPrincipal: {
+    // ?include=full para detalle completo desde listado
+    full: {
+      variantes: {
+        where: { activo: true },
+        select: { id: true, nombre: true, sku: true, precio: true, stock: true, atributos: true, activo: true }
+      },
       imagenes: {
-        where: { esPrincipal: true },
-        take: 1
+        orderBy: { orden: "asc" },
+        select: { id: true, url: true, textoAlternativo: true, orden: true, esPrincipal: true }
       }
     }
   },
-  excludeFieldsInList: ["fechaRegistro", "usuarioRegistro", "fechaActualizacion", "usuarioActualizacion"]
+  // listSelect: en el listado solo traemos los campos esenciales para la tabla/grilla del frontend
+  listSelect: {
+    id: true,
+    tiendaId: true,
+    categoriaId: true,
+    nombre: true,
+    slug: true,
+    descripcionCorta: true,
+    sku: true,
+    precioBase: true,
+    precioOferta: true,
+    stock: true,
+    activo: true,
+    destacado: true,
+    esServicio: true,
+    etiquetas: true,
+    // Solo imagen principal en el listado
+    imagenes: {
+      where: { esPrincipal: true },
+      take: 1,
+      select: { id: true, url: true, textoAlternativo: true }
+    }
+  }
 });
 const productosController = new GenericController(productosService, "Producto");
 

@@ -198,10 +198,35 @@ router.get(
         prisma.pedidos.findMany({
           where,
           orderBy: orderByClause,
-          include: {
-            detalles: true,
+          select: {
+            id: true,
+            tiendaId: true,
+            numeroPedido: true,
+            estado: true,
+            estadoPago: true,
+            subtotal: true,
+            descuentoMonto: true,
+            costoEnvio: true,
+            total: true,
+            metodoPago: true,
+            metodoEnvio: true,
+            origen: true,
+            notas: true,
+            fechaConfirmado: true,
+            fechaEntregado: true,
+            fechaRegistro: true,
             cliente: { select: { id: true, nombre: true, whatsappNumero: true, email: true } },
-            historialEstados: { orderBy: { fechaRegistro: "desc" } }
+            detalles: {
+              select: {
+                id: true,
+                productoNombre: true,
+                varianteNombre: true,
+                cantidad: true,
+                precioUnitario: true,
+                descuento: true,
+                total: true
+              }
+            }
           },
           skip,
           take
@@ -243,7 +268,12 @@ router.get(
         where: { id: req.params.id },
         include: {
           detalles: true,
-          cliente: true,
+          cliente: {
+            select: {
+              id: true, nombre: true, whatsappNumero: true, email: true,
+              tipoDocumento: true, numeroDocumento: true, direccionPredeterminada: true
+            }
+          },
           historialEstados: { orderBy: { fechaRegistro: "desc" } }
         }
       });
@@ -316,14 +346,18 @@ router.put(
           }
         }
 
-        // Actualizar pedido
+        // Actualizar pedido — solo retornar campos relevantes al cambio de estado
         const updated = await tx.pedidos.update({
           where: { id },
           data: updateData,
-          include: {
-            detalles: true,
-            cliente: true,
-            historialEstados: { orderBy: { fechaRegistro: "desc" } }
+          select: {
+            id: true,
+            numeroPedido: true,
+            estado: true,
+            estadoPago: true,
+            fechaConfirmado: true,
+            fechaEntregado: true,
+            fechaActualizacion: true
           }
         });
 
@@ -379,10 +413,13 @@ router.put(
       const pedidoActualizado = await prisma.pedidos.update({
         where: { id },
         data: updateData,
-        include: {
-          detalles: true,
-          cliente: true,
-          historialEstados: { orderBy: { fechaRegistro: "desc" } }
+        select: {
+          id: true,
+          numeroPedido: true,
+          estadoPago: true,
+          metodoPago: true,
+          referenciaPago: true,
+          fechaActualizacion: true
         }
       });
 

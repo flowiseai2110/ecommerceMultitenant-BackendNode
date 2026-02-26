@@ -45,7 +45,16 @@ router.get(
         prisma.zonas_envio.findMany({
           where,
           orderBy: orderByClause,
-          include: { ubigeos: true },
+          select: {
+            id: true,
+            tiendaId: true,
+            nombre: true,
+            costoEnvio: true,
+            envioGratisMinimo: true,
+            diasEstimados: true,
+            activo: true,
+            _count: { select: { ubigeos: true } }
+          },
           skip,
           take
         }),
