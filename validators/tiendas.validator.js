@@ -69,6 +69,11 @@ export const idParamSchema = z.object({
     .string()
 });
 
+// Schema para validar tiendaId en params anidados (/:tiendaId/...)
+export const tiendaIdParamSchema = z.object({
+  tiendaId: z.string().uuid("tiendaId debe ser un UUID válido")
+});
+
 // Schema para query params de paginación
 // .passthrough() permite que filtros adicionales (ej: ?slug=mi-tienda) lleguen al buildWhereClause del GenericService
 export const paginationSchema = z.object({
