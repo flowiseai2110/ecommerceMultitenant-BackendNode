@@ -2,13 +2,11 @@ export function apiResponse(res, {
   status = 200,
   type = "SUCCESS",
   code,
-  data = null
+  data = null,
+  meta = undefined
 }) {
-  return res.status(status).json({
-    status,
-    type,
-    code,
-    data
-  });
+  const body = { status, type, code, data };
+  if (meta !== undefined) body.meta = meta;
+  return res.status(status).json(body);
 }
 

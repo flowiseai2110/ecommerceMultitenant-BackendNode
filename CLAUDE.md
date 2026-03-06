@@ -26,6 +26,12 @@ npm run prisma:studio     # Abrir Prisma Studio
 npm test             # Ejecutar tests con Jest
 ```
 
+## Contexto Frontend
+
+- **Angular Admin** → consume `/api/v1/admin/...` — requiere JWT + rol en `usuario_tiendas`
+- **Angular Store** → consume `/api/v1/store/...` — endpoints públicos del catálogo y checkout
+- Toda operación admin debe enviar `tiendaId` (query param o body) para verificación de acceso
+
 ## Estructura del proyecto
 
 ```
@@ -36,18 +42,28 @@ config/
   prisma.js                # Instancia singleton de PrismaClient
   swagger.js               # Configuración de Swagger
 routes/
-  index.js                 # Router raíz — monta todos los módulos en /api/v1
-  *.routes.js              # Rutas por módulo
+  index.js                 # Router raíz — monta /admin, /store y generales
+  admin/
+    index.js               # Router admin — aplica authMiddleware a todo
+  store/
+    index.js               # Router store — rutas públicas del storefront
+    *.routes.js            # Rutas públicas por módulo
+  *.routes.js              # Rutas admin por módulo
 controllers/
   generic.controller.js    # Controlador base reutilizable
 middlewares/
   auth.middleware.js        # Verificación JWT con Supabase JWKS
+  tienda-access.middleware.js  # requireTiendaAccess — verifica rol en usuario_tiendas
   error.middleware.js       # Handler global de errores y 404
   validation.middleware.js  # Middleware de validación Zod
 repositories/
   generic.repository.js    # Repositorio base (CRUD genérico con Prisma)
+  pedidos.repository.js    # Repositorio de pedidos
+  zonas-envio.repository.js # Repositorio de zonas de envío
 services/
   generic.service.js       # Servicio base reutilizable
+  pedidos.service.js       # Lógica completa de pedidos (transacciones, stock, numeración)
+  zonas-envio.service.js   # Lógica de zonas de envío con ubigeos
   email.service.js         # Envío de emails con Resend
   roles.service.js         # Lógica de roles multi-tenant
 validators/
@@ -111,8 +127,34 @@ Para errores:
 
 ### Rutas
 - Prefijo global: `/api/v1`
+- Admin (Angular Admin): `/api/v1/admin/{recurso}` — requiere `Authorization: Bearer <token>` + `?tiendaId=`
+- Store (Angular Store): `/api/v1/store/{recurso}` — público, filtrar con `?tiendaId=`
 - Documentación Swagger: `/api/v1/swagger`
 - JSON OpenAPI: `/api/v1/swagger.json`
+
+### Roles multi-tenant (`usuario_tiendas.rol`)
+Jerarquía ascendente: `viewer` < `editor` < `admin` < `owner`
+
+| Rol | Permisos |
+|-----|----------|
+| viewer | Solo lectura |
+| editor | Lectura + gestión de catálogo y pedidos |
+| admin | Todo excepto gestionar miembros y eliminar tienda |
+| owner | Acceso total |
+
+Verificación con `requireTiendaAccess(minRol)` — extrae `tiendaId` de body → params → query.
+
+### Estados de pedidos
+```
+pendiente → confirmado → en_proceso → enviado → entregado
+                                              ↘
+                                            cancelado (desde cualquier estado)
+```
+Al cancelar: se repone stock y se revierte `totalPedidos`/`totalGastado` del cliente.
+
+### Generación de número de pedido
+Usa `pg_advisory_xact_lock` por tiendaId + `MAX(numero_pedido)` dentro de una transacción.
+Garantiza unicidad sin race conditions bajo alta concurrencia.
 
 ### Modelos Prisma
 - Nombres en **español** y **snake_case** en DB (mapeados con `@map`)

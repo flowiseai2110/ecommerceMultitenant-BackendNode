@@ -24,13 +24,14 @@ class GenericController {
     try {
       // Usar validatedQuery si existe (Express 5), sino req.query
       const query = req.validatedQuery || req.query;
-      const result = await this.service.findAll(query);
+      const { data, meta } = await this.service.findAll(query);
 
       return apiResponse(res, {
         status: 200,
         type: "SUCCESS",
         code: `${this.resourceName.toUpperCase()}_LIST`,
-        data: result
+        data,
+        meta
       });
     } catch (error) {
       next(error);
