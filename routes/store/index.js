@@ -5,6 +5,7 @@ import productosRoutes from "./productos.routes.js";
 import metodosPagoRoutes from "./metodos-pago.routes.js";
 import zonasEnvioRoutes from "./zonas-envio.routes.js";
 import pedidosRoutes from "./pedidos.routes.js";
+import cuponesRoutes from "./cupones.routes.js";
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use("/productos", productosRoutes);
 router.use("/metodos-pago", metodosPagoRoutes);
 router.use("/zonas-envio", zonasEnvioRoutes);
 router.use("/pedidos", pedidosRoutes);
+router.use("/cupones", cuponesRoutes);
 
 export default router;

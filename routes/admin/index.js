@@ -11,6 +11,7 @@ import invitationsRoutes from "../invitations.routes.js";
 import metodosPagoRoutes from "../metodos-pago.routes.js";
 import pedidosRoutes from "../pedidos.routes.js";
 import zonasEnvioRoutes from "../zonas-envio.routes.js";
+import cuponesRoutes from "../cupones.routes.js";
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use("/invitations", invitationsRoutes);
 router.use("/metodos-pago", metodosPagoRoutes);
 router.use("/pedidos", pedidosRoutes);
 router.use("/zonas-envio", zonasEnvioRoutes);
+router.use("/cupones", cuponesRoutes);
 
 export default router;

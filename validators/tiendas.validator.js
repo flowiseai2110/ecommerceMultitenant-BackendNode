@@ -17,7 +17,10 @@ const tiendasBaseSchema = {
   ubigeo: z.string().nullable().optional(),
   moneda: z.string().nullable().optional(),
   tipoNegocio: z.string().nullable().optional(),
-  activo: z.boolean()
+  activo: z.boolean(),
+  envioGratisMinimo: z.coerce.number().min(0).nullable().optional(),
+  metaPixelId: z.string().max(50).nullable().optional(),
+  googleAnalyticsId: z.string().max(50).nullable().optional()
 };
 
 // Schema para crear persona (todos los campos requeridos excepto email)
@@ -37,7 +40,10 @@ export const createTiendaSchema = z.object({
   ubigeo : tiendasBaseSchema.ubigeo,
   moneda : tiendasBaseSchema.moneda,
   tipoNegocio : tiendasBaseSchema.tipoNegocio,
-  activo: tiendasBaseSchema.activo
+  activo: tiendasBaseSchema.activo,
+  envioGratisMinimo: tiendasBaseSchema.envioGratisMinimo,
+  metaPixelId: tiendasBaseSchema.metaPixelId,
+  googleAnalyticsId: tiendasBaseSchema.googleAnalyticsId
 });
 
 // Schema para actualizar tienda (todos los campos opcionales)
@@ -57,7 +63,10 @@ export const updateTiendaSchema = z.object({
     ubigeo : tiendasBaseSchema.ubigeo,
     moneda : tiendasBaseSchema.moneda,
     tipoNegocio : tiendasBaseSchema.tipoNegocio,
-    activo: tiendasBaseSchema.activo
+    activo: tiendasBaseSchema.activo,
+    envioGratisMinimo: tiendasBaseSchema.envioGratisMinimo,
+    metaPixelId: tiendasBaseSchema.metaPixelId,
+    googleAnalyticsId: tiendasBaseSchema.googleAnalyticsId
 }).refine(
   (data) => Object.keys(data).length > 0,
   { message: "Debe proporcionar al menos un campo para actualizar" }

@@ -123,6 +123,11 @@ model tiendas {
   // Ubicación
   ubigeo                String?   @db.VarChar(8)
 
+  // Configuración de envío y marketing
+  envioGratisMinimo     Decimal?  @map("envio_gratis_minimo") @db.Decimal(10, 2)
+  metaPixelId           String?   @map("meta_pixel_id") @db.VarChar(50)
+  googleAnalyticsId     String?   @map("google_analytics_id") @db.VarChar(50)
+
   // Configuración general
   moneda                String?   @default("PEN") @db.VarChar(3)
   tipoNegocio           String?   @default("productos") @map("tipo_negocio") @db.VarChar(50)
@@ -137,6 +142,7 @@ model tiendas {
   // Relaciones
   usuarios              usuario_tiendas[]
   invitaciones          invitaciones[]
+  cupones               cupones[]
 }
 
 model tienda_configuraciones {
@@ -153,6 +159,31 @@ model tienda_configuraciones {
   usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
 
   @@unique([tiendaId, clave], name: "uq_tienda_clave")
+}
+
+// ============================================
+// MÓDULO: CUPONES
+// ============================================
+
+model cupones {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  codigo                String    @db.VarChar(50)
+  tipo                  String    @db.VarChar(20)
+  valor                 Decimal   @db.Decimal(10, 2)
+  minimoCompra          Decimal   @default(0) @map("minimo_compra") @db.Decimal(10, 2)
+  usoMaximo             Int?      @map("uso_maximo")
+  usoMaximoPorCliente   Int?      @default(1) @map("uso_maximo_por_cliente")
+  usoActual             Int       @default(0) @map("uso_actual")
+  fechaInicio           DateTime? @default(now()) @map("fecha_inicio") @db.Timestamptz
+  fechaFin              DateTime? @map("fecha_fin") @db.Timestamptz
+  activo                Boolean   @default(true)
+  createdAt             DateTime? @default(now()) @map("created_at") @db.Timestamptz
+
+  tienda                tiendas   @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+
+  @@unique([tiendaId, codigo], name: "uq_cupon_tienda_codigo")
+  @@index([tiendaId], name: "idx_cupones_tienda")
 }
 
 // ============================================
@@ -330,6 +361,7 @@ model pedidos {
   direccionEnvio        String?   @map("direccion_envio") @db.Text
   notas                 String?   @db.Text
   origen                String    @default("web") @db.VarChar(20)
+  codigoCupon           String?   @map("codigo_cupon") @db.VarChar(50)
   fechaConfirmado       DateTime? @map("fecha_confirmado") @db.Timestamptz
   fechaEntregado        DateTime? @map("fecha_entregado") @db.Timestamptz
 

@@ -134,7 +134,8 @@ class PedidosService {
       metodoPago,
       metodoEnvio,
       direccionEnvio,
-      origen = "web"
+      origen = "web",
+      codigoCupon = null
     } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -153,10 +154,42 @@ class PedidosService {
       const subtotal = itemsConTotal.reduce((sum, item) => sum + item.total, 0);
       const total = Math.round((subtotal - descuentoMonto + costoEnvio) * 100) / 100;
 
-      // 4. Generar número de pedido con advisory lock (sin race condition)
+      // 4. Validar cupón e incrementar uso si viene en el pedido
+      let codigoCuponGuardado = null;
+      if (codigoCupon) {
+        const codigoNorm = codigoCupon.toUpperCase();
+        const now = new Date();
+        const cupon = await tx.cupones.findFirst({
+          where: { tiendaId, codigo: codigoNorm, activo: true }
+        });
+
+        if (!cupon) throw new ValidationError("Cupón no válido");
+        if (cupon.fechaInicio && cupon.fechaInicio > now) throw new ValidationError("Cupón aún no vigente");
+        if (cupon.fechaFin && cupon.fechaFin < now) throw new ValidationError("Cupón expirado");
+        if (cupon.usoMaximo !== null && cupon.usoActual >= cupon.usoMaximo)
+          throw new ValidationError("Cupón agotado");
+
+        // Verificar límite por cliente (cliente ya fue creado/actualizado en paso 2)
+        if (cupon.usoMaximoPorCliente !== null) {
+          const usosCliente = await tx.pedidos.count({
+            where: { tiendaId, clienteId: cliente.id, codigoCupon: codigoNorm }
+          });
+          if (usosCliente >= cupon.usoMaximoPorCliente) {
+            throw new ValidationError("Ya usaste este cupón el máximo de veces permitido");
+          }
+        }
+
+        await tx.cupones.update({
+          where: { id: cupon.id },
+          data: { usoActual: { increment: 1 } }
+        });
+        codigoCuponGuardado = codigoNorm;
+      }
+
+      // 5. Generar número de pedido con advisory lock (sin race condition)
       const numeroPedido = await this.#generarNumeroPedido(tiendaId, tx);
 
-      // 5. Crear pedido con detalles e historial inicial
+      // 6. Crear pedido con detalles e historial inicial
       const pedido = await tx.pedidos.create({
         data: {
           tiendaId,
@@ -173,6 +206,7 @@ class PedidosService {
           direccionEnvio: direccionEnvio || null,
           notas: notas || null,
           origen,
+          codigoCupon: codigoCuponGuardado,
           fechaRegistro: new Date(),
           usuarioRegistro: "storefront",
           detalles: {
@@ -198,7 +232,7 @@ class PedidosService {
         }
       });
 
-      // 6. Descontar stock (stock ya validado arriba)
+      // 7. Descontar stock (stock ya validado arriba)
       for (const item of detalles) {
         if (!item.productoId) continue;
         if (item.varianteId) {
@@ -214,7 +248,7 @@ class PedidosService {
         }
       }
 
-      // 7. Actualizar estadísticas del cliente
+      // 8. Actualizar estadísticas del cliente
       await tx.clientes.update({
         where: { id: cliente.id },
         data: {
@@ -271,6 +305,7 @@ class PedidosService {
           metodoEnvio: true,
           origen: true,
           notas: true,
+          codigoCupon: true,
           fechaConfirmado: true,
           fechaEntregado: true,
           fechaRegistro: true,

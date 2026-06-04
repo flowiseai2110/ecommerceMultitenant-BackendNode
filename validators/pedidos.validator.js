@@ -31,7 +31,8 @@ export const createPedidoSchema = z.object({
   costoEnvio: z.coerce.number().min(0).optional().default(0),
   descuentoMonto: z.coerce.number().min(0).optional().default(0),
   notas: z.string().optional().nullable(),
-  origen: z.string().max(20).optional().default("web")
+  origen: z.string().max(20).optional().default("web"),
+  codigoCupon: z.string().max(50).optional().nullable()
 });
 
 // Schema para actualizar estado del pedido
