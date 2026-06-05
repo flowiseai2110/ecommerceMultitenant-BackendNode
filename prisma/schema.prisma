@@ -109,6 +109,7 @@ model tiendas {
   slug                  String    @unique @db.VarChar(100)
   descripcion           String?   @db.Text
   logoUrl               String?   @map("logo_url") @db.VarChar(500)
+  logoBackground        String?   @map("logo_background") @db.VarChar(7)
   bannerUrl             String?   @map("banner_url") @db.VarChar(500)
   whatsappNumero        String?   @map("whatsapp_numero") @db.VarChar(20)
   email                 String?   @db.VarChar(100)

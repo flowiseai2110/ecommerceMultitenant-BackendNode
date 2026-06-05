@@ -21,6 +21,8 @@ class GenericService {
     this.listSelect = options.listSelect || null;
     // Campos a excluir en listados (fallback legacy — se ignora si listSelect está definido)
     this.excludeFieldsInList = options.excludeFieldsInList || [];
+    // Orden por defecto cuando no se recibe ?orderBy en la query
+    this.defaultOrderBy = options.defaultOrderBy || null;
   }
 
   /**
@@ -43,7 +45,7 @@ class GenericService {
     const queryOptions = {
       page: parseInt(page) || undefined,
       limit: parseInt(limit) || undefined,
-      orderBy: this.parseOrderBy(orderBy),
+      orderBy: this.parseOrderBy(orderBy) || this.defaultOrderBy || undefined,
       where: this.buildWhereClause(filters),
       ...(resolvedSelect ? { select: resolvedSelect } : { include: resolvedInclude })
     };

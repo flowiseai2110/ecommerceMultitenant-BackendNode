@@ -16,7 +16,8 @@ import {
 const categoriasRepository = new GenericRepository(prisma.categorias, "Categoria");
 const categoriasService = new GenericService(categoriasRepository, {
   enableAudit: true,
-  excludeFieldsInList: ["fechaRegistro", "usuarioRegistro", "fechaActualizacion", "usuarioActualizacion"]
+  excludeFieldsInList: ["fechaRegistro", "usuarioRegistro", "fechaActualizacion", "usuarioActualizacion"],
+  defaultOrderBy: [{ orden: "asc" }, { fechaRegistro: "asc" }]
 });
 const categoriasController = new GenericController(categoriasService, "Categoria");
 
@@ -26,7 +27,7 @@ const router = Router();
 router.get(
   "/",
   validate({ query: paginationSchema }),
-  categoriasController.findAll
+  categoriasController.findAll 
 );
 
 // GET - Obtener categoría por ID
