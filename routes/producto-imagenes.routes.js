@@ -5,6 +5,7 @@ import GenericRepository from "../repositories/generic.repository.js";
 import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
 import {
   createImagenSchema,
   updateImagenSchema,
@@ -16,6 +17,25 @@ import {
 const imagenesRepository = new GenericRepository(prisma.producto_imagenes, "ProductoImagen");
 const imagenesService = new GenericService(imagenesRepository, { enableAudit: true });
 const imagenesController = new GenericController(imagenesService, "ProductoImagen");
+
+// producto_imagenes no tiene tiendaId propio: la tienda dueña se hereda
+// del producto padre. Resolvemos vía productoId (creación) o vía la
+// relación producto de la imagen existente (actualización/eliminación).
+const resolveImagenTiendaId = resolveTiendaId(async (req) => {
+  if (req.body?.productoId) {
+    const producto = await prisma.productos.findUnique({
+      where: { id: req.body.productoId },
+      select: { tiendaId: true }
+    });
+    return producto?.tiendaId || null;
+  }
+
+  const imagen = await prisma.producto_imagenes.findUnique({
+    where: { id: req.params.id },
+    select: { producto: { select: { tiendaId: true } } }
+  });
+  return imagen?.producto?.tiendaId || null;
+});
 
 const router = Router();
 
@@ -37,6 +57,8 @@ router.get(
 router.post(
   "/",
   authMiddleware,
+  resolveImagenTiendaId,
+  requireTiendaAccess("editor"),
   validate({ body: createImagenSchema }),
   imagenesController.create
 );
@@ -45,6 +67,8 @@ router.post(
 router.put(
   "/:id",
   authMiddleware,
+  resolveImagenTiendaId,
+  requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateImagenSchema }),
   imagenesController.update
 );
@@ -53,6 +77,8 @@ router.put(
 router.delete(
   "/:id",
   authMiddleware,
+  resolveImagenTiendaId,
+  requireTiendaAccess("admin"),
   validate({ params: idParamSchema }),
   imagenesController.delete
 );

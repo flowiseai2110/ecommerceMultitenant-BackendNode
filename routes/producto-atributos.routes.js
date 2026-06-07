@@ -5,6 +5,7 @@ import GenericRepository from "../repositories/generic.repository.js";
 import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
 import {
   createAtributoSchema,
   updateAtributoSchema,
@@ -16,6 +17,16 @@ import {
 const atributosRepository = new GenericRepository(prisma.producto_atributos, "ProductoAtributo");
 const atributosService = new GenericService(atributosRepository, { enableAudit: true });
 const atributosController = new GenericController(atributosService, "ProductoAtributo");
+
+// Resuelve el tiendaId dueño del atributo cuando la petición no lo trae
+// (rutas /:id), para que requireTiendaAccess pueda validar pertenencia.
+const resolveAtributoTiendaId = resolveTiendaId(async (req) => {
+  const atributo = await prisma.producto_atributos.findUnique({
+    where: { id: req.params.id },
+    select: { tiendaId: true }
+  });
+  return atributo?.tiendaId || null;
+});
 
 const router = Router();
 
@@ -37,6 +48,7 @@ router.get(
 router.post(
   "/",
   authMiddleware,
+  requireTiendaAccess("editor"),
   validate({ body: createAtributoSchema }),
   atributosController.create
 );
@@ -45,6 +57,8 @@ router.post(
 router.put(
   "/:id",
   authMiddleware,
+  resolveAtributoTiendaId,
+  requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateAtributoSchema }),
   atributosController.update
 );
@@ -53,6 +67,8 @@ router.put(
 router.delete(
   "/:id",
   authMiddleware,
+  resolveAtributoTiendaId,
+  requireTiendaAccess("admin"),
   validate({ params: idParamSchema }),
   atributosController.delete
 );

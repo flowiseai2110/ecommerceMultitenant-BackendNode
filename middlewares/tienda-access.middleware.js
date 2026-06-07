@@ -61,4 +61,30 @@ export function requireTiendaAccess(minRol = "viewer") {
   };
 }
 
-export default { requireTiendaAccess };
+/**
+ * Middleware factory que resuelve req.params.tiendaId a partir del propio
+ * recurso cuando el cliente no lo envía en body/params/query (rutas tipo
+ * PUT/DELETE /:id). Debe ejecutarse ANTES de requireTiendaAccess.
+ *
+ * Sin esto, requireTiendaAccess no tendría tiendaId con qué validar
+ * membresía, y la verificación de pertenencia del recurso se omitiría
+ * (permitiendo modificar/eliminar registros de otras tiendas).
+ *
+ * @param {(req: import("express").Request) => Promise<string|null>} resolver
+ *   Función que devuelve el tiendaId dueño del recurso, o null si no existe.
+ */
+export function resolveTiendaId(resolver) {
+  return async (req, res, next) => {
+    try {
+      if (!req.body?.tiendaId && !req.params?.tiendaId && !req.query?.tiendaId) {
+        const tiendaId = await resolver(req);
+        if (tiendaId) req.params.tiendaId = tiendaId;
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+export default { requireTiendaAccess, resolveTiendaId };

@@ -26,7 +26,6 @@ export const createCategoriaSchema = z.object({
 
 // Schema para actualizar categoría
 export const updateCategoriaSchema = z.object({
-  tiendaId: categoriasBaseSchema.tiendaId.optional(),
   categoriaPadreId: categoriasBaseSchema.categoriaPadreId,
   nombre: categoriasBaseSchema.nombre.optional(),
   slug: categoriasBaseSchema.slug.optional(),

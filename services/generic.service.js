@@ -137,26 +137,25 @@ class GenericService {
    * @param {number|string} id - ID del registro
    * @param {Object} data - Datos validados a actualizar
    * @param {Object} user - Usuario autenticado (req.user)
+   * @param {string|null} tiendaId - Scope multi-tenant opcional
    * @returns {Promise<Object>}
    */
-  async update(id, data, user = null) {
-     
-    // Agregar campos de auditoría de actualización
+  async update(id, data, user = null, tiendaId = null) {
     if (this.enableAudit) {
       data = this.addUpdateAuditFields(data, user);
     }
 
-    return await this.repository.update(id, data);
+    return await this.repository.update(id, data, { tiendaId });
   }
 
   /**
    * Elimina un registro por ID
    * @param {number|string} id - ID del registro
+   * @param {string|null} tiendaId - Scope multi-tenant opcional
    * @returns {Promise<Object>}
    */
-  async delete(id) {
-    
-    return await this.repository.delete(id);
+  async delete(id, tiendaId = null) {
+    return await this.repository.delete(id, tiendaId);
   }
 
   /**

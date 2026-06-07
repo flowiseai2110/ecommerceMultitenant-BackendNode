@@ -24,7 +24,6 @@ export const createVarianteSchema = z.object({
 
 // Schema para actualizar variante
 export const updateVarianteSchema = z.object({
-  productoId: variantesBaseSchema.productoId.optional(),
   nombre: variantesBaseSchema.nombre.optional(),
   sku: variantesBaseSchema.sku,
   precio: variantesBaseSchema.precio,

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../../config/prisma.js";
 import { validate } from "../../middlewares/validation.middleware.js";
+import { scopeBodyToTienda } from "../../middlewares/resolve-tienda.middleware.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import { NotFoundError } from "../../utils/errors.js";
 import PedidosRepository from "../../repositories/pedidos.repository.js";
@@ -15,9 +16,13 @@ const router = Router();
 
 // ============================================
 // POST / - Crear pedido desde el storefront (público)
+// Si la tienda se resolvió por subdominio, el pedido SIEMPRE se crea contra
+// esa tienda — ignora cualquier tiendaId que el cliente intente enviar
+// (evita pedidos cruzados por frontend desactualizado o manipulación).
 // ============================================
 router.post(
   "/",
+  scopeBodyToTienda,
   validate({ body: createPedidoSchema }),
   async (req, res, next) => {
     try {

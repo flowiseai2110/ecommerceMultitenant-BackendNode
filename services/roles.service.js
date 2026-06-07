@@ -1,32 +1,15 @@
 import { prisma } from "../config/prisma.js";
 
-// Cache para roles (evita consultas repetidas)
-let rolesCache = null;
-let cacheTimestamp = null;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
-
 /**
- * Obtiene todos los roles de usuario desde enumerados
+ * Obtiene todos los roles de usuario desde enumerados.
+ * Son solo 4 registros — no justifica cache en proceso único.
  * @returns {Promise<Array>} Lista de roles
  */
 export async function getRolesUsuario() {
-  const now = Date.now();
-
-  // Usar cache si está vigente
-  if (rolesCache && cacheTimestamp && (now - cacheTimestamp) < CACHE_TTL) {
-    return rolesCache;
-  }
-
-  rolesCache = await prisma.enumerados.findMany({
-    where: {
-      tipo: "rol_usuario",
-      activo: true
-    },
+  return await prisma.enumerados.findMany({
+    where: { tipo: "rol_usuario", activo: true },
     orderBy: { orden: "asc" }
   });
-
-  cacheTimestamp = now;
-  return rolesCache;
 }
 
 /**
@@ -84,19 +67,10 @@ export async function compararRoles(rolId1, rolId2) {
   return 0;
 }
 
-/**
- * Invalida el cache de roles (usar después de modificar enumerados)
- */
-export function invalidarCacheRoles() {
-  rolesCache = null;
-  cacheTimestamp = null;
-}
-
 export default {
   getRolesUsuario,
   getCodigoRol,
   getIdRolByCodigo,
   tienePermisosAdmin,
-  compararRoles,
-  invalidarCacheRoles
+  compararRoles
 };

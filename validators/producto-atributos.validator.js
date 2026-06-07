@@ -18,7 +18,6 @@ export const createAtributoSchema = z.object({
 
 // Schema para actualizar atributo
 export const updateAtributoSchema = z.object({
-  tiendaId: atributosBaseSchema.tiendaId.optional(),
   nombre: atributosBaseSchema.nombre.optional(),
   valores: atributosBaseSchema.valores.optional(),
   aplicaA: atributosBaseSchema.aplicaA

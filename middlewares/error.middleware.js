@@ -4,6 +4,20 @@ import { AppError } from "../utils/errors.js";
 import { logger } from "../config/logger.js";
 import config from "../config/index.js";
 
+const SENSITIVE_FIELDS = [
+  "password", "contrasena", "token", "secret", "apiKey",
+  "cvv", "tarjeta", "cardNumber", "referenciaPago", "supabaseServiceKey"
+];
+
+function sanitizeBody(body) {
+  if (!body || typeof body !== "object") return body;
+  const sanitized = { ...body };
+  for (const field of SENSITIVE_FIELDS) {
+    if (field in sanitized) sanitized[field] = "[REDACTED]";
+  }
+  return sanitized;
+}
+
 /**
  * Middleware para manejar rutas no encontradas (404)
  */
@@ -30,7 +44,7 @@ export function errorHandler(err, req, res, next) {
     stack: err.stack,
     path: req.path,
     method: req.method,
-    body: req.body,
+    body: sanitizeBody(req.body),
     user: req.user?.id
   });
 

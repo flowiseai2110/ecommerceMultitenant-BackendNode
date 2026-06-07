@@ -82,8 +82,7 @@ class GenericController {
   async update(req, res, next) {
     try {
       const { id } = req.params;
-      // Pasar el usuario autenticado para auditoría
-      const record = await this.service.update(id, req.body, req.user);
+      const record = await this.service.update(id, req.body, req.user, req.tiendaId);
 
       return apiResponse(res, {
         status: 200,
@@ -102,7 +101,7 @@ class GenericController {
   async delete(req, res, next) {
     try {
       const { id } = req.params;
-      await this.service.delete(id);
+      await this.service.delete(id, req.tiendaId);
 
       return apiResponse(res, {
         status: 200,

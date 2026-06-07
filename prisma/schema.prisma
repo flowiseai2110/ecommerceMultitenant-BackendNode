@@ -185,6 +185,7 @@ model cupones {
 
   @@unique([tiendaId, codigo], name: "uq_cupon_tienda_codigo")
   @@index([tiendaId], name: "idx_cupones_tienda")
+  @@index([tiendaId, activo], name: "idx_cupones_tienda_activo")
 }
 
 // ============================================
@@ -207,6 +208,9 @@ model categorias {
   usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
   fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
   usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  @@index([tiendaId, activo], name: "idx_categorias_tienda_activo")
+  @@index([tiendaId, slug], name: "idx_categorias_tienda_slug")
 }
 
 // ============================================
@@ -243,6 +247,11 @@ model productos {
   // Relaciones
   variantes             producto_variantes[]
   imagenes              producto_imagenes[]
+
+  @@index([tiendaId, activo], name: "idx_productos_tienda_activo")
+  @@index([tiendaId, categoriaId], name: "idx_productos_tienda_categoria")
+  @@index([tiendaId, slug], name: "idx_productos_tienda_slug")
+  @@index([tiendaId, destacado], name: "idx_productos_tienda_destacado")
 }
 
 // ============================================
@@ -308,6 +317,8 @@ model producto_atributos {
   usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
   fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
   usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  @@index([tiendaId], name: "idx_atributos_tienda")
 }
 
 // ============================================
@@ -339,6 +350,8 @@ model clientes {
   pedidos                   pedidos[]
 
   @@unique([tiendaId, whatsappNumero], name: "uq_cliente_whatsapp")
+  @@index([tiendaId], name: "idx_clientes_tienda")
+  @@index([tiendaId, ultimoPedidoFecha(sort: Desc)], name: "idx_clientes_tienda_fecha")
 }
 
 // ============================================
@@ -379,6 +392,9 @@ model pedidos {
 
   @@unique([tiendaId, numeroPedido], name: "uq_numero_pedido")
   @@index([tiendaId], name: "idx_pedidos_tienda")
+  @@index([tiendaId, estado], name: "idx_pedidos_tienda_estado")
+  @@index([tiendaId, estadoPago], name: "idx_pedidos_tienda_estado_pago")
+  @@index([tiendaId, fechaRegistro(sort: Desc)], name: "idx_pedidos_tienda_fecha")
   @@index([clienteId], name: "idx_pedidos_cliente")
 }
 
@@ -434,6 +450,8 @@ model metodos_pago {
   cuentaInfo            Json?     @map("cuenta_info") @db.JsonB
   activo                Boolean   @default(true)
   orden                 Int       @default(0)
+
+  @@index([tiendaId, activo], name: "idx_metodos_pago_tienda_activo")
 }
 
 // ============================================

@@ -9,9 +9,9 @@ export const config = {
   databaseUrl: process.env.DATABASE_URL,
 
   // JWT / Supabase
-  supabaseUrl: process.env.SUPABASE_URL || "https://tknrjrghvvfryachibsy.supabase.co",
-  supabaseJwksUrl: process.env.SUPABASE_JWKS_URL || "https://tknrjrghvvfryachibsy.supabase.co/auth/v1/.well-known/jwks.json",
-  supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY, // Para crear usuarios desde el servidor
+  supabaseUrl: process.env.SUPABASE_URL,
+  supabaseJwksUrl: process.env.SUPABASE_JWKS_URL,
+  supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
   jwtAudience: process.env.JWT_AUDIENCE || "authenticated",
 
   // Rate Limiting
@@ -44,6 +44,13 @@ export const config = {
   // Frontend URL (para links en emails)
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:4200",
 
+  // Plataforma — dominio base para resolución de tienda por subdominio
+  // Ej: PLATFORM_BASE_DOMAIN=ecompyme.com → zapateriaalonso.ecompyme.com
+  platform: {
+    baseDomain: process.env.PLATFORM_BASE_DOMAIN || null,
+    reservedSubdomains: ["www", "api", "admin", "tiendas", "store", "app"]
+  },
+
   // Email - Resend
   resend: {
     apiKey: process.env.RESEND_API_KEY,
@@ -62,7 +69,7 @@ export const config = {
 };
 
 // Validar configuración crítica
-const requiredEnvVars = ["DATABASE_URL"];
+const requiredEnvVars = ["DATABASE_URL", "SUPABASE_URL", "SUPABASE_JWKS_URL", "SUPABASE_SERVICE_KEY"];
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingVars.length > 0) {

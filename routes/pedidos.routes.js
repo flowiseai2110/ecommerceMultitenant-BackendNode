@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireTiendaAccess } from "../middlewares/tienda-access.middleware.js";
@@ -18,6 +17,19 @@ const pedidosService = new PedidosService(pedidosRepository);
 
 const router = Router();
 
+// Resuelve tiendaId desde el pedido cuando no viene en la request
+async function resolvePedidoTiendaId(req, res, next) {
+  try {
+    if (!req.body?.tiendaId && !req.params?.tiendaId && !req.query?.tiendaId) {
+      const tiendaId = await pedidosService.resolveTiendaId(req.params.id);
+      if (tiendaId) req.params.tiendaId = tiendaId;
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
 // ============================================
 // GET /resumen - Listado compacto para tabla del admin
 // GET /admin/pedidos/resumen?tiendaId=xxx&estado=pendiente
@@ -31,47 +43,8 @@ router.get(
   async (req, res, next) => {
     try {
       const query = req.validatedQuery || req.query;
-      const { page = 1, limit = 20, tiendaId, estado } = query;
-
-      const take = Math.min(parseInt(limit) || 20, 100);
-      const skip = ((parseInt(page) || 1) - 1) * take;
-
-      const where = { tiendaId };
-      if (estado) where.estado = estado;
-
-      const [data, total] = await Promise.all([
-        prisma.pedidos.findMany({
-          where,
-          orderBy: { fechaRegistro: "desc" },
-          select: {
-            id: true,
-            numeroPedido: true,
-            estado: true,
-            total: true,
-            fechaRegistro: true,
-            cliente: { select: { nombre: true } }
-          },
-          skip,
-          take
-        }),
-        prisma.pedidos.count({ where })
-      ]);
-
-      const p = parseInt(page) || 1;
-      return apiResponse(res, {
-        status: 200,
-        type: "SUCCESS",
-        code: "PEDIDOS_RESUMEN",
-        data,
-        meta: {
-          total,
-          page: p,
-          limit: take,
-          totalPages: Math.ceil(total / take),
-          hasNextPage: p < Math.ceil(total / take),
-          hasPrevPage: p > 1
-        }
-      });
+      const { data, meta } = await pedidosService.findResumen(query);
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDOS_RESUMEN", data, meta });
     } catch (error) {
       next(error);
     }
@@ -124,6 +97,7 @@ router.get(
 router.put(
   "/:id/estado",
   authMiddleware,
+  resolvePedidoTiendaId,
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateEstadoSchema }),
   async (req, res, next) => {
@@ -146,6 +120,7 @@ router.put(
 router.put(
   "/:id/pago",
   authMiddleware,
+  resolvePedidoTiendaId,
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateEstadoPagoSchema }),
   async (req, res, next) => {
@@ -168,6 +143,7 @@ router.put(
 router.delete(
   "/:id",
   authMiddleware,
+  resolvePedidoTiendaId,
   requireTiendaAccess("admin"),
   validate({ params: idParamSchema }),
   async (req, res, next) => {

@@ -5,6 +5,7 @@ import GenericRepository from "../repositories/generic.repository.js";
 import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
 import {
   createVarianteSchema,
   updateVarianteSchema,
@@ -16,6 +17,25 @@ import {
 const variantesRepository = new GenericRepository(prisma.producto_variantes, "ProductoVariante");
 const variantesService = new GenericService(variantesRepository, { enableAudit: true });
 const variantesController = new GenericController(variantesService, "ProductoVariante");
+
+// producto_variantes no tiene tiendaId propio: la tienda dueña se hereda
+// del producto padre. Resolvemos vía productoId (creación) o vía la
+// relación producto de la variante existente (actualización/eliminación).
+const resolveVarianteTiendaId = resolveTiendaId(async (req) => {
+  if (req.body?.productoId) {
+    const producto = await prisma.productos.findUnique({
+      where: { id: req.body.productoId },
+      select: { tiendaId: true }
+    });
+    return producto?.tiendaId || null;
+  }
+
+  const variante = await prisma.producto_variantes.findUnique({
+    where: { id: req.params.id },
+    select: { producto: { select: { tiendaId: true } } }
+  });
+  return variante?.producto?.tiendaId || null;
+});
 
 const router = Router();
 
@@ -37,6 +57,8 @@ router.get(
 router.post(
   "/",
   authMiddleware,
+  resolveVarianteTiendaId,
+  requireTiendaAccess("editor"),
   validate({ body: createVarianteSchema }),
   variantesController.create
 );
@@ -45,6 +67,8 @@ router.post(
 router.put(
   "/:id",
   authMiddleware,
+  resolveVarianteTiendaId,
+  requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateVarianteSchema }),
   variantesController.update
 );
@@ -53,6 +77,8 @@ router.put(
 router.delete(
   "/:id",
   authMiddleware,
+  resolveVarianteTiendaId,
+  requireTiendaAccess("admin"),
   validate({ params: idParamSchema }),
   variantesController.delete
 );

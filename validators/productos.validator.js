@@ -46,7 +46,6 @@ export const createProductoSchema = z.object({
 
 // Schema para actualizar producto
 export const updateProductoSchema = z.object({
-  tiendaId: productosBaseSchema.tiendaId.optional(),
   categoriaId: productosBaseSchema.categoriaId,
   nombre: productosBaseSchema.nombre.optional(),
   slug: productosBaseSchema.slug.optional(),

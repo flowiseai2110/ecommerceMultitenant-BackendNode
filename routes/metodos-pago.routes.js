@@ -5,6 +5,7 @@ import GenericRepository from "../repositories/generic.repository.js";
 import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
 import {
   createMetodoPagoSchema,
   updateMetodoPagoSchema,
@@ -15,6 +16,16 @@ import {
 const metodosPagoRepository = new GenericRepository(prisma.metodos_pago, "Método de pago");
 const metodosPagoService = new GenericService(metodosPagoRepository, { enableAudit: false });
 const metodosPagoController = new GenericController(metodosPagoService, "MetodoPago");
+
+// Resuelve el tiendaId dueño del método de pago cuando la petición no lo trae
+// (rutas /:id), para que requireTiendaAccess pueda validar pertenencia.
+const resolveMetodoPagoTiendaId = resolveTiendaId(async (req) => {
+  const metodoPago = await prisma.metodos_pago.findUnique({
+    where: { id: req.params.id },
+    select: { tiendaId: true }
+  });
+  return metodoPago?.tiendaId || null;
+});
 
 const router = Router();
 
@@ -36,6 +47,7 @@ router.get(
 router.post(
   "/",
   authMiddleware,
+  requireTiendaAccess("admin"),
   validate({ body: createMetodoPagoSchema }),
   metodosPagoController.create
 );
@@ -44,6 +56,8 @@ router.post(
 router.put(
   "/:id",
   authMiddleware,
+  resolveMetodoPagoTiendaId,
+  requireTiendaAccess("admin"),
   validate({ params: idParamSchema, body: updateMetodoPagoSchema }),
   metodosPagoController.update
 );
@@ -52,6 +66,8 @@ router.put(
 router.delete(
   "/:id",
   authMiddleware,
+  resolveMetodoPagoTiendaId,
+  requireTiendaAccess("admin"),
   validate({ params: idParamSchema }),
   metodosPagoController.delete
 );

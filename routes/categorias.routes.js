@@ -5,6 +5,7 @@ import GenericRepository from "../repositories/generic.repository.js";
 import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
 import {
   createCategoriaSchema,
   updateCategoriaSchema,
@@ -20,6 +21,16 @@ const categoriasService = new GenericService(categoriasRepository, {
   defaultOrderBy: [{ orden: "asc" }, { fechaRegistro: "asc" }]
 });
 const categoriasController = new GenericController(categoriasService, "Categoria");
+
+// Resuelve el tiendaId dueño de la categoría cuando la petición no lo trae
+// (rutas /:id), para que requireTiendaAccess pueda validar pertenencia.
+const resolveCategoriaTiendaId = resolveTiendaId(async (req) => {
+  const categoria = await prisma.categorias.findUnique({
+    where: { id: req.params.id },
+    select: { tiendaId: true }
+  });
+  return categoria?.tiendaId || null;
+});
 
 const router = Router();
 
@@ -41,6 +52,7 @@ router.get(
 router.post(
   "/",
   authMiddleware,
+  requireTiendaAccess("editor"),
   validate({ body: createCategoriaSchema }),
   categoriasController.create
 );
@@ -49,6 +61,8 @@ router.post(
 router.put(
   "/:id",
   authMiddleware,
+  resolveCategoriaTiendaId,
+  requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateCategoriaSchema }),
   categoriasController.update
 );
@@ -57,6 +71,8 @@ router.put(
 router.delete(
   "/:id",
   authMiddleware,
+  resolveCategoriaTiendaId,
+  requireTiendaAccess("admin"),
   validate({ params: idParamSchema }),
   categoriasController.delete
 );

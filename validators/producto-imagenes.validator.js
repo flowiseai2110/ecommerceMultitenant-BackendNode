@@ -22,7 +22,6 @@ export const createImagenSchema = z.object({
 
 // Schema para actualizar imagen
 export const updateImagenSchema = z.object({
-  productoId: imagenesBaseSchema.productoId.optional(),
   varianteId: imagenesBaseSchema.varianteId,
   url: imagenesBaseSchema.url.optional(),
   textoAlternativo: imagenesBaseSchema.textoAlternativo,

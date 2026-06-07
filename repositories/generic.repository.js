@@ -131,10 +131,14 @@ class GenericRepository {
    * @returns {Promise<Object>}
    */
   async update(id, data, options = {}) {
-    const { include = undefined } = options;
+    const { include = undefined, tiendaId = null } = options;
 
-    // Verificar que existe
-    await this.findById(id);
+    if (tiendaId) {
+      const exists = await this.model.findFirst({ where: { id, tiendaId } });
+      if (!exists) throw new NotFoundError(this.modelName);
+    } else {
+      await this.findById(id);
+    }
 
     return await this.model.update({
       where: { id },
@@ -159,15 +163,18 @@ class GenericRepository {
   /**
    * Elimina un registro por ID
    * @param {number} id - ID del registro
+   * @param {string|null} tiendaId - Scope multi-tenant opcional
    * @returns {Promise<Object>}
    */
-  async delete(id) {
-    // Verificar que existe
-    await this.findById(id);
+  async delete(id, tiendaId = null) {
+    if (tiendaId) {
+      const exists = await this.model.findFirst({ where: { id, tiendaId } });
+      if (!exists) throw new NotFoundError(this.modelName);
+    } else {
+      await this.findById(id);
+    }
 
-    return await this.model.delete({
-      where: { id }
-    });
+    return await this.model.delete({ where: { id } });
   }
 
   /**

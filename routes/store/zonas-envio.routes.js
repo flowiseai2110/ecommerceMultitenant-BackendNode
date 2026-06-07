@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../../config/prisma.js";
 import { validate } from "../../middlewares/validation.middleware.js";
+import { scopeQueryToTienda } from "../../middlewares/resolve-tienda.middleware.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import ZonasEnvioRepository from "../../repositories/zonas-envio.repository.js";
 import ZonasEnvioService from "../../services/zonas-envio.service.js";
@@ -12,11 +13,13 @@ const zonasEnvioService = new ZonasEnvioService(zonasEnvioRepository);
 const router = Router();
 
 // ============================================
-// GET / - Listar zonas de envío (público — filtra por ?tiendaId=)
+// GET / - Listar zonas de envío (público — filtra por la tienda del
+// subdominio, o por ?tiendaId= como fallback en dev/dominio genérico)
 // ============================================
 router.get(
   "/",
   validate({ query: paginationSchema }),
+  scopeQueryToTienda,
   async (req, res, next) => {
     try {
       const query = req.validatedQuery || req.query;
