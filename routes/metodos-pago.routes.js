@@ -29,16 +29,23 @@ const resolveMetodoPagoTiendaId = resolveTiendaId(async (req) => {
 
 const router = Router();
 
-// GET - Listar métodos de pago (público para storefront)
+// GET - Listar métodos de pago de una tienda (admin)
+// Antes no exigía auth/membresía: cualquier usuario autenticado podía pasar
+// ?tiendaId=<otra-tienda> y ver sus métodos de pago (filtraciones cross-tenant).
 router.get(
   "/",
+  authMiddleware,
+  requireTiendaAccess("viewer"),
   validate({ query: paginationSchema }),
   metodosPagoController.findAll
 );
 
-// GET - Obtener método de pago por ID
+// GET - Obtener método de pago por ID (admin)
 router.get(
   "/:id",
+  authMiddleware,
+  resolveMetodoPagoTiendaId,
+  requireTiendaAccess("viewer"),
   validate({ params: idParamSchema }),
   metodosPagoController.findById
 );
