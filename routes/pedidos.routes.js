@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireTiendaAccess } from "../middlewares/tienda-access.middleware.js";
