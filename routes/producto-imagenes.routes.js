@@ -69,6 +69,7 @@ router.put(
   authMiddleware,
   resolveImagenTiendaId,
   requireTiendaAccess("editor"),
+  (req, _res, next) => { req.tiendaId = null; next(); },
   validate({ params: idParamSchema, body: updateImagenSchema }),
   imagenesController.update
 );
@@ -79,6 +80,7 @@ router.delete(
   authMiddleware,
   resolveImagenTiendaId,
   requireTiendaAccess("admin"),
+  (req, _res, next) => { req.tiendaId = null; next(); },
   validate({ params: idParamSchema }),
   imagenesController.delete
 );

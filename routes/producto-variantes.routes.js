@@ -69,6 +69,7 @@ router.put(
   authMiddleware,
   resolveVarianteTiendaId,
   requireTiendaAccess("editor"),
+  (req, _res, next) => { req.tiendaId = null; next(); },
   validate({ params: idParamSchema, body: updateVarianteSchema }),
   variantesController.update
 );
@@ -79,6 +80,7 @@ router.delete(
   authMiddleware,
   resolveVarianteTiendaId,
   requireTiendaAccess("admin"),
+  (req, _res, next) => { req.tiendaId = null; next(); },
   validate({ params: idParamSchema }),
   variantesController.delete
 );
