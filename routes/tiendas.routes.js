@@ -146,7 +146,22 @@ router.put(
   validate({ params: idParamSchema, body: updateTiendaSchema }),
   resolveTiendaIdFromId,
   requireTiendaAccess("admin"),
-  tiendasController.update
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      // tiendas es la raíz del tenant: no tiene campo tiendaId propio.
+      // requireTiendaAccess ya verificó el acceso, así que no se pasa tiendaId.
+      const record = await tiendaService.update(id, req.body, req.user, null);
+      return apiResponse(res, {
+        status: 200,
+        type: "SUCCESS",
+        code: "TIENDAS_UPDATED",
+        data: record
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 router.delete(
