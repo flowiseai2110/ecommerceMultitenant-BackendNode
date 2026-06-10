@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { resolveTienda } from "../../middlewares/resolve-tienda.middleware.js";
+import { cache } from "../../utils/cache.js";
 import tiendasRoutes from "./tiendas.routes.js";
 import categoriasRoutes from "./categorias.routes.js";
 import productosRoutes from "./productos.routes.js";
@@ -18,12 +19,12 @@ router.use(resolveTienda);
 
 // Rutas públicas del storefront — no requieren autenticación
 // Filtrar siempre por ?tiendaId= para scope multi-tenant
-router.use("/tiendas", tiendasRoutes);
-router.use("/categorias", categoriasRoutes);
-router.use("/productos", productosRoutes);
-router.use("/metodos-pago", metodosPagoRoutes);
-router.use("/zonas-envio", zonasEnvioRoutes);
-router.use("/pedidos", pedidosRoutes);
+router.use("/tiendas", cache(300), tiendasRoutes);
+router.use("/categorias", cache(300), categoriasRoutes);
+router.use("/productos", cache(60), productosRoutes);
+router.use("/metodos-pago", cache(300), metodosPagoRoutes);
+router.use("/zonas-envio", cache(300), zonasEnvioRoutes);
+router.use("/pedidos", pedidosRoutes);       // sin caché — rastreo en tiempo real
 router.use("/cupones", cuponesRoutes);
 
 export default router;

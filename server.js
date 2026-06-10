@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import compression from "compression";
 import rateLimit from "express-rate-limit";
 import swaggerUi from "swagger-ui-express";
 
@@ -24,6 +25,9 @@ const app = express();
 
 // Helmet - Headers de seguridad
 app.use(helmet());
+
+// Compresión gzip — reduce el tamaño de las respuestas JSON un 70-80%
+app.use(compression());
 
 // CORS - Configuración
 app.use(cors({

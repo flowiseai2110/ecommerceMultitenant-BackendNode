@@ -276,6 +276,8 @@ model producto_variantes {
 
   // Relaciones
   producto              productos @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@index([productoId], name: "idx_variantes_producto")
 }
 
 // ============================================
@@ -299,6 +301,8 @@ model producto_imagenes {
 
   // Relaciones
   producto              productos @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@index([productoId, orden], name: "idx_imagenes_producto_orden")
 }
 
 // ============================================
