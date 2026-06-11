@@ -66,10 +66,21 @@ export const paginationSchema = z.object({
   orderBy: z.string().regex(/^[a-zA-Z_]+:(asc|desc)$/i, "Formato de ordenamiento inválido").optional()
 }).passthrough();
 
+// Schema para GET /lista — listado optimizado del admin
+export const listaQuerySchema = z.object({
+  tiendaId: z.string({ required_error: "tiendaId es requerido" }).uuid("tiendaId inválido"),
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().optional(),
+  orderBy: z.string().regex(/^[a-zA-Z_]+:(asc|desc)$/i, "Formato de ordenamiento inválido").optional(),
+  estado: z.enum(["pendiente", "confirmado", "en_proceso", "enviado", "entregado", "cancelado"]).optional(),
+  estadoPago: z.enum(["pendiente", "pagado", "rechazado", "reembolsado"]).optional(),
+});
+
 export default {
   createPedidoSchema,
   updateEstadoSchema,
   updateEstadoPagoSchema,
   idParamSchema,
-  paginationSchema
+  paginationSchema,
+  listaQuerySchema
 };

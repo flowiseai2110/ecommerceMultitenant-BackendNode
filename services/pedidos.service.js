@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
 
@@ -546,6 +547,99 @@ class PedidosService {
         hasNextPage: p < Math.ceil(total / take),
         hasPrevPage: p > 1
       }
+    };
+  }
+
+  /**
+   * Listado optimizado para la tabla del admin.
+   * Una sola query con JOIN a clientes — sin detalles ni historial.
+   * Índice usado: idx_pedidos_tienda_fecha (tiendaId, fechaRegistro DESC)
+   */
+  async findLista(query = {}) {
+    const {
+      tiendaId,
+      page = 1,
+      limit = 10,
+      orderBy = "fechaRegistro:desc",
+      estado,
+      estadoPago,
+    } = query;
+
+    const take = Math.min(parseInt(limit) || 10, 100);
+    const skip = ((parseInt(page) || 1) - 1) * take;
+
+    // Whitelist: campo de la query → columna real en DB
+    const ORDER_FIELD_MAP = {
+      fechaRegistro: "p.fecha_registro",
+      total: "p.total",
+      numeroPedido: "p.numero_pedido",
+      estado: "p.estado",
+    };
+    const [rawField, rawDir = "desc"] = (orderBy || "fechaRegistro:desc").split(":");
+    const orderCol = ORDER_FIELD_MAP[rawField] ?? "p.fecha_registro";
+    const orderDir = rawDir.toLowerCase() === "asc" ? "ASC" : "DESC";
+
+    // Construir WHERE dinámico con parámetros seguros
+    const conditions = [Prisma.sql`p.tienda_id = ${tiendaId}::uuid`];
+    if (estado) conditions.push(Prisma.sql`p.estado = ${estado}`);
+    if (estadoPago) conditions.push(Prisma.sql`p.estado_pago = ${estadoPago}`);
+    const whereClause = Prisma.join(conditions, " AND ");
+
+    // Una sola query: datos + total via window function (elimina el COUNT separado)
+    const rows = await prisma.$queryRaw`
+      SELECT
+        p.id,
+        p.numero_pedido    AS "numeroPedido",
+        p.codigo_cupon     AS "codigoCupon",
+        p.estado,
+        p.estado_pago      AS "estadoPago",
+        p.total,
+        p.cliente_id       AS "clienteId",
+        p.fecha_registro   AS "fechaRegistro",
+        c.id               AS "cId",
+        c.nombre           AS "clienteNombre",
+        c.email            AS "clienteEmail",
+        c.whatsapp_numero  AS "clienteWhatsapp",
+        COUNT(*) OVER()    AS "totalCount"
+      FROM pedidos p
+      LEFT JOIN clientes c ON c.id = p.cliente_id
+      WHERE ${whereClause}
+      ORDER BY ${Prisma.raw(orderCol)} ${Prisma.raw(orderDir)}
+      LIMIT ${take} OFFSET ${skip}
+    `;
+
+    const total = rows.length > 0 ? Number(rows[0].totalCount) : 0;
+
+    const data = rows.map((row) => ({
+      id: row.id,
+      numeroPedido: row.numeroPedido,
+      codigoCupon: row.codigoCupon ?? null,
+      estado: row.estado,
+      estadoPago: row.estadoPago,
+      total: parseFloat(row.total),
+      clienteId: row.clienteId ?? null,
+      fechaRegistro: row.fechaRegistro,
+      cliente: row.cId
+        ? {
+            id: row.cId,
+            nombre: row.clienteNombre,
+            email: row.clienteEmail ?? null,
+            whatsappNumero: row.clienteWhatsapp ?? null,
+          }
+        : null,
+    }));
+
+    const p = parseInt(page) || 1;
+    return {
+      data,
+      meta: {
+        page: p,
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take),
+        hasNextPage: p < Math.ceil(total / take),
+        hasPrevPage: p > 1,
+      },
     };
   }
 

@@ -4,6 +4,22 @@ import { getCodigoRol } from "../services/roles.service.js";
 
 const ROL_JERARQUIA = ["viewer", "editor", "admin", "owner"];
 
+// Cache en memoria: evita un round-trip a Supabase por request
+// TTL 5 min — suficiente para reflejar cambios de rol sin lag perceptible
+const _cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000;
+
+function _getCache(userId, tiendaId) {
+  const entry = _cache.get(`${userId}:${tiendaId}`);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > CACHE_TTL) { _cache.delete(`${userId}:${tiendaId}`); return null; }
+  return entry.data;
+}
+
+function _setCache(userId, tiendaId, data) {
+  _cache.set(`${userId}:${tiendaId}`, { ts: Date.now(), data });
+}
+
 /**
  * Middleware factory que verifica que el usuario autenticado
  * tiene acceso a la tienda con el rol mínimo requerido.
@@ -31,15 +47,23 @@ export function requireTiendaAccess(minRol = "viewer") {
         return next(new ForbiddenError("Se requiere tiendaId para verificar acceso"));
       }
 
-      const membership = await prisma.usuario_tiendas.findFirst({
-        where: { userId: req.user.id, tiendaId, activo: true }
-      });
+      let cached = _getCache(req.user.id, tiendaId);
 
-      if (!membership) {
-        return next(new ForbiddenError("No tienes acceso a esta tienda"));
+      if (!cached) {
+        const membership = await prisma.usuario_tiendas.findFirst({
+          where: { userId: req.user.id, tiendaId, activo: true }
+        });
+
+        if (!membership) {
+          return next(new ForbiddenError("No tienes acceso a esta tienda"));
+        }
+
+        const codigoRol = await getCodigoRol(membership.rol);
+        cached = { membership, codigoRol };
+        _setCache(req.user.id, tiendaId, cached);
       }
 
-      const codigoRol = await getCodigoRol(membership.rol);
+      const { membership, codigoRol } = cached;
       const nivelUsuario = ROL_JERARQUIA.indexOf(codigoRol);
       const nivelMinimo = ROL_JERARQUIA.indexOf(minRol);
 

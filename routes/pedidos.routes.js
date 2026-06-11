@@ -10,7 +10,8 @@ import {
   updateEstadoSchema,
   updateEstadoPagoSchema,
   idParamSchema,
-  paginationSchema
+  paginationSchema,
+  listaQuerySchema
 } from "../validators/pedidos.validator.js";
 
 const pedidosRepository = new PedidosRepository(prisma.pedidos);
@@ -66,6 +67,27 @@ router.get(
       const query = req.validatedQuery || req.query;
       const { data, meta } = await pedidosService.findAll(query);
       return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDOS_LIST", data, meta });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// GET /lista - Listado optimizado para tabla del admin
+// GET /admin/pedidos/lista?tiendaId=xxx&page=1&limit=10
+// Una sola query con JOIN a clientes — sin detalles ni historial
+// ============================================
+router.get(
+  "/lista",
+  authMiddleware,
+  requireTiendaAccess("viewer"),
+  validate({ query: listaQuerySchema }),
+  async (req, res, next) => {
+    try {
+      const query = req.validatedQuery || req.query;
+      const { data, meta } = await pedidosService.findLista(query);
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDOS_LISTA", data, meta });
     } catch (error) {
       next(error);
     }
