@@ -11,6 +11,7 @@ import { prisma } from "./config/prisma.js";
 import routes from "./routes/index.js";
 import { swaggerSpec } from "./config/swagger.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
+import { performanceMiddleware, getRouteMetrics, resetRouteMetrics } from "./middlewares/performance.middleware.js";
 
 // Soporte para serializar BigInt a JSON
 BigInt.prototype.toJSON = function() {
@@ -63,15 +64,37 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // ============================================
-// LOGGING DE REQUESTS (solo en desarrollo)
+// MONITOREO DE PERFORMANCE (todos los entornos)
 // ============================================
 
-if (config.nodeEnv === "development") {
-  app.use((req, res, next) => {
-    logger.http(`${req.method} ${req.url}`);
-    next();
+app.use(performanceMiddleware);
+
+// ============================================
+// MÉTRICAS DE PERFORMANCE
+// ============================================
+
+// GET /api/v1/metrics — estadísticas acumuladas por ruta (desde el último reinicio)
+// IMPORTANTE: proteger con IP allowlist o auth antes de exponer en internet
+app.get("/api/v1/metrics", (req, res) => {
+  const routes = getRouteMetrics();
+  res.json({
+    status: 200,
+    type: "SUCCESS",
+    code: "METRICS",
+    data: {
+      uptime:        Math.round(process.uptime()),
+      memory:        process.memoryUsage(),
+      totalRequests: routes.reduce((acc, r) => acc + r.count, 0),
+      routes,
+    },
   });
-}
+});
+
+// POST /api/v1/metrics/reset — limpia los contadores en memoria
+app.post("/api/v1/metrics/reset", (req, res) => {
+  resetRouteMetrics();
+  res.json({ status: 200, type: "SUCCESS", code: "METRICS_RESET", data: null });
+});
 
 // ============================================
 // DOCUMENTACIÓN SWAGGER
