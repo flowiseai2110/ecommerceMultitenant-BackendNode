@@ -530,5 +530,5 @@ CREATE TRIGGER tr_actualizar_stats_cliente
 
 
 -- ============================================
--- FIN DEL SCRIPT
+-- FIN DEL SCRIPT - 15/06
 -- ============================================
