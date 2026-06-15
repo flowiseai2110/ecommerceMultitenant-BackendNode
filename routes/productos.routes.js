@@ -1,4 +1,5 @@
 import { Router } from "express";
+import multer from "multer";
 import GenericController from "../controllers/generic.controller.js";
 import GenericService from "../services/generic.service.js";
 import GenericRepository from "../repositories/generic.repository.js";
@@ -6,12 +7,22 @@ import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
+import { uploadImagenForProducto } from "../controllers/producto-imagenes.controller.js";
 import {
   createProductoSchema,
   updateProductoSchema,
   idParamSchema,
   paginationSchema
 } from "../validators/productos.validator.js";
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Solo se permiten archivos de imagen"));
+  },
+});
 
 // Crear instancias de las capas
 const productosRepository = new GenericRepository(prisma.productos, "Producto");
@@ -111,6 +122,17 @@ router.put(
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateProductoSchema }),
   productosController.update
+);
+
+// POST /:id/imagen - Subir imagen para un producto específico
+router.post(
+  "/:id/imagen",
+  authMiddleware,
+  validate({ params: idParamSchema }),
+  upload.single("file"),
+  resolveProductoTiendaId,
+  requireTiendaAccess("editor"),
+  uploadImagenForProducto
 );
 
 // DELETE - Eliminar producto

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import personaRoutes from "./persona.routes.js";
 import uploadsRoutes from "./uploads.routes.js";
+import imagesRoutes from "./images.routes.js";
 import adminRoutes from "./admin/index.js";
 import storeRoutes from "./store/index.js";
 
@@ -45,6 +46,7 @@ router.get("/health", (req, res) => {
 // ============================================
 router.use("/personas", personaRoutes);
 router.use("/uploads", uploadsRoutes);
+router.use("/images", imagesRoutes);
 
 // ============================================
 // RUTAS DE ADMINISTRACIÓN — /api/v1/admin/...

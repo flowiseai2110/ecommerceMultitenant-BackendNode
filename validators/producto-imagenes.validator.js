@@ -44,9 +44,26 @@ export const paginationSchema = z.object({
   orderBy: z.string().regex(/^[a-zA-Z_]+:(asc|desc)$/i, "Formato de ordenamiento inválido").optional()
 }).passthrough();
 
+// Schema para upload multipart cuando productoId viene en el body
+export const uploadImagenSchema = z.object({
+  productoId: z.string({ required_error: "El ID de producto es requerido" }).uuid("ID de producto inválido"),
+  varianteId: z.string().uuid("ID de variante inválido").optional().nullable(),
+  textoAlternativo: z.string().max(200, "El texto alternativo no puede exceder 200 caracteres").optional().nullable(),
+  orden: z.coerce.number({ invalid_type_error: "El orden debe ser un número" }).int().min(0).optional().default(0),
+  esPrincipal: z.preprocess(v => v === "true", z.boolean()).optional().default(false),
+  fit: z.enum(["cover", "contain", "fill", "inside", "outside"], {
+    message: "fit debe ser: cover, contain, fill, inside u outside"
+  }).optional().default("cover"),
+});
+
+// Schema para upload cuando productoId viene en el path param (:id)
+export const uploadImagenForProductoSchema = uploadImagenSchema.omit({ productoId: true });
+
 export default {
   createImagenSchema,
   updateImagenSchema,
+  uploadImagenSchema,
+  uploadImagenForProductoSchema,
   idParamSchema,
   paginationSchema
 };

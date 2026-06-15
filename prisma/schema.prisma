@@ -289,6 +289,9 @@ model producto_imagenes {
   productoId            String    @map("producto_id") @db.Uuid
   varianteId            String?   @map("variante_id") @db.Uuid
   url                   String    @db.VarChar(500)
+  urlJpeg               String?   @map("url_jpeg") @db.VarChar(500)
+  storagePath           String?   @map("storage_path") @db.VarChar(500)
+  storagePathJpeg       String?   @map("storage_path_jpeg") @db.VarChar(500)
   textoAlternativo      String?   @map("texto_alternativo") @db.VarChar(200)
   orden                 Int       @default(0)
   esPrincipal           Boolean   @default(false) @map("es_principal")

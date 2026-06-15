@@ -1,4 +1,5 @@
 import { Router } from "express";
+import multer from "multer";
 import GenericController from "../controllers/generic.controller.js";
 import GenericService from "../services/generic.service.js";
 import GenericRepository from "../repositories/generic.repository.js";
@@ -6,12 +7,22 @@ import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
+import { uploadImagen, deleteImagenWithCleanup } from "../controllers/producto-imagenes.controller.js";
 import {
   createImagenSchema,
   updateImagenSchema,
   idParamSchema,
   paginationSchema
 } from "../validators/producto-imagenes.validator.js";
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Solo se permiten archivos de imagen"));
+  },
+});
 
 // Crear instancias de las capas
 const imagenesRepository = new GenericRepository(prisma.producto_imagenes, "ProductoImagen");
@@ -53,7 +64,18 @@ router.get(
   imagenesController.findById
 );
 
-// POST - Crear imagen
+// POST /upload - Subir archivo + procesar con Sharp + guardar en DB
+// multer corre primero para poblar req.body y req.file antes de resolveImagenTiendaId
+router.post(
+  "/upload",
+  authMiddleware,
+  upload.single("file"),
+  resolveImagenTiendaId,
+  requireTiendaAccess("editor"),
+  uploadImagen
+);
+
+// POST - Crear imagen con URL ya existente (sin procesamiento)
 router.post(
   "/",
   authMiddleware,
@@ -74,15 +96,14 @@ router.put(
   imagenesController.update
 );
 
-// DELETE - Eliminar imagen
+// DELETE - Eliminar imagen y limpiar archivos de Supabase Storage
 router.delete(
   "/:id",
   authMiddleware,
   resolveImagenTiendaId,
   requireTiendaAccess("admin"),
-  (req, _res, next) => { req.tiendaId = null; next(); },
   validate({ params: idParamSchema }),
-  imagenesController.delete
+  deleteImagenWithCleanup
 );
 
 export default router;
