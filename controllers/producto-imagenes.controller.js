@@ -52,10 +52,6 @@ export function makeUploadImagenForProducto(bucket, subfolder = "productos") {
       if (!parsed.success) throw new ValidationError(parsed.error.errors[0].message);
 
       const productoId = req.params.id;
-
-      const producto = await prisma.productos.findUnique({ where: { id: productoId }, select: { id: true } });
-      if (!producto) throw new NotFoundError("Producto");
-
       const { varianteId, textoAlternativo, orden, esPrincipal, fit } = parsed.data;
 
       const folder = req.tiendaId ? `${req.tiendaId}/${subfolder}` : subfolder;

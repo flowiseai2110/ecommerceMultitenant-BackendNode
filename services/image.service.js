@@ -80,6 +80,8 @@ export async function processAndUploadImage(buffer, filename, { fit, bucket, fol
     throw new Error(`Error al subir WebP a Supabase Storage: ${webpResult.error.message}`);
   }
   if (jpegResult.error) {
+    // Limpiar el WebP ya subido para no dejar archivos huérfanos
+    await supabase.storage.from(bucket).remove([webpPath]);
     throw new Error(`Error al subir JPEG a Supabase Storage: ${jpegResult.error.message}`);
   }
 

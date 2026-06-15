@@ -1,22 +1,13 @@
 import { Router } from "express";
-import multer from "multer";
 import sharp from "sharp";
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) cb(null, true);
-    else cb(new Error("Solo se permiten archivos de imagen"));
-  },
-});
+import { uploadImage } from "../middlewares/upload.middleware.js";
 
 const router = Router();
 
 // POST /api/v1/images/preview
 // Procesa la imagen en memoria (400×400 WebP) y devuelve base64.
 // No sube nada a Storage — solo para previsualización en el cliente.
-router.post("/preview", upload.single("file"), async (req, res, next) => {
+router.post("/preview", uploadImage.single("file"), async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({

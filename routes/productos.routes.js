@@ -1,5 +1,5 @@
 import { Router } from "express";
-import multer from "multer";
+import { uploadImage } from "../middlewares/upload.middleware.js";
 import GenericController from "../controllers/generic.controller.js";
 import GenericService from "../services/generic.service.js";
 import GenericRepository from "../repositories/generic.repository.js";
@@ -17,14 +17,6 @@ import {
   paginationSchema
 } from "../validators/productos.validator.js";
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) cb(null, true);
-    else cb(new Error("Solo se permiten archivos de imagen"));
-  },
-});
 
 // Crear instancias de las capas
 const productosRepository = new GenericRepository(prisma.productos, "Producto");
@@ -131,7 +123,7 @@ router.post(
   "/:id/imagen",
   authMiddleware,
   validate({ params: idParamSchema }),
-  upload.single("file"),
+  uploadImage.single("file"),
   resolveProductoTiendaId,
   requireTiendaAccess("editor"),
   uploadImagenForProducto

@@ -7,6 +7,8 @@ import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
 import { apiResponse } from "../utils/apiResponse.js";
+import { uploadImage } from "../middlewares/upload.middleware.js";
+import { uploadLogo, uploadBanner } from "../controllers/tiendas-imagen.controller.js";
 import {
   createTiendaSchema,
   updateTiendaSchema,
@@ -162,6 +164,28 @@ router.put(
       next(error);
     }
   }
+);
+
+// POST /:id/logo — Subir o reemplazar logo de la tienda (400×400, inside)
+router.post(
+  "/:id/logo",
+  authMiddleware,
+  validate({ params: idParamSchema }),
+  uploadImage.single("file"),
+  resolveTiendaIdFromId,
+  requireTiendaAccess("admin"),
+  uploadLogo
+);
+
+// POST /:id/banner — Subir o reemplazar banner de la tienda (1200×400, cover)
+router.post(
+  "/:id/banner",
+  authMiddleware,
+  validate({ params: idParamSchema }),
+  uploadImage.single("file"),
+  resolveTiendaIdFromId,
+  requireTiendaAccess("admin"),
+  uploadBanner
 );
 
 router.delete(
