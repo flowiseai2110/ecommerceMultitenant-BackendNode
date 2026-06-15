@@ -7,7 +7,9 @@ import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
-import { uploadImagen, deleteImagenWithCleanup } from "../controllers/producto-imagenes.controller.js";
+import { makeUploadImagen, deleteImagenWithCleanup } from "../controllers/producto-imagenes.controller.js";
+
+const uploadImagen = makeUploadImagen("tiendas");
 import {
   createImagenSchema,
   updateImagenSchema,

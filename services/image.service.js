@@ -24,7 +24,7 @@ const DEFAULT_DIMENSIONS = {
  * @param {number} [options.height] - Alto en píxeles (default según fit)
  * @returns {{ webp: { url, path }, jpeg: { url, path } }}
  */
-export async function processAndUploadImage(buffer, filename, { fit, bucket, width, height } = {}) {
+export async function processAndUploadImage(buffer, filename, { fit, bucket, folder = "", width, height } = {}) {
   if (!fit || !DEFAULT_DIMENSIONS[fit]) {
     throw new Error(`fit es requerido. Valores permitidos: ${Object.keys(DEFAULT_DIMENSIONS).join(", ")}.`);
   }
@@ -44,8 +44,9 @@ export async function processAndUploadImage(buffer, filename, { fit, bucket, wid
 
   const baseName = filename.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_");
   const uid = crypto.randomUUID();
-  const webpPath = `${uid}_${baseName}.webp`;
-  const jpegPath = `${uid}_${baseName}.jpg`;
+  const prefix = folder ? `${folder}/` : "";
+  const webpPath = `${prefix}${uid}_${baseName}.webp`;
+  const jpegPath = `${prefix}${uid}_${baseName}.jpg`;
 
   let webpBuffer, jpegBuffer;
 
