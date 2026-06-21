@@ -80,9 +80,16 @@ export const paginationSchema = z.object({
   orderBy: z.string().regex(/^[a-zA-Z_]+:(asc|desc)$/i, "Formato de ordenamiento inválido").optional()
 }).passthrough();
 
+// Schema para query params del endpoint agregado /productos/home
+export const homeQuerySchema = z.object({
+  tiendaId: z.string({ required_error: "El ID de tienda es requerido" }).uuid("ID de tienda inválido"),
+  limit: z.string().regex(/^\d+$/, "El límite debe ser un número").transform((val) => parseInt(val, 10)).optional()
+});
+
 export default {
   createProductoSchema,
   updateProductoSchema,
   idParamSchema,
-  paginationSchema
+  paginationSchema,
+  homeQuerySchema
 };

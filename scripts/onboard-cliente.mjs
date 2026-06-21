@@ -15,17 +15,17 @@ import { prisma } from "../config/prisma.js";
 import { getIdRolByCodigo } from "../services/roles.service.js";
 
 const CLIENTE = {
-  ownerUserId: "edca2ae4-1642-4337-8c10-2dcd2b215a28",
-  ownerEmail: "demo@yopmail.com", // solo para auditoría (usuarioRegistro)
+  ownerUserId: "96346950-636f-49e0-aa7f-be5536f9ec96",
+  ownerEmail: "maggy302023@gmail.com", // solo para auditoría (usuarioRegistro)
 
   tienda: {
-    nombre: "Zapatillas Terrex", // nombre comercial de la tienda
-    slug: "zapatillas", // será su subdominio: zapateriaalonso.ecompyme.com
-    whatsappNumero: "957625308",
+    nombre: "M&G", // nombre comercial de la tienda
+    slug: "myg", // será su subdominio: zapateriaalonso.ecompyme.com
+    whatsappNumero: "999999999",
     ruc: "99999999998",
-    razonSocial: "Zapatillas Terrex E.I.R.L.",
-    razonComercial: "Zapatillas Terrex E.I.R.L.",
-    direccionFiscal: "Av. Bolivar 123, Lima",
+    razonSocial: "myg E.I.R.L.",
+    razonComercial: "myg E.I.R.L.",
+    direccionFiscal: "Lima, Lima, Peru",
     activo: true
   }
 };
