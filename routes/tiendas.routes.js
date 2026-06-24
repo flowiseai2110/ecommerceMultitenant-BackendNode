@@ -9,6 +9,8 @@ import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-acce
 import { apiResponse } from "../utils/apiResponse.js";
 import { uploadImage } from "../middlewares/upload.middleware.js";
 import { uploadLogo, uploadBanner } from "../controllers/tiendas-imagen.controller.js";
+import MemoryCache from "../utils/memory-cache.js";
+import { invalidateTiendasStoreCache } from "./store/tiendas.routes.js";
 import {
   createTiendaSchema,
   updateTiendaSchema,
@@ -27,6 +29,53 @@ const tiendasController = new GenericController(tiendaService, "Tiendas");
 // requireTiendaAccess pueda validar la membresía del usuario.
 const resolveTiendaIdFromId = resolveTiendaId(async (req) => req.params.id);
 
+// Campos que la tabla de administración (tienda-list) realmente renderiza:
+// id (key), nombre + slug (columna Nombre), ruc, email, tipoNegocio, activo.
+// El detalle completo se obtiene aparte vía GET /:id al editar.
+const TIENDAS_LIST_ALLOWED_FIELDS = ["id", "nombre", "slug", "ruc", "email", "tipoNegocio", "activo"];
+
+// Campos donde el buscador del admin debe coincidir (ver placeholder en
+// tienda-list.component.html: "Buscar por nombre, slug, RUC, razon social o email")
+const TIENDAS_SEARCH_FIELDS = ["nombre", "slug", "ruc", "razonSocial", "email"];
+
+// Construye el "select" de Prisma para el listado: por defecto, solo lo que
+// usa la tabla; si llega ?fields=, se filtra contra el whitelist (deny by default).
+function buildTiendasListSelect(fields) {
+  const requested = fields
+    ? String(fields).split(",").map(f => f.trim()).filter(Boolean)
+    : TIENDAS_LIST_ALLOWED_FIELDS;
+
+  const allowed = requested.filter(f => TIENDAS_LIST_ALLOWED_FIELDS.includes(f));
+  const select = { id: true };
+  for (const field of allowed) {
+    select[field] = true;
+  }
+  return select;
+}
+
+// Cache temporal del listado (60s): el resultado depende de la membresía del
+// usuario, así que la key incluye su id además de los parámetros de la query.
+const TIENDAS_LIST_CACHE_TTL_MS = 60_000;
+const tiendasListCache = new MemoryCache();
+
+function buildTiendasListCacheKey(userId, query, page, limit) {
+  return [userId, page, limit, query.search || "", query.fields || ""].join("|");
+}
+
+// Invalida la cache del listado admin Y la cache pública del storefront tras
+// cualquier escritura exitosa (create/update/delete/logo/banner). Se limpian
+// por completo en vez de por key puntual: son tablas pequeñas y así no hay
+// riesgo de dejar combinaciones de búsqueda/fields/slug obsoletas.
+function invalidateTiendasListCache(req, res, next) {
+  res.on("finish", () => {
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      tiendasListCache.clear();
+      invalidateTiendasStoreCache();
+    }
+  });
+  next();
+}
+
 const router = Router();
 
 // GET / - Listar SOLO las tiendas a las que el usuario pertenece
@@ -41,16 +90,31 @@ router.get(
       const page = parseInt(query.page) || 1;
       const limit = Math.min(parseInt(query.limit) || 10, 100);
 
+      const cacheKey = buildTiendasListCacheKey(req.user.id, query, page, limit);
+      const cached = tiendasListCache.get(cacheKey);
+      if (cached) {
+        return apiResponse(res, cached);
+      }
+
       const membresias = await prisma.usuario_tiendas.findMany({
         where: { userId: req.user.id, activo: true },
         select: { tiendaId: true }
       });
       const tiendaIds = membresias.map(m => m.tiendaId);
 
-      const where = { id: { in: tiendaIds } };
+      const where = {
+        id: { in: tiendaIds },
+        ...(query.search ? {
+          OR: TIENDAS_SEARCH_FIELDS.map(field => ({
+            [field]: { contains: query.search, mode: "insensitive" }
+          }))
+        } : {})
+      };
+      const select = buildTiendasListSelect(query.fields);
       const [data, total] = await Promise.all([
         prisma.tiendas.findMany({
           where,
+          select,
           skip: (page - 1) * limit,
           take: limit,
           orderBy: { fechaRegistro: "desc" }
@@ -58,7 +122,7 @@ router.get(
         prisma.tiendas.count({ where })
       ]);
 
-      return apiResponse(res, {
+      const responsePayload = {
         status: 200, type: "SUCCESS", code: "TIENDAS_LIST", data,
         meta: {
           total, page, limit,
@@ -66,7 +130,10 @@ router.get(
           hasNextPage: page < Math.ceil(total / limit),
           hasPrevPage: page > 1
         }
-      });
+      };
+      tiendasListCache.set(cacheKey, responsePayload, TIENDAS_LIST_CACHE_TTL_MS);
+
+      return apiResponse(res, responsePayload);
     } catch (error) {
       next(error);
     }
@@ -139,6 +206,7 @@ router.post(
   "/",
   authMiddleware,
   validate({ body: createTiendaSchema }),
+  invalidateTiendasListCache,
   tiendasController.create
 );
 
@@ -148,6 +216,7 @@ router.put(
   validate({ params: idParamSchema, body: updateTiendaSchema }),
   resolveTiendaIdFromId,
   requireTiendaAccess("admin"),
+  invalidateTiendasListCache,
   async (req, res, next) => {
     try {
       const { id } = req.params;
@@ -174,6 +243,7 @@ router.post(
   uploadImage.single("file"),
   resolveTiendaIdFromId,
   requireTiendaAccess("admin"),
+  invalidateTiendasListCache,
   uploadLogo
 );
 
@@ -185,6 +255,7 @@ router.post(
   uploadImage.single("file"),
   resolveTiendaIdFromId,
   requireTiendaAccess("admin"),
+  invalidateTiendasListCache,
   uploadBanner
 );
 
@@ -194,6 +265,7 @@ router.delete(
   validate({ params: idParamSchema }),
   resolveTiendaIdFromId,
   requireTiendaAccess("owner"),
+  invalidateTiendasListCache,
   tiendasController.delete
 );
 

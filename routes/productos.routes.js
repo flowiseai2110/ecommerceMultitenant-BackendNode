@@ -8,8 +8,20 @@ import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
 import { makeUploadImagenForProducto } from "../controllers/producto-imagenes.controller.js";
+import { invalidateProductoDetailCache } from "./store/productos.routes.js";
 
 const uploadImagenForProducto = makeUploadImagenForProducto("tiendas");
+
+// Invalida la cache pública del detalle (GET /store/productos/:id) cuando una
+// escritura admin sobre ese producto termina en éxito.
+function invalidateProductoCacheOnSuccess(req, res, next) {
+  res.on("finish", () => {
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      invalidateProductoDetailCache(req.params.id);
+    }
+  });
+  next();
+}
 import {
   createProductoSchema,
   updateProductoSchema,
@@ -115,6 +127,7 @@ router.put(
   resolveProductoTiendaId,
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateProductoSchema }),
+  invalidateProductoCacheOnSuccess,
   productosController.update
 );
 
@@ -136,6 +149,7 @@ router.delete(
   resolveProductoTiendaId,
   requireTiendaAccess("admin"),
   validate({ params: idParamSchema }),
+  invalidateProductoCacheOnSuccess,
   productosController.delete
 );
 

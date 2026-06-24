@@ -23,6 +23,9 @@ class GenericService {
     this.excludeFieldsInList = options.excludeFieldsInList || [];
     // Orden por defecto cuando no se recibe ?orderBy en la query
     this.defaultOrderBy = options.defaultOrderBy || null;
+    // Whitelist de campos permitidos para sparse fieldsets (?fields=a,b,c)
+    // Si no se define, el parámetro "fields" se ignora (deny by default)
+    this.allowedFields = options.allowedFields || null;
   }
 
   /**
@@ -31,16 +34,19 @@ class GenericService {
    * @returns {Promise<{data: Array, meta: Object}>}
    */
   async findAll(query = {}) {
-    const { page, limit, orderBy, include, ...filters } = query;
+    const { page, limit, orderBy, include, fields, ...filters } = query;
 
     // Resolver include: si hay un preset configurado, usarlo; sino el default
     const resolvedInclude = (include && this.includePresets[include])
       ? this.includePresets[include]
       : this.defaultInclude;
 
-    // Si hay listSelect definido, usarlo como select (más eficiente que stripFields)
+    // Sparse fieldsets (?fields=a,b,c): solo aplica si el módulo definió un
+    // whitelist (allowedFields). Tiene prioridad sobre listSelect porque es
+    // una elección explícita del cliente para esa request puntual.
+    // Si no hay listSelect definido, usarlo como select (más eficiente que stripFields)
     // select e include son mutuamente excluyentes — listSelect tiene prioridad
-    const resolvedSelect = this.listSelect || null;
+    const resolvedSelect = this.buildSparseSelect(fields) || this.listSelect || null;
 
     const queryOptions = {
       page: parseInt(page) || undefined,
@@ -58,6 +64,27 @@ class GenericService {
     }
 
     return result;
+  }
+
+  /**
+   * Construye un objeto "select" de Prisma a partir de ?fields=a,b,c,
+   * filtrando contra el whitelist allowedFields del módulo.
+   * @param {string} fields - Lista de campos separados por coma
+   * @returns {Object|null}
+   */
+  buildSparseSelect(fields) {
+    if (!fields || !this.allowedFields) return null;
+
+    const requested = String(fields).split(",").map(f => f.trim()).filter(Boolean);
+    const allowed = requested.filter(f => this.allowedFields.includes(f));
+
+    if (allowed.length === 0) return null;
+
+    const select = { id: true };
+    for (const field of allowed) {
+      select[field] = true;
+    }
+    return select;
   }
 
   /**
