@@ -59,11 +59,34 @@ export const uploadImagenSchema = z.object({
 // Schema para upload cuando productoId viene en el path param (:id)
 export const uploadImagenForProductoSchema = uploadImagenSchema.omit({ productoId: true });
 
+// Schema para iniciar una generación/edición de imagen con IA (prompt opcional)
+export const generarIaSchema = z.object({
+  prompt: z.string().max(1000, "El prompt no puede exceder 1000 caracteres").optional()
+});
+
+// Schema para confirmar el resultado de una tarea de IA y persistirlo como imagen del producto
+// (body JSON real, no multipart — usa los tipos base, no los coerce de uploadImagenSchema)
+export const confirmarIaSchema = z.object({
+  productoId: imagenesBaseSchema.productoId,
+  varianteId: imagenesBaseSchema.varianteId,
+  textoAlternativo: imagenesBaseSchema.textoAlternativo,
+  orden: imagenesBaseSchema.orden,
+  esPrincipal: imagenesBaseSchema.esPrincipal
+});
+
+// Schema para validar taskId en params
+export const taskIdParamSchema = z.object({
+  taskId: z.string({ required_error: "El taskId es requerido" }).min(1, "taskId inválido")
+});
+
 export default {
   createImagenSchema,
   updateImagenSchema,
   uploadImagenSchema,
   uploadImagenForProductoSchema,
+  generarIaSchema,
+  confirmarIaSchema,
+  taskIdParamSchema,
   idParamSchema,
   paginationSchema
 };

@@ -58,6 +58,12 @@ export const config = {
     devToEmail: process.env.RESEND_DEV_TO_EMAIL // email de redirección en desarrollo (free tier)
   },
 
+  // Kie.ai — generación/edición de imágenes con IA (Nano Banana)
+  kie: {
+    apiKey: process.env.KIE_API_KEY,
+    baseUrl: "https://api.kie.ai/api/v1"
+  },
+
   // Imágenes por defecto por folder
   defaultImages: {
     logos: "https://placehold.co/200x200/e2e8f0/64748b?text=Logo",

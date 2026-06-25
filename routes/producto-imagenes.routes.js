@@ -9,10 +9,18 @@ import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
 import { makeUploadImagen, deleteImagenWithCleanup } from "../controllers/producto-imagenes.controller.js";
 import {
+  generarImagenIA,
+  consultarEstadoImagenIA,
+  confirmarImagenIA
+} from "../controllers/ai-imagen.controller.js";
+import {
   createImagenSchema,
   updateImagenSchema,
   idParamSchema,
-  paginationSchema
+  paginationSchema,
+  generarIaSchema,
+  confirmarIaSchema,
+  taskIdParamSchema
 } from "../validators/producto-imagenes.validator.js";
 
 const uploadImagen = makeUploadImagen("tiendas");
@@ -88,6 +96,38 @@ router.put(
   (req, _res, next) => { req.tiendaId = null; next(); },
   validate({ params: idParamSchema, body: updateImagenSchema }),
   imagenesController.update
+);
+
+// ============================================
+// GENERACIÓN DE IMAGEN CON IA (Nano Banana vía Kie.ai)
+// ============================================
+
+// POST - Inicia la edición con IA de una imagen ya subida (:id = imagen origen)
+router.post(
+  "/:id/generar-ia",
+  authMiddleware,
+  resolveImagenTiendaId,
+  requireTiendaAccess("editor"),
+  validate({ params: idParamSchema, body: generarIaSchema }),
+  generarImagenIA
+);
+
+// GET - Consulta el estado de la tarea de IA (polling, sin efectos secundarios)
+router.get(
+  "/generar-ia/:taskId",
+  authMiddleware,
+  validate({ params: taskIdParamSchema }),
+  consultarEstadoImagenIA
+);
+
+// POST - Confirma el resultado de la IA y lo persiste como imagen real del producto
+router.post(
+  "/generar-ia/:taskId/confirmar",
+  authMiddleware,
+  resolveImagenTiendaId,
+  requireTiendaAccess("editor"),
+  validate({ params: taskIdParamSchema, body: confirmarIaSchema }),
+  confirmarImagenIA
 );
 
 // DELETE - Eliminar imagen y limpiar archivos de Supabase Storage
