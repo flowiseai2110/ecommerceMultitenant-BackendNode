@@ -6,6 +6,7 @@ import { prisma } from "../../config/prisma.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import { validate } from "../../middlewares/validation.middleware.js";
 import { idParamSchema, paginationSchema } from "../../validators/tiendas.validator.js";
+import { getDiseno } from "../../services/tienda-diseno.service.js";
 import MemoryCache from "../../utils/memory-cache.js";
 
 const tiendasRepository = new GenericRepository(prisma.tiendas, "Tienda");
@@ -41,6 +42,15 @@ router.get("/", validate({ query: paginationSchema }), async (req, res, next) =>
     }
 
     const { data, meta } = await tiendasService.findAll(query);
+
+    // Cuando el storefront resuelve una tienda puntual por slug, se adjunta
+    // su personalización visual (barra de anuncios, hero) para evitar un
+    // segundo request público. La invalidación llega vía
+    // invalidateTiendasStoreCache() al guardar el diseño en el admin.
+    if (query.slug && data.length === 1) {
+      data[0].diseno = await getDiseno(data[0].id);
+    }
+
     const responsePayload = { status: 200, type: "SUCCESS", code: "TIENDA_LIST", data, meta };
     tiendasStoreCache.set(cacheKey, responsePayload, TIENDAS_STORE_CACHE_TTL_MS);
 

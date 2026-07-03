@@ -1,14 +1,14 @@
 import config from "../config/index.js";
 import { InternalError, ValidationError } from "../utils/errors.js";
 
-const NANO_BANANA_EDIT_MODEL = "google/nano-banana-edit";
+export const NANO_BANANA_EDIT_MODEL = "google/nano-banana-edit";
 
 export const DEFAULT_PRODUCT_PHOTO_PROMPT =
   "Fondo blanco puro, iluminación de estudio uniforme, sombra suave y realista, " +
   "producto centrado y enfocado con alta nitidez. No alteres la forma, el color " +
   "ni el diseño del producto.";
 
-async function kieRequest(path, options = {}) {
+export async function kieRequest(path, options = {}) {
   if (!config.kie.apiKey) {
     throw new InternalError("KIE_API_KEY no está configurado en el servidor");
   }

@@ -1,6 +1,7 @@
 import { prisma } from "../config/prisma.js";
 import { processAndUploadImage } from "../services/image.service.js";
 import { createNanoBananaEditTask, getTaskStatus } from "../services/ai-image.service.js";
+import { registrarUsoImagenIA } from "../services/uso-recursos.service.js";
 import { generarIaSchema, confirmarIaSchema } from "../validators/producto-imagenes.validator.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
@@ -26,7 +27,14 @@ export async function generarImagenIA(req, res, next) {
       prompt: parsed.data.prompt
     });
 
-    return apiResponse(res, { status: 202, type: "SUCCESS", code: "IA_TASK_CREATED", data: { taskId } });
+    const uso = await registrarUsoImagenIA(req.tiendaId);
+
+    return apiResponse(res, {
+      status: 202,
+      type: "SUCCESS",
+      code: "IA_TASK_CREATED",
+      data: { taskId, uso }
+    });
   } catch (err) {
     next(err);
   }

@@ -108,6 +108,7 @@ model tiendas {
   nombre                String    @db.VarChar(100)
   slug                  String    @unique @db.VarChar(100)
   descripcion           String?   @db.Text
+  planId                String?   @map("plan_id") @db.Uuid
   logoUrl               String?   @map("logo_url") @db.VarChar(500)
   logoStoragePath       String?   @map("logo_storage_path") @db.VarChar(500)
   logoBackground        String?   @map("logo_background") @db.VarChar(7)
@@ -143,9 +144,11 @@ model tiendas {
   usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
 
   // Relaciones
+  plan                  planes?           @relation(fields: [planId], references: [id])
   usuarios              usuario_tiendas[]
   invitaciones          invitaciones[]
   cupones               cupones[]
+  usosRecursos          tienda_uso_recursos[]
 }
 
 model tienda_configuraciones {
@@ -162,6 +165,50 @@ model tienda_configuraciones {
   usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
 
   @@unique([tiendaId, clave], name: "uq_tienda_clave")
+}
+
+// ============================================
+// MÓDULO: PLANES Y CUOTAS DE USO
+// ============================================
+
+model planes {
+  id                    String    @id @default(uuid()) @db.Uuid
+  codigo                String    @unique @db.VarChar(50)
+  nombre                String    @db.VarChar(100)
+  limiteImagenesIaMes   Int?      @map("limite_imagenes_ia_mes")
+  precioImagenExcedente Decimal?  @map("precio_imagen_excedente") @db.Decimal(10, 2)
+  precioMensual         Decimal?  @map("precio_mensual") @db.Decimal(10, 2)
+  orden                 Int       @default(0)
+  activo                Boolean   @default(true)
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  // Relaciones
+  tiendas               tiendas[]
+}
+
+model tienda_uso_recursos {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  recurso               String    @db.VarChar(50)
+  periodo               String    @db.VarChar(7)
+  cantidadUsada         Int       @default(0) @map("cantidad_usada")
+  cantidadIncluida      Int?      @map("cantidad_incluida")
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  // Relaciones
+  tienda                tiendas   @relation(fields: [tiendaId], references: [id])
+
+  @@unique([tiendaId, recurso, periodo], name: "uq_tienda_recurso_periodo")
 }
 
 // ============================================

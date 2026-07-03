@@ -11,6 +11,9 @@ import { uploadImage } from "../middlewares/upload.middleware.js";
 import { uploadLogo, uploadBanner } from "../controllers/tiendas-imagen.controller.js";
 import MemoryCache from "../utils/memory-cache.js";
 import { invalidateTiendasStoreCache } from "./store/tiendas.routes.js";
+import { seedMetodosPagoParaTienda } from "../services/metodos-pago-seed.service.js";
+import { getDiseno, saveDiseno } from "../services/tienda-diseno.service.js";
+import { logger } from "../config/logger.js";
 import {
   createTiendaSchema,
   updateTiendaSchema,
@@ -18,6 +21,7 @@ import {
   tiendaIdParamSchema,
   paginationSchema
 } from "../validators/tiendas.validator.js";
+import { updateDisenoSchema } from "../validators/tienda-diseno.validator.js";
 
 // Crear instancias de las capas
 const tiendasRepository = new GenericRepository(prisma.tiendas, "Tiendas");
@@ -207,7 +211,28 @@ router.post(
   authMiddleware,
   validate({ body: createTiendaSchema }),
   invalidateTiendasListCache,
-  tiendasController.create
+  async (req, res, next) => {
+    try {
+      const record = await tiendaService.create(req.body, req.user);
+
+      // Precargar métodos de pago sugeridos para que el dueño solo los
+      // active/complete. Un fallo aquí no debe deshacer la tienda creada.
+      try {
+        await seedMetodosPagoParaTienda(record.id);
+      } catch (error) {
+        logger.error(`No se pudieron precargar los métodos de pago de la tienda ${record.id}:`, error);
+      }
+
+      return apiResponse(res, {
+        status: 201,
+        type: "SUCCESS",
+        code: "TIENDAS_CREATED",
+        data: record
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 router.put(
@@ -228,6 +253,53 @@ router.put(
         type: "SUCCESS",
         code: "TIENDAS_UPDATED",
         data: record
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// GET /:id/diseno — Personalización visual del storefront (anuncio, hero)
+router.get(
+  "/:id/diseno",
+  authMiddleware,
+  validate({ params: idParamSchema }),
+  resolveTiendaIdFromId,
+  requireTiendaAccess("viewer"),
+  async (req, res, next) => {
+    try {
+      const diseno = await getDiseno(req.params.id);
+      return apiResponse(res, {
+        status: 200,
+        type: "SUCCESS",
+        code: "TIENDA_DISENO",
+        data: diseno
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// PUT /:id/diseno — Guardar personalización visual (upsert por clave).
+// Invalida las caches de tiendas porque el diseño viaja embebido en la
+// respuesta pública de GET /store/tiendas?slug=.
+router.put(
+  "/:id/diseno",
+  authMiddleware,
+  validate({ params: idParamSchema, body: updateDisenoSchema }),
+  resolveTiendaIdFromId,
+  requireTiendaAccess("admin"),
+  invalidateTiendasListCache,
+  async (req, res, next) => {
+    try {
+      const diseno = await saveDiseno(req.params.id, req.body, req.user);
+      return apiResponse(res, {
+        status: 200,
+        type: "SUCCESS",
+        code: "TIENDA_DISENO_UPDATED",
+        data: diseno
       });
     } catch (error) {
       next(error);

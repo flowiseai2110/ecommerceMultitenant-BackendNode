@@ -64,6 +64,12 @@ export const config = {
     baseUrl: "https://api.kie.ai/api/v1"
   },
 
+  // Studio — generador de imágenes IA sin persistencia permanente.
+  // Bucket separado del de assets de tienda, con limpieza automática por TTL.
+  studio: {
+    scratchBucket: process.env.STUDIO_SCRATCH_BUCKET || "studio-scratch"
+  },
+
   // Imágenes por defecto por folder
   defaultImages: {
     logos: "https://placehold.co/200x200/e2e8f0/64748b?text=Logo",

@@ -13,6 +13,7 @@
 
 import { prisma } from "../config/prisma.js";
 import { getIdRolByCodigo } from "../services/roles.service.js";
+import { seedMetodosPagoParaTienda } from "../services/metodos-pago-seed.service.js";
 
 const CLIENTE = {
   ownerUserId: "96346950-636f-49e0-aa7f-be5536f9ec96",
@@ -49,7 +50,7 @@ async function main() {
     throw new Error(`El usuario ${CLIENTE.ownerUserId} ya tiene una membresía registrada (tiendaId: ${membresiaExistente.tiendaId})`);
   }
 
-  const { tienda } = await prisma.$transaction(async (tx) => {
+  const { tienda, metodosPrecargados } = await prisma.$transaction(async (tx) => {
     const tienda = await tx.tiendas.create({
       data: {
         ...CLIENTE.tienda,
@@ -69,7 +70,9 @@ async function main() {
       }
     });
 
-    return { tienda, membresia };
+    const metodosPrecargados = await seedMetodosPagoParaTienda(tienda.id, {}, tx);
+
+    return { tienda, membresia, metodosPrecargados };
   });
 
   console.log("Cliente registrado correctamente:");
@@ -77,6 +80,7 @@ async function main() {
   console.log(`  slug:    ${tienda.slug}`);
   console.log(`  url:     https://${tienda.slug}.ecompyme.com`);
   console.log(`  owner:   ${CLIENTE.ownerEmail} (${CLIENTE.ownerUserId})`);
+  console.log(`  pagos:   ${metodosPrecargados} métodos de pago precargados (activar en el admin)`);
 }
 
 main()

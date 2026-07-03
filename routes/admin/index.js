@@ -12,6 +12,7 @@ import metodosPagoRoutes from "../metodos-pago.routes.js";
 import pedidosRoutes from "../pedidos.routes.js";
 import zonasEnvioRoutes from "../zonas-envio.routes.js";
 import cuponesRoutes from "../cupones.routes.js";
+import studioRoutes from "../studio.routes.js";
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use("/metodos-pago", metodosPagoRoutes);
 router.use("/pedidos", pedidosRoutes);
 router.use("/zonas-envio", zonasEnvioRoutes);
 router.use("/cupones", cuponesRoutes);
+router.use("/studio", studioRoutes);
 
 export default router;
