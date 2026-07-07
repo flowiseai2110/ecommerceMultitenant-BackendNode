@@ -465,62 +465,33 @@ CREATE POLICY "MetodosPago: eliminar" ON metodos_pago
     );
 
 -- ============================================
--- TABLA: ZONAS_ENVIO
+-- TABLA: METODOS_ENVIO
 -- ============================================
 
-DROP POLICY IF EXISTS "ZonasEnvio: ver" ON zonas_envio;
-CREATE POLICY "ZonasEnvio: ver" ON zonas_envio
+ALTER TABLE metodos_envio ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "MetodosEnvio: ver" ON metodos_envio;
+CREATE POLICY "MetodosEnvio: ver" ON metodos_envio
     FOR SELECT USING (
         tienda_id IN (SELECT obtener_tiendas_usuario())
     );
 
-DROP POLICY IF EXISTS "ZonasEnvio: crear" ON zonas_envio;
-CREATE POLICY "ZonasEnvio: crear" ON zonas_envio
+DROP POLICY IF EXISTS "MetodosEnvio: crear" ON metodos_envio;
+CREATE POLICY "MetodosEnvio: crear" ON metodos_envio
     FOR INSERT WITH CHECK (
         tiene_rol_en_tienda(tienda_id, ARRAY['owner', 'admin'])
     );
 
-DROP POLICY IF EXISTS "ZonasEnvio: actualizar" ON zonas_envio;
-CREATE POLICY "ZonasEnvio: actualizar" ON zonas_envio
+DROP POLICY IF EXISTS "MetodosEnvio: actualizar" ON metodos_envio;
+CREATE POLICY "MetodosEnvio: actualizar" ON metodos_envio
     FOR UPDATE USING (
         tiene_rol_en_tienda(tienda_id, ARRAY['owner', 'admin'])
     );
 
-DROP POLICY IF EXISTS "ZonasEnvio: eliminar" ON zonas_envio;
-CREATE POLICY "ZonasEnvio: eliminar" ON zonas_envio
+DROP POLICY IF EXISTS "MetodosEnvio: eliminar" ON metodos_envio;
+CREATE POLICY "MetodosEnvio: eliminar" ON metodos_envio
     FOR DELETE USING (
         tiene_rol_en_tienda(tienda_id, ARRAY['owner', 'admin'])
-    );
-
--- ============================================
--- TABLA: ZONA_ENVIO_UBIGEOS
--- ============================================
-
-DROP POLICY IF EXISTS "ZonaEnvioUbigeos: ver" ON zona_envio_ubigeos;
-CREATE POLICY "ZonaEnvioUbigeos: ver" ON zona_envio_ubigeos
-    FOR SELECT USING (
-        zona_envio_id IN (
-            SELECT id FROM zonas_envio 
-            WHERE tienda_id IN (SELECT obtener_tiendas_usuario())
-        )
-    );
-
-DROP POLICY IF EXISTS "ZonaEnvioUbigeos: crear" ON zona_envio_ubigeos;
-CREATE POLICY "ZonaEnvioUbigeos: crear" ON zona_envio_ubigeos
-    FOR INSERT WITH CHECK (
-        zona_envio_id IN (
-            SELECT id FROM zonas_envio 
-            WHERE tiene_rol_en_tienda(tienda_id, ARRAY['owner', 'admin'])
-        )
-    );
-
-DROP POLICY IF EXISTS "ZonaEnvioUbigeos: eliminar" ON zona_envio_ubigeos;
-CREATE POLICY "ZonaEnvioUbigeos: eliminar" ON zona_envio_ubigeos
-    FOR DELETE USING (
-        zona_envio_id IN (
-            SELECT id FROM zonas_envio 
-            WHERE tiene_rol_en_tienda(tienda_id, ARRAY['owner', 'admin'])
-        )
     );
 
 -- ============================================

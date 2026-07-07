@@ -128,7 +128,7 @@ Para errores:
 | Catálogo | `categorias`, `productos`, `producto_variantes`, `producto_imagenes`, `producto_atributos` |
 | Clientes | `clientes` |
 | Pedidos | `pedidos`, `pedido_detalles`, `pedido_historial_estados` |
-| Configuración | `metodos_pago`, `zonas_envio`, `zona_envio_ubigeos` |
+| Configuración | `metodos_pago`, `metodos_envio` |
 | Datos maestros | `enumerados`, `ubigeos`, `persona` |
 
 ### Importaciones

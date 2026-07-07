@@ -5,7 +5,7 @@ import tiendasRoutes from "./tiendas.routes.js";
 import categoriasRoutes from "./categorias.routes.js";
 import productosRoutes from "./productos.routes.js";
 import metodosPagoRoutes from "./metodos-pago.routes.js";
-import zonasEnvioRoutes from "./zonas-envio.routes.js";
+import metodosEnvioRoutes from "./metodos-envio.routes.js";
 import pedidosRoutes from "./pedidos.routes.js";
 import cuponesRoutes from "./cupones.routes.js";
 
@@ -23,7 +23,7 @@ router.use("/tiendas", cache(300), tiendasRoutes);
 router.use("/categorias", cache(300), categoriasRoutes);
 router.use("/productos", cache(60), productosRoutes);
 router.use("/metodos-pago", cache(300), metodosPagoRoutes);
-router.use("/zonas-envio", cache(300), zonasEnvioRoutes);
+router.use("/metodos-envio", cache(300), metodosEnvioRoutes);
 router.use("/pedidos", pedidosRoutes);       // sin caché — rastreo en tiempo real
 router.use("/cupones", cuponesRoutes);
 

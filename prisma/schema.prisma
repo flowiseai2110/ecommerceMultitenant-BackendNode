@@ -511,40 +511,20 @@ model metodos_pago {
 }
 
 // ============================================
-// MÓDULO: ZONAS DE ENVÍO
+// MÓDULO: MÉTODOS DE ENVÍO
 // ============================================
 
-model zonas_envio {
+model metodos_envio {
   id                    String    @id @default(uuid()) @db.Uuid
   tiendaId              String    @map("tienda_id") @db.Uuid
-  nombre                String    @db.VarChar(100)
-  costoEnvio            Decimal   @default(0) @map("costo_envio") @db.Decimal(10, 2)
-  envioGratisMinimo     Decimal?  @map("envio_gratis_minimo") @db.Decimal(10, 2)
-  diasEstimados         Int?      @map("dias_estimados")
+  nombre                String    @db.VarChar(50)
+  tipo                  String    @db.VarChar(30)
+  costoReferencial      Decimal?  @map("costo_referencial") @db.Decimal(10, 2)
+  instrucciones         String?   @db.Text
   activo                Boolean   @default(true)
+  orden                 Int       @default(0)
 
-  // Relaciones
-  ubigeos               zona_envio_ubigeos[]
-
-  @@index([tiendaId], name: "idx_zonas_tienda")
-  @@index([tiendaId, activo], name: "idx_zonas_activo")
-}
-
-// ============================================
-// MÓDULO: ZONA ENVÍO UBIGEOS (Intermedia)
-// ============================================
-
-model zona_envio_ubigeos {
-  id                    String    @id @default(uuid()) @db.Uuid
-  zonaEnvioId           String    @map("zona_envio_id") @db.Uuid
-  ubigeo                String    @db.VarChar(8)
-
-  // Relaciones
-  zonaEnvio             zonas_envio @relation(fields: [zonaEnvioId], references: [id], onDelete: Cascade)
-
-  @@unique([zonaEnvioId, ubigeo], name: "uq_zona_ubigeo")
-  @@index([zonaEnvioId], name: "idx_zona_ubigeos_zona")
-  @@index([ubigeo], name: "idx_zona_ubigeos_ubigeo")
+  @@index([tiendaId, activo], name: "idx_metodos_envio_tienda_activo")
 }
 
 

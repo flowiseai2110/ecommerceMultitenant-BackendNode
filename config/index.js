@@ -58,10 +58,17 @@ export const config = {
     devToEmail: process.env.RESEND_DEV_TO_EMAIL // email de redirección en desarrollo (free tier)
   },
 
-  // Kie.ai — generación/edición de imágenes con IA (Nano Banana)
+  // Kie.ai — solo lo sigue usando Studio (services/ai-studio.service.js).
+  // El flujo principal de producto-imagenes migró a la API directa de Google (ver config.gemini).
   kie: {
     apiKey: process.env.KIE_API_KEY,
     baseUrl: "https://api.kie.ai/api/v1"
+  },
+
+  // Google Gemini — edición de imágenes con Nano Banana (gemini-2.5-flash-image) via API directa.
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY,
+    imageModel: process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image"
   },
 
   // Studio — generador de imágenes IA sin persistencia permanente.

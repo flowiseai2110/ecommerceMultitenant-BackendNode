@@ -10,7 +10,7 @@ import usersRoutes from "../users.routes.js";
 import invitationsRoutes from "../invitations.routes.js";
 import metodosPagoRoutes from "../metodos-pago.routes.js";
 import pedidosRoutes from "../pedidos.routes.js";
-import zonasEnvioRoutes from "../zonas-envio.routes.js";
+import metodosEnvioRoutes from "../metodos-envio.routes.js";
 import cuponesRoutes from "../cupones.routes.js";
 import studioRoutes from "../studio.routes.js";
 
@@ -29,7 +29,7 @@ router.use("/users", usersRoutes);
 router.use("/invitations", invitationsRoutes);
 router.use("/metodos-pago", metodosPagoRoutes);
 router.use("/pedidos", pedidosRoutes);
-router.use("/zonas-envio", zonasEnvioRoutes);
+router.use("/metodos-envio", metodosEnvioRoutes);
 router.use("/cupones", cuponesRoutes);
 router.use("/studio", studioRoutes);
 

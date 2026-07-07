@@ -12,6 +12,7 @@ import { uploadLogo, uploadBanner } from "../controllers/tiendas-imagen.controll
 import MemoryCache from "../utils/memory-cache.js";
 import { invalidateTiendasStoreCache } from "./store/tiendas.routes.js";
 import { seedMetodosPagoParaTienda } from "../services/metodos-pago-seed.service.js";
+import { seedMetodosEnvioParaTienda } from "../services/metodos-envio-seed.service.js";
 import { getDiseno, saveDiseno } from "../services/tienda-diseno.service.js";
 import { logger } from "../config/logger.js";
 import {
@@ -221,6 +222,14 @@ router.post(
         await seedMetodosPagoParaTienda(record.id);
       } catch (error) {
         logger.error(`No se pudieron precargar los métodos de pago de la tienda ${record.id}:`, error);
+      }
+
+      // Precargar métodos de envío sugeridos (Recojo en tienda activo,
+      // couriers desactivados hasta que el dueño confirme que trabaja con ellos).
+      try {
+        await seedMetodosEnvioParaTienda(record.id);
+      } catch (error) {
+        logger.error(`No se pudieron precargar los métodos de envío de la tienda ${record.id}:`, error);
       }
 
       return apiResponse(res, {

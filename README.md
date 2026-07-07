@@ -355,29 +355,18 @@ CREATE TABLE metodos_pago (
  
 
 -- ============================================
--- TABLA: ZONAS ENVÍO
+-- TABLA: MÉTODOS DE ENVÍO
 -- ============================================
 
-CREATE TABLE zonas_envio (
+CREATE TABLE metodos_envio (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tienda_id UUID NOT NULL,
-    nombre VARCHAR(100) NOT NULL,
-    costo_envio DECIMAL(10,2) NOT NULL DEFAULT 0,
-    envio_gratis_minimo DECIMAL(10,2),
-    dias_estimados INT,
-    activo BOOLEAN DEFAULT true 
-);
- 
- 
-
--- ============================================
--- TABLA: ZONA ENVÍO UBIGEOS (Intermedia)
--- ============================================
-
-CREATE TABLE zona_envio_ubigeos (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    zona_envio_id UUID NOT NULL,
-    ubigeo VARCHAR(8) NOT NULL 
+    nombre VARCHAR(50) NOT NULL,
+    tipo VARCHAR(30) NOT NULL,
+    costo_referencial DECIMAL(10,2),
+    instrucciones TEXT,
+    activo BOOLEAN DEFAULT true,
+    orden INT DEFAULT 0
 );
   
 

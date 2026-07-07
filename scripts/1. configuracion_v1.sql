@@ -443,46 +443,29 @@ COMMENT ON TABLE metodos_pago IS 'Métodos de pago disponibles por tienda';
 COMMENT ON COLUMN metodos_pago.cuenta_info IS 'Info de cuenta: {"banco": "BCP", "cuenta": "123456", "cci": "00212345"}';
 
 -- ============================================
--- TABLA: ZONAS ENVÍO
+-- TABLA: MÉTODOS DE ENVÍO
 -- ============================================
 
-CREATE TABLE zonas_envio (
+CREATE TABLE metodos_envio (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tienda_id UUID NOT NULL,
-    nombre VARCHAR(100) NOT NULL,
-    costo_envio DECIMAL(10,2) NOT NULL DEFAULT 0,
-    envio_gratis_minimo DECIMAL(10,2),
-    dias_estimados INT,
+    nombre VARCHAR(50) NOT NULL,
+    tipo VARCHAR(30) NOT NULL,
+    costo_referencial DECIMAL(10,2),
+    instrucciones TEXT,
     activo BOOLEAN DEFAULT true,
-    
-    CONSTRAINT fk_zona_tienda FOREIGN KEY (tienda_id) REFERENCES tiendas(id) ON DELETE CASCADE
+    orden INT DEFAULT 0,
+
+    CONSTRAINT fk_metodo_envio_tienda FOREIGN KEY (tienda_id) REFERENCES tiendas(id) ON DELETE CASCADE
 );
 
--- Índices para zonas_envio
-CREATE INDEX idx_zonas_tienda ON zonas_envio(tienda_id);
-CREATE INDEX idx_zonas_activo ON zonas_envio(tienda_id, activo);
+-- Índices para metodos_envio
+CREATE INDEX idx_metodos_envio_tienda ON metodos_envio(tienda_id);
+CREATE INDEX idx_metodos_envio_activo ON metodos_envio(tienda_id, activo);
 
-COMMENT ON TABLE zonas_envio IS 'Zonas de envío con costos por tienda';
-
--- ============================================
--- TABLA: ZONA ENVÍO UBIGEOS (Intermedia)
--- ============================================
-
-CREATE TABLE zona_envio_ubigeos (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    zona_envio_id UUID NOT NULL,
-    ubigeo VARCHAR(8) NOT NULL,
-    
-    CONSTRAINT fk_zona_ubigeo_zona FOREIGN KEY (zona_envio_id) REFERENCES zonas_envio(id) ON DELETE CASCADE,
-    CONSTRAINT fk_zona_ubigeo_ubigeo FOREIGN KEY (ubigeo) REFERENCES ubigeos(codigo),
-    CONSTRAINT uq_zona_ubigeo UNIQUE (zona_envio_id, ubigeo)
-);
-
--- Índices para zona_envio_ubigeos
-CREATE INDEX idx_zona_ubigeos_zona ON zona_envio_ubigeos(zona_envio_id);
-CREATE INDEX idx_zona_ubigeos_ubigeo ON zona_envio_ubigeos(ubigeo);
-
-COMMENT ON TABLE zona_envio_ubigeos IS 'Relación entre zonas de envío y ubigeos';
+COMMENT ON TABLE metodos_envio IS 'Métodos de envío/entrega ofrecidos por la tienda (courier, delivery propio, recojo en tienda)';
+COMMENT ON COLUMN metodos_envio.tipo IS 'courier | delivery_propio | recojo_tienda';
+COMMENT ON COLUMN metodos_envio.costo_referencial IS 'Costo informativo, no se calcula automaticamente — el costo real se coordina manualmente (ej. WhatsApp)';
 
 -- ============================================
 -- FUNCIÓN: Registrar cambio de estado de pedido
