@@ -82,7 +82,9 @@ class GenericController {
   async update(req, res, next) {
     try {
       const { id } = req.params;
-      const record = await this.service.update(id, req.body, req.user, req.tiendaId);
+      const record = await this.service.update(id, req.body, req.user, req.tiendaId, {
+        skipExistsCheck: req.skipExistsCheck
+      });
 
       return apiResponse(res, {
         status: 200,

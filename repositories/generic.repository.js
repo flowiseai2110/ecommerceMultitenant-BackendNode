@@ -131,14 +131,20 @@ class GenericRepository {
    * @returns {Promise<Object>}
    */
   async update(id, data, options = {}) {
-    const { include = undefined, tiendaId = null } = options;
+    const { include = undefined, tiendaId = null, skipExistsCheck = false } = options;
 
     if (tiendaId) {
       const exists = await this.model.findFirst({ where: { id, tiendaId } });
       if (!exists) throw new NotFoundError(this.modelName);
-    } else {
+    } else if (!skipExistsCheck) {
       await this.findById(id);
     }
+    // skipExistsCheck: para modelos sin tiendaId propio (ej. producto_imagenes,
+    // producto_variantes) cuyo middleware de ruta ya confirmó la existencia del
+    // registro al resolver su tienda dueña — evita repetir esa misma consulta
+    // acá. Si el registro desaparece justo antes del update (carrera muy
+    // improbable), Prisma lanza P2025 y el error middleware ya lo traduce a
+    // un 404 limpio (RECORD_NOT_FOUND), así que no se pierde nada.
 
     return await this.model.update({
       where: { id },

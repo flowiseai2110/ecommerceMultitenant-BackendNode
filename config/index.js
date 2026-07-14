@@ -68,7 +68,10 @@ export const config = {
   // Google Gemini — edición de imágenes con Nano Banana (gemini-2.5-flash-image) via API directa.
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
-    imageModel: process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image"
+    imageModel: process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image",
+    // Circuit breaker de plataforma, independiente de la cuota por tienda. null = sin tope.
+    maxCallsDia: process.env.GEMINI_MAX_CALLS_DIA ? parseInt(process.env.GEMINI_MAX_CALLS_DIA) : null,
+    maxCallsMes: process.env.GEMINI_MAX_CALLS_MES ? parseInt(process.env.GEMINI_MAX_CALLS_MES) : null
   },
 
   // Studio — generador de imágenes IA sin persistencia permanente.

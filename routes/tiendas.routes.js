@@ -145,7 +145,12 @@ router.get(
   }
 );
 
-// GET - Stats de una tienda (4 COUNTs + 1 aggregate en paralelo)
+// GET - Stats de una tienda: antes 7 queries (6 count + 1 aggregate) vía
+// Promise.all. Corren en paralelo a nivel de Node, pero cada una paga por
+// separado la latencia de red hacia Supabase — con Promise.all no se gana
+// nada si el cuello de botella es el round-trip, no el cómputo en Postgres.
+// Se colapsó a una sola consulta con subqueries correlacionadas (mismo
+// razonamiento que GET /store/productos/home).
 router.get(
   "/:tiendaId/stats",
   authMiddleware,
@@ -155,41 +160,31 @@ router.get(
     try {
       const { tiendaId } = req.params;
 
-      const [
-        categorias,
-        productos,
-        pedidosTotal,
-        pedidosPendientes,
-        clientes,
-        miembros,
-        ventas
-      ] = await Promise.all([
-        prisma.categorias.count({ where: { tiendaId } }),
-        prisma.productos.count({ where: { tiendaId, activo: true } }),
-        prisma.pedidos.count({ where: { tiendaId } }),
-        prisma.pedidos.count({ where: { tiendaId, estado: "pendiente" } }),
-        prisma.clientes.count({ where: { tiendaId } }),
-        prisma.usuario_tiendas.count({ where: { tiendaId, activo: true } }),
-        prisma.pedidos.aggregate({
-          where: { tiendaId },
-          _sum: { total: true }
-        })
-      ]);
+      const [row] = await prisma.$queryRaw`
+        SELECT
+          (SELECT COUNT(*) FROM categorias WHERE tienda_id = ${tiendaId}::uuid) AS categorias,
+          (SELECT COUNT(*) FROM productos WHERE tienda_id = ${tiendaId}::uuid AND activo = true) AS productos,
+          (SELECT COUNT(*) FROM pedidos WHERE tienda_id = ${tiendaId}::uuid) AS pedidos_total,
+          (SELECT COUNT(*) FROM pedidos WHERE tienda_id = ${tiendaId}::uuid AND estado = 'pendiente') AS pedidos_pendientes,
+          (SELECT COUNT(*) FROM clientes WHERE tienda_id = ${tiendaId}::uuid) AS clientes,
+          (SELECT COUNT(*) FROM usuario_tiendas WHERE tienda_id = ${tiendaId}::uuid AND activo = true) AS miembros,
+          (SELECT COALESCE(SUM(total), 0) FROM pedidos WHERE tienda_id = ${tiendaId}::uuid) AS ventas_total
+      `;
 
       return apiResponse(res, {
         status: 200,
         type: "SUCCESS",
         code: "TIENDA_STATS",
         data: {
-          categorias,
-          productos,
+          categorias: Number(row.categorias),
+          productos: Number(row.productos),
           pedidos: {
-            total: pedidosTotal,
-            pendientes: pedidosPendientes
+            total: Number(row.pedidos_total),
+            pendientes: Number(row.pedidos_pendientes)
           },
-          clientes,
-          miembros,
-          ventasTotal: ventas._sum.total ?? 0
+          clientes: Number(row.clientes),
+          miembros: Number(row.miembros),
+          ventasTotal: parseFloat(row.ventas_total)
         }
       });
     } catch (error) {

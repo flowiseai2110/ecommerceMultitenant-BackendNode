@@ -1,10 +1,14 @@
 import { prisma } from "../config/prisma.js";
 import { processAndUploadImage } from "../services/image.service.js";
-import { createNanoBananaEditTask, getTaskStatus } from "../services/ai-image.service.js";
-import { registrarUsoImagenIA } from "../services/uso-recursos.service.js";
+import { createNanoBananaEditTask, getTaskStatus, getTaskTiendaId } from "../services/ai-image.service.js";
+import {
+  registrarUsoImagenIA,
+  verificarCuotaTienda,
+  verificarYRegistrarLimiteGlobalIA
+} from "../services/uso-recursos.service.js";
 import { generarIaSchema, confirmarIaSchema } from "../validators/producto-imagenes.validator.js";
 import { apiResponse } from "../utils/apiResponse.js";
-import { NotFoundError, ValidationError } from "../utils/errors.js";
+import { NotFoundError, ValidationError, ForbiddenError } from "../utils/errors.js";
 import GenericRepository from "../repositories/generic.repository.js";
 import GenericService from "../services/generic.service.js";
 
@@ -22,9 +26,13 @@ export async function generarImagenIA(req, res, next) {
     const imagenOrigen = await prisma.producto_imagenes.findUnique({ where: { id } });
     if (!imagenOrigen) throw new NotFoundError("Imagen");
 
+    await verificarCuotaTienda(req.tiendaId);
+    await verificarYRegistrarLimiteGlobalIA();
+
     const { taskId } = await createNanoBananaEditTask({
       imageUrl: imagenOrigen.url,
-      prompt: parsed.data.prompt
+      prompt: parsed.data.prompt,
+      tiendaId: req.tiendaId
     });
 
     const uso = await registrarUsoImagenIA(req.tiendaId);
@@ -62,6 +70,16 @@ export async function confirmarImagenIA(req, res, next) {
     const status = await getTaskStatus(taskId);
     if (status.state !== "success") {
       throw new ValidationError(`La tarea de IA no está lista (estado: ${status.state})`);
+    }
+
+    // La tarea existe (status.state === "success") y tiene un tiendaId asociado
+    // desde su creación — confirmar que pertenece a la misma tienda del producto
+    // destino, para que un editor de la Tienda A no pueda apropiarse (y persistir
+    // en su catálogo) del resultado de una tarea generada — y pagada como cuota —
+    // por la Tienda B, adivinando o reutilizando su taskId.
+    const taskTiendaId = getTaskTiendaId(taskId);
+    if (taskTiendaId && taskTiendaId !== req.tiendaId) {
+      throw new ForbiddenError("Esta tarea de IA no pertenece a tu tienda");
     }
 
     const resultUrl = status.resultUrls[0];

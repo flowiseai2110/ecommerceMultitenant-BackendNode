@@ -6,7 +6,7 @@ import GenericRepository from "../repositories/generic.repository.js";
 import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
+import { requireTiendaAccess, resolveTiendaId, scopeReadToResourceTienda } from "../middlewares/tienda-access.middleware.js";
 import { makeUploadImagenForProducto } from "../controllers/producto-imagenes.controller.js";
 import { invalidateProductoDetailCache } from "./store/productos.routes.js";
 
@@ -85,15 +85,29 @@ const productosService = new GenericService(productosRepository, {
 });
 const productosController = new GenericController(productosService, "Producto");
 
-// Resuelve el tiendaId dueño del producto cuando la petición no lo trae
-// (rutas /:id), para que requireTiendaAccess pueda validar pertenencia.
-const resolveProductoTiendaId = resolveTiendaId(async (req) => {
+// Dueño real del producto en BD — compartido por las dos formas de scope
+// de abajo (una para escritura, otra para lectura).
+const findProductoTiendaId = async (req) => {
   const producto = await prisma.productos.findUnique({
     where: { id: req.params.id },
     select: { tiendaId: true }
   });
   return producto?.tiendaId || null;
-});
+};
+
+// Resuelve el tiendaId dueño del producto cuando la petición no lo trae
+// (rutas /:id de escritura), para que requireTiendaAccess pueda validar
+// pertenencia.
+const resolveProductoTiendaId = resolveTiendaId(findProductoTiendaId);
+
+// Para lectura (GET /:id): resuelve el tiendaId dueño SIEMPRE, ignorando
+// cualquier tiendaId que venga en query (el admin manda la tienda
+// seleccionada en la UI, que no necesariamente es la dueña del producto
+// solicitado). Sin esto, cualquier usuario autenticado con membresía en
+// CUALQUIER tienda podía leer el detalle completo de productos de otras
+// tiendas (incluye precioCosto, stockAlerta, metadata) con solo conocer
+// el UUID — ver auditoría de aislamiento multi-tenant.
+const scopeProductoReadToOwner = scopeReadToResourceTienda(findProductoTiendaId);
 
 const router = Router();
 
@@ -107,7 +121,10 @@ router.get(
 // GET - Obtener producto por ID
 router.get(
   "/:id",
+  authMiddleware,
   validate({ params: idParamSchema }),
+  scopeProductoReadToOwner,
+  requireTiendaAccess("viewer"),
   productosController.findById
 );
 

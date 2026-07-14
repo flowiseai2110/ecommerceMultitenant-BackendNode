@@ -55,8 +55,15 @@ export class UnprocessableError extends AppError {
 
 // Error 429 - Too Many Requests
 export class TooManyRequestsError extends AppError {
-  constructor(message = "Demasiadas solicitudes") {
-    super(message, 429, "TOO_MANY_REQUESTS");
+  constructor(message = "Demasiadas solicitudes", details = null) {
+    super(message, 429, "TOO_MANY_REQUESTS", details);
+  }
+}
+
+// Error 402 - Cuota de plan agotada
+export class QuotaExceededError extends AppError {
+  constructor(message = "Cuota del plan agotada", details = null) {
+    super(message, 402, "QUOTA_EXCEEDED", details);
   }
 }
 
@@ -84,6 +91,7 @@ export default {
   ConflictError,
   UnprocessableError,
   TooManyRequestsError,
+  QuotaExceededError,
   InternalError,
   DatabaseError
 };

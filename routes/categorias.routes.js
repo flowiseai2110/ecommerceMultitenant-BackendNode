@@ -5,7 +5,7 @@ import GenericRepository from "../repositories/generic.repository.js";
 import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
+import { requireTiendaAccess, resolveTiendaId, scopeReadToResourceTienda } from "../middlewares/tienda-access.middleware.js";
 import {
   createCategoriaSchema,
   updateCategoriaSchema,
@@ -22,15 +22,25 @@ const categoriasService = new GenericService(categoriasRepository, {
 });
 const categoriasController = new GenericController(categoriasService, "Categoria");
 
-// Resuelve el tiendaId dueño de la categoría cuando la petición no lo trae
-// (rutas /:id), para que requireTiendaAccess pueda validar pertenencia.
-const resolveCategoriaTiendaId = resolveTiendaId(async (req) => {
+// Dueño real de la categoría en BD — compartido por las dos formas de scope
+// de abajo (una para escritura, otra para lectura).
+const findCategoriaTiendaId = async (req) => {
   const categoria = await prisma.categorias.findUnique({
     where: { id: req.params.id },
     select: { tiendaId: true }
   });
   return categoria?.tiendaId || null;
-});
+};
+
+// Resuelve el tiendaId dueño de la categoría cuando la petición no lo trae
+// (rutas /:id de escritura), para que requireTiendaAccess pueda validar
+// pertenencia.
+const resolveCategoriaTiendaId = resolveTiendaId(findCategoriaTiendaId);
+
+// Para lectura (GET /:id): resuelve el tiendaId dueño SIEMPRE, ignorando
+// cualquier tiendaId que venga en query — ver mismo razonamiento en
+// productos.routes.js.
+const scopeCategoriaReadToOwner = scopeReadToResourceTienda(findCategoriaTiendaId);
 
 const router = Router();
 
@@ -44,7 +54,10 @@ router.get(
 // GET - Obtener categoría por ID
 router.get(
   "/:id",
+  authMiddleware,
   validate({ params: idParamSchema }),
+  scopeCategoriaReadToOwner,
+  requireTiendaAccess("viewer"),
   categoriasController.findById
 );
 

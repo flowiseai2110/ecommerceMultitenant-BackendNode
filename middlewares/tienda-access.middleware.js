@@ -111,4 +111,36 @@ export function resolveTiendaId(resolver) {
   };
 }
 
-export default { requireTiendaAccess, resolveTiendaId };
+/**
+ * Variante de resolveTiendaId para lecturas (GET /:id): SIEMPRE resuelve el
+ * tiendaId dueño real del recurso y lo escribe en req.params, sin importar
+ * si el cliente ya mandó un tiendaId por query/body.
+ *
+ * Por qué no reusar resolveTiendaId: esa función solo resuelve cuando el
+ * cliente NO manda tiendaId, y el admin SÍ lo manda hoy en los GET /:id
+ * (la tienda seleccionada en el dropdown de la UI). Confiar en ese valor
+ * para decidir acceso de lectura permitiría bloquear (o autorizar) según
+ * la tienda activa en la UI en vez de la tienda real dueña del recurso
+ * solicitado — dos cosas que no tienen por qué coincidir (ej. el usuario
+ * tiene Tienda A seleccionada pero abre un link directo a un producto de
+ * Tienda B, a la que también pertenece).
+ *
+ * req.params.tiendaId tiene prioridad sobre query en requireTiendaAccess,
+ * así que sobrescribirlo aquí anula cualquier valor enviado por el cliente.
+ *
+ * @param {(req: import("express").Request) => Promise<string|null>} resolver
+ *   Función que devuelve el tiendaId dueño del recurso, o null si no existe.
+ */
+export function scopeReadToResourceTienda(resolver) {
+  return async (req, res, next) => {
+    try {
+      const tiendaId = await resolver(req);
+      if (tiendaId) req.params.tiendaId = tiendaId;
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+export default { requireTiendaAccess, resolveTiendaId, scopeReadToResourceTienda };

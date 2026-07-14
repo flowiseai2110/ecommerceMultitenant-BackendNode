@@ -211,6 +211,19 @@ model tienda_uso_recursos {
   @@unique([tiendaId, recurso, periodo], name: "uq_tienda_recurso_periodo")
 }
 
+model ia_uso_global {
+  id             String    @id @default(uuid()) @db.Uuid
+  periodo        String    @db.VarChar(10) // "YYYY-MM-DD" si tipo=dia, "YYYY-MM" si tipo=mes
+  tipo           String    @db.VarChar(10) // "dia" | "mes"
+  cantidadUsada  Int       @default(0) @map("cantidad_usada")
+
+  // Auditoría
+  fechaRegistro      DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  fechaActualizacion DateTime? @map("fecha_actualizacion") @db.Timestamptz
+
+  @@unique([periodo, tipo], name: "uq_periodo_tipo")
+}
+
 // ============================================
 // MÓDULO: CUPONES
 // ============================================

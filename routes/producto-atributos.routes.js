@@ -5,7 +5,7 @@ import GenericRepository from "../repositories/generic.repository.js";
 import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
+import { requireTiendaAccess, resolveTiendaId, scopeReadToResourceTienda } from "../middlewares/tienda-access.middleware.js";
 import {
   createAtributoSchema,
   updateAtributoSchema,
@@ -18,15 +18,25 @@ const atributosRepository = new GenericRepository(prisma.producto_atributos, "Pr
 const atributosService = new GenericService(atributosRepository, { enableAudit: true });
 const atributosController = new GenericController(atributosService, "ProductoAtributo");
 
-// Resuelve el tiendaId dueño del atributo cuando la petición no lo trae
-// (rutas /:id), para que requireTiendaAccess pueda validar pertenencia.
-const resolveAtributoTiendaId = resolveTiendaId(async (req) => {
+// Dueño real del atributo en BD — compartido por las dos formas de scope
+// de abajo (una para escritura, otra para lectura).
+const findAtributoTiendaId = async (req) => {
   const atributo = await prisma.producto_atributos.findUnique({
     where: { id: req.params.id },
     select: { tiendaId: true }
   });
   return atributo?.tiendaId || null;
-});
+};
+
+// Resuelve el tiendaId dueño del atributo cuando la petición no lo trae
+// (rutas /:id de escritura), para que requireTiendaAccess pueda validar
+// pertenencia.
+const resolveAtributoTiendaId = resolveTiendaId(findAtributoTiendaId);
+
+// Para lectura (GET /:id): resuelve el tiendaId dueño SIEMPRE, ignorando
+// cualquier tiendaId que venga en query — ver mismo razonamiento en
+// productos.routes.js.
+const scopeAtributoReadToOwner = scopeReadToResourceTienda(findAtributoTiendaId);
 
 const router = Router();
 
@@ -40,7 +50,10 @@ router.get(
 // GET - Obtener atributo por ID
 router.get(
   "/:id",
+  authMiddleware,
   validate({ params: idParamSchema }),
+  scopeAtributoReadToOwner,
+  requireTiendaAccess("viewer"),
   atributosController.findById
 );
 

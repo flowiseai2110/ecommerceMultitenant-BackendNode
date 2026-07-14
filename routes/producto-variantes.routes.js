@@ -5,7 +5,7 @@ import GenericRepository from "../repositories/generic.repository.js";
 import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
+import { requireTiendaAccess, resolveTiendaId, scopeReadToResourceTienda } from "../middlewares/tienda-access.middleware.js";
 import {
   createVarianteSchema,
   updateVarianteSchema,
@@ -20,8 +20,8 @@ const variantesController = new GenericController(variantesService, "ProductoVar
 
 // producto_variantes no tiene tiendaId propio: la tienda dueña se hereda
 // del producto padre. Resolvemos vía productoId (creación) o vía la
-// relación producto de la variante existente (actualización/eliminación).
-const resolveVarianteTiendaId = resolveTiendaId(async (req) => {
+// relación producto de la variante existente (actualización/eliminación/lectura).
+const findVarianteTiendaId = async (req) => {
   if (req.body?.productoId) {
     const producto = await prisma.productos.findUnique({
       where: { id: req.body.productoId },
@@ -35,7 +35,14 @@ const resolveVarianteTiendaId = resolveTiendaId(async (req) => {
     select: { producto: { select: { tiendaId: true } } }
   });
   return variante?.producto?.tiendaId || null;
-});
+};
+
+const resolveVarianteTiendaId = resolveTiendaId(findVarianteTiendaId);
+
+// Para lectura (GET /:id): resuelve el tiendaId dueño SIEMPRE, ignorando
+// cualquier tiendaId que venga en query — ver mismo razonamiento en
+// productos.routes.js.
+const scopeVarianteReadToOwner = scopeReadToResourceTienda(findVarianteTiendaId);
 
 const router = Router();
 
@@ -49,7 +56,10 @@ router.get(
 // GET - Obtener variante por ID
 router.get(
   "/:id",
+  authMiddleware,
   validate({ params: idParamSchema }),
+  scopeVarianteReadToOwner,
+  requireTiendaAccess("viewer"),
   variantesController.findById
 );
 
@@ -64,12 +74,16 @@ router.post(
 );
 
 // PUT - Actualizar variante
+// producto_variantes no tiene tiendaId propio (ver resolveVarianteTiendaId),
+// así que se limpia para que GenericRepository.update no intente filtrar por
+// una columna inexistente. skipExistsCheck evita repetir la consulta de
+// existencia: resolveVarianteTiendaId ya la hizo para resolver la tienda dueña.
 router.put(
   "/:id",
   authMiddleware,
   resolveVarianteTiendaId,
   requireTiendaAccess("editor"),
-  (req, _res, next) => { req.tiendaId = null; next(); },
+  (req, _res, next) => { req.tiendaId = null; req.skipExistsCheck = true; next(); },
   validate({ params: idParamSchema, body: updateVarianteSchema }),
   variantesController.update
 );

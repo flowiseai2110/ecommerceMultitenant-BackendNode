@@ -109,9 +109,10 @@ setInterval(() => {
  * @param {object} params
  * @param {string} params.imageUrl - URL pública de la imagen origen
  * @param {string} [params.prompt] - Instrucción de edición
+ * @param {string} params.tiendaId - Tienda dueña de la tarea (para scope multi-tenant del polling)
  * @returns {Promise<{ taskId: string }>}
  */
-export async function createNanoBananaEditTask({ imageUrl, prompt }) {
+export async function createNanoBananaEditTask({ imageUrl, prompt, tiendaId }) {
   if (!imageUrl) throw new ValidationError("Se requiere la URL de la imagen origen");
 
   const taskId = crypto.randomUUID();
@@ -138,9 +139,9 @@ export async function createNanoBananaEditTask({ imageUrl, prompt }) {
     const resultBuffer = Buffer.from(imagePart.inlineData.data, "base64");
     const { path, url } = await uploadResultToScratch(resultBuffer, taskId);
 
-    record = { state: "success", resultUrls: [url], failMsg: null, scratchPath: path, createdAt: Date.now() };
+    record = { state: "success", resultUrls: [url], failMsg: null, scratchPath: path, tiendaId, createdAt: Date.now() };
   } catch (err) {
-    record = { state: "fail", resultUrls: [], failMsg: err.message, scratchPath: null, createdAt: Date.now() };
+    record = { state: "fail", resultUrls: [], failMsg: err.message, scratchPath: null, tiendaId, createdAt: Date.now() };
   }
 
   geminiTasks.set(taskId, record);
@@ -165,4 +166,15 @@ export async function getTaskStatus(taskId) {
   return { taskId, state: task.state, resultUrls: task.resultUrls, failMsg: task.failMsg };
 }
 
-export default { createNanoBananaEditTask, getTaskStatus, DEFAULT_PRODUCT_PHOTO_PROMPT };
+/**
+ * Tienda dueña de una tarea de edición con Gemini, o null si no existe/expiró.
+ * Usado para scopear el polling y la confirmación a la tienda que la creó —
+ * ver auditoría de aislamiento multi-tenant (producto-imagenes.routes.js).
+ * @param {string} taskId
+ * @returns {string|null}
+ */
+export function getTaskTiendaId(taskId) {
+  return geminiTasks.get(taskId)?.tiendaId ?? null;
+}
+
+export default { createNanoBananaEditTask, getTaskStatus, getTaskTiendaId, DEFAULT_PRODUCT_PHOTO_PROMPT };

@@ -165,14 +165,15 @@ class GenericService {
    * @param {Object} data - Datos validados a actualizar
    * @param {Object} user - Usuario autenticado (req.user)
    * @param {string|null} tiendaId - Scope multi-tenant opcional
+   * @param {Object} options - Opciones adicionales (ej. skipExistsCheck)
    * @returns {Promise<Object>}
    */
-  async update(id, data, user = null, tiendaId = null) {
+  async update(id, data, user = null, tiendaId = null, options = {}) {
     if (this.enableAudit) {
       data = this.addUpdateAuditFields(data, user);
     }
 
-    return await this.repository.update(id, data, { tiendaId });
+    return await this.repository.update(id, data, { tiendaId, ...options });
   }
 
   /**
