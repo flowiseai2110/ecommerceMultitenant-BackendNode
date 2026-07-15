@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
+import rateLimit from "express-rate-limit";
+import config from "../../config/index.js";
 import { prisma } from "../../config/prisma.js";
 import { validate } from "../../middlewares/validation.middleware.js";
 import { scopeBodyToTienda } from "../../middlewares/resolve-tienda.middleware.js";
@@ -35,6 +37,23 @@ async function notifyNewOrder(pedido) {
   }
 }
 
+// Rate limit propio del checkout, más agresivo que el global: crear un pedido
+// descuenta stock, así que un bot creando pedidos falsos puede vaciar el
+// inventario de una tienda (OWASP OAT-021 Denial of Inventory). Un cliente
+// legítimo no crea más de un puñado de pedidos por ventana.
+const checkoutLimiter = rateLimit({
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.checkoutMax,
+  message: {
+    status: 429,
+    type: "ERROR",
+    code: "TOO_MANY_ORDERS",
+    data: { message: "Has creado demasiados pedidos en poco tiempo, intenta más tarde" }
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // ============================================
 // POST / - Crear pedido desde el storefront (público)
 // Si la tienda se resolvió por subdominio, el pedido SIEMPRE se crea contra
@@ -43,6 +62,7 @@ async function notifyNewOrder(pedido) {
 // ============================================
 router.post(
   "/",
+  checkoutLimiter,
   scopeBodyToTienda,
   validate({ body: createPedidoSchema }),
   async (req, res, next) => {

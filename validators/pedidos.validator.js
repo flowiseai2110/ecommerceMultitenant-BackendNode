@@ -6,7 +6,9 @@ const detalleItemSchema = z.object({
   varianteId: z.string().uuid("ID de variante inválido").optional().nullable(),
   productoNombre: z.string({ required_error: "El nombre del producto es requerido" }).min(1).max(200),
   varianteNombre: z.string().max(100).optional().nullable(),
-  cantidad: z.coerce.number({ required_error: "La cantidad es requerida" }).int().min(1, "La cantidad mínima es 1"),
+  // El máximo aplica sobre todo a servicios (sin stock físico); para productos
+  // con stock la validación real es contra el stock disponible
+  cantidad: z.coerce.number({ required_error: "La cantidad es requerida" }).int().min(1, "La cantidad mínima es 1").max(100, "La cantidad máxima por producto es 100"),
   precioUnitario: z.coerce.number({ required_error: "El precio unitario es requerido" }).min(0),
   descuento: z.coerce.number().min(0).optional().default(0)
 });
@@ -23,7 +25,9 @@ export const createPedidoSchema = z.object({
     numeroDocumento: z.string().max(20).optional().nullable()
   }),
   // Items del pedido
-  detalles: z.array(detalleItemSchema).min(1, "Debe incluir al menos un producto"),
+  detalles: z.array(detalleItemSchema)
+    .min(1, "Debe incluir al menos un producto")
+    .max(50, "Un pedido no puede tener más de 50 productos distintos"),
   // Info de envío y pago
   metodoPago: z.string().max(50).optional().nullable(),
   metodoEnvio: z.string().max(50).optional().nullable(),

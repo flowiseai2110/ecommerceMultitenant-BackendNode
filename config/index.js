@@ -17,7 +17,11 @@ export const config = {
   // Rate Limiting
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutos
-    max: parseInt(process.env.RATE_LIMIT_MAX) || 100 // máximo 100 requests por ventana
+    max: parseInt(process.env.RATE_LIMIT_MAX) || 100, // máximo 100 requests por ventana
+    // Límite específico para creación de pedidos (OWASP OAT-021 Denial of Inventory):
+    // los pedidos descuentan stock al crearse, así que este endpoint necesita un
+    // tope mucho más agresivo que el global
+    checkoutMax: parseInt(process.env.RATE_LIMIT_CHECKOUT_MAX) || 5
   },
 
   // CORS - soporta múltiples orígenes separados por coma

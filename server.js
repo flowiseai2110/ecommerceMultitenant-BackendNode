@@ -20,6 +20,13 @@ BigInt.prototype.toJSON = function() {
 
 const app = express();
 
+// Railway (y cualquier PaaS) pone la app detrás de su proxy: sin esto,
+// req.ip es la IP del proxy y el rate limiting cuenta a TODOS los visitantes
+// como una sola IP. "1" = confiar solo en el primer salto (el edge de Railway);
+// no usar "true" porque permitiría a un cliente falsificar su IP vía
+// X-Forwarded-For y evadir el rate limit.
+app.set("trust proxy", 1);
+
 // ============================================
 // MIDDLEWARES DE SEGURIDAD
 // ============================================
