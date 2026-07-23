@@ -14,6 +14,7 @@ import { invalidateTiendasStoreCache } from "./store/tiendas.routes.js";
 import { seedMetodosPagoParaTienda } from "../services/metodos-pago-seed.service.js";
 import { seedMetodosEnvioParaTienda } from "../services/metodos-envio-seed.service.js";
 import { getDiseno, saveDiseno } from "../services/tienda-diseno.service.js";
+import { getPlantillasWhatsapp, savePlantillasWhatsapp } from "../services/tienda-plantillas-whatsapp.service.js";
 import { logger } from "../config/logger.js";
 import {
   createTiendaSchema,
@@ -23,6 +24,7 @@ import {
   paginationSchema
 } from "../validators/tiendas.validator.js";
 import { updateDisenoSchema } from "../validators/tienda-diseno.validator.js";
+import { updatePlantillasWhatsappSchema } from "../validators/tienda-plantillas-whatsapp.validator.js";
 
 // Crear instancias de las capas
 const tiendasRepository = new GenericRepository(prisma.tiendas, "Tiendas");
@@ -304,6 +306,52 @@ router.put(
         type: "SUCCESS",
         code: "TIENDA_DISENO_UPDATED",
         data: diseno
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// GET /:id/plantillas-whatsapp — Plantillas de mensajes al cliente
+// Devuelve solo las plantillas personalizadas; las ausentes usan defaults del admin.
+router.get(
+  "/:id/plantillas-whatsapp",
+  authMiddleware,
+  validate({ params: idParamSchema }),
+  resolveTiendaIdFromId,
+  requireTiendaAccess("viewer"),
+  async (req, res, next) => {
+    try {
+      const plantillas = await getPlantillasWhatsapp(req.params.id);
+      return apiResponse(res, {
+        status: 200,
+        type: "SUCCESS",
+        code: "TIENDA_PLANTILLAS_WHATSAPP",
+        data: plantillas
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// PUT /:id/plantillas-whatsapp — Guardar plantillas (upsert de una sola fila).
+// Claves con string vacío vuelven al default (se eliminan del JSON guardado).
+router.put(
+  "/:id/plantillas-whatsapp",
+  authMiddleware,
+  validate({ params: idParamSchema, body: updatePlantillasWhatsappSchema }),
+  resolveTiendaIdFromId,
+  requireTiendaAccess("admin"),
+  async (req, res, next) => {
+    try {
+      const plantillas = await savePlantillasWhatsapp(req.params.id, req.body, req.user);
+      return apiResponse(res, {
+        status: 200,
+        type: "SUCCESS",
+        code: "TIENDA_PLANTILLAS_WHATSAPP_UPDATED",
+        data: plantillas
       });
     } catch (error) {
       next(error);

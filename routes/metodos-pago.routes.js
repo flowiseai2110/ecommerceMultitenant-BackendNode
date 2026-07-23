@@ -6,6 +6,8 @@ import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
+import { uploadImage } from "../middlewares/upload.middleware.js";
+import { uploadQr, deleteQr } from "../controllers/metodos-pago-qr.controller.js";
 import {
   createMetodoPagoSchema,
   updateMetodoPagoSchema,
@@ -67,6 +69,27 @@ router.put(
   requireTiendaAccess("admin"),
   validate({ params: idParamSchema, body: updateMetodoPagoSchema }),
   metodosPagoController.update
+);
+
+// POST - Subir o reemplazar QR de pago del método (Yape/Plin/etc.)
+router.post(
+  "/:id/qr",
+  authMiddleware,
+  validate({ params: idParamSchema }),
+  uploadImage.single("file"),
+  resolveMetodoPagoTiendaId,
+  requireTiendaAccess("admin"),
+  uploadQr
+);
+
+// DELETE - Quitar QR de pago del método
+router.delete(
+  "/:id/qr",
+  authMiddleware,
+  validate({ params: idParamSchema }),
+  resolveMetodoPagoTiendaId,
+  requireTiendaAccess("admin"),
+  deleteQr
 );
 
 // DELETE - Eliminar método de pago (admin)

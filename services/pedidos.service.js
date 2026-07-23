@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
+import { invalidatePendientesCount } from "./pedidos-pendientes-cache.js";
 
 /**
  * Servicio de pedidos con lógica de negocio completa:
@@ -350,6 +351,10 @@ class PedidosService {
       // El margen extra cubre latencia de red/pooler hacia Supabase.
       maxWait: 5000,
       timeout: 15000
+    }).then((pedido) => {
+      // Todo pedido nuevo nace "pendiente": el conteo cacheado del badge cambió
+      invalidatePendientesCount(tiendaId);
+      return pedido;
     });
   }
 
@@ -479,7 +484,7 @@ class PedidosService {
       throw new NotFoundError("Pedido");
     }
 
-    return await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx) => {
       const updateData = {
         estado,
         fechaActualizacion: new Date(),
@@ -575,6 +580,13 @@ class PedidosService {
 
       return updated;
     });
+
+    // El conteo del badge solo cambia si el pedido entra o sale de "pendiente"
+    if (pedido.estado === "pendiente" || estado === "pendiente") {
+      invalidatePendientesCount(pedido.tiendaId);
+    }
+
+    return updated;
   }
 
   /**
@@ -772,7 +784,11 @@ class PedidosService {
       throw new NotFoundError("Pedido");
     }
 
-    return await prisma.pedidos.delete({ where: { id } });
+    const deleted = await prisma.pedidos.delete({ where: { id } });
+    if (pedido.estado === "pendiente") {
+      invalidatePendientesCount(pedido.tiendaId);
+    }
+    return deleted;
   }
 }
 

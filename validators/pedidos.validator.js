@@ -80,11 +80,17 @@ export const listaQuerySchema = z.object({
   estadoPago: z.enum(["pendiente", "pagado", "rechazado", "reembolsado"]).optional(),
 });
 
+// Schema para GET /pendientes/count — badge del sidebar del admin
+export const pendientesCountQuerySchema = z.object({
+  tiendaId: z.string({ required_error: "tiendaId es requerido" }).uuid("tiendaId inválido")
+});
+
 export default {
   createPedidoSchema,
   updateEstadoSchema,
   updateEstadoPagoSchema,
   idParamSchema,
   paginationSchema,
-  listaQuerySchema
+  listaQuerySchema,
+  pendientesCountQuerySchema
 };

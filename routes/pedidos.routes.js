@@ -11,8 +11,13 @@ import {
   updateEstadoPagoSchema,
   idParamSchema,
   paginationSchema,
-  listaQuerySchema
+  listaQuerySchema,
+  pendientesCountQuerySchema
 } from "../validators/pedidos.validator.js";
+import {
+  getPendientesCount,
+  setPendientesCount
+} from "../services/pedidos-pendientes-cache.js";
 
 const pedidosRepository = new PedidosRepository(prisma.pedidos);
 const pedidosService = new PedidosService(pedidosRepository);
@@ -88,6 +93,41 @@ router.get(
       const query = req.validatedQuery || req.query;
       const { data, meta } = await pedidosService.findLista(query);
       return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDOS_LISTA", data, meta });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// GET /pendientes/count - Conteo de pedidos pendientes (badge del admin)
+// GET /admin/pedidos/pendientes/count?tiendaId=xxx
+// Servido desde caché en memoria; solo toca la DB en cache miss.
+// El caché se invalida al crear/actualizar/eliminar pedidos.
+// ============================================
+router.get(
+  "/pendientes/count",
+  authMiddleware,
+  requireTiendaAccess("viewer"),
+  validate({ query: pendientesCountQuerySchema }),
+  async (req, res, next) => {
+    try {
+      const { tiendaId } = req.validatedQuery || req.query;
+
+      let total = getPendientesCount(tiendaId);
+      if (total === null) {
+        total = await prisma.pedidos.count({
+          where: { tiendaId, estado: "pendiente" }
+        });
+        setPendientesCount(tiendaId, total);
+      }
+
+      return apiResponse(res, {
+        status: 200,
+        type: "SUCCESS",
+        code: "PEDIDOS_PENDIENTES_COUNT",
+        data: { total }
+      });
     } catch (error) {
       next(error);
     }
