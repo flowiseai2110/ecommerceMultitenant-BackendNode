@@ -228,11 +228,11 @@ function formatMetodoPago(tipo) {
  * de país) — wa.me requiere el código, así que se antepone 51 en ese caso.
  */
 function buildWhatsAppClienteUrl(pedido, tienda, metodoPagoLabel) {
-  const digits = String(pedido.cliente?.whatsappNumero || "").replace(/\D/g, "");
+  const digits = String(pedido.clienteWhatsapp || "").replace(/\D/g, "");
   if (!digits) return null;
 
   const numero = digits.length === 9 ? `51${digits}` : digits;
-  const mensaje = `Hola ${pedido.cliente?.nombre || ""}, recibimos tu pedido ${pedido.numeroPedido} en ${tienda.nombre}. ` +
+  const mensaje = `Hola ${pedido.clienteNombre || ""}, recibimos tu pedido ${pedido.numeroPedido} en ${tienda.nombre}. ` +
     `Te escribimos para coordinar el pago${metodoPagoLabel ? ` por ${metodoPagoLabel.toLowerCase()}` : ""}.`;
 
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
@@ -255,7 +255,7 @@ function generateNewOrderEmailHTML(pedido, tienda) {
       })
     : "";
 
-  const cliente = pedido.cliente || {};
+  const cliente = { nombre: pedido.clienteNombre, whatsappNumero: pedido.clienteWhatsapp, email: pedido.clienteEmail };
 
   const filasDetalles = (pedido.detalles || []).map(item => `
             <tr>

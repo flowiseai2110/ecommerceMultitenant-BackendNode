@@ -172,7 +172,12 @@ class PedidosService {
 
   /**
    * Busca un cliente por WhatsApp dentro de una tienda.
-   * Si no existe lo crea. Si existe actualiza nombre/email.
+   * Si no existe lo crea. Si existe lo reusa tal cual está:
+   * el nombre/email de `clientes` solo lo cambia el propio cliente
+   * (ej. desde un futuro perfil/login), nunca un pedido nuevo.
+   * Los datos de contacto de ESTE pedido se guardan aparte como
+   * snapshot en `pedidos` (ver #create), así el historial no se
+   * ve afectado por compras posteriores con el mismo WhatsApp.
    */
   async #upsertCliente(tiendaId, clienteData, tx) {
     let cliente = await tx.clientes.findFirst({
@@ -190,15 +195,6 @@ class PedidosService {
           numeroDocumento: clienteData.numeroDocumento || null,
           fechaRegistro: new Date(),
           usuarioRegistro: "storefront"
-        }
-      });
-    } else {
-      cliente = await tx.clientes.update({
-        where: { id: cliente.id },
-        data: {
-          nombre: clienteData.nombre,
-          email: clienteData.email || cliente.email,
-          fechaActualizacion: new Date()
         }
       });
     }
@@ -289,6 +285,9 @@ class PedidosService {
         data: {
           tiendaId,
           clienteId: cliente.id,
+          clienteNombre: clienteData.nombre,
+          clienteWhatsapp: clienteData.whatsappNumero,
+          clienteEmail: clienteData.email || null,
           numeroPedido,
           estado: "pendiente",
           subtotal,
@@ -405,9 +404,10 @@ class PedidosService {
           fechaConfirmado: true,
           fechaEntregado: true,
           fechaRegistro: true,
-          cliente: {
-            select: { id: true, nombre: true, whatsappNumero: true, email: true }
-          },
+          clienteId: true,
+          clienteNombre: true,
+          clienteWhatsapp: true,
+          clienteEmail: true,
           detalles: {
             select: {
               id: true,
@@ -426,8 +426,18 @@ class PedidosService {
       prisma.pedidos.count({ where })
     ]);
 
+    // El cliente se arma desde el snapshot guardado en el propio pedido
+    // (no desde la ficha actual de `clientes`): así el historial no cambia
+    // si el cliente hace otra compra después con datos distintos.
+    const mapped = data.map(({ clienteId, clienteNombre, clienteWhatsapp, clienteEmail, ...pedido }) => ({
+      ...pedido,
+      cliente: clienteId
+        ? { id: clienteId, nombre: clienteNombre, whatsappNumero: clienteWhatsapp, email: clienteEmail }
+        : null
+    }));
+
     return {
-      data,
+      data: mapped,
       meta: {
         total,
         page: parseInt(page) || 1,
@@ -467,7 +477,20 @@ class PedidosService {
       throw new NotFoundError("Pedido");
     }
 
-    return pedido;
+    // nombre/whatsapp/email mostrados son el snapshot de ESTE pedido, no la
+    // ficha actual del cliente. tipoDocumento/numeroDocumento/direccion no
+    // se capturan en el checkout, así que esos sí vienen de `clientes`.
+    return {
+      ...pedido,
+      cliente: pedido.cliente
+        ? {
+            ...pedido.cliente,
+            nombre: pedido.clienteNombre,
+            whatsappNumero: pedido.clienteWhatsapp,
+            email: pedido.clienteEmail
+          }
+        : null
+    };
   }
 
   /**
@@ -658,7 +681,7 @@ class PedidosService {
           estado: true,
           total: true,
           fechaRegistro: true,
-          cliente: { select: { nombre: true } }
+          clienteNombre: true
         },
         skip,
         take
@@ -666,9 +689,15 @@ class PedidosService {
       prisma.pedidos.count({ where })
     ]);
 
+    // Nombre desde el snapshot del pedido, no desde la ficha actual del cliente
+    const mapped = data.map(({ clienteNombre, ...pedido }) => ({
+      ...pedido,
+      cliente: { nombre: clienteNombre }
+    }));
+
     const p = parseInt(page) || 1;
     return {
-      data,
+      data: mapped,
       meta: {
         total,
         page: p,
@@ -715,24 +744,24 @@ class PedidosService {
     if (estadoPago) conditions.push(Prisma.sql`p.estado_pago = ${estadoPago}`);
     const whereClause = Prisma.join(conditions, " AND ");
 
-    // Una sola query: datos + total via window function (elimina el COUNT separado)
+    // Nombre/whatsapp/email vienen del snapshot guardado en el propio pedido
+    // (no de un JOIN a `clientes`): así el historial no cambia si el cliente
+    // hace otra compra después con datos distintos.
     const rows = await prisma.$queryRaw`
       SELECT
         p.id,
-        p.numero_pedido    AS "numeroPedido",
-        p.codigo_cupon     AS "codigoCupon",
+        p.numero_pedido     AS "numeroPedido",
+        p.codigo_cupon      AS "codigoCupon",
         p.estado,
-        p.estado_pago      AS "estadoPago",
+        p.estado_pago       AS "estadoPago",
         p.total,
-        p.cliente_id       AS "clienteId",
-        p.fecha_registro   AS "fechaRegistro",
-        c.id               AS "cId",
-        c.nombre           AS "clienteNombre",
-        c.email            AS "clienteEmail",
-        c.whatsapp_numero  AS "clienteWhatsapp",
-        COUNT(*) OVER()    AS "totalCount"
+        p.cliente_id        AS "clienteId",
+        p.cliente_nombre    AS "clienteNombre",
+        p.cliente_email     AS "clienteEmail",
+        p.cliente_whatsapp  AS "clienteWhatsapp",
+        p.fecha_registro    AS "fechaRegistro",
+        COUNT(*) OVER()     AS "totalCount"
       FROM pedidos p
-      LEFT JOIN clientes c ON c.id = p.cliente_id
       WHERE ${whereClause}
       ORDER BY ${Prisma.raw(orderCol)} ${Prisma.raw(orderDir)}
       LIMIT ${take} OFFSET ${skip}
@@ -749,9 +778,9 @@ class PedidosService {
       total: parseFloat(row.total),
       clienteId: row.clienteId ?? null,
       fechaRegistro: row.fechaRegistro,
-      cliente: row.cId
+      cliente: row.clienteId
         ? {
-            id: row.cId,
+            id: row.clienteId,
             nombre: row.clienteNombre,
             email: row.clienteEmail ?? null,
             whatsappNumero: row.clienteWhatsapp ?? null,
