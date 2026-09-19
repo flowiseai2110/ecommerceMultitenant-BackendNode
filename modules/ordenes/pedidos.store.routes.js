@@ -3,10 +3,10 @@ import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import config from "../../config/index.js";
 import { validate } from "../../middlewares/validation.middleware.js";
-import { scopeBodyToTienda } from "../../middlewares/resolve-tienda.middleware.js";
+import { scopeBodyToTienda } from "../../kernel/tenant/index.js";
 import { apiResponse } from "../../utils/apiResponse.js";
-import PedidosService from "../../services/pedidos.service.js";
-import { createPedidoSchema } from "../../validators/pedidos.validator.js";
+import PedidosService from "./pedidos.service.js";
+import { createPedidoSchema } from "./pedidos.schema.js";
 
 const pedidosService = new PedidosService();
 
@@ -32,8 +32,7 @@ const checkoutLimiter = rateLimit({
 // ============================================
 // POST / - Crear pedido desde el storefront (público)
 // Si la tienda se resolvió por subdominio, el pedido SIEMPRE se crea contra
-// esa tienda — ignora cualquier tiendaId que el cliente intente enviar
-// (evita pedidos cruzados por frontend desactualizado o manipulación).
+// esa tienda — ignora cualquier tiendaId que el cliente intente enviar.
 // ============================================
 router.post(
   "/",

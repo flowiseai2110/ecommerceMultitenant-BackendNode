@@ -102,7 +102,25 @@ upload de productos); se tratarán al definir un contexto de medios/AI. El guard
 `requireIaTaskAccess` conserva un chequeo de membresía inline (TODO PR5: mover al
 guard compartido del kernel).
 
-Próximos contextos: **tenants/usuarios**, **pedidos**, **inventario**, **pagos**.
+El contexto **`tenants` (tiendas, users, invitations) está extraído** en
+`modules/tenants/`, con cachés propias (`tiendas.cache.js`) y el chequeo de
+membresía consolidado en `kernel/tenant/membership.js` (`findActiveMembership`,
+usado por `requireTiendaAccess` y el guard de tareas de IA). Los servicios
+`tienda-diseno`, `tienda-plantillas-whatsapp`, roles y seeds siguen en
+`services/` (compartidos / datos maestros).
+
+Contextos **`ordenes`** (pedidos, badge cache) e **`inventario`** (stock:
+validar/bloquear/descontar/reponer, operando sobre la `tx` de Órdenes) extraídos.
+`updatePago` (transición de estado de pago) vive en Órdenes por ser parte del
+ciclo de vida del pedido.
+
+Contextos **`pagos`** (metodos-pago + QR), **`envios`** (metodos-envio) y
+**`cupones`** (CRUD admin + validación pública) extraídos.
+
+**Todos los bounded contexts del plan están migrados a `modules/`.** Lo que queda
+en `routes/` (`persona`, `studio`, `uploads`, `images`) son concerns
+cross-cutting/auxiliares (datos maestros, AI, media) que no eran dominios del
+plan; se pueden agrupar en un contexto de medios/AI en el futuro si hace falta.
 
 Bounded contexts objetivo: **catálogo**, **órdenes**, **inventario**, **pagos**,
 **tenants/usuarios**. (Carrito se mantiene client-side por decisión de producto;
@@ -134,12 +152,19 @@ Para listas y respuestas paginadas se usan los helpers de `kernel/http`
 
 ## Plan de migración (por riesgo, cada paso = 1 PR, app siempre verde)
 
-- **PR 0** — Fundaciones: este documento + helpers de serialización. *(actual)*
-- **PR 1** — Kernel: contexto de tenant unificado + guards componibles.
-- **PR 2** — Sacar Prisma de rutas/controladores; quitar cableado muerto.
-- **PR 3** — Serializers de salida por audiencia (empezando por GET).
-- **PR 4** — Extraer módulo **Catálogo** (plantilla del resto).
-- **PR 5** — Extraer **Tenants/Usuarios**.
-- **PR 6** — Extraer **Inventario** desde Órdenes (concurrency-critical).
-- **PR 7** — Extraer **Órdenes** (controller propio).
-- **PR 8** — Extraer **Pagos**.
+- ✅ **PR 0** — Fundaciones: este documento + helpers de serialización.
+- ✅ **PR 1** — Kernel: contexto de tenant unificado + guards componibles.
+- ✅ **PR 2** — Sacar Prisma de rutas/controladores; quitar cableado muerto.
+- ✅ **PR 3** — Serializers de salida por audiencia (GET del store).
+- ✅ **PR 4** — Extraer módulo **Catálogo** (categorías, productos, variantes,
+  atributos, imágenes) — plantilla del resto.
+- ✅ **PR 5** — Extraer **Tenants/Usuarios** (tiendas, users, invitations) +
+  consolidar membresía en el kernel.
+- ✅ **PR 6** — Extraer **Inventario** desde Órdenes (concurrency-critical).
+- ✅ **PR 7** — Extraer **Órdenes** (pedidos).
+- ✅ **PR 8** — Extraer **Pagos** (metodos-pago + QR), **Envíos** y **Cupones**.
+
+Pendiente opcional (fuera del plan de dominios): agrupar `persona`, `studio`,
+`uploads`, `images` en un contexto de medios/AI, y añadir serializers admin a los
+endpoints de configuración (metodos-pago/envio) que hoy conservan su salida
+previa.

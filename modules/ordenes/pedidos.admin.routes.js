@@ -1,9 +1,8 @@
 import { Router } from "express";
-import { validate } from "../middlewares/validation.middleware.js";
-import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { requireTiendaAccess } from "../middlewares/tienda-access.middleware.js";
-import { apiResponse } from "../utils/apiResponse.js";
-import PedidosService from "../services/pedidos.service.js";
+import { validate } from "../../middlewares/validation.middleware.js";
+import { authMiddleware, requireTiendaAccess } from "../../kernel/tenant/index.js";
+import { apiResponse } from "../../utils/apiResponse.js";
+import PedidosService from "./pedidos.service.js";
 import {
   updateEstadoSchema,
   updateEstadoPagoSchema,
@@ -12,11 +11,11 @@ import {
   paginationSchema,
   listaQuerySchema,
   pendientesCountQuerySchema
-} from "../validators/pedidos.validator.js";
+} from "./pedidos.schema.js";
 import {
   getPendientesCount,
   setPendientesCount
-} from "../services/pedidos-pendientes-cache.js";
+} from "./pedidos-pendientes-cache.js";
 
 const pedidosService = new PedidosService();
 
@@ -35,11 +34,7 @@ async function resolvePedidoTiendaId(req, res, next) {
   }
 }
 
-// ============================================
 // GET /resumen - Listado compacto para tabla del admin
-// GET /admin/pedidos/resumen?tiendaId=xxx&estado=pendiente
-// Devuelve: numeroPedido, cliente.nombre, estado, total, fechaRegistro
-// ============================================
 router.get(
   "/resumen",
   authMiddleware,
@@ -56,10 +51,7 @@ router.get(
   }
 );
 
-// ============================================
 // GET / - Listar pedidos (requiere tiendaId en query)
-// GET /admin/pedidos?tiendaId=xxx
-// ============================================
 router.get(
   "/",
   authMiddleware,
@@ -76,11 +68,7 @@ router.get(
   }
 );
 
-// ============================================
 // GET /lista - Listado optimizado para tabla del admin
-// GET /admin/pedidos/lista?tiendaId=xxx&page=1&limit=10
-// Una sola query con JOIN a clientes — sin detalles ni historial
-// ============================================
 router.get(
   "/lista",
   authMiddleware,
@@ -97,12 +85,8 @@ router.get(
   }
 );
 
-// ============================================
 // GET /pendientes/count - Conteo de pedidos pendientes (badge del admin)
-// GET /admin/pedidos/pendientes/count?tiendaId=xxx
 // Servido desde caché en memoria; solo toca la DB en cache miss.
-// El caché se invalida al crear/actualizar/eliminar pedidos.
-// ============================================
 router.get(
   "/pendientes/count",
   authMiddleware,
@@ -130,10 +114,7 @@ router.get(
   }
 );
 
-// ============================================
 // GET /:id - Obtener pedido por ID
-// GET /admin/pedidos/:id?tiendaId=xxx
-// ============================================
 router.get(
   "/:id",
   authMiddleware,
@@ -149,10 +130,7 @@ router.get(
   }
 );
 
-// ============================================
 // PUT /:id/estado - Actualizar estado
-// PUT /admin/pedidos/:id/estado?tiendaId=xxx
-// ============================================
 router.put(
   "/:id/estado",
   authMiddleware,
@@ -172,10 +150,7 @@ router.put(
   }
 );
 
-// ============================================
 // PUT /:id/pago - Actualizar estado de pago
-// PUT /admin/pedidos/:id/pago?tiendaId=xxx
-// ============================================
 router.put(
   "/:id/pago",
   authMiddleware,
@@ -195,10 +170,7 @@ router.put(
   }
 );
 
-// ============================================
-// PUT /:id/detalles - Actualizar detalles logísticos (envío, dirección, comprobante, nota)
-// PUT /admin/pedidos/:id/detalles?tiendaId=xxx
-// ============================================
+// PUT /:id/detalles - Actualizar detalles logísticos
 router.put(
   "/:id/detalles",
   authMiddleware,
@@ -217,10 +189,7 @@ router.put(
   }
 );
 
-// ============================================
 // DELETE /:id - Eliminar pedido
-// DELETE /admin/pedidos/:id?tiendaId=xxx
-// ============================================
 router.delete(
   "/:id",
   authMiddleware,

@@ -15,6 +15,9 @@
 // Contexto normalizado (PR 1).
 export { getTenant, setTenant, requireTenantId } from "./tenant-context.js";
 
+// Lectura de membresía usuario↔tienda para los guards.
+export { findActiveMembership } from "./membership.js";
+
 // Autenticación / rol de plataforma.
 export { authMiddleware, requireRole, optionalAuth } from "../../middlewares/auth.middleware.js";
 

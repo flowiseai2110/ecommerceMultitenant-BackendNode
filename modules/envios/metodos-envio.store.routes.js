@@ -4,8 +4,8 @@ import GenericService from "../../services/generic.service.js";
 import GenericRepository from "../../repositories/generic.repository.js";
 import { prisma } from "../../config/prisma.js";
 import { validate } from "../../middlewares/validation.middleware.js";
-import { scopeQueryToTienda } from "../../middlewares/resolve-tienda.middleware.js";
-import { idParamSchema, paginationSchema } from "../../validators/metodos-envio.validator.js";
+import { scopeQueryToTienda } from "../../kernel/tenant/index.js";
+import { idParamSchema, paginationSchema } from "./metodos-envio.schema.js";
 
 const metodosEnvioRepository = new GenericRepository(prisma.metodos_envio, "Método de envío");
 const metodosEnvioService = new GenericService(metodosEnvioRepository, {

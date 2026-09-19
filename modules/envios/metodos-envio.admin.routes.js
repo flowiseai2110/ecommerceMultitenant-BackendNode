@@ -1,17 +1,16 @@
 import { Router } from "express";
-import GenericController from "../controllers/generic.controller.js";
-import GenericService from "../services/generic.service.js";
-import GenericRepository from "../repositories/generic.repository.js";
-import { prisma } from "../config/prisma.js";
-import { validate } from "../middlewares/validation.middleware.js";
-import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { requireTiendaAccess, resolveTiendaId } from "../middlewares/tienda-access.middleware.js";
+import GenericController from "../../controllers/generic.controller.js";
+import GenericService from "../../services/generic.service.js";
+import GenericRepository from "../../repositories/generic.repository.js";
+import { prisma } from "../../config/prisma.js";
+import { validate } from "../../middlewares/validation.middleware.js";
+import { authMiddleware, requireTiendaAccess, resolveTiendaId } from "../../kernel/tenant/index.js";
 import {
   createMetodoEnvioSchema,
   updateMetodoEnvioSchema,
   idParamSchema,
   paginationSchema
-} from "../validators/metodos-envio.validator.js";
+} from "./metodos-envio.schema.js";
 
 const metodosEnvioRepository = new GenericRepository(prisma.metodos_envio, "Método de envío");
 const metodosEnvioService = new GenericService(metodosEnvioRepository, { enableAudit: false });

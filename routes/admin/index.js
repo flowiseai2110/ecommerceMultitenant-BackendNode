@@ -1,17 +1,17 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
-import tiendasRoutes from "../tiendas.routes.js";
+import tiendasRoutes from "../../modules/tenants/tiendas.admin.routes.js";
 import categoriasRoutes from "../../modules/catalogo/categorias.admin.routes.js";
 import productosRoutes from "../../modules/catalogo/productos.admin.routes.js";
 import productoVariantesRoutes from "../../modules/catalogo/producto-variantes.admin.routes.js";
 import productoImagenesRoutes from "../../modules/catalogo/producto-imagenes.admin.routes.js";
 import productoAtributosRoutes from "../../modules/catalogo/producto-atributos.admin.routes.js";
-import usersRoutes from "../users.routes.js";
-import invitationsRoutes from "../invitations.routes.js";
-import metodosPagoRoutes from "../metodos-pago.routes.js";
-import pedidosRoutes from "../pedidos.routes.js";
-import metodosEnvioRoutes from "../metodos-envio.routes.js";
-import cuponesRoutes from "../cupones.routes.js";
+import usersRoutes from "../../modules/tenants/users.admin.routes.js";
+import invitationsRoutes from "../../modules/tenants/invitations.admin.routes.js";
+import metodosPagoRoutes from "../../modules/pagos/metodos-pago.admin.routes.js";
+import pedidosRoutes from "../../modules/ordenes/pedidos.admin.routes.js";
+import metodosEnvioRoutes from "../../modules/envios/metodos-envio.admin.routes.js";
+import cuponesRoutes from "../../modules/cupones/cupones.admin.routes.js";
 import studioRoutes from "../studio.routes.js";
 
 const router = Router();

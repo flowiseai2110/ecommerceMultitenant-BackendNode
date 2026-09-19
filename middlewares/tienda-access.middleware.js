@@ -1,6 +1,6 @@
-import { prisma } from "../config/prisma.js";
 import { ForbiddenError, UnauthorizedError } from "../utils/errors.js";
 import { getCodigoRol } from "../services/roles.service.js";
+import { findActiveMembership } from "../kernel/tenant/membership.js";
 
 const ROL_JERARQUIA = ["viewer", "editor", "admin", "owner"];
 
@@ -50,9 +50,7 @@ export function requireTiendaAccess(minRol = "viewer") {
       let cached = _getCache(req.user.id, tiendaId);
 
       if (!cached) {
-        const membership = await prisma.usuario_tiendas.findFirst({
-          where: { userId: req.user.id, tiendaId, activo: true }
-        });
+        const membership = await findActiveMembership(req.user.id, tiendaId);
 
         if (!membership) {
           return next(new ForbiddenError("No tienes acceso a esta tienda"));

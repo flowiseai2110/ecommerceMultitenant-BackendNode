@@ -5,28 +5,15 @@ import GenericRepository from "../../repositories/generic.repository.js";
 import { prisma } from "../../config/prisma.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import { validate } from "../../middlewares/validation.middleware.js";
-import { idParamSchema, paginationSchema } from "../../validators/tiendas.validator.js";
+import { idParamSchema, paginationSchema } from "./tiendas.schema.js";
 import { getDiseno } from "../../services/tienda-diseno.service.js";
-import MemoryCache from "../../utils/memory-cache.js";
+import { getTiendasStore, setTiendasStore } from "./tiendas.cache.js";
 
 const tiendasRepository = new GenericRepository(prisma.tiendas, "Tienda");
 const tiendasService = new GenericService(tiendasRepository, {
   searchFields: ["nombre", "slug"]
 });
 const tiendasController = new GenericController(tiendasService, "Tienda");
-
-// Cache temporal (60s) de GET / — es el endpoint que el FrontendStore llama en
-// CADA carga de página (storeResolver) para resolver la tienda por ?slug=.
-// Misma respuesta para todos los visitantes de ese slug: ideal para cachear.
-// El frontend ya tiene su propio cache de 2min (tanstack-query) para no repetir
-// el request en cada navegación SPA; esto cubre lo que SÍ llega al backend
-// (primera carga de cada visitante, o cuando su cache local expira).
-const TIENDAS_STORE_CACHE_TTL_MS = 60_000;
-const tiendasStoreCache = new MemoryCache();
-
-export function invalidateTiendasStoreCache() {
-  tiendasStoreCache.clear();
-}
 
 const router = Router();
 
@@ -36,7 +23,7 @@ router.get("/", validate({ query: paginationSchema }), async (req, res, next) =>
     const query = req.validatedQuery || req.query;
     const cacheKey = JSON.stringify(query);
 
-    const cached = tiendasStoreCache.get(cacheKey);
+    const cached = getTiendasStore(cacheKey);
     if (cached) {
       return apiResponse(res, cached);
     }
@@ -52,7 +39,7 @@ router.get("/", validate({ query: paginationSchema }), async (req, res, next) =>
     }
 
     const responsePayload = { status: 200, type: "SUCCESS", code: "TIENDA_LIST", data, meta };
-    tiendasStoreCache.set(cacheKey, responsePayload, TIENDAS_STORE_CACHE_TTL_MS);
+    setTiendasStore(cacheKey, responsePayload);
 
     return apiResponse(res, responsePayload);
   } catch (error) {

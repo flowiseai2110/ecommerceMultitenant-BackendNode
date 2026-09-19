@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { resolveTienda } from "../../middlewares/resolve-tienda.middleware.js";
 import { cache } from "../../utils/cache.js";
-import tiendasRoutes from "./tiendas.routes.js";
+import tiendasRoutes from "../../modules/tenants/tiendas.store.routes.js";
 import categoriasRoutes from "../../modules/catalogo/categorias.store.routes.js";
 import productosRoutes from "../../modules/catalogo/productos.store.routes.js";
-import metodosPagoRoutes from "./metodos-pago.routes.js";
-import metodosEnvioRoutes from "./metodos-envio.routes.js";
-import pedidosRoutes from "./pedidos.routes.js";
-import cuponesRoutes from "./cupones.routes.js";
+import metodosPagoRoutes from "../../modules/pagos/metodos-pago.store.routes.js";
+import metodosEnvioRoutes from "../../modules/envios/metodos-envio.store.routes.js";
+import pedidosRoutes from "../../modules/ordenes/pedidos.store.routes.js";
+import cuponesRoutes from "../../modules/cupones/cupones.store.routes.js";
 
 const router = Router();
 

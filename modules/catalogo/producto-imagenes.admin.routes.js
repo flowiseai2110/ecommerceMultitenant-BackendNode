@@ -9,7 +9,8 @@ import {
   authMiddleware,
   requireTiendaAccess,
   resolveTiendaId,
-  scopeReadToResourceTienda
+  scopeReadToResourceTienda,
+  findActiveMembership
 } from "../../kernel/tenant/index.js";
 import { makeUploadImagen, deleteImagenWithCleanup } from "../../controllers/producto-imagenes.controller.js";
 import {
@@ -134,16 +135,12 @@ router.post(
 // en generarImagenIA. Si la tarea no existe o expiró (TTL de 15 min), no
 // bloquea: el controller ya devuelve un estado "fail" con mensaje genérico
 // sin filtrar ningún dato, así que no hay nada que proteger en ese caso.
-// TODO(PR5 tenants/usuarios): consolidar este chequeo de membresía en un guard
-// compartido del kernel; hoy repite la consulta de requireTiendaAccess.
 async function requireIaTaskAccess(req, res, next) {
   try {
     const tiendaId = getTaskTiendaId(req.params.taskId);
     if (!tiendaId) return next();
 
-    const membership = await prisma.usuario_tiendas.findFirst({
-      where: { userId: req.user.id, tiendaId, activo: true }
-    });
+    const membership = await findActiveMembership(req.user.id, tiendaId);
     if (!membership) return next(new ForbiddenError("No tienes acceso a esta tarea de IA"));
 
     next();

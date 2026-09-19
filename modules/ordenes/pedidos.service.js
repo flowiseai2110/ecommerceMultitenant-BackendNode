@@ -1,19 +1,19 @@
-import { prisma, Prisma } from "../config/prisma.js";
-import { NotFoundError, ValidationError } from "../utils/errors.js";
+import { prisma, Prisma } from "../../config/prisma.js";
+import { NotFoundError, ValidationError } from "../../utils/errors.js";
 import { invalidatePendientesCount } from "./pedidos-pendientes-cache.js";
-import emailService from "./email.service.js";
-import { logger } from "../config/logger.js";
+import emailService from "../../services/email.service.js";
+import { logger } from "../../config/logger.js";
+import { validarYBloquearStock, descontarStock, reponerStock } from "../inventario/inventario.service.js";
 
 /**
- * Servicio de pedidos con lógica de negocio completa:
+ * Servicio de Pedidos (contexto Órdenes) con lógica de negocio completa:
  * - Generación de número de pedido sin race condition (advisory lock)
- * - Validación de stock antes de crear
+ * - Validación/bloqueo/descuento de stock (delegado al contexto Inventario)
  * - Upsert de cliente por WhatsApp
  * - Actualización de estadísticas del cliente
  * - Reposición de stock y reversión de estadísticas al cancelar
  */
 class PedidosService {
-
   /**
    * Genera el siguiente número de pedido para una tienda.
    * Usa pg_advisory_xact_lock para evitar race conditions bajo concurrencia.
@@ -33,148 +33,12 @@ class PedidosService {
   }
 
   /**
-   * Valida y BLOQUEA el stock de todos los items en 2 queries fijas
-   * (una por tabla), sin importar cuántos items tenga el pedido.
-   *
-   * - Agrupa cantidades por producto/variante: el mismo item puede venir en
-   *   varias líneas del carrito y debe validarse contra la suma total.
-   * - SELECT ... FOR UPDATE bloquea las filas hasta el commit: dos pedidos
-   *   concurrentes sobre el mismo producto se serializan aquí, así el que
-   *   llega segundo ve el stock ya descontado (elimina el oversell).
-   * - Los ids se ordenan para que transacciones concurrentes adquieran los
-   *   locks en el mismo orden y no se produzcan deadlocks.
-   * - Filtra por tiendaId (scope multi-tenant).
-   *
-   * Devuelve las listas agregadas listas para el descuento batcheado;
-   * los productos tipo servicio quedan excluidos (no manejan stock físico).
-   */
-  async #validarYBloquearStock(tiendaId, detalles, tx) {
-    const cantidadesVariante = new Map();
-    const cantidadesProducto = new Map();
-    const nombrePorId = new Map();
-
-    for (const item of detalles) {
-      if (!item.productoId) continue;
-      if (item.varianteId) {
-        cantidadesVariante.set(
-          item.varianteId,
-          (cantidadesVariante.get(item.varianteId) || 0) + item.cantidad
-        );
-        nombrePorId.set(item.varianteId, item.varianteNombre || item.varianteId);
-      } else {
-        cantidadesProducto.set(
-          item.productoId,
-          (cantidadesProducto.get(item.productoId) || 0) + item.cantidad
-        );
-        nombrePorId.set(item.productoId, item.productoNombre);
-      }
-    }
-
-    const varianteIds = [...cantidadesVariante.keys()].sort();
-    const productoIds = [...cantidadesProducto.keys()].sort();
-
-    const variantes = varianteIds.length
-      ? await tx.$queryRaw`
-          SELECT pv.id, pv.stock, pv.activo
-          FROM producto_variantes pv
-          JOIN productos p ON p.id = pv.producto_id
-          WHERE pv.id = ANY(${varianteIds}::uuid[])
-            AND p.tienda_id = ${tiendaId}::uuid
-          ORDER BY pv.id
-          FOR UPDATE OF pv
-        `
-      : [];
-
-    const productos = productoIds.length
-      ? await tx.$queryRaw`
-          SELECT id, stock, activo, es_servicio AS "esServicio"
-          FROM productos
-          WHERE id = ANY(${productoIds}::uuid[])
-            AND tienda_id = ${tiendaId}::uuid
-          ORDER BY id
-          FOR UPDATE
-        `
-      : [];
-
-    const variantesPorId = new Map(variantes.map(v => [v.id, v]));
-    for (const [id, cantidad] of cantidadesVariante) {
-      const variante = variantesPorId.get(id);
-      if (!variante || !variante.activo) {
-        throw new ValidationError(`Variante "${nombrePorId.get(id)}" no disponible`);
-      }
-      if (variante.stock < cantidad) {
-        throw new ValidationError(
-          `Stock insuficiente para "${nombrePorId.get(id)}". Disponible: ${variante.stock}, solicitado: ${cantidad}`
-        );
-      }
-    }
-
-    const productosPorId = new Map(productos.map(p => [p.id, p]));
-    for (const [id, cantidad] of cantidadesProducto) {
-      const producto = productosPorId.get(id);
-      if (!producto || !producto.activo) {
-        throw new ValidationError(`Producto "${nombrePorId.get(id)}" no disponible`);
-      }
-      // Los servicios no tienen stock físico
-      if (!producto.esServicio && producto.stock < cantidad) {
-        throw new ValidationError(
-          `Stock insuficiente para "${nombrePorId.get(id)}". Disponible: ${producto.stock}, solicitado: ${cantidad}`
-        );
-      }
-    }
-
-    return {
-      variantesADescontar: [...cantidadesVariante].map(([id, cantidad]) => ({ id, cantidad })),
-      productosADescontar: [...cantidadesProducto]
-        .filter(([id]) => !productosPorId.get(id).esServicio)
-        .map(([id, cantidad]) => ({ id, cantidad }))
-    };
-  }
-
-  /**
-   * Descuenta stock en 2 queries fijas (una por tabla) vía UPDATE ... FROM unnest.
-   * El guard "stock >= cantidad" es defensa en profundidad: con los locks
-   * FOR UPDATE ya tomados en #validarYBloquearStock nunca debería fallar,
-   * pero si fallara el conteo de filas afectadas no cuadra y se hace rollback
-   * en vez de dejar stock negativo.
-   */
-  async #descontarStock(variantesADescontar, productosADescontar, tx) {
-    if (variantesADescontar.length > 0) {
-      const ids = variantesADescontar.map(v => v.id);
-      const cantidades = variantesADescontar.map(v => v.cantidad);
-      const afectadas = await tx.$executeRaw`
-        UPDATE producto_variantes pv
-        SET stock = pv.stock - d.cantidad
-        FROM (SELECT unnest(${ids}::uuid[]) AS id, unnest(${cantidades}::int[]) AS cantidad) d
-        WHERE pv.id = d.id AND pv.stock >= d.cantidad
-      `;
-      if (afectadas !== variantesADescontar.length) {
-        throw new ValidationError("El stock cambió mientras se procesaba el pedido. Intenta nuevamente.");
-      }
-    }
-
-    if (productosADescontar.length > 0) {
-      const ids = productosADescontar.map(p => p.id);
-      const cantidades = productosADescontar.map(p => p.cantidad);
-      const afectados = await tx.$executeRaw`
-        UPDATE productos p
-        SET stock = p.stock - d.cantidad
-        FROM (SELECT unnest(${ids}::uuid[]) AS id, unnest(${cantidades}::int[]) AS cantidad) d
-        WHERE p.id = d.id AND p.stock >= d.cantidad
-      `;
-      if (afectados !== productosADescontar.length) {
-        throw new ValidationError("El stock cambió mientras se procesaba el pedido. Intenta nuevamente.");
-      }
-    }
-  }
-
-  /**
    * Busca un cliente por WhatsApp dentro de una tienda.
    * Si no existe lo crea. Si existe lo reusa tal cual está:
    * el nombre/email de `clientes` solo lo cambia el propio cliente
    * (ej. desde un futuro perfil/login), nunca un pedido nuevo.
    * Los datos de contacto de ESTE pedido se guardan aparte como
-   * snapshot en `pedidos` (ver #create), así el historial no se
+   * snapshot en `pedidos` (ver create), así el historial no se
    * ve afectado por compras posteriores con el mismo WhatsApp.
    */
   async #upsertCliente(tiendaId, clienteData, tx) {
@@ -202,13 +66,14 @@ class PedidosService {
 
   /**
    * Crea un pedido completo en una sola transacción:
-   * 1. Valida stock
+   * 1. Valida y bloquea stock (Inventario)
    * 2. Upsert cliente
    * 3. Calcula totales
-   * 4. Genera número de pedido (sin race condition)
-   * 5. Crea pedido + detalles + historial
-   * 6. Descuenta stock
-   * 7. Actualiza estadísticas del cliente
+   * 4. Valida cupón
+   * 5. Genera número de pedido (sin race condition)
+   * 6. Crea pedido + detalles + historial
+   * 7. Descuenta stock (Inventario)
+   * 8. Actualiza estadísticas del cliente
    */
   async create(data) {
     const {
@@ -227,9 +92,8 @@ class PedidosService {
 
     return await prisma.$transaction(async (tx) => {
       // 1. Validar stock y bloquear las filas involucradas (FOR UPDATE).
-      //    2 queries fijas sin importar el número de items del carrito.
       const { variantesADescontar, productosADescontar } =
-        await this.#validarYBloquearStock(tiendaId, detalles, tx);
+        await validarYBloquearStock(tx, tiendaId, detalles);
 
       // 2. Buscar o crear cliente
       const cliente = await this.#upsertCliente(tiendaId, clienteData, tx);
@@ -329,7 +193,7 @@ class PedidosService {
       });
 
       // 7. Descontar stock en batch (filas ya bloqueadas y validadas en el paso 1)
-      await this.#descontarStock(variantesADescontar, productosADescontar, tx);
+      await descontarStock(tx, variantesADescontar, productosADescontar);
 
       // 8. Actualizar estadísticas del cliente
       await tx.clientes.update({
@@ -495,7 +359,7 @@ class PedidosService {
    * Actualiza el estado de un pedido.
    * - Registra el cambio en historial_estados
    * - Marca fechaConfirmado / fechaEntregado según corresponda
-   * - Si se cancela: repone stock y revierte estadísticas del cliente
+   * - Si se cancela: repone stock (Inventario) y revierte estadísticas del cliente
    * Si se provee tiendaId, verifica que el pedido pertenezca a esa tienda.
    */
   async updateEstado(id, estado, notas, user, tiendaId = null) {
@@ -522,49 +386,7 @@ class PedidosService {
       // Cancelación: reponer stock y revertir estadísticas del cliente
       if (estado === "cancelado" && pedido.estado !== "cancelado") {
         const detalles = await tx.pedido_detalles.findMany({ where: { pedidoId: id } });
-
-        // Agrupar cantidades por variante/producto para reponer en batch
-        // (2 queries fijas, igual que el descuento en create)
-        const reponerVariantes = new Map();
-        const reponerProductos = new Map();
-        for (const item of detalles) {
-          if (!item.productoId) continue;
-          if (item.varianteId) {
-            reponerVariantes.set(
-              item.varianteId,
-              (reponerVariantes.get(item.varianteId) || 0) + item.cantidad
-            );
-          } else {
-            reponerProductos.set(
-              item.productoId,
-              (reponerProductos.get(item.productoId) || 0) + item.cantidad
-            );
-          }
-        }
-
-        if (reponerVariantes.size > 0) {
-          const ids = [...reponerVariantes.keys()];
-          const cantidades = [...reponerVariantes.values()];
-          await tx.$executeRaw`
-            UPDATE producto_variantes pv
-            SET stock = pv.stock + d.cantidad
-            FROM (SELECT unnest(${ids}::uuid[]) AS id, unnest(${cantidades}::int[]) AS cantidad) d
-            WHERE pv.id = d.id
-          `;
-        }
-
-        if (reponerProductos.size > 0) {
-          const ids = [...reponerProductos.keys()];
-          const cantidades = [...reponerProductos.values()];
-          // Los servicios no manejan stock físico: no se les descuenta al crear
-          // ni se les repone al cancelar
-          await tx.$executeRaw`
-            UPDATE productos p
-            SET stock = p.stock + d.cantidad
-            FROM (SELECT unnest(${ids}::uuid[]) AS id, unnest(${cantidades}::int[]) AS cantidad) d
-            WHERE p.id = d.id AND p.es_servicio = false
-          `;
-        }
+        await reponerStock(tx, detalles);
 
         if (pedido.clienteId) {
           await tx.clientes.update({

@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+/**
+ * Schemas Zod de entrada para invitaciones. El schema ES el contrato de entrada
+ * (ver docs/ARQUITECTURA.md).
+ */
+
 // Schema para crear invitación
 export const createInvitacionSchema = z.object({
   tiendaId: z.string().uuid("tiendaId debe ser un UUID válido"),
@@ -35,4 +40,9 @@ export const listInvitacionesQuerySchema = z.object({
   estado: z.enum(["pendiente", "aceptada", "expirada", "cancelada"]).optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10)
+});
+
+// Schema para aceptar invitación (usuario ya autenticado)
+export const acceptAuthenticatedSchema = z.object({
+  token: z.string().min(1)
 });
