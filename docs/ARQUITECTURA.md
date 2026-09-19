@@ -67,6 +67,50 @@ dominio reciben `tiendaId` como **argumento obligatorio**, no como
 `tiendaId = null`. Filtrar por tienda no puede ser algo que cada ruta recuerde
 hacer: lo exige el dominio.
 
+### Read-policy por audiencia (enforcement de listado)
+
+`GenericService` acepta una **read-policy** por instancia (audiencia):
+- `requireTiendaId: true` — `findAll` lanza si la query no trae `tiendaId`
+  (cierra el listado cross-tenant: omitir el filtro ya no devuelve todas las tiendas).
+- `allowedFilters: [...]` — whitelist de campos filtrables (además de `tiendaId` y
+  `search`); cualquier otro filtro de la query se ignora (evita enumerar por
+  columnas sensibles como `precioCosto`).
+- `allowedOrderBy: [...]` — whitelist de campos ordenables; otro campo cae al
+  `defaultOrderBy`.
+
+Sin estas opciones, el comportamiento es el legacy (retrocompatible). En el
+**admin**, además, los `GET /` de listado llevan `requireTiendaAccess("viewer")`
+(valida membresía sobre `?tiendaId=`); el read-policy es la segunda barrera en la
+capa de negocio. En el **store** (público), `requireTiendaId` es la barrera
+principal junto a `scopeQueryToTienda`.
+
+### Defense-in-depth: auto-scope de tienda (Etapa 2 — implementada)
+
+Red de seguridad para el "filtro olvidado" en código futuro, en dos piezas:
+
+- **`kernel/tenant/tenant-store.js`** — `AsyncLocalStorage` con `{ tiendaId, bypass }`.
+  Un middleware raíz (`server.js`) abre el contexto por request; los resolvers
+  (`requireTiendaAccess`, `resolveTienda`, `setTenant`) escriben el `tiendaId` con
+  `setContextTiendaId`.
+- **Extensión Prisma** (`config/prisma.js`, `$extends`) — para un **allowlist** de
+  modelos con `tienda_id` propio (`categorias`, `productos`, `producto_atributos`,
+  `clientes`, `pedidos`, `metodos_pago`, `metodos_envio`, `cupones`), hace `AND`
+  del `tiendaId` del contexto sobre el `where` en lecturas y bulk
+  (`findMany/findFirst/count/aggregate/groupBy/updateMany/deleteMany`). Solo
+  estrecha, nunca amplía → no puede causar fugas.
+
+Escape hatch: **`runUnscoped(fn)`** desactiva el scope para queries legítimamente
+cross-tenant. Es async y hace `await fn()` dentro del contexto: las promesas de
+Prisma son lazy (se ejecutan al `await`), así que devolverlas sin esperar correría
+la query fuera del bypass.
+
+Fuera del auto-scope (por diseño): `findUnique`/`update`/`delete`/`create` por
+clave única (van por id, protegidos en la ruta y `findUnique` no admite where
+no-único), `$queryRaw` (scope manual explícito), modelos hijos sin `tienda_id`
+(scope por relación en el servicio), y `tiendas`/`usuario_tiendas`/`invitaciones`/
+datos maestros (excluidos del allowlist). RLS en Postgres queda como refuerzo
+opcional posterior (implica transacción por request para `SET LOCAL` + pooler).
+
 ## Layout de módulos (destino)
 
 ```

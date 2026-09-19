@@ -20,7 +20,13 @@ import { serializeAtributoAdmin } from "./producto-atributos.serializer.js";
 
 // Crear instancias de las capas
 const atributosRepository = new GenericRepository(prisma.producto_atributos, "ProductoAtributo");
-const atributosService = new GenericService(atributosRepository, { enableAudit: true });
+const atributosService = new GenericService(atributosRepository, {
+  enableAudit: true,
+  // Read-policy admin: scope obligatorio + whitelist.
+  requireTiendaId: true,
+  allowedFilters: ["aplicaA"],
+  allowedOrderBy: ["nombre", "fechaRegistro"]
+});
 const atributosController = new GenericController(atributosService, "ProductoAtributo", {
   serialize: serializeAtributoAdmin
 });
@@ -40,9 +46,12 @@ const scopeAtributoReadToOwner = scopeReadToResourceTienda(findAtributoTiendaId)
 
 const router = Router();
 
-// GET - Listar todos los atributos
+// GET - Listar atributos de una tienda (admin)
+// Exige membresía en la tienda (?tiendaId=).
 router.get(
   "/",
+  authMiddleware,
+  requireTiendaAccess("viewer"),
   validate({ query: paginationSchema }),
   atributosController.findAll
 );

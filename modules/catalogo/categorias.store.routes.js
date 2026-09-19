@@ -10,7 +10,12 @@ import { serializeCategoriaStore } from "./categorias.serializer.js";
 
 const categoriasRepository = new GenericRepository(prisma.categorias, "Categoria");
 const categoriasService = new GenericService(categoriasRepository, {
-  searchFields: ["nombre", "slug"]
+  searchFields: ["nombre", "slug"],
+  // Read-policy store: sin tiendaId (subdominio o ?tiendaId=) no se lista nada,
+  // en vez de devolver categorías de todas las tiendas.
+  requireTiendaId: true,
+  allowedFilters: ["activo", "categoriaPadreId"],
+  allowedOrderBy: ["orden", "nombre", "fechaRegistro"]
 });
 // El serializer del store define el contrato de salida campo por campo (excluye
 // auditoría en listado Y detalle), reemplazando el viejo excludeFieldsInList.

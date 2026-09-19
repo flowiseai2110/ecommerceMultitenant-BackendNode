@@ -10,7 +10,11 @@ import { idParamSchema, paginationSchema } from "./metodos-envio.schema.js";
 const metodosEnvioRepository = new GenericRepository(prisma.metodos_envio, "Método de envío");
 const metodosEnvioService = new GenericService(metodosEnvioRepository, {
   enableAudit: false,
-  searchFields: ["nombre"]
+  searchFields: ["nombre"],
+  // Read-policy store: scope obligatorio + whitelist.
+  requireTiendaId: true,
+  allowedFilters: ["activo"],
+  allowedOrderBy: ["orden", "nombre"]
 });
 const metodosEnvioController = new GenericController(metodosEnvioService, "MetodoEnvio");
 

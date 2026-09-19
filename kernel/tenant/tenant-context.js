@@ -1,4 +1,5 @@
 import { ForbiddenError } from "../../utils/errors.js";
+import { setContextTiendaId } from "./tenant-store.js";
 
 /**
  * Contexto de tenant normalizado del request.
@@ -46,6 +47,7 @@ export function setTenant(req, ctx) {
   req[TENANT_KEY] = tenant;
   // Sync legacy: consumidores viejos siguen leyendo req.tiendaId.
   req.tiendaId = tenant.id;
+  setContextTiendaId(tenant.id); // auto-scope de Prisma (defensa en profundidad)
   return tenant;
 }
 

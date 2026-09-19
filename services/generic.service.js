@@ -26,6 +26,22 @@ class GenericService {
     // Whitelist de campos permitidos para sparse fieldsets (?fields=a,b,c)
     // Si no se define, el parámetro "fields" se ignora (deny by default)
     this.allowedFields = options.allowedFields || null;
+    // Read-policy por audiencia (ver docs/ARQUITECTURA.md):
+    // - requireTiendaId: findAll exige un tiendaId en los filtros (cierra el
+    //   listado cross-tenant). No sustituye a requireTiendaAccess en el admin
+    //   (que además valida membresía); es la garantía de scope en la capa de negocio.
+    this.requireTiendaId = options.requireTiendaId === true;
+    // - allowedFilters: whitelist de campos filtrables (además de tiendaId y search).
+    //   Si se define, cualquier otro filtro de la query se ignora (evita que el
+    //   cliente filtre/enumere por columnas sensibles como precioCosto).
+    this.allowedFilters = options.allowedFilters || null;
+    // - allowedOrderBy: whitelist de campos ordenables. Si se define y el cliente
+    //   pide otro, se cae al defaultOrderBy.
+    this.allowedOrderBy = options.allowedOrderBy || null;
+    // - tenantRelation: para modelos hijos SIN columna tiendaId propia (ej.
+    //   producto_variantes, producto_imagenes), nombre de la relación al padre
+    //   que sí la tiene. El filtro tiendaId se traduce a { <relación>: { tiendaId } }.
+    this.tenantRelation = options.tenantRelation || null;
   }
 
   /**
@@ -35,6 +51,12 @@ class GenericService {
    */
   async findAll(query = {}) {
     const { page, limit, orderBy, include, fields, ...filters } = query;
+
+    // Read-policy: el listado debe estar scopeado a una tienda. Cierra la fuga
+    // cross-tenant (un cliente que omite tiendaId ya no obtiene todas las tiendas).
+    if (this.requireTiendaId && !filters.tiendaId) {
+      throw new ValidationError("Se requiere tiendaId para listar este recurso");
+    }
 
     // Resolver include: si hay un preset configurado, usarlo; sino el default
     const resolvedInclude = (include && this.includePresets[include])
@@ -248,7 +270,26 @@ class GenericService {
       return undefined;
     }
 
+    // Read-policy: si hay whitelist de orden, un campo no permitido se ignora
+    // (cae al defaultOrderBy). Evita ordenar por columnas no indexadas/sensibles.
+    if (this.allowedOrderBy && !this.allowedOrderBy.includes(field)) {
+      return undefined;
+    }
+
     return { [field]: direction.toLowerCase() };
+  }
+
+  /**
+   * Decide si un campo de filtro está permitido por la read-policy.
+   * tiendaId y search siempre se permiten (scope y búsqueda general). Si no hay
+   * allowedFilters definido, se permite todo (comportamiento legacy).
+   * @param {string} field - Campo destino (ya sin prefijos like_/min_/max_).
+   * @returns {boolean}
+   */
+  #isFilterAllowed(field) {
+    if (!this.allowedFilters) return true;
+    if (field === "tiendaId") return true;
+    return this.allowedFilters.includes(field);
   }
 
   /**
@@ -267,6 +308,12 @@ class GenericService {
       // Convertir tipos de query params (siempre llegan como string)
       const parsedValue = this.parseQueryValue(value);
 
+      // Scope de tienda en modelos hijos: tiendaId → filtro por relación padre
+      if (key === "tiendaId" && this.tenantRelation) {
+        where[this.tenantRelation] = { tiendaId: parsedValue };
+        continue;
+      }
+
       // Soporte para búsqueda general con "search"
       // Busca en los campos configurados en searchFields
       if (key === "search") {
@@ -277,19 +324,23 @@ class GenericService {
       // Soporte para búsqueda parcial con prefijo "like_"
       else if (key.startsWith("like_")) {
         const field = key.replace("like_", "");
+        if (!this.#isFilterAllowed(field)) continue;
         where[field] = { contains: value, mode: "insensitive" };
       }
       // Soporte para rango con prefijos "min_" y "max_"
       else if (key.startsWith("min_")) {
         const field = key.replace("min_", "");
+        if (!this.#isFilterAllowed(field)) continue;
         where[field] = { ...where[field], gte: parsedValue };
       }
       else if (key.startsWith("max_")) {
         const field = key.replace("max_", "");
+        if (!this.#isFilterAllowed(field)) continue;
         where[field] = { ...where[field], lte: parsedValue };
       }
       // Búsqueda exacta por defecto
       else {
+        if (!this.#isFilterAllowed(key)) continue;
         where[key] = parsedValue;
       }
     }

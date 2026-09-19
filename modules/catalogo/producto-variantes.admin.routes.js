@@ -20,7 +20,14 @@ import { serializeVarianteAdmin } from "./producto-variantes.serializer.js";
 
 // Crear instancias de las capas
 const variantesRepository = new GenericRepository(prisma.producto_variantes, "ProductoVariante");
-const variantesService = new GenericService(variantesRepository, { enableAudit: true });
+const variantesService = new GenericService(variantesRepository, {
+  enableAudit: true,
+  // producto_variantes no tiene tiendaId propio → se scopa por la relación producto.
+  requireTiendaId: true,
+  tenantRelation: "producto",
+  allowedFilters: ["productoId", "activo"],
+  allowedOrderBy: ["nombre", "fechaRegistro"]
+});
 const variantesController = new GenericController(variantesService, "ProductoVariante", {
   serialize: serializeVarianteAdmin
 });
@@ -47,9 +54,13 @@ const scopeVarianteReadToOwner = scopeReadToResourceTienda(findVarianteTiendaId)
 
 const router = Router();
 
-// GET - Listar todas las variantes
+// GET - Listar variantes de una tienda (admin)
+// Exige membresía en la tienda (?tiendaId=); el scope se aplica vía la relación
+// producto porque producto_variantes no tiene tiendaId propio.
 router.get(
   "/",
+  authMiddleware,
+  requireTiendaAccess("viewer"),
   validate({ query: paginationSchema }),
   variantesController.findAll
 );

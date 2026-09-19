@@ -18,6 +18,9 @@ export { getTenant, setTenant, requireTenantId } from "./tenant-context.js";
 // Lectura de membresía usuario↔tienda para los guards.
 export { findActiveMembership } from "./membership.js";
 
+// Contexto ALS + escape hatch para el auto-scope de Prisma (defensa en profundidad).
+export { runWithTenantContext, setContextTiendaId, runUnscoped } from "./tenant-store.js";
+
 // Autenticación / rol de plataforma.
 export { authMiddleware, requireRole, optionalAuth } from "../../middlewares/auth.middleware.js";
 

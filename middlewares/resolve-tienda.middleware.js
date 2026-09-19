@@ -1,6 +1,7 @@
 import { prisma } from "../config/prisma.js";
 import config from "../config/index.js";
 import { NotFoundError } from "../utils/errors.js";
+import { setContextTiendaId } from "../kernel/tenant/tenant-store.js";
 
 const CACHE_TTL_MS = 60 * 1000;
 
@@ -84,6 +85,7 @@ export async function resolveTienda(req, res, next) {
       if (tienda?.activo) {
         req.tienda = tienda;
         req.tiendaId = tienda.id;
+        setContextTiendaId(tienda.id); // auto-scope de Prisma (defensa en profundidad)
       }
     }
 

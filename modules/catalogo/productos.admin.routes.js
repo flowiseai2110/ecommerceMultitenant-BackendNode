@@ -53,6 +53,10 @@ const productosService = new GenericService(productosRepository, {
     }
   },
   searchFields: ["nombre", "descripcion", "descripcionCorta", "slug", "sku"],
+  // Read-policy admin: scope obligatorio + whitelist de filtros/orden.
+  requireTiendaId: true,
+  allowedFilters: ["activo", "categoriaId", "destacado", "esServicio"],
+  allowedOrderBy: ["precioBase", "nombre", "fechaRegistro", "stock"],
   includePresets: {
     // ?include=full para detalle completo desde listado
     full: {
@@ -118,9 +122,13 @@ const scopeProductoReadToOwner = scopeReadToResourceTienda(findProductoTiendaId)
 
 const router = Router();
 
-// GET - Listar todos los productos
+// GET - Listar productos de una tienda (admin)
+// Exige membresía en la tienda (?tiendaId=) — antes cualquier usuario autenticado
+// podía listar productos de todas las tiendas omitiendo el filtro.
 router.get(
   "/",
+  authMiddleware,
+  requireTiendaAccess("viewer"),
   validate({ query: paginationSchema }),
   productosController.findAll
 );

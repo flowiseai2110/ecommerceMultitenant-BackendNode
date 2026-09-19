@@ -1,6 +1,7 @@
 import { ForbiddenError, UnauthorizedError } from "../utils/errors.js";
 import { getCodigoRol } from "../services/roles.service.js";
 import { findActiveMembership } from "../kernel/tenant/membership.js";
+import { setContextTiendaId } from "../kernel/tenant/tenant-store.js";
 
 const ROL_JERARQUIA = ["viewer", "editor", "admin", "owner"];
 
@@ -75,6 +76,7 @@ export function requireTiendaAccess(minRol = "viewer") {
 
       req.tiendaId = tiendaId;
       req.tiendaMembership = membership;
+      setContextTiendaId(tiendaId); // auto-scope de Prisma (defensa en profundidad)
 
       next();
     } catch (error) {

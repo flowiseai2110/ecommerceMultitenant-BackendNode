@@ -8,6 +8,7 @@ import swaggerUi from "swagger-ui-express";
 import config from "./config/index.js";
 import { logger } from "./config/logger.js";
 import { prisma } from "./config/prisma.js";
+import { runWithTenantContext } from "./kernel/tenant/index.js";
 import routes from "./routes/index.js";
 import { swaggerSpec } from "./config/swagger.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
@@ -69,6 +70,15 @@ app.use(express.json({ limit: "10mb" }));
 
 // Parse URL-encoded bodies
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// ============================================
+// CONTEXTO DE TENANT (AsyncLocalStorage)
+// ============================================
+
+// Abre un contexto de tenant por request. Los resolvers de tenant escriben el
+// tiendaId cuando lo resuelven, y la extensión de Prisma lo lee para auto-inyectar
+// el scope de tienda (defensa en profundidad). Ver kernel/tenant/tenant-store.js.
+app.use((req, res, next) => runWithTenantContext(next));
 
 // ============================================
 // MONITOREO DE PERFORMANCE (todos los entornos)

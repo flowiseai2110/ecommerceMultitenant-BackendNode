@@ -55,7 +55,11 @@ const productosService = new GenericService(productosRepository, {
     }
   },
   searchFields: ["nombre", "descripcion", "descripcionCorta", "slug", "sku"],
-  listSelect: productosListSelect
+  listSelect: productosListSelect,
+  // Read-policy store: sin tiendaId (subdominio o ?tiendaId=) no se lista nada.
+  requireTiendaId: true,
+  allowedFilters: ["activo", "categoriaId", "destacado", "esServicio"],
+  allowedOrderBy: ["precioBase", "nombre", "fechaRegistro", "stock"]
 });
 // El serializer del store define el contrato de salida campo por campo: nunca
 // expone precioCosto, stockAlerta, metadata ni auditoría al público.

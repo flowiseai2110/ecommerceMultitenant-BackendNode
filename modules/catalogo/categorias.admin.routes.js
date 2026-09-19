@@ -22,7 +22,11 @@ import { serializeCategoriaAdmin } from "./categorias.serializer.js";
 const categoriasRepository = new GenericRepository(prisma.categorias, "Categoria");
 const categoriasService = new GenericService(categoriasRepository, {
   enableAudit: true,
-  defaultOrderBy: [{ orden: "asc" }, { fechaRegistro: "asc" }]
+  defaultOrderBy: [{ orden: "asc" }, { fechaRegistro: "asc" }],
+  // Read-policy admin: scope obligatorio + whitelist de filtros/orden.
+  requireTiendaId: true,
+  allowedFilters: ["activo", "categoriaPadreId"],
+  allowedOrderBy: ["orden", "nombre", "fechaRegistro"]
 });
 // El serializer admin define el contrato de salida campo por campo (incluye
 // campos de auditoría, que el admin sí ve), reemplazando el viejo
@@ -46,9 +50,13 @@ const scopeCategoriaReadToOwner = scopeReadToResourceTienda(findCategoriaTiendaI
 
 const router = Router();
 
-// GET - Listar todas las categorías
+// GET - Listar categorías de una tienda (admin)
+// Exige membresía en la tienda (?tiendaId=) — antes cualquier usuario autenticado
+// podía listar categorías de todas las tiendas omitiendo el filtro.
 router.get(
   "/",
+  authMiddleware,
+  requireTiendaAccess("viewer"),
   validate({ query: paginationSchema }),
   categoriasController.findAll
 );

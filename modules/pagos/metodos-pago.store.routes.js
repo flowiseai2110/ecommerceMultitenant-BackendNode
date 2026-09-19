@@ -10,7 +10,11 @@ import { idParamSchema, paginationSchema } from "./metodos-pago.schema.js";
 const metodosPagoRepository = new GenericRepository(prisma.metodos_pago, "Método de pago");
 const metodosPagoService = new GenericService(metodosPagoRepository, {
   enableAudit: false,
-  searchFields: ["nombre"]
+  searchFields: ["nombre"],
+  // Read-policy store: scope obligatorio + whitelist.
+  requireTiendaId: true,
+  allowedFilters: ["activo"],
+  allowedOrderBy: ["orden", "nombre"]
 });
 const metodosPagoController = new GenericController(metodosPagoService, "MetodoPago");
 

@@ -35,7 +35,14 @@ const uploadImagen = makeUploadImagen("tiendas");
 
 // Crear instancias de las capas
 const imagenesRepository = new GenericRepository(prisma.producto_imagenes, "ProductoImagen");
-const imagenesService = new GenericService(imagenesRepository, { enableAudit: true });
+const imagenesService = new GenericService(imagenesRepository, {
+  enableAudit: true,
+  // producto_imagenes no tiene tiendaId propio → se scopa por la relación producto.
+  requireTiendaId: true,
+  tenantRelation: "producto",
+  allowedFilters: ["productoId", "esPrincipal"],
+  allowedOrderBy: ["orden", "fechaRegistro"]
+});
 const imagenesController = new GenericController(imagenesService, "ProductoImagen", {
   serialize: serializeImagenAdmin
 });
@@ -62,9 +69,13 @@ const scopeImagenReadToOwner = scopeReadToResourceTienda(findImagenTiendaId);
 
 const router = Router();
 
-// GET - Listar todas las imágenes
+// GET - Listar imágenes de una tienda (admin)
+// Exige membresía en la tienda (?tiendaId=); el scope se aplica vía la relación
+// producto porque producto_imagenes no tiene tiendaId propio.
 router.get(
   "/",
+  authMiddleware,
+  requireTiendaAccess("viewer"),
   validate({ query: paginationSchema }),
   imagenesController.findAll
 );
