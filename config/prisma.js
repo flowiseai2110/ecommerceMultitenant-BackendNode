@@ -1,10 +1,30 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../generated/prisma/client.ts";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { logger } from "./logger.js";
 
 // Singleton pattern para PrismaClient
 const globalForPrisma = globalThis;
 
+// Prisma 7 (rust-free): la conexión ya no se declara en schema.prisma, se pasa
+// un driver adapter al constructor. Para PostgreSQL usamos @prisma/adapter-pg,
+// que envuelve el pool de node-postgres (`pg`).
+// El connectionString sale de DATABASE_URL (pooler de Supabase). El parámetro
+// `?pgbouncer=true` es específico de Prisma; el driver pg lo ignora sin error.
+//
+// Config del pool de node-postgres:
+// - `max`: nº máximo de conexiones que la app abre hacia el pooler de Supabase.
+//   Se acota para no agotar el cupo del pooler transaccional (6543), sobre todo
+//   si corren varias instancias del backend. Configurable con DB_POOL_MAX.
+// - `connectionTimeoutMillis`: pg no trae timeout por defecto (el motor Rust de
+//   v6 sí tenía 5s); sin esto una conexión colgada esperaría indefinidamente.
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+  max: Number(process.env.DB_POOL_MAX ?? 10),
+  connectionTimeoutMillis: Number(process.env.DB_CONNECTION_TIMEOUT_MS ?? 10000)
+});
+
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
+  adapter,
   log: [
     { level: "query", emit: "event" },
     { level: "error", emit: "event" },

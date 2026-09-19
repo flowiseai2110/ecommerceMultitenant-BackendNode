@@ -346,6 +346,7 @@ CREATE TABLE pedidos (
     referencia_pago VARCHAR(100),
     metodo_envio VARCHAR(50),
     direccion_envio TEXT,
+    comprobante VARCHAR(10),
     notas TEXT,
     origen VARCHAR(20) DEFAULT 'whatsapp',
     fecha_confirmado TIMESTAMP,
@@ -369,6 +370,10 @@ CREATE INDEX idx_pedidos_numero ON pedidos(numero_pedido);
 
 COMMENT ON TABLE pedidos IS 'Pedidos de los clientes';
 COMMENT ON COLUMN pedidos.origen IS 'Origen del pedido: whatsapp, web, manual';
+COMMENT ON COLUMN pedidos.comprobante IS 'Comprobante solicitado: boleta, factura, ninguno';
+
+-- Para bases ya existentes (aplicar a mano en Supabase):
+-- ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS comprobante VARCHAR(10);
 
 -- ============================================
 -- TABLA: PEDIDO DETALLES

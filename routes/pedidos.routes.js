@@ -9,6 +9,7 @@ import PedidosService from "../services/pedidos.service.js";
 import {
   updateEstadoSchema,
   updateEstadoPagoSchema,
+  updateDetallesSchema,
   idParamSchema,
   paginationSchema,
   listaQuerySchema,
@@ -193,6 +194,28 @@ router.put(
         req.params.id, estadoPago, referenciaPago, metodoPago, req.user, req.tiendaId
       );
       return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_PAGO_UPDATED", data });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// PUT /:id/detalles - Actualizar detalles logísticos (envío, dirección, comprobante, nota)
+// PUT /admin/pedidos/:id/detalles?tiendaId=xxx
+// ============================================
+router.put(
+  "/:id/detalles",
+  authMiddleware,
+  resolvePedidoTiendaId,
+  requireTiendaAccess("editor"),
+  validate({ params: idParamSchema, body: updateDetallesSchema }),
+  async (req, res, next) => {
+    try {
+      const data = await pedidosService.updateDetalles(
+        req.params.id, req.body, req.user, req.tiendaId
+      );
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_DETALLES_UPDATED", data });
     } catch (error) {
       next(error);
     }

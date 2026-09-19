@@ -1,3 +1,33 @@
+# Setup del proyecto (tras clonar)
+
+```bash
+# 1. Instalar dependencias
+npm install
+
+# 2. Generar el cliente de Prisma (OBLIGATORIO tras clonar)
+npm run prisma:generate
+
+# 3. Levantar en desarrollo
+npm run dev
+```
+
+> **⚠️ Importante:** desde Prisma 7 el cliente se genera en `generated/prisma`
+> (archivos `.ts`) y esa carpeta está en `.gitignore`. Por eso **no viaja en el
+> repositorio** y hay que correr `npm run prisma:generate` después de clonar o
+> tras cambiar `prisma/schema.prisma`. Si al arrancar ves un error de importación
+> de `../generated/prisma/client.ts`, es que falta ejecutar ese comando.
+
+### Variables de entorno del pool (opcional)
+
+El backend usa el driver `pg` vía `@prisma/adapter-pg`. Se pueden ajustar:
+
+| Variable | Default | Descripción |
+|---|---|---|
+| `DB_POOL_MAX` | `10` | Máx. conexiones de la app hacia el pooler de Supabase |
+| `DB_CONNECTION_TIMEOUT_MS` | `10000` | Timeout al abrir conexión (pg no trae uno por defecto) |
+
+---
+
 //INICIALIZANDO PROYECTO
 
 

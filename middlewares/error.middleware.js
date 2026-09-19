@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../generated/prisma/client.ts";
 import { apiResponse } from "../utils/apiResponse.js";
 import { AppError } from "../utils/errors.js";
 import { logger } from "../config/logger.js";

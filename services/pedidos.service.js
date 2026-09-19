@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../generated/prisma/client.ts";
 import { prisma } from "../config/prisma.js";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
 import { invalidatePendientesCount } from "./pedidos-pendientes-cache.js";
@@ -644,6 +644,35 @@ class PedidosService {
         fechaActualizacion: true
       }
     });
+  }
+
+  /**
+   * Actualiza los detalles logísticos del pedido: método de envío, dirección,
+   * comprobante y nota interna. Actualización parcial (solo los campos enviados).
+   * No cambia estado ni estadoPago, así que no toca el caché del badge.
+   * Si se provee tiendaId, verifica pertenencia a la tienda.
+   */
+  async updateDetalles(id, data, user, tiendaId = null) {
+    const pedido = await prisma.pedidos.findUnique({ where: { id } });
+
+    if (!pedido || (tiendaId && pedido.tiendaId !== tiendaId)) {
+      throw new NotFoundError("Pedido");
+    }
+
+    const updateData = {
+      fechaActualizacion: new Date(),
+      usuarioActualizacion: user?.email || user?.id || "system"
+    };
+
+    for (const campo of ["metodoEnvio", "direccionEnvio", "comprobante", "notas"]) {
+      if (data[campo] !== undefined) updateData[campo] = data[campo];
+    }
+
+    await prisma.pedidos.update({ where: { id }, data: updateData });
+
+    // Devuelve el pedido completo (con detalles/cliente) para que el store del
+    // admin no pierda total/ítems al hacer merge de una respuesta parcial.
+    return this.findById(id, tiendaId);
   }
 
   /**

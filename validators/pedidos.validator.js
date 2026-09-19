@@ -58,6 +58,17 @@ export const updateEstadoPagoSchema = z.object({
   metodoPago: z.string().max(50).optional().nullable()
 });
 
+// Schema para actualizar detalles logísticos del pedido (entrega, comprobante, nota interna)
+export const updateDetallesSchema = z.object({
+  metodoEnvio: z.string().max(50).optional().nullable(),
+  direccionEnvio: z.string().optional().nullable(),
+  comprobante: z.enum(["boleta", "factura", "ninguno"]).optional().nullable(),
+  notas: z.string().optional().nullable()
+}).refine(
+  (data) => Object.keys(data).length > 0,
+  { message: "Debe enviar al menos un campo para actualizar" }
+);
+
 // Schema para validar ID en params
 export const idParamSchema = z.object({
   id: z.string().uuid("ID inválido")
@@ -89,6 +100,7 @@ export default {
   createPedidoSchema,
   updateEstadoSchema,
   updateEstadoPagoSchema,
+  updateDetallesSchema,
   idParamSchema,
   paginationSchema,
   listaQuerySchema,

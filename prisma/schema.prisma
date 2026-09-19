@@ -1,11 +1,10 @@
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../generated/prisma"
 }
 
 model persona {
@@ -445,6 +444,7 @@ model pedidos {
   referenciaPago        String?   @map("referencia_pago") @db.VarChar(100)
   metodoEnvio           String?   @map("metodo_envio") @db.VarChar(50)
   direccionEnvio        String?   @map("direccion_envio") @db.Text
+  comprobante           String?   @db.VarChar(10)
   notas                 String?   @db.Text
   origen                String    @default("web") @db.VarChar(20)
   codigoCupon           String?   @map("codigo_cupon") @db.VarChar(50)
