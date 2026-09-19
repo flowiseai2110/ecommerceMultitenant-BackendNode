@@ -5,9 +5,29 @@ import { apiResponse } from "../utils/apiResponse.js";
  * Delega la lógica de negocio al servicio correspondiente
  */
 class GenericController {
-  constructor(service, resourceName = "Registro") {
+  /**
+   * @param {object} service - Servicio de dominio.
+   * @param {string} [resourceName="Registro"] - Nombre del recurso (para los codes).
+   * @param {object} [options]
+   * @param {(row: object) => object} [options.serialize] - Serializer aplicado a
+   *   la salida de findAll (por item) y findById, cuando listado y detalle
+   *   comparten forma. Nunca se devuelve el objeto crudo de Prisma.
+   * @param {(row: object) => object} [options.serializeList] - Serializer solo del
+   *   listado (findAll). Tiene prioridad sobre `serialize` para el listado.
+   * @param {(row: object) => object} [options.serializeItem] - Serializer solo del
+   *   detalle (findById). Tiene prioridad sobre `serialize` para el detalle.
+   *   Úsalo con `serializeList` cuando listado y detalle tienen contratos
+   *   distintos (ej. lista compacta vs. detalle con relaciones).
+   *   Si no se provee ninguno, la salida es idéntica a antes (retrocompatible).
+   *   Ver docs/ARQUITECTURA.md.
+   */
+  constructor(service, resourceName = "Registro", options = {}) {
     this.service = service;
     this.resourceName = resourceName;
+    this.serialize = options.serialize || null;
+    // Overrides por operación; caen a `serialize` si no se especifican.
+    this.serializeList = options.serializeList || options.serialize || null;
+    this.serializeItem = options.serializeItem || options.serialize || null;
 
     // Bind de métodos para mantener el contexto
     this.findAll = this.findAll.bind(this);
@@ -30,7 +50,7 @@ class GenericController {
         status: 200,
         type: "SUCCESS",
         code: `${this.resourceName.toUpperCase()}_LIST`,
-        data,
+        data: this.serializeList ? data.map(this.serializeList) : data,
         meta
       });
     } catch (error) {
@@ -50,7 +70,7 @@ class GenericController {
         status: 200,
         type: "SUCCESS",
         code: `${this.resourceName.toUpperCase()}_FOUND`,
-        data: record
+        data: this.serializeItem ? this.serializeItem(record) : record
       });
     } catch (error) {
       next(error);

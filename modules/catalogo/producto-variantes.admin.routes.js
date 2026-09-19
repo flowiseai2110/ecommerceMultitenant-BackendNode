@@ -1,47 +1,48 @@
 import { Router } from "express";
-import GenericController from "../controllers/generic.controller.js";
-import GenericService from "../services/generic.service.js";
-import GenericRepository from "../repositories/generic.repository.js";
-import { prisma } from "../config/prisma.js";
-import { validate } from "../middlewares/validation.middleware.js";
-import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { requireTiendaAccess, resolveTiendaId, scopeReadToResourceTienda } from "../middlewares/tienda-access.middleware.js";
+import GenericController from "../../controllers/generic.controller.js";
+import GenericService from "../../services/generic.service.js";
+import GenericRepository from "../../repositories/generic.repository.js";
+import { prisma } from "../../config/prisma.js";
+import { validate } from "../../middlewares/validation.middleware.js";
+import {
+  authMiddleware,
+  requireTiendaAccess,
+  resolveTiendaId,
+  scopeReadToResourceTienda
+} from "../../kernel/tenant/index.js";
 import {
   createVarianteSchema,
   updateVarianteSchema,
   idParamSchema,
   paginationSchema
-} from "../validators/producto-variantes.validator.js";
+} from "./producto-variantes.schema.js";
+import { serializeVarianteAdmin } from "./producto-variantes.serializer.js";
 
 // Crear instancias de las capas
 const variantesRepository = new GenericRepository(prisma.producto_variantes, "ProductoVariante");
 const variantesService = new GenericService(variantesRepository, { enableAudit: true });
-const variantesController = new GenericController(variantesService, "ProductoVariante");
+const variantesController = new GenericController(variantesService, "ProductoVariante", {
+  serialize: serializeVarianteAdmin
+});
+
+// Repositorio de productos, solo para resolver el tiendaId del producto padre
+// al crear una variante (req.body.productoId).
+const productosRepository = new GenericRepository(prisma.productos, "Producto");
 
 // producto_variantes no tiene tiendaId propio: la tienda dueña se hereda
 // del producto padre. Resolvemos vía productoId (creación) o vía la
 // relación producto de la variante existente (actualización/eliminación/lectura).
-const findVarianteTiendaId = async (req) => {
+const findVarianteTiendaId = (req) => {
   if (req.body?.productoId) {
-    const producto = await prisma.productos.findUnique({
-      where: { id: req.body.productoId },
-      select: { tiendaId: true }
-    });
-    return producto?.tiendaId || null;
+    return productosRepository.findTiendaIdById(req.body.productoId);
   }
-
-  const variante = await prisma.producto_variantes.findUnique({
-    where: { id: req.params.id },
-    select: { producto: { select: { tiendaId: true } } }
-  });
-  return variante?.producto?.tiendaId || null;
+  return variantesRepository.findRelatedTiendaId(req.params.id, "producto");
 };
 
 const resolveVarianteTiendaId = resolveTiendaId(findVarianteTiendaId);
 
 // Para lectura (GET /:id): resuelve el tiendaId dueño SIEMPRE, ignorando
-// cualquier tiendaId que venga en query — ver mismo razonamiento en
-// productos.routes.js.
+// cualquier tiendaId que venga en query — ver mismo razonamiento en productos.
 const scopeVarianteReadToOwner = scopeReadToResourceTienda(findVarianteTiendaId);
 
 const router = Router();

@@ -21,13 +21,9 @@ const metodosPagoController = new GenericController(metodosPagoService, "MetodoP
 
 // Resuelve el tiendaId dueño del método de pago cuando la petición no lo trae
 // (rutas /:id), para que requireTiendaAccess pueda validar pertenencia.
-const resolveMetodoPagoTiendaId = resolveTiendaId(async (req) => {
-  const metodoPago = await prisma.metodos_pago.findUnique({
-    where: { id: req.params.id },
-    select: { tiendaId: true }
-  });
-  return metodoPago?.tiendaId || null;
-});
+const resolveMetodoPagoTiendaId = resolveTiendaId(
+  (req) => metodosPagoRepository.findTiendaIdById(req.params.id)
+);
 
 const router = Router();
 

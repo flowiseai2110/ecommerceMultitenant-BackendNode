@@ -1,7 +1,8 @@
-import { Prisma } from "../generated/prisma/client.ts";
-import { prisma } from "../config/prisma.js";
+import { prisma, Prisma } from "../config/prisma.js";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
 import { invalidatePendientesCount } from "./pedidos-pendientes-cache.js";
+import emailService from "./email.service.js";
+import { logger } from "../config/logger.js";
 
 /**
  * Servicio de pedidos con lógica de negocio completa:
@@ -12,9 +13,6 @@ import { invalidatePendientesCount } from "./pedidos-pendientes-cache.js";
  * - Reposición de stock y reversión de estadísticas al cancelar
  */
 class PedidosService {
-  constructor(repository) {
-    this.repository = repository;
-  }
 
   /**
    * Genera el siguiente número de pedido para una tienda.
@@ -685,6 +683,87 @@ class PedidosService {
       select: { tiendaId: true }
     });
     return pedido?.tiendaId || null;
+  }
+
+  /**
+   * Seguimiento público de un pedido por su número, scopeado a la tienda.
+   * @param {string} tiendaId - Tienda dueña del pedido (scope multi-tenant).
+   * @param {string} numeroPedido - Número visible del pedido (ej. "PED-0001").
+   * @returns {Promise<object>} Pedido con detalles e historial.
+   * @throws {NotFoundError} si no existe un pedido con ese número en la tienda.
+   */
+  async rastrear(tiendaId, numeroPedido) {
+    const pedido = await prisma.pedidos.findFirst({
+      where: { tiendaId, numeroPedido },
+      select: {
+        id: true,
+        numeroPedido: true,
+        estado: true,
+        estadoPago: true,
+        subtotal: true,
+        descuentoMonto: true,
+        costoEnvio: true,
+        total: true,
+        codigoCupon: true,
+        metodoPago: true,
+        metodoEnvio: true,
+        direccionEnvio: true,
+        notas: true,
+        fechaConfirmado: true,
+        fechaEntregado: true,
+        fechaRegistro: true,
+        cliente: { select: { nombre: true } },
+        detalles: {
+          select: {
+            id: true,
+            productoNombre: true,
+            varianteNombre: true,
+            cantidad: true,
+            precioUnitario: true,
+            descuento: true,
+            total: true
+          }
+        },
+        historialEstados: {
+          select: { estado: true, notas: true, fechaRegistro: true },
+          orderBy: { fechaRegistro: "asc" }
+        }
+      }
+    });
+
+    if (!pedido) throw new NotFoundError("Pedido");
+    return pedido;
+  }
+
+  /**
+   * Cuenta los pedidos pendientes de una tienda (fuente para el badge del admin;
+   * la capa de ruta se encarga del caché).
+   * @param {string} tiendaId - Tienda a contar.
+   * @returns {Promise<number>}
+   */
+  async countPendientes(tiendaId) {
+    return prisma.pedidos.count({ where: { tiendaId, estado: "pendiente" } });
+  }
+
+  /**
+   * Notifica por email al dueño de la tienda que entró un pedido nuevo.
+   * Efecto secundario NO bloqueante: cualquier fallo solo se loggea, nunca debe
+   * invalidar un pedido ya creado. Se consulta la tienda aquí (y no vía
+   * req.tienda) porque resolveTienda no la puebla en desarrollo local sin
+   * subdominio, y su caché no incluye los datos de contacto.
+   * @param {{ tiendaId: string, numeroPedido: string }} pedido - Pedido recién creado.
+   * @returns {Promise<void>}
+   */
+  async notifyNewOrder(pedido) {
+    try {
+      const tienda = await prisma.tiendas.findUnique({
+        where: { id: pedido.tiendaId },
+        select: { nombre: true, email: true, logoUrl: true, moneda: true }
+      });
+      if (tienda) await emailService.sendNewOrderEmail(pedido, tienda);
+    } catch (error) {
+      logger.error(`❌ No se pudo notificar por email el pedido ${pedido.numeroPedido}:`, error);
+    }
   }
 
   /**

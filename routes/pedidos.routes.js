@@ -1,10 +1,8 @@
 import { Router } from "express";
-import { prisma } from "../config/prisma.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireTiendaAccess } from "../middlewares/tienda-access.middleware.js";
 import { apiResponse } from "../utils/apiResponse.js";
-import PedidosRepository from "../repositories/pedidos.repository.js";
 import PedidosService from "../services/pedidos.service.js";
 import {
   updateEstadoSchema,
@@ -20,8 +18,7 @@ import {
   setPendientesCount
 } from "../services/pedidos-pendientes-cache.js";
 
-const pedidosRepository = new PedidosRepository(prisma.pedidos);
-const pedidosService = new PedidosService(pedidosRepository);
+const pedidosService = new PedidosService();
 
 const router = Router();
 
@@ -117,9 +114,7 @@ router.get(
 
       let total = getPendientesCount(tiendaId);
       if (total === null) {
-        total = await prisma.pedidos.count({
-          where: { tiendaId, estado: "pendiente" }
-        });
+        total = await pedidosService.countPendientes(tiendaId);
         setPendientesCount(tiendaId, total);
       }
 

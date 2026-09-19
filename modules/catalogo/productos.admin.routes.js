@@ -1,14 +1,28 @@
 import { Router } from "express";
-import { uploadImage } from "../middlewares/upload.middleware.js";
-import GenericController from "../controllers/generic.controller.js";
-import GenericService from "../services/generic.service.js";
-import GenericRepository from "../repositories/generic.repository.js";
-import { prisma } from "../config/prisma.js";
-import { validate } from "../middlewares/validation.middleware.js";
-import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { requireTiendaAccess, resolveTiendaId, scopeReadToResourceTienda } from "../middlewares/tienda-access.middleware.js";
-import { makeUploadImagenForProducto } from "../controllers/producto-imagenes.controller.js";
-import { invalidateProductoDetailCache } from "./store/productos.routes.js";
+import { uploadImage } from "../../middlewares/upload.middleware.js";
+import GenericController from "../../controllers/generic.controller.js";
+import GenericService from "../../services/generic.service.js";
+import GenericRepository from "../../repositories/generic.repository.js";
+import { prisma } from "../../config/prisma.js";
+import { validate } from "../../middlewares/validation.middleware.js";
+import {
+  authMiddleware,
+  requireTiendaAccess,
+  resolveTiendaId,
+  scopeReadToResourceTienda
+} from "../../kernel/tenant/index.js";
+import { makeUploadImagenForProducto } from "../../controllers/producto-imagenes.controller.js";
+import { invalidateProductoDetailCache } from "./productos.cache.js";
+import {
+  createProductoSchema,
+  updateProductoSchema,
+  idParamSchema,
+  paginationSchema
+} from "./productos.schema.js";
+import {
+  serializeProductoAdminList,
+  serializeProductoAdmin
+} from "./productos.serializer.js";
 
 const uploadImagenForProducto = makeUploadImagenForProducto("tiendas");
 
@@ -22,13 +36,6 @@ function invalidateProductoCacheOnSuccess(req, res, next) {
   });
   next();
 }
-import {
-  createProductoSchema,
-  updateProductoSchema,
-  idParamSchema,
-  paginationSchema
-} from "../validators/productos.validator.js";
-
 
 // Crear instancias de las capas
 const productosRepository = new GenericRepository(prisma.productos, "Producto");
@@ -83,17 +90,17 @@ const productosService = new GenericService(productosRepository, {
     }
   }
 });
-const productosController = new GenericController(productosService, "Producto");
+// Contratos de salida por operación: la tabla del admin usa la proyección
+// compacta (serializeProductoAdminList) y el detalle el producto completo con
+// campos de gestión y relaciones (serializeProductoAdmin).
+const productosController = new GenericController(productosService, "Producto", {
+  serializeList: serializeProductoAdminList,
+  serializeItem: serializeProductoAdmin
+});
 
 // Dueño real del producto en BD — compartido por las dos formas de scope
 // de abajo (una para escritura, otra para lectura).
-const findProductoTiendaId = async (req) => {
-  const producto = await prisma.productos.findUnique({
-    where: { id: req.params.id },
-    select: { tiendaId: true }
-  });
-  return producto?.tiendaId || null;
-};
+const findProductoTiendaId = (req) => productosRepository.findTiendaIdById(req.params.id);
 
 // Resuelve el tiendaId dueño del producto cuando la petición no lo trae
 // (rutas /:id de escritura), para que requireTiendaAccess pueda validar

@@ -5,12 +5,21 @@ import GenericRepository from "../../repositories/generic.repository.js";
 import { prisma } from "../../config/prisma.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import { validate } from "../../middlewares/validation.middleware.js";
-import { scopeQueryToTienda } from "../../middlewares/resolve-tienda.middleware.js";
-import { idParamSchema, paginationSchema, homeQuerySchema } from "../../validators/productos.validator.js";
-import MemoryCache from "../../utils/memory-cache.js";
+import { scopeQueryToTienda } from "../../kernel/tenant/index.js";
+import { idParamSchema, paginationSchema, homeQuerySchema } from "./productos.schema.js";
 import { NotFoundError } from "../../utils/errors.js";
+import {
+  serializeProductoCardStore,
+  serializeProductoDetailStore
+} from "./productos.serializer.js";
+import {
+  getProductosHome,
+  setProductosHome,
+  getProductoDetail,
+  setProductoDetail
+} from "./productos.cache.js";
 
-// Proyección de campos para listados públicos — reusada también por GET /home
+// Proyección de campos para listados públicos
 const productosListSelect = {
   id: true,
   tiendaId: true,
@@ -48,26 +57,11 @@ const productosService = new GenericService(productosRepository, {
   searchFields: ["nombre", "descripcion", "descripcionCorta", "slug", "sku"],
   listSelect: productosListSelect
 });
-const productosController = new GenericController(productosService, "Producto");
-
-// Cache temporal del home público (60s): misma respuesta para todos los
-// visitantes de una tienda, así que la key es solo tiendaId + take.
-// Endpoint público, sin auth — no hay invalidación por escritura todavía
-// (si se necesita reflejar cambios al instante, avisar para wirearlo).
-const PRODUCTOS_HOME_CACHE_TTL_MS = 60_000;
-const productosHomeCache = new MemoryCache();
-
-// Cache temporal del detalle de producto (60s): mismo problema que tenía /home —
-// findById con include: { variantes, imagenes } genera 2 round-trips extra (uno
-// por relación). Se colapsa a 1 query con subqueries correlacionadas que devuelven
-// JSON directamente. Se invalida puntualmente por id desde el admin al editar/borrar
-// (ver invalidateProductoDetailCache, importada en routes/productos.routes.js).
-const PRODUCTO_DETAIL_CACHE_TTL_MS = 60_000;
-const productoDetailCache = new MemoryCache();
-
-export function invalidateProductoDetailCache(id) {
-  productoDetailCache.delete(id);
-}
+// El serializer del store define el contrato de salida campo por campo: nunca
+// expone precioCosto, stockAlerta, metadata ni auditoría al público.
+const productosController = new GenericController(productosService, "Producto", {
+  serialize: serializeProductoCardStore
+});
 
 const router = Router();
 
@@ -84,7 +78,7 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
     const take = Math.min(limit || 8, 20);
 
     const cacheKey = `${tiendaId}|${take}`;
-    const cached = productosHomeCache.get(cacheKey);
+    const cached = getProductosHome(cacheKey);
     if (cached) {
       return apiResponse(res, cached);
     }
@@ -135,29 +129,19 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
     const destacados = [];
     const recientes = [];
     for (const row of rows) {
-      const producto = {
-        id: row.id,
-        tiendaId: row.tiendaId,
-        nombre: row.nombre,
-        slug: row.slug,
-        descripcionCorta: row.descripcionCorta,
-        sku: row.sku,
-        precioBase: row.precioBase,
-        precioOferta: row.precioOferta,
-        stock: row.stock,
-        activo: row.activo,
-        destacado: row.destacado,
-        esServicio: row.esServicio,
-        etiquetas: row.etiquetas,
+      // La query aplana la imagen principal en columnas (imagenId/imagenUrl/...);
+      // se rearma como array antes de pasar por el serializer de tarjeta.
+      const producto = serializeProductoCardStore({
+        ...row,
         imagenes: row.imagenId
           ? [{ id: row.imagenId, url: row.imagenUrl, textoAlternativo: row.imagenAlt }]
           : []
-      };
+      });
       (row.grupo === "destacados" ? destacados : recientes).push(producto);
     }
 
     const responsePayload = { status: 200, type: "SUCCESS", code: "PRODUCTO_HOME", data: { destacados, recientes } };
-    productosHomeCache.set(cacheKey, responsePayload, PRODUCTOS_HOME_CACHE_TTL_MS);
+    setProductosHome(cacheKey, responsePayload);
 
     return apiResponse(res, responsePayload);
   } catch (error) {
@@ -170,7 +154,7 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
   try {
     const { id } = req.params;
 
-    const cached = productoDetailCache.get(id);
+    const cached = getProductoDetail(id);
     if (cached) {
       return apiResponse(res, cached);
     }
@@ -202,13 +186,13 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
       WHERE p.id = ${id}::uuid
     `;
 
-    const producto = rows[0];
-    if (!producto) {
+    if (!rows[0]) {
       throw new NotFoundError("Producto");
     }
+    const producto = serializeProductoDetailStore(rows[0]);
 
     const responsePayload = { status: 200, type: "SUCCESS", code: "PRODUCTO_FOUND", data: producto };
-    productoDetailCache.set(id, responsePayload, PRODUCTO_DETAIL_CACHE_TTL_MS);
+    setProductoDetail(id, responsePayload);
 
     return apiResponse(res, responsePayload);
   } catch (error) {

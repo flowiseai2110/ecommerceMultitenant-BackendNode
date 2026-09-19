@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+/**
+ * Schemas Zod de entrada para atributos de producto. El schema ES el contrato de
+ * entrada (ver docs/ARQUITECTURA.md).
+ */
+
 // Schema base para producto atributos
 const atributosBaseSchema = {
   tiendaId: z.string({ required_error: "El ID de tienda es requerido" }).uuid("ID de tienda inválido"),

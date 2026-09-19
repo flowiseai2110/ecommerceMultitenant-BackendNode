@@ -19,13 +19,9 @@ const metodosEnvioController = new GenericController(metodosEnvioService, "Metod
 
 // Resuelve el tiendaId dueño del método de envío cuando la petición no lo trae
 // (rutas /:id), para que requireTiendaAccess pueda validar pertenencia.
-const resolveMetodoEnvioTiendaId = resolveTiendaId(async (req) => {
-  const metodoEnvio = await prisma.metodos_envio.findUnique({
-    where: { id: req.params.id },
-    select: { tiendaId: true }
-  });
-  return metodoEnvio?.tiendaId || null;
-});
+const resolveMetodoEnvioTiendaId = resolveTiendaId(
+  (req) => metodosEnvioRepository.findTiendaIdById(req.params.id)
+);
 
 const router = Router();
 

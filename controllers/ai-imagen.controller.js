@@ -6,7 +6,7 @@ import {
   verificarCuotaTienda,
   verificarYRegistrarLimiteGlobalIA
 } from "../services/uso-recursos.service.js";
-import { generarIaSchema, confirmarIaSchema } from "../validators/producto-imagenes.validator.js";
+import { generarIaSchema, confirmarIaSchema } from "../modules/catalogo/producto-imagenes.schema.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { NotFoundError, ValidationError, ForbiddenError } from "../utils/errors.js";
 import GenericRepository from "../repositories/generic.repository.js";

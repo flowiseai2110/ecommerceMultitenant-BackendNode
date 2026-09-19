@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+/**
+ * Schemas Zod de entrada para categorías. En esta arquitectura el schema ES el
+ * contrato de entrada (no un tipo TS): la ruta valida con él y hacia adentro el
+ * input se considera confiable. Ver docs/ARQUITECTURA.md.
+ */
+
 // Schema base para categorías
 const categoriasBaseSchema = {
   tiendaId: z.string({ required_error: "El ID de tienda es requerido" }).uuid("ID de tienda inválido"),

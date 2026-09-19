@@ -1,32 +1,33 @@
 import { Router } from "express";
-import GenericController from "../controllers/generic.controller.js";
-import GenericService from "../services/generic.service.js";
-import GenericRepository from "../repositories/generic.repository.js";
-import { prisma } from "../config/prisma.js";
-import { validate } from "../middlewares/validation.middleware.js";
-import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { requireTiendaAccess, resolveTiendaId, scopeReadToResourceTienda } from "../middlewares/tienda-access.middleware.js";
+import GenericController from "../../controllers/generic.controller.js";
+import GenericService from "../../services/generic.service.js";
+import GenericRepository from "../../repositories/generic.repository.js";
+import { prisma } from "../../config/prisma.js";
+import { validate } from "../../middlewares/validation.middleware.js";
+import {
+  authMiddleware,
+  requireTiendaAccess,
+  resolveTiendaId,
+  scopeReadToResourceTienda
+} from "../../kernel/tenant/index.js";
 import {
   createAtributoSchema,
   updateAtributoSchema,
   idParamSchema,
   paginationSchema
-} from "../validators/producto-atributos.validator.js";
+} from "./producto-atributos.schema.js";
+import { serializeAtributoAdmin } from "./producto-atributos.serializer.js";
 
 // Crear instancias de las capas
 const atributosRepository = new GenericRepository(prisma.producto_atributos, "ProductoAtributo");
 const atributosService = new GenericService(atributosRepository, { enableAudit: true });
-const atributosController = new GenericController(atributosService, "ProductoAtributo");
+const atributosController = new GenericController(atributosService, "ProductoAtributo", {
+  serialize: serializeAtributoAdmin
+});
 
 // Dueño real del atributo en BD — compartido por las dos formas de scope
 // de abajo (una para escritura, otra para lectura).
-const findAtributoTiendaId = async (req) => {
-  const atributo = await prisma.producto_atributos.findUnique({
-    where: { id: req.params.id },
-    select: { tiendaId: true }
-  });
-  return atributo?.tiendaId || null;
-};
+const findAtributoTiendaId = (req) => atributosRepository.findTiendaIdById(req.params.id);
 
 // Resuelve el tiendaId dueño del atributo cuando la petición no lo trae
 // (rutas /:id de escritura), para que requireTiendaAccess pueda validar
@@ -34,8 +35,7 @@ const findAtributoTiendaId = async (req) => {
 const resolveAtributoTiendaId = resolveTiendaId(findAtributoTiendaId);
 
 // Para lectura (GET /:id): resuelve el tiendaId dueño SIEMPRE, ignorando
-// cualquier tiendaId que venga en query — ver mismo razonamiento en
-// productos.routes.js.
+// cualquier tiendaId que venga en query — ver mismo razonamiento en productos.
 const scopeAtributoReadToOwner = scopeReadToResourceTienda(findAtributoTiendaId);
 
 const router = Router();

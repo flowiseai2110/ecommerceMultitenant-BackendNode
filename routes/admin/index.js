@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import tiendasRoutes from "../tiendas.routes.js";
-import categoriasRoutes from "../categorias.routes.js";
-import productosRoutes from "../productos.routes.js";
-import productoVariantesRoutes from "../producto-variantes.routes.js";
-import productoImagenesRoutes from "../producto-imagenes.routes.js";
-import productoAtributosRoutes from "../producto-atributos.routes.js";
+import categoriasRoutes from "../../modules/catalogo/categorias.admin.routes.js";
+import productosRoutes from "../../modules/catalogo/productos.admin.routes.js";
+import productoVariantesRoutes from "../../modules/catalogo/producto-variantes.admin.routes.js";
+import productoImagenesRoutes from "../../modules/catalogo/producto-imagenes.admin.routes.js";
+import productoAtributosRoutes from "../../modules/catalogo/producto-atributos.admin.routes.js";
 import usersRoutes from "../users.routes.js";
 import invitationsRoutes from "../invitations.routes.js";
 import metodosPagoRoutes from "../metodos-pago.routes.js";

@@ -82,6 +82,37 @@ class GenericRepository {
   }
 
   /**
+   * Devuelve el tiendaId dueño de un registro que tiene columna tiendaId propia.
+   * Pensado para resolver el scope multi-tenant de una ruta /:id sin exponer
+   * Prisma en la capa de rutas (ver docs/ARQUITECTURA.md).
+   * @param {string} id - ID del registro.
+   * @returns {Promise<string|null>} tiendaId, o null si el registro no existe.
+   */
+  async findTiendaIdById(id) {
+    const record = await this.model.findUnique({
+      where: { id },
+      select: { tiendaId: true }
+    });
+    return record?.tiendaId ?? null;
+  }
+
+  /**
+   * Devuelve el tiendaId heredado de una relación padre, para recursos sin
+   * columna tiendaId propia (ej. producto_variantes / producto_imagenes heredan
+   * la tienda de su producto).
+   * @param {string} id - ID del registro hijo.
+   * @param {string} relation - Nombre de la relación al padre que tiene tiendaId.
+   * @returns {Promise<string|null>} tiendaId del padre, o null si no existe.
+   */
+  async findRelatedTiendaId(id, relation) {
+    const record = await this.model.findUnique({
+      where: { id },
+      select: { [relation]: { select: { tiendaId: true } } }
+    });
+    return record?.[relation]?.tiendaId ?? null;
+  }
+
+  /**
    * Busca un registro único por criterios
    * @param {Object} where - Criterios de búsqueda
    * @param {Object} options - Opciones adicionales

@@ -1,20 +1,24 @@
 import { Router } from "express";
-import { uploadImage } from "../middlewares/upload.middleware.js";
-import GenericController from "../controllers/generic.controller.js";
-import GenericService from "../services/generic.service.js";
-import GenericRepository from "../repositories/generic.repository.js";
-import { prisma } from "../config/prisma.js";
-import { validate } from "../middlewares/validation.middleware.js";
-import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { requireTiendaAccess, resolveTiendaId, scopeReadToResourceTienda } from "../middlewares/tienda-access.middleware.js";
-import { makeUploadImagen, deleteImagenWithCleanup } from "../controllers/producto-imagenes.controller.js";
+import { uploadImage } from "../../middlewares/upload.middleware.js";
+import GenericController from "../../controllers/generic.controller.js";
+import GenericService from "../../services/generic.service.js";
+import GenericRepository from "../../repositories/generic.repository.js";
+import { prisma } from "../../config/prisma.js";
+import { validate } from "../../middlewares/validation.middleware.js";
+import {
+  authMiddleware,
+  requireTiendaAccess,
+  resolveTiendaId,
+  scopeReadToResourceTienda
+} from "../../kernel/tenant/index.js";
+import { makeUploadImagen, deleteImagenWithCleanup } from "../../controllers/producto-imagenes.controller.js";
 import {
   generarImagenIA,
   consultarEstadoImagenIA,
   confirmarImagenIA
-} from "../controllers/ai-imagen.controller.js";
-import { getTaskTiendaId } from "../services/ai-image.service.js";
-import { ForbiddenError } from "../utils/errors.js";
+} from "../../controllers/ai-imagen.controller.js";
+import { getTaskTiendaId } from "../../services/ai-image.service.js";
+import { ForbiddenError } from "../../utils/errors.js";
 import {
   createImagenSchema,
   updateImagenSchema,
@@ -23,40 +27,36 @@ import {
   generarIaSchema,
   confirmarIaSchema,
   taskIdParamSchema
-} from "../validators/producto-imagenes.validator.js";
+} from "./producto-imagenes.schema.js";
+import { serializeImagenAdmin } from "./producto-imagenes.serializer.js";
 
 const uploadImagen = makeUploadImagen("tiendas");
-
 
 // Crear instancias de las capas
 const imagenesRepository = new GenericRepository(prisma.producto_imagenes, "ProductoImagen");
 const imagenesService = new GenericService(imagenesRepository, { enableAudit: true });
-const imagenesController = new GenericController(imagenesService, "ProductoImagen");
+const imagenesController = new GenericController(imagenesService, "ProductoImagen", {
+  serialize: serializeImagenAdmin
+});
+
+// Repositorio de productos, solo para resolver el tiendaId del producto padre
+// al crear una imagen (req.body.productoId).
+const productosRepository = new GenericRepository(prisma.productos, "Producto");
 
 // producto_imagenes no tiene tiendaId propio: la tienda dueña se hereda
 // del producto padre. Resolvemos vía productoId (creación) o vía la
 // relación producto de la imagen existente (actualización/eliminación/lectura).
-const findImagenTiendaId = async (req) => {
+const findImagenTiendaId = (req) => {
   if (req.body?.productoId) {
-    const producto = await prisma.productos.findUnique({
-      where: { id: req.body.productoId },
-      select: { tiendaId: true }
-    });
-    return producto?.tiendaId || null;
+    return productosRepository.findTiendaIdById(req.body.productoId);
   }
-
-  const imagen = await prisma.producto_imagenes.findUnique({
-    where: { id: req.params.id },
-    select: { producto: { select: { tiendaId: true } } }
-  });
-  return imagen?.producto?.tiendaId || null;
+  return imagenesRepository.findRelatedTiendaId(req.params.id, "producto");
 };
 
 const resolveImagenTiendaId = resolveTiendaId(findImagenTiendaId);
 
 // Para lectura (GET /:id): resuelve el tiendaId dueño SIEMPRE, ignorando
-// cualquier tiendaId que venga en query — ver mismo razonamiento en
-// productos.routes.js.
+// cualquier tiendaId que venga en query — ver mismo razonamiento en productos.
 const scopeImagenReadToOwner = scopeReadToResourceTienda(findImagenTiendaId);
 
 const router = Router();
@@ -134,6 +134,8 @@ router.post(
 // en generarImagenIA. Si la tarea no existe o expiró (TTL de 15 min), no
 // bloquea: el controller ya devuelve un estado "fail" con mensaje genérico
 // sin filtrar ningún dato, así que no hay nada que proteger en ese caso.
+// TODO(PR5 tenants/usuarios): consolidar este chequeo de membresía en un guard
+// compartido del kernel; hoy repite la consulta de requireTiendaAccess.
 async function requireIaTaskAccess(req, res, next) {
   try {
     const tiendaId = getTaskTiendaId(req.params.taskId);

@@ -72,7 +72,8 @@ hacer: lo exige el dominio.
 ```
 modules/
   <contexto>/
-    <contexto>.routes.js        # admin y/o store; declara Zod + guards
+    <contexto>.admin.routes.js  # rutas de la audiencia admin (o .routes.js si es única)
+    <contexto>.store.routes.js  # rutas de la audiencia store (storefront público)
     <contexto>.controller.js    # delega y serializa
     <contexto>.service.js       # negocio (JSDoc en firmas)
     <contexto>.repository.js    # Prisma (JSDoc en firmas)
@@ -83,6 +84,25 @@ kernel/                         # cross-cutting compartido
   http/                         # apiResponse, helpers de serialización
   errors/                       # (reexporta utils/errors.js)
 ```
+
+Cuando un contexto sirve a dos audiencias con contratos distintos, se separan las
+rutas en `<contexto>.admin.routes.js` y `<contexto>.store.routes.js`, cada una con
+su serializer de salida. Los `routes/admin/index.js` y `routes/store/index.js`
+siguen siendo el punto de montaje y sólo importan desde `modules/<contexto>/`.
+
+**Estado de la extracción:** el módulo **`catalogo` está completo** — `categorias`,
+`productos`, `producto-variantes`, `producto-atributos` y `producto-imagenes` viven
+en `modules/catalogo/`. La caché pública vive en `catalogo/productos.cache.js`
+(antes la ruta admin importaba de la ruta store — dependencia cruzada resuelta).
+
+Los controllers de imagen/IA (`producto-imagenes.controller.js`,
+`ai-imagen.controller.js`) y sus servicios (`image.service`, `ai-image.service`)
+siguen en `controllers/` y `services/` por ser cross-context (los usa también el
+upload de productos); se tratarán al definir un contexto de medios/AI. El guard
+`requireIaTaskAccess` conserva un chequeo de membresía inline (TODO PR5: mover al
+guard compartido del kernel).
+
+Próximos contextos: **tenants/usuarios**, **pedidos**, **inventario**, **pagos**.
 
 Bounded contexts objetivo: **catálogo**, **órdenes**, **inventario**, **pagos**,
 **tenants/usuarios**. (Carrito se mantiene client-side por decisión de producto;

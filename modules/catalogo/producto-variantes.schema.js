@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+/**
+ * Schemas Zod de entrada para variantes de producto. El schema ES el contrato de
+ * entrada (ver docs/ARQUITECTURA.md).
+ */
+
 // Schema base para producto variantes
 const variantesBaseSchema = {
   productoId: z.string({ required_error: "El ID de producto es requerido" }).uuid("ID de producto inválido"),

@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+/**
+ * Schemas Zod de entrada para imágenes de producto (incluye upload multipart y
+ * el flujo de generación con IA). El schema ES el contrato de entrada
+ * (ver docs/ARQUITECTURA.md).
+ */
+
 // Schema base para producto imágenes
 const imagenesBaseSchema = {
   productoId: z.string({ required_error: "El ID de producto es requerido" }).uuid("ID de producto inválido"),

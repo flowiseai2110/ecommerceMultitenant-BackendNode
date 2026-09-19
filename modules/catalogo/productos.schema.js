@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+/**
+ * Schemas Zod de entrada para productos. El schema ES el contrato de entrada
+ * (ver docs/ARQUITECTURA.md): la ruta valida con él y hacia adentro el input se
+ * considera confiable.
+ */
+
 // Schema base para productos
 const productosBaseSchema = {
   tiendaId: z.string({ required_error: "El ID de tienda es requerido" }).uuid("ID de tienda inválido"),

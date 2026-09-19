@@ -1,6 +1,6 @@
 import { prisma } from "../config/prisma.js";
 import { processAndUploadImage, deleteFromStorage } from "../services/image.service.js";
-import { uploadImagenSchema, uploadImagenForProductoSchema } from "../validators/producto-imagenes.validator.js";
+import { uploadImagenSchema, uploadImagenForProductoSchema } from "../modules/catalogo/producto-imagenes.schema.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
 import GenericRepository from "../repositories/generic.repository.js";
