@@ -1,6 +1,12 @@
-import { PrismaClient } from "../generated/prisma/client.ts";
+import { PrismaClient, Prisma } from "../generated/prisma/client.ts";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { logger } from "./logger.js";
+
+// Reexport del namespace `Prisma` (Prisma.sql / Prisma.join / Prisma.raw, tipos
+// de error, etc.). Los services deben importarlo desde aquí y NO desde el path
+// del cliente generado (`generated/prisma/...`), para no acoplarse a la ruta ni
+// a la extensión .ts del código generado.
+export { Prisma };
 
 // Singleton pattern para PrismaClient
 const globalForPrisma = globalThis;

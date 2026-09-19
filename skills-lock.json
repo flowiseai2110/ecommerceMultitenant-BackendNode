@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "backend-architecture": {
+      "source": "we-are-singular/skills",
+      "sourceType": "github",
+      "skillPath": "skills/backend-architecture/SKILL.md",
+      "computedHash": "9413b781388cb93cd5d2c499727639551f51fb300491f24e17ba12be72a0d1cb"
+    },
     "supabase-postgres-best-practices": {
       "source": "supabase/agent-skills",
       "sourceType": "github",
