@@ -9,6 +9,7 @@ import productoAtributosRoutes from "../../modules/catalogo/producto-atributos.a
 import usersRoutes from "../../modules/tenants/users.admin.routes.js";
 import invitationsRoutes from "../../modules/tenants/invitations.admin.routes.js";
 import metodosPagoRoutes from "../../modules/pagos/metodos-pago.admin.routes.js";
+import pasarelaConfigRoutes from "../../modules/pagos/pasarela-config.admin.routes.js";
 import pedidosRoutes from "../../modules/ordenes/pedidos.admin.routes.js";
 import metodosEnvioRoutes from "../../modules/envios/metodos-envio.admin.routes.js";
 import cuponesRoutes from "../../modules/cupones/cupones.admin.routes.js";
@@ -28,6 +29,7 @@ router.use("/producto-atributos", productoAtributosRoutes);
 router.use("/users", usersRoutes);
 router.use("/invitations", invitationsRoutes);
 router.use("/metodos-pago", metodosPagoRoutes);
+router.use("/pasarela-config", pasarelaConfigRoutes);
 router.use("/pedidos", pedidosRoutes);
 router.use("/metodos-envio", metodosEnvioRoutes);
 router.use("/cupones", cuponesRoutes);

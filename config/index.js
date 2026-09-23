@@ -78,6 +78,20 @@ export const config = {
     maxCallsMes: process.env.GEMINI_MAX_CALLS_MES ? parseInt(process.env.GEMINI_MAX_CALLS_MES) : null
   },
 
+  // Pasarela de pagos (PSP) — ver pasarela-de-pagos/ para el análisis completo.
+  pagos: {
+    // Clave maestra (32 bytes en base64/hex) para cifrar credenciales de pasarela
+    // por tienda en reposo (AES-256-GCM). Ver utils/crypto.js.
+    encryptionKey: process.env.PAGOS_ENCRYPTION_KEY,
+    // Culqi — pasarela principal (tarjetas + Yape). Cada tienda usa sus propias
+    // llaves; acá solo va lo global del proveedor.
+    culqi: {
+      apiBaseUrl: process.env.CULQI_API_BASE_URL || "https://api.culqi.com/v2",
+      // Timeout de las llamadas HTTP a Culqi (ms). La doc sugiere 5-10s.
+      timeoutMs: parseInt(process.env.CULQI_TIMEOUT_MS) || 10000
+    }
+  },
+
   // Studio — generador de imágenes IA sin persistencia permanente.
   // Bucket separado del de assets de tienda, con limpieza automática por TTL.
   studio: {

@@ -4,6 +4,7 @@ import uploadsRoutes from "./uploads.routes.js";
 import imagesRoutes from "./images.routes.js";
 import adminRoutes from "./admin/index.js";
 import storeRoutes from "./store/index.js";
+import webhooksRoutes from "../modules/pagos/pasarela.webhook.routes.js";
 
 const router = Router();
 
@@ -47,6 +48,10 @@ router.get("/health", (req, res) => {
 router.use("/personas", personaRoutes);
 router.use("/uploads", uploadsRoutes);
 router.use("/images", imagesRoutes);
+
+// Webhooks de pasarelas de pago (server-to-server, público, verificado por
+// idempotencia + reconfirmación contra el proveedor). Fuera de /admin y /store.
+router.use("/webhooks", webhooksRoutes);
 
 // ============================================
 // RUTAS DE ADMINISTRACIÓN — /api/v1/admin/...

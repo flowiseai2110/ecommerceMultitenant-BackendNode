@@ -111,6 +111,66 @@ no-único), `$queryRaw` (scope manual explícito), modelos hijos sin `tienda_id`
 datos maestros (excluidos del allowlist). RLS en Postgres queda como refuerzo
 opcional posterior (implica transacción por request para `SET LOCAL` + pooler).
 
+## Clasificación de recursos: reference vs transaccional
+
+La read-policy de arriba dice *cómo* se filtra un listado, pero no *qué política de
+listado* le corresponde a cada recurso. El `GenericService` hoy trata a todos los
+recursos igual (misma paginación offset, mismo `maxLimit=100` global). Eso es
+correcto para agregar recursos, pero no escala cuando los recursos son de
+naturaleza distinta. El criterio que mantiene la fórmula sana es una distinción
+clásica de modelado de datos — **master/reference data vs transactional data** — que
+además decide la estrategia de paginación y de caché.
+
+| | **Reference / lookup data** | **Transaccional** |
+|---|---|---|
+| Ejemplos | `categorias`, `metodos_pago`, `metodos_envio`, `cupones`* | `productos`, `pedidos`, `clientes` |
+| Cardinalidad | Acotada (decenas por tienda) | No acotada (crece sin techo) |
+| "Traer todo" | **Legítimo** — para selects, filtros client-side, caché | **Nunca** — obliga a paginar |
+| Paginación | Casi irrelevante; offset con `limit` alto basta | Crítica; offset degrada (deep pagination) |
+| Estrategia a escala | `limit` amplio / "list all acotado" | **Keyset/cursor** cuando la tabla crece |
+| Caché en cliente | Sí, agresiva (invalidar en mutación) | Con cuidado / poco |
+| Mutación | Poco frecuente | Frecuente |
+
+\* `cupones` es *reference con crecimiento*: hoy es config acotada, pero puede
+crecer con el tiempo; si una tienda acumula cientos, reclasifícalo como
+transaccional (paginar de verdad, no "traer todo").
+
+### Criterio de diseño
+
+1. **`maxLimit` no es una constante universal.** El `maxLimit=100` global de
+   `config.pagination` mezcla dos necesidades opuestas: un recurso reference quiere
+   "dame todas" (y 100 es un techo arbitrario que puede quedarse corto), mientras un
+   recurso transaccional **jamás** debe permitir traer 100+ sin control. Cuando un
+   recurso lo necesite, el tope debe poder variar por recurso (opción de instancia
+   del `GenericService`), derivado de esta clasificación — no un número global.
+
+2. **La estrategia de paginación se elige por cardinalidad esperada.** Offset
+   (`skip = (page-1)*take`) es correcto para tablas acotadas, pero obliga a la DB a
+   escanear y descartar N filas: degrada en tablas grandes (mitiga **OWASP API4:
+   Unrestricted Resource Consumption**, pero no el costo del deep-offset). Para
+   `productos`/`pedidos` a escala, el estándar es **keyset/cursor pagination**.
+
+3. **"Traer todo acotado" es una operación de primera clase para reference data.**
+   No es un parche pedir `limit` alto y cachear en el cliente: es la política
+   *correcta* para su clase. El consumidor (p. ej. un `<select>` de categorías en el
+   admin) necesita la lista completa, no una página. Lo que sería un error es
+   aplicarle paginación transaccional a un recurso de referencia.
+
+### Cómo se refleja hoy y qué falta
+
+- Los recursos reference ya pueden servir "todo" vía `?limit=100` + filtro
+  `?activo=true` (whitelist en `allowedFilters`). Para tiendas con >100 categorías
+  el cliente debe iterar páginas usando `meta.hasNextPage` como salvaguarda.
+- **Pendiente:** exponer `maxLimit` por instancia en `GenericService` (deriva de la
+  clase del recurso) y evaluar keyset pagination para `productos`/`pedidos` cuando su
+  cardinalidad lo justifique. Mientras tanto, el offset + `maxLimit=100` global se
+  mantiene como default seguro.
+
+> Referencias: distinción *master data / transactional data* (Data Warehousing /
+> DDD: agregados de catálogo vs de operación); *keyset pagination* como alternativa
+> al offset para tablas grandes; **OWASP API Security Top 10 (2023) — API4** para el
+> tope de consumo.
+
 ## Layout de módulos (destino)
 
 ```

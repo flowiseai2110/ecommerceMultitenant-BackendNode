@@ -20,7 +20,8 @@ export { Prisma };
 //     (hijos sin tienda_id; se scopan por relación en la capa de servicio)
 const TENANT_SCOPED_MODELS = new Set([
   "categorias", "productos", "producto_atributos",
-  "clientes", "pedidos", "metodos_pago", "metodos_envio", "cupones"
+  "clientes", "pedidos", "metodos_pago", "metodos_envio", "cupones",
+  "pagos", "tienda_pasarela_config"
 ]);
 
 // Solo lecturas y operaciones masivas. findUnique/update/delete/create se dejan

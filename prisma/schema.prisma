@@ -461,6 +461,7 @@ model pedidos {
   cliente               clientes? @relation(fields: [clienteId], references: [id], onDelete: SetNull)
   detalles              pedido_detalles[]
   historialEstados      pedido_historial_estados[]
+  pagos                 pagos[]
 
   @@unique([tiendaId, numeroPedido], name: "uq_numero_pedido")
   @@index([tiendaId], name: "idx_pedidos_tienda")
@@ -541,6 +542,85 @@ model metodos_envio {
   orden                 Int       @default(0)
 
   @@index([tiendaId, activo], name: "idx_metodos_envio_tienda_activo")
+}
+
+// ============================================
+// MÓDULO: PASARELA DE PAGOS (PSP)
+// Integración con proveedores de pago online (Culqi, etc.).
+// Ver pasarela-de-pagos/ para el análisis y detalle técnico.
+// ============================================
+
+// Credenciales de la pasarela por tienda. Cada tienda conecta su propia cuenta
+// del proveedor y recibe el dinero en su cuenta (modelo "credenciales propias").
+// La llave secreta se guarda CIFRADA (AES-256-GCM) — nunca en texto plano.
+model tienda_pasarela_config {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  proveedor             String    @db.VarChar(30)                              // culqi | izipay | ...
+  modo                  String    @default("test") @db.VarChar(10)            // test | live
+  llavePublica          String?   @map("llave_publica") @db.VarChar(200)      // pk_ — pública, va al frontend
+  llaveSecretaCifrada   String?   @map("llave_secreta_cifrada") @db.Text      // sk_ cifrada (AES-256-GCM)
+  webhookSecretCifrado  String?   @map("webhook_secret_cifrado") @db.Text     // secret de verificación de firma, cifrado
+  activo                Boolean   @default(false)
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  @@unique([tiendaId, proveedor], name: "uq_pasarela_tienda_proveedor")
+  @@index([tiendaId, activo], name: "idx_pasarela_tienda_activo")
+}
+
+// Un intento/transacción de pago contra la pasarela, ligado a un pedido.
+model pagos {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  pedidoId              String    @map("pedido_id") @db.Uuid
+  proveedor             String    @db.VarChar(30)                             // culqi | ...
+  proveedorCargoId      String?   @map("proveedor_cargo_id") @db.VarChar(100) // chr_... (id del cargo en Culqi)
+  metodo                String    @db.VarChar(30)                             // tarjeta | yape | pago_efectivo | qr_interoperable
+  monto                 Decimal   @db.Decimal(10, 2)                          // monto en la moneda (S/), NO en céntimos
+  moneda                String    @default("PEN") @db.VarChar(3)
+  estado                String    @default("pendiente") @db.VarChar(20)       // pendiente | pagado | fallido | reembolsado
+  outcomeCode           String?   @map("outcome_code") @db.VarChar(50)        // código del proveedor (ej. AUT0000)
+  outcomeMensaje        String?   @map("outcome_mensaje") @db.Text
+  metadata              Json?     @db.JsonB
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  // Relaciones
+  pedido                pedidos   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  eventos               pago_eventos[]
+
+  @@unique([proveedor, proveedorCargoId], name: "uq_pago_proveedor_cargo")
+  @@index([tiendaId], name: "idx_pagos_tienda")
+  @@index([pedidoId], name: "idx_pagos_pedido")
+  @@index([tiendaId, estado], name: "idx_pagos_tienda_estado")
+}
+
+// Bitácora de webhooks recibidos del proveedor. El proveedorEventoId único
+// garantiza idempotencia: un mismo evento reenviado no se procesa dos veces.
+model pago_eventos {
+  id                    String    @id @default(uuid()) @db.Uuid
+  pagoId                String?   @map("pago_id") @db.Uuid
+  proveedor             String    @db.VarChar(30)
+  proveedorEventoId     String    @map("proveedor_evento_id") @db.VarChar(120)
+  tipo                  String    @db.VarChar(60)                             // charge.creation.succeeded | ...
+  payload               Json?     @db.JsonB
+  procesado             Boolean   @default(false)
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+
+  // Relaciones
+  pago                  pagos?    @relation(fields: [pagoId], references: [id], onDelete: SetNull)
+
+  @@unique([proveedor, proveedorEventoId], name: "uq_evento_proveedor")
+  @@index([pagoId], name: "idx_pago_eventos_pago")
 }
 
 
