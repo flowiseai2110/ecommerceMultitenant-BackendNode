@@ -1,6 +1,6 @@
 import { ForbiddenError, UnauthorizedError } from "../utils/errors.js";
 import { getCodigoRol } from "../services/roles.service.js";
-import { findActiveMembership } from "../kernel/tenant/membership.js";
+import { findActiveMembership, hasAnyActiveMembership } from "../kernel/tenant/membership.js";
 import { setContextTiendaId } from "../kernel/tenant/tenant-store.js";
 
 const ROL_JERARQUIA = ["viewer", "editor", "admin", "owner"];
@@ -85,6 +85,47 @@ export function requireTiendaAccess(minRol = "viewer") {
   };
 }
 
+// Cache de "es miembro de alguna tienda". Solo guarda positivos: así quien
+// acaba de aceptar su primera invitación obtiene acceso de inmediato, y una
+// cuenta de comprador no llena el Map. Un miembro desactivado conserva el
+// acceso como máximo CACHE_TTL (mismo criterio que requireTiendaAccess).
+const _anyMembershipCache = new Map();
+
+/**
+ * Exige que el usuario autenticado sea miembro activo de AL MENOS UNA tienda.
+ *
+ * Para endpoints de admin que no operan sobre una tienda concreta (crear
+ * tienda, studio de IA) y por eso no pueden usar requireTiendaAccess. Sin
+ * esto bastaría un JWT válido, y cualquiera obtiene uno iniciando sesión con
+ * Google en el storefront (mismo proyecto de Supabase Auth).
+ *
+ * Debe ejecutarse DESPUÉS de authMiddleware.
+ */
+export function requireAnyMembership() {
+  return async (req, res, next) => {
+    try {
+      if (!req.user) {
+        return next(new UnauthorizedError("Usuario no autenticado"));
+      }
+
+      const cachedAt = _anyMembershipCache.get(req.user.id);
+      if (cachedAt && Date.now() - cachedAt <= CACHE_TTL) {
+        return next();
+      }
+
+      if (!(await hasAnyActiveMembership(req.user.id))) {
+        _anyMembershipCache.delete(req.user.id);
+        return next(new ForbiddenError("Tu cuenta no tiene acceso al panel de administración"));
+      }
+
+      _anyMembershipCache.set(req.user.id, Date.now());
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
 /**
  * Middleware factory que resuelve req.params.tiendaId a partir del propio
  * recurso cuando el cliente no lo envía en body/params/query (rutas tipo
@@ -143,4 +184,4 @@ export function scopeReadToResourceTienda(resolver) {
   };
 }
 
-export default { requireTiendaAccess, resolveTiendaId, scopeReadToResourceTienda };
+export default { requireTiendaAccess, requireAnyMembership, resolveTiendaId, scopeReadToResourceTienda };

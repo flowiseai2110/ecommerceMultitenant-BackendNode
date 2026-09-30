@@ -38,6 +38,11 @@ class GenericService {
     // - allowedOrderBy: whitelist de campos ordenables. Si se define y el cliente
     //   pide otro, se cae al defaultOrderBy.
     this.allowedOrderBy = options.allowedOrderBy || null;
+    // - multiValueFilters: campos cuyo valor puede llegar como lista separada
+    //   por comas (?categoriaId=a,b) y se traduce a { in: [...] } para un OR
+    //   dentro de la faceta. Es opt-in por modulo a proposito: un filtro exacto
+    //   cualquiera (ej. nombre) puede contener comas legitimamente.
+    this.multiValueFilters = options.multiValueFilters || [];
     // - tenantRelation: para modelos hijos SIN columna tiendaId propia (ej.
     //   producto_variantes, producto_imagenes), nombre de la relación al padre
     //   que sí la tiene. El filtro tiendaId se traduce a { <relación>: { tiendaId } }.
@@ -337,6 +342,13 @@ class GenericService {
         const field = key.replace("max_", "");
         if (!this.#isFilterAllowed(field)) continue;
         where[field] = { ...where[field], lte: parsedValue };
+      }
+      // Multi-valor (OR dentro de la faceta): ?categoriaId=a,b -> { in: [a, b] }
+      else if (this.multiValueFilters.includes(key) && typeof value === "string" && value.includes(",")) {
+        if (!this.#isFilterAllowed(key)) continue;
+        const values = value.split(",").map(v => v.trim()).filter(Boolean);
+        if (values.length === 0) continue;
+        where[key] = values.length === 1 ? values[0] : { in: values };
       }
       // Búsqueda exacta por defecto
       else {

@@ -13,6 +13,8 @@ import pasarelaConfigRoutes from "../../modules/pagos/pasarela-config.admin.rout
 import pedidosRoutes from "../../modules/ordenes/pedidos.admin.routes.js";
 import metodosEnvioRoutes from "../../modules/envios/metodos-envio.admin.routes.js";
 import cuponesRoutes from "../../modules/cupones/cupones.admin.routes.js";
+import liveRoutes from "../../modules/live/live.admin.routes.js";
+import resenasRoutes from "../../modules/resenas/resenas.admin.routes.js";
 import studioRoutes from "../studio.routes.js";
 
 const router = Router();
@@ -33,6 +35,8 @@ router.use("/pasarela-config", pasarelaConfigRoutes);
 router.use("/pedidos", pedidosRoutes);
 router.use("/metodos-envio", metodosEnvioRoutes);
 router.use("/cupones", cuponesRoutes);
+router.use("/live", liveRoutes);
+router.use("/resenas", resenasRoutes);
 router.use("/studio", studioRoutes);
 
 export default router;

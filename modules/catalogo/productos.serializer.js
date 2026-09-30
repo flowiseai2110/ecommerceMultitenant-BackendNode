@@ -48,6 +48,19 @@ function serializeVarianteStore(v) {
 }
 
 /**
+ * Resumen de reseñas aprobadas (denormalizado en productos, ver resenas.service).
+ * Number(): en las queries raw Postgres puede devolver el float como string.
+ * @param {object} row
+ * @returns {{ ratingPromedio: number, ratingCantidad: number }}
+ */
+function serializeRatingStore(row) {
+  return {
+    ratingPromedio: Number(row.ratingPromedio) || 0,
+    ratingCantidad: Number(row.ratingCantidad) || 0
+  };
+}
+
+/**
  * Tarjeta de producto para listados públicos (GET / y GET /home).
  * `categoriaId` solo viene en el listado paginado; en /home llega undefined y
  * JSON lo omite, preservando la salida actual de cada endpoint.
@@ -70,6 +83,7 @@ export function serializeProductoCardStore(row) {
     destacado: row.destacado,
     esServicio: row.esServicio,
     etiquetas: row.etiquetas,
+    ...serializeRatingStore(row),
     imagenes: Array.isArray(row.imagenes) ? row.imagenes.map(serializeImagenStore) : []
   };
 }
@@ -98,6 +112,7 @@ export function serializeProductoDetailStore(row) {
     destacado: row.destacado,
     esServicio: row.esServicio,
     etiquetas: row.etiquetas,
+    ...serializeRatingStore(row),
     variantes: Array.isArray(row.variantes) ? row.variantes.map(serializeVarianteStore) : [],
     imagenes: Array.isArray(row.imagenes) ? row.imagenes.map(serializeImagenStore) : []
   };

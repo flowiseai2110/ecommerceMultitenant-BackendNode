@@ -21,3 +21,18 @@ export async function findActiveMembership(userId, tiendaId) {
     where: { userId, tiendaId, activo: true }
   });
 }
+
+/**
+ * ¿El usuario es miembro activo de al menos una tienda? Distingue a un
+ * comerciante (que entra al admin por invitación) de un comprador que solo
+ * tiene cuenta porque inició sesión con Google en el storefront.
+ * @param {string} userId - ID del usuario (Supabase Auth).
+ * @returns {Promise<boolean>}
+ */
+export async function hasAnyActiveMembership(userId) {
+  const membership = await prisma.usuario_tiendas.findFirst({
+    where: { userId, activo: true },
+    select: { id: true }
+  });
+  return !!membership;
+}

@@ -8,7 +8,11 @@ import metodosPagoRoutes from "../../modules/pagos/metodos-pago.store.routes.js"
 import pasarelaRoutes from "../../modules/pagos/pasarela.store.routes.js";
 import metodosEnvioRoutes from "../../modules/envios/metodos-envio.store.routes.js";
 import pedidosRoutes from "../../modules/ordenes/pedidos.store.routes.js";
+import cuentaRoutes from "../../modules/ordenes/cuenta.store.routes.js";
+import resenasRoutes from "../../modules/resenas/resenas.store.routes.js";
 import cuponesRoutes from "../../modules/cupones/cupones.store.routes.js";
+import liveRoutes from "../../modules/live/live.store.routes.js";
+import agenteRoutes from "../../modules/agente/agente.store.routes.js";
 
 const router = Router();
 
@@ -27,6 +31,10 @@ router.use("/metodos-pago", cache(300), metodosPagoRoutes);
 router.use("/pagos", pasarelaRoutes);        // sin caché — crea cargos en la pasarela
 router.use("/metodos-envio", cache(300), metodosEnvioRoutes);
 router.use("/pedidos", pedidosRoutes);       // sin caché — rastreo en tiempo real
+router.use("/cuenta", cuentaRoutes);         // sin caché — datos privados del comprador (JWT)
+router.use("/resenas", resenasRoutes);       // caché solo en GET /producto (lo fija la ruta)
 router.use("/cupones", cuponesRoutes);
+router.use("/live", cache(15), liveRoutes);   // caché corta: el tiempo real llega por Realtime
+router.use("/agente", agenteRoutes);          // sin caché — cada consulta es conversacional y única
 
 export default router;

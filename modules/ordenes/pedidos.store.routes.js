@@ -3,7 +3,7 @@ import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import config from "../../config/index.js";
 import { validate } from "../../middlewares/validation.middleware.js";
-import { scopeBodyToTienda } from "../../kernel/tenant/index.js";
+import { scopeBodyToTienda, optionalAuth } from "../../kernel/tenant/index.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import PedidosService from "./pedidos.service.js";
 import { createPedidoSchema } from "./pedidos.schema.js";
@@ -37,11 +37,14 @@ const checkoutLimiter = rateLimit({
 router.post(
   "/",
   checkoutLimiter,
+  // Login opcional: con sesión el pedido queda en "Mis pedidos"; un token
+  // inválido o vencido no bloquea la compra, se procesa como invitado.
+  optionalAuth,
   scopeBodyToTienda,
   validate({ body: createPedidoSchema }),
   async (req, res, next) => {
     try {
-      const data = await pedidosService.create(req.body);
+      const data = await pedidosService.create(req.body, { authUserId: req.user?.id ?? null });
 
       // Fire-and-forget: la respuesta del checkout no espera al email
       pedidosService.notifyNewOrder(data);

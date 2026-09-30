@@ -35,6 +35,8 @@ const productosListSelect = {
   destacado: true,
   esServicio: true,
   etiquetas: true,
+  ratingPromedio: true,
+  ratingCantidad: true,
   imagenes: {
     where: { esPrincipal: true },
     take: 1,
@@ -59,6 +61,8 @@ const productosService = new GenericService(productosRepository, {
   // Read-policy store: sin tiendaId (subdominio o ?tiendaId=) no se lista nada.
   requireTiendaId: true,
   allowedFilters: ["activo", "categoriaId", "destacado", "esServicio"],
+  // El storefront permite marcar varias categorias a la vez (?categoriaId=a,b)
+  multiValueFilters: ["categoriaId"],
   allowedOrderBy: ["precioBase", "nombre", "fechaRegistro", "stock"]
 });
 // El serializer del store define el contrato de salida campo por campo: nunca
@@ -98,6 +102,7 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
                p.descripcion_corta AS "descripcionCorta", p.sku, p.precio_base AS "precioBase",
                p.precio_oferta AS "precioOferta", p.stock, p.activo, p.destacado,
                p.es_servicio AS "esServicio", p.etiquetas,
+               p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
                img.id AS "imagenId", img.url AS "imagenUrl", img.texto_alternativo AS "imagenAlt"
         FROM productos p
         LEFT JOIN LATERAL (
@@ -116,6 +121,7 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
                p.descripcion_corta AS "descripcionCorta", p.sku, p.precio_base AS "precioBase",
                p.precio_oferta AS "precioOferta", p.stock, p.activo, p.destacado,
                p.es_servicio AS "esServicio", p.etiquetas,
+               p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
                img.id AS "imagenId", img.url AS "imagenUrl", img.texto_alternativo AS "imagenAlt"
         FROM productos p
         LEFT JOIN LATERAL (
@@ -168,6 +174,7 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
              p.descripcion, p.descripcion_corta AS "descripcionCorta", p.sku,
              p.precio_base AS "precioBase", p.precio_oferta AS "precioOferta",
              p.stock, p.activo, p.destacado, p.es_servicio AS "esServicio", p.etiquetas,
+             p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
              COALESCE(v.variantes, '[]'::json) AS variantes,
              COALESCE(i.imagenes, '[]'::json) AS imagenes
       FROM productos p

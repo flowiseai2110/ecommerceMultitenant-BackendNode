@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { requireAnyMembership } from "../middlewares/tienda-access.middleware.js";
 import { validate } from "../middlewares/validation.middleware.js";
 import { uploadImage } from "../middlewares/upload.middleware.js";
 import { generarStudio, consultarEstadoStudio } from "../controllers/studio.controller.js";
@@ -14,12 +15,15 @@ const router = Router();
 
 // ============================================
 // STUDIO — generación libre de imágenes con IA (sin tenant, sin persistencia)
+// Sin tenant no aplica requireTiendaAccess, pero sí exige ser miembro de alguna
+// tienda: la IA tiene costo y un comprador del storefront también tiene JWT.
 // ============================================
 
 // POST - Encola una tarea de generación con IA a partir de imágenes recibidas en el body
 router.post(
   "/generar-ia",
   authMiddleware,
+  requireAnyMembership(),
   uploadStudioImages,
   validate({ body: generarStudioSchema }),
   generarStudio
@@ -29,6 +33,7 @@ router.post(
 router.get(
   "/generar-ia/:taskId",
   authMiddleware,
+  requireAnyMembership(),
   validate({ params: studioTaskIdParamSchema }),
   consultarEstadoStudio
 );

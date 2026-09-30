@@ -5,6 +5,12 @@ import emailService from "../../services/email.service.js";
 import { logger } from "../../config/logger.js";
 import { validarYBloquearStock, descontarStock, reponerStock } from "../inventario/inventario.service.js";
 
+// Columnas del destino de entrega en `pedidos` (ver schema.prisma).
+const CAMPOS_DESTINO = [
+  "courier", "agenciaTexto", "departamento", "provincia", "distrito",
+  "ubigeoCode", "referencia", "latitud", "longitud"
+];
+
 /**
  * Servicio de Pedidos (contexto Órdenes) con lógica de negocio completa:
  * - Generación de número de pedido sin race condition (advisory lock)
@@ -74,8 +80,11 @@ class PedidosService {
    * 6. Crea pedido + detalles + historial
    * 7. Descuenta stock (Inventario)
    * 8. Actualiza estadísticas del cliente
+   *
+   * `authUserId` viene del JWT verificado (nunca del body): si el comprador
+   * inició sesión en el storefront, el pedido queda en su "Mis pedidos".
    */
-  async create(data) {
+  async create(data, { authUserId = null } = {}) {
     const {
       tiendaId,
       cliente: clienteData,
@@ -89,6 +98,9 @@ class PedidosService {
       origen = "web",
       codigoCupon = null
     } = data;
+    // Destino de entrega: ya viene normalizado por createPedidoSchema.
+    const destino = {};
+    for (const campo of CAMPOS_DESTINO) destino[campo] = data[campo] ?? null;
 
     return await prisma.$transaction(async (tx) => {
       // 1. Validar stock y bloquear las filas involucradas (FOR UPDATE).
@@ -150,6 +162,7 @@ class PedidosService {
           clienteNombre: clienteData.nombre,
           clienteWhatsapp: clienteData.whatsappNumero,
           clienteEmail: clienteData.email || null,
+          authUserId,
           numeroPedido,
           estado: "pendiente",
           subtotal,
@@ -160,6 +173,7 @@ class PedidosService {
           estadoPago: "pendiente",
           metodoEnvio: metodoEnvio || null,
           direccionEnvio: direccionEnvio || null,
+          ...destino,
           notas: notas || null,
           origen,
           codigoCupon: codigoCuponGuardado,
@@ -555,6 +569,81 @@ class PedidosService {
 
     if (!pedido) throw new NotFoundError("Pedido");
     return pedido;
+  }
+
+  /**
+   * "Mis pedidos" del comprador logueado en una tienda. Solo los pedidos que
+   * hizo con sesión iniciada (authUserId); los de invitado no se le asocian
+   * porque el WhatsApp no prueba que sea la misma persona.
+   * @param {string} tiendaId
+   * @param {string} authUserId - `sub` del JWT de Supabase.
+   * @returns {Promise<object[]>}
+   */
+  async listByAuthUser(tiendaId, authUserId) {
+    const pedidos = await prisma.pedidos.findMany({
+      where: { tiendaId, authUserId },
+      orderBy: { fechaRegistro: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        numeroPedido: true,
+        estado: true,
+        estadoPago: true,
+        total: true,
+        metodoPago: true,
+        metodoEnvio: true,
+        fechaRegistro: true,
+        _count: { select: { detalles: true } }
+      }
+    });
+
+    return pedidos.map(({ _count, total, ...pedido }) => ({
+      ...pedido,
+      total: Number(total),
+      cantidadItems: _count.detalles
+    }));
+  }
+
+  /**
+   * Datos de contacto del último pedido del comprador en esta tienda, para
+   * autocompletar el checkout. Se toma del snapshot del pedido (lo que el
+   * propio comprador escribió), no de la ficha `clientes`, que la edita el admin.
+   *
+   * Incluye el destino de entrega y el nombre del método de envío: el checkout
+   * los precarga si ese método sigue activo en la tienda.
+   * @param {string} tiendaId
+   * @param {string} authUserId
+   * @returns {Promise<object|null>}
+   */
+  async ultimoContacto(tiendaId, authUserId) {
+    const destinoSelect = Object.fromEntries(CAMPOS_DESTINO.map(c => [c, true]));
+    const pedido = await prisma.pedidos.findFirst({
+      where: { tiendaId, authUserId },
+      orderBy: { fechaRegistro: "desc" },
+      select: {
+        clienteNombre: true,
+        clienteWhatsapp: true,
+        clienteEmail: true,
+        metodoEnvio: true,
+        direccionEnvio: true,
+        ...destinoSelect,
+        cliente: { select: { tipoDocumento: true, numeroDocumento: true } }
+      }
+    });
+    if (!pedido) return null;
+
+    const destino = { direccion: pedido.direccionEnvio };
+    for (const campo of CAMPOS_DESTINO) destino[campo] = pedido[campo];
+
+    return {
+      nombre: pedido.clienteNombre,
+      whatsappNumero: pedido.clienteWhatsapp,
+      email: pedido.clienteEmail,
+      tipoDocumento: pedido.cliente?.tipoDocumento ?? null,
+      numeroDocumento: pedido.cliente?.numeroDocumento ?? null,
+      metodoEnvio: pedido.metodoEnvio,
+      destino
+    };
   }
 
   /**

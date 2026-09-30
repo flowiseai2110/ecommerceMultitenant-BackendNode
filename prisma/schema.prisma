@@ -148,6 +148,46 @@ model tiendas {
   invitaciones          invitaciones[]
   cupones               cupones[]
   usosRecursos          tienda_uso_recursos[]
+  avisoLive             avisos_live?
+}
+
+// ============================================
+// MÓDULO: AVISO DE LIVE
+// Una fila por tienda. El emprendedor transmite en TikTok/YouTube/Facebook;
+// esta plataforma NO transmite video: solo guarda los links y avisa a la tienda
+// que hay un live activo. El storefront lee vía Supabase Realtime con el rol
+// anon (SELECT público) — ver docs/sql/live_rls_realtime.sql. Todas las
+// escrituras pasan por el backend con Prisma.
+// ============================================
+model avisos_live {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @unique @map("tienda_id") @db.Uuid
+
+  activo                Boolean   @default(false)
+  titulo                String?   @db.VarChar(100)
+
+  // Links persistentes — se conservan entre lives para no re-pegarlos.
+  tiktokUrl             String?   @map("tiktok_url") @db.Text
+  youtubeUrl            String?   @map("youtube_url") @db.Text
+  facebookUrl           String?   @map("facebook_url") @db.Text
+
+  // Qué plataformas se muestran en el live ACTUAL.
+  mostrarTiktok         Boolean   @default(false) @map("mostrar_tiktok")
+  mostrarYoutube        Boolean   @default(false) @map("mostrar_youtube")
+  mostrarFacebook       Boolean   @default(false) @map("mostrar_facebook")
+
+  iniciadoEn            DateTime? @map("iniciado_en") @db.Timestamptz
+  expiraEn              DateTime? @map("expira_en") @db.Timestamptz
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  tienda                tiendas   @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+
+  @@index([activo, expiraEn], name: "idx_avisos_live_activo_expira")
 }
 
 model tienda_configuraciones {
@@ -298,6 +338,10 @@ model productos {
   esServicio            Boolean   @default(false) @map("es_servicio")
   etiquetas             String[]
   metadata              Json?     @db.JsonB
+  // Resumen de reseñas APROBADAS, desnormalizado para tarjetas y orden por
+  // valoración. Lo recalcula resenas.service en cada cambio de estado.
+  ratingPromedio        Float     @default(0) @map("rating_promedio")
+  ratingCantidad        Int       @default(0) @map("rating_cantidad")
 
   // Auditoría
   fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
@@ -308,6 +352,7 @@ model productos {
   // Relaciones
   variantes             producto_variantes[]
   imagenes              producto_imagenes[]
+  resenas               resenas[]
 
   @@index([tiendaId, activo], name: "idx_productos_tienda_activo")
   @@index([tiendaId, categoriaId], name: "idx_productos_tienda_categoria")
@@ -433,6 +478,9 @@ model pedidos {
   clienteNombre         String?   @map("cliente_nombre") @db.VarChar(100)
   clienteWhatsapp       String?   @map("cliente_whatsapp") @db.VarChar(20)
   clienteEmail          String?   @map("cliente_email") @db.VarChar(100)
+  // Usuario de Supabase Auth (login con Google en el storefront) que hizo el
+  // pedido; null si se compró como invitado. Es la base de "Mis pedidos".
+  authUserId            String?   @map("auth_user_id") @db.Uuid
   numeroPedido          String    @map("numero_pedido") @db.VarChar(20)
   estado                String    @default("pendiente") @db.VarChar(50)
   subtotal              Decimal   @default(0) @db.Decimal(10, 2)
@@ -444,6 +492,18 @@ model pedidos {
   referenciaPago        String?   @map("referencia_pago") @db.VarChar(100)
   metodoEnvio           String?   @map("metodo_envio") @db.VarChar(50)
   direccionEnvio        String?   @map("direccion_envio") @db.Text
+  // Destino de entrega capturado en el checkout (no afecta el total). Según el
+  // tipo de envío: courier → courier + agenciaTexto; domicilio → ubigeo +
+  // direccionEnvio + referencia (+ pin del mapa).
+  courier               String?   @db.VarChar(50)
+  agenciaTexto          String?   @map("agencia_texto") @db.Text
+  departamento          String?   @db.VarChar(100)
+  provincia             String?   @db.VarChar(100)
+  distrito              String?   @db.VarChar(100)
+  ubigeoCode            String?   @map("ubigeo_code") @db.VarChar(10)
+  referencia            String?   @db.Text
+  latitud               Float?
+  longitud              Float?
   comprobante           String?   @db.VarChar(10)
   notas                 String?   @db.Text
   origen                String    @default("web") @db.VarChar(20)
@@ -462,6 +522,7 @@ model pedidos {
   detalles              pedido_detalles[]
   historialEstados      pedido_historial_estados[]
   pagos                 pagos[]
+  resenas               resenas[]
 
   @@unique([tiendaId, numeroPedido], name: "uq_numero_pedido")
   @@index([tiendaId], name: "idx_pedidos_tienda")
@@ -469,6 +530,45 @@ model pedidos {
   @@index([tiendaId, estadoPago], name: "idx_pedidos_tienda_estado_pago")
   @@index([tiendaId, fechaRegistro(sort: Desc)], name: "idx_pedidos_tienda_fecha")
   @@index([clienteId], name: "idx_pedidos_cliente")
+  @@index([tiendaId, authUserId, fechaRegistro(sort: Desc)], name: "idx_pedidos_tienda_auth_user")
+}
+
+// ============================================
+// MÓDULO: RESEÑAS (valoración de productos)
+// ============================================
+// Solo de compras verificadas: el pedido debe estar entregado e incluir el
+// producto. Una reseña por (pedido, producto); editarla la vuelve a moderar.
+// La restricción 1..5 de estrellas vive en SQL (docs/sql/resenas_setup.sql).
+
+model resenas {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  productoId            String    @map("producto_id") @db.Uuid
+  pedidoId              String    @map("pedido_id") @db.Uuid
+  // Usuario de Supabase si reseñó con sesión; null si llegó por el link de WhatsApp.
+  authUserId            String?   @map("auth_user_id") @db.Uuid
+  estrellas             Int       @db.SmallInt
+  comentario            String?   @db.Text
+  // "Ana G." — derivado del nombre del pedido; nunca el nombre completo.
+  nombreMostrado        String    @map("nombre_mostrado") @db.VarChar(60)
+  // pendiente | aprobada | rechazada
+  estado                String    @default("pendiente") @db.VarChar(20)
+  respuestaTienda       String?   @map("respuesta_tienda") @db.Text
+  fechaRespuesta        DateTime? @map("fecha_respuesta") @db.Timestamptz
+
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  // Relaciones
+  producto              productos @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  pedido                pedidos   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@unique([pedidoId, productoId], name: "uq_resena_pedido_producto")
+  @@index([tiendaId, productoId, estado, fechaRegistro(sort: Desc)], name: "idx_resenas_producto_estado")
+  @@index([tiendaId, estado, fechaRegistro(sort: Desc)], name: "idx_resenas_tienda_estado")
 }
 
 // ============================================

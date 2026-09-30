@@ -98,6 +98,31 @@ export const config = {
     scratchBucket: process.env.STUDIO_SCRATCH_BUCKET || "studio-scratch"
   },
 
+  // Reseñas de productos. El link de WhatsApp ("califica tu compra") lleva un
+  // token firmado con este secreto: prueba que quien reseña recibió el pedido,
+  // aunque haya comprado sin cuenta.
+  resenas: {
+    linkSecret: process.env.RESENAS_LINK_SECRET,
+    linkTtlDias: parseInt(process.env.RESENAS_LINK_TTL_DIAS) || 60,
+    // Máximo de reseñas enviadas por IP en la ventana del rate limit global.
+    rateLimitMax: parseInt(process.env.RESENAS_RATE_LIMIT_MAX) || 20
+  },
+
+  // Agente / Asesor de ventas IA. Ver modules/agente/arquitectura.md.
+  // El modelo se aísla acá para poder migrar a otro proveedor sin tocar el servicio.
+  agente: {
+    apiKey: process.env.AGENTE_IA_API_KEY,
+    modelo: process.env.AGENTE_IA_MODELO || "claude-haiku-4-5",
+    // Tope de tokens de salida por turno (respuestas de chat: cortas).
+    maxTokens: parseInt(process.env.AGENTE_IA_MAX_TOKENS) || 1024,
+    // Tope de vueltas del loop de tool-use por turno (anti-loop infinito).
+    maxToolLoops: parseInt(process.env.AGENTE_IA_MAX_TOOL_LOOPS) || 4,
+    // Máximo de mensajes de historial que el cliente puede enviar (anti-abuso de contexto).
+    maxHistorial: parseInt(process.env.AGENTE_IA_MAX_HISTORIAL) || 20,
+    // Rate limit específico del asesor por ventana (por sessionToken).
+    rateLimitMax: parseInt(process.env.AGENTE_IA_RATE_LIMIT_MAX) || 20
+  },
+
   // Imágenes por defecto por folder
   defaultImages: {
     logos: "https://placehold.co/200x200/e2e8f0/64748b?text=Logo",

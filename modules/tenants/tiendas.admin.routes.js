@@ -4,7 +4,7 @@ import GenericService from "../../services/generic.service.js";
 import GenericRepository from "../../repositories/generic.repository.js";
 import { prisma } from "../../config/prisma.js";
 import { validate } from "../../middlewares/validation.middleware.js";
-import { authMiddleware, requireTiendaAccess, resolveTiendaId } from "../../kernel/tenant/index.js";
+import { authMiddleware, requireAnyMembership, requireTiendaAccess, resolveTiendaId } from "../../kernel/tenant/index.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import { uploadImage } from "../../middlewares/upload.middleware.js";
 import { uploadLogo, uploadBanner } from "../../controllers/tiendas-imagen.controller.js";
@@ -110,9 +110,12 @@ router.get(
   tiendasController.findById
 );
 
+// Solo miembros de alguna tienda (comerciantes invitados). Un comprador del
+// storefront también tiene JWT de Supabase y no debe poder crear tiendas.
 router.post(
   "/",
   authMiddleware,
+  requireAnyMembership(),
   validate({ body: createTiendaSchema }),
   invalidateTiendasListCache,
   async (req, res, next) => {

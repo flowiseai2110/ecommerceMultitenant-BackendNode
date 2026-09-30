@@ -13,6 +13,17 @@ const detalleItemSchema = z.object({
   descuento: z.coerce.number().min(0).optional().default(0)
 });
 
+// El destino de entrega es una anotación para el vendedor (no afecta el total):
+// un dato raro NO debe tumbar el pedido. Por eso se recorta en vez de rechazar
+// (el form del storefront no limita el largo del texto pegado del mapa del
+// courier) y una coordenada inválida se descarta como null.
+const textoDestino = (max) => z.string().nullish()
+  .transform(v => {
+    const limpio = v?.trim();
+    return limpio ? limpio.slice(0, max) : null;
+  });
+const coordenada = (limite) => z.number().min(-limite).max(limite).nullish().catch(null);
+
 // Schema para crear pedido (desde storefront)
 export const createPedidoSchema = z.object({
   tiendaId: z.string({ required_error: "El ID de tienda es requerido" }).uuid("ID de tienda inválido"),
@@ -32,6 +43,16 @@ export const createPedidoSchema = z.object({
   metodoPago: z.string().max(50).optional().nullable(),
   metodoEnvio: z.string().max(50).optional().nullable(),
   direccionEnvio: z.string().optional().nullable(),
+  // Destino de entrega (ver textoDestino/coordenada arriba)
+  courier: textoDestino(50),
+  agenciaTexto: textoDestino(2000),
+  departamento: textoDestino(100),
+  provincia: textoDestino(100),
+  distrito: textoDestino(100),
+  ubigeoCode: textoDestino(10),
+  referencia: textoDestino(1000),
+  latitud: coordenada(90),
+  longitud: coordenada(180),
   costoEnvio: z.coerce.number().min(0).optional().default(0),
   descuentoMonto: z.coerce.number().min(0).optional().default(0),
   notas: z.string().optional().nullable(),
