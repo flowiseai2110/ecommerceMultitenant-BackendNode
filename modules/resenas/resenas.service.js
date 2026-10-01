@@ -1,6 +1,8 @@
 import { prisma } from "../../config/prisma.js";
 import { ForbiddenError, NotFoundError, UnprocessableError } from "../../utils/errors.js";
 import { invalidateProductoDetailCache } from "../catalogo/productos.cache.js";
+import config from "../../config/index.js";
+import { firmarTokenResena } from "./resenas.token.js";
 
 /**
  * Reseñas de productos (valoración con estrellas).
@@ -146,6 +148,22 @@ export async function verificarCompra(db, { tiendaId, pedidoId, productoId, auth
   return pedido;
 }
 
+// Promedio bayesiano para "Mejor valorados": cada producto arranca con
+// PRIOR_CANTIDAD reseñas "virtuales" de PRIOR_MEDIA estrellas, que se diluyen
+// a medida que llegan reseñas reales. Mantener en sync con resenas_ranking.sql.
+const PRIOR_MEDIA = 4;
+const PRIOR_CANTIDAD = 3;
+
+/**
+ * Puntaje de ranking (0 si no hay reseñas: van al final de "Mejor valorados").
+ * 5.0 con 1 reseña → 4.25; 4.9 con 40 → 4.84.
+ */
+export function calcularRatingScore(sumaEstrellas, cantidad) {
+  if (!cantidad) return 0;
+  const score = (PRIOR_CANTIDAD * PRIOR_MEDIA + sumaEstrellas) / (PRIOR_CANTIDAD + cantidad);
+  return Math.round(score * 10000) / 10000;
+}
+
 /**
  * Recalcula el resumen desnormalizado del producto con las reseñas APROBADAS.
  * @param {object} db - Transacción.
@@ -155,12 +173,14 @@ export async function recalcularRatingProducto(db, productoId) {
   const agg = await db.resenas.aggregate({
     where: { productoId, estado: "aprobada" },
     _avg: { estrellas: true },
+    _sum: { estrellas: true },
     _count: { _all: true }
   });
   const ratingCantidad = agg._count._all;
   const ratingPromedio = ratingCantidad ? redondear(agg._avg.estrellas) : 0;
-  await db.productos.update({ where: { id: productoId }, data: { ratingPromedio, ratingCantidad } });
-  return { ratingPromedio, ratingCantidad };
+  const ratingScore = calcularRatingScore(agg._sum?.estrellas ?? 0, ratingCantidad);
+  await db.productos.update({ where: { id: productoId }, data: { ratingPromedio, ratingCantidad, ratingScore } });
+  return { ratingPromedio, ratingCantidad, ratingScore };
 }
 
 /**
@@ -255,6 +275,24 @@ export async function listarResenasProducto(tiendaId, productoId, { page = 1, li
 }
 
 /**
+ * Reseñas para los testimonios del home: aprobadas, de 4-5 estrellas y CON
+ * comentario (un testimonio sin texto no dice nada), las más recientes.
+ */
+export async function listarResenasDestacadas(tiendaId, limit = 6) {
+  const data = await prisma.resenas.findMany({
+    where: { tiendaId, estado: "aprobada", estrellas: { gte: 4 }, comentario: { not: null } },
+    orderBy: { fechaRegistro: "desc" },
+    take: limit,
+    include: { producto: { select: { nombre: true } } }
+  });
+  return data.map(r => ({
+    ...serializeResenaStore(r),
+    productoId: r.productoId,
+    productoNombre: r.producto?.nombre ?? null
+  }));
+}
+
+/**
  * Productos que el comprador puede calificar: los de sus pedidos ENTREGADOS en
  * la tienda, con la reseña que ya dejó (si existe) para poder editarla.
  *
@@ -311,6 +349,45 @@ export async function listarResenables(tiendaId, filtro) {
     }
     return { pedidoId: p.id, numeroPedido: p.numeroPedido, fechaEntregado: p.fechaEntregado, items };
   }).filter(p => p.items.length);
+}
+
+// ============================================
+// Link "califica tu compra" (WhatsApp tras la entrega)
+// ============================================
+
+/**
+ * URL pública de una ruta de la tienda: subdominio en producción
+ * (https://<slug>.<baseDomain>/<ruta>) o modo por ruta en dev
+ * (<storefrontUrl>/<slug>/<ruta>).
+ */
+export function urlTienda(slug, ruta) {
+  const { baseDomain, storefrontUrl } = config.platform;
+  return baseDomain
+    ? `https://${slug}.${baseDomain}/${ruta}`
+    : `${storefrontUrl.replace(/\/+$/, "")}/${slug}/${ruta}`;
+}
+
+/**
+ * Genera el link firmado para que el comprador califique su pedido sin cuenta.
+ * Solo para pedidos ENTREGADOS: antes no hay nada que calificar.
+ * @returns {Promise<{ url: string, expiraEn: string }>}
+ */
+export async function generarEnlaceResena(tiendaId, pedidoId) {
+  const pedido = await prisma.pedidos.findFirst({
+    where: { id: pedidoId, tiendaId },
+    select: { id: true, estado: true }
+  });
+  if (!pedido) throw new NotFoundError("Pedido");
+  if (pedido.estado !== "entregado") {
+    throw new UnprocessableError("El pedido aún no está entregado", { motivo: "PEDIDO_NO_ENTREGADO" });
+  }
+
+  const tienda = await prisma.tiendas.findUnique({ where: { id: tiendaId }, select: { slug: true } });
+  if (!tienda) throw new NotFoundError("Tienda");
+
+  const token = await firmarTokenResena({ pedidoId, tiendaId });
+  const expiraEn = new Date(Date.now() + config.resenas.linkTtlDias * 24 * 60 * 60 * 1000).toISOString();
+  return { url: urlTienda(tienda.slug, `resenar/${token}`), expiraEn };
 }
 
 // ============================================

@@ -224,6 +224,9 @@ desarrollará al abordar esta fase.)
 
 ## 8. Roadmap
 
+> Specs en curso: [búsqueda confiable del asesor](../../docs/specs/asesor-ia-busqueda/spec.md)
+> (FTS en español, filtros por categoría y color). Reemplaza la búsqueda `contains` de §6.
+
 - **Fase 1 (actual):** `buscar_productos` de solo-lectura → busca y muestra tarjetas. Tool-use simple.
 - **Fase 2:** tools de lectura extra (`consultar_envio`, `verificar_stock_variante`,
   `productos_relacionados`) + RAG opcional sobre `.md` de conocimiento de tienda (pgvector + RLS por

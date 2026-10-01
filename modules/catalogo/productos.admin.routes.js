@@ -86,6 +86,7 @@ const productosService = new GenericService(productosRepository, {
     destacado: true,
     esServicio: true,
     etiquetas: true,
+    colores: true,
     // Solo imagen principal en el listado
     imagenes: {
       where: { esPrincipal: true },

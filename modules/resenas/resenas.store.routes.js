@@ -11,9 +11,10 @@ import {
 import { apiResponse } from "../../utils/apiResponse.js";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../../utils/errors.js";
 import { verificarTokenResena } from "./resenas.token.js";
-import { guardarResena, listarResenasProducto, listarResenables } from "./resenas.service.js";
+import { guardarResena, listarResenasDestacadas, listarResenasProducto, listarResenables } from "./resenas.service.js";
 import {
   crearResenaSchema,
+  destacadasQuerySchema,
   listarProductoQuerySchema,
   productoParamSchema,
   tiendaQuerySchema,
@@ -65,6 +66,25 @@ router.get(
       return apiResponse(res, {
         status: 200, type: "SUCCESS", code: "RESENAS_PRODUCTO", data, meta: { ...meta, resumen }
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// GET /destacadas?tiendaId=X — Testimonios reales para el home (público)
+// ============================================
+router.get(
+  "/destacadas",
+  validate({ query: destacadasQuerySchema }),
+  scopeQueryToTienda,
+  async (req, res, next) => {
+    try {
+      const { tiendaId, limit } = req.validatedQuery || req.query;
+      const data = await listarResenasDestacadas(tiendaId, limit);
+      res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=150");
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENAS_DESTACADAS", data });
     } catch (error) {
       next(error);
     }

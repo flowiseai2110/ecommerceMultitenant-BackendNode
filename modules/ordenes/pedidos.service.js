@@ -4,12 +4,16 @@ import { invalidatePendientesCount } from "./pedidos-pendientes-cache.js";
 import emailService from "../../services/email.service.js";
 import { logger } from "../../config/logger.js";
 import { validarYBloquearStock, descontarStock, reponerStock } from "../inventario/inventario.service.js";
+import { cotizarMetodoEnvio } from "../envios/cotizacion.service.js";
 
 // Columnas del destino de entrega en `pedidos` (ver schema.prisma).
 const CAMPOS_DESTINO = [
   "courier", "agenciaTexto", "departamento", "provincia", "distrito",
   "ubigeoCode", "referencia", "latitud", "longitud"
 ];
+
+// Desde este total (S/) SUNAT exige DNI/CE del adquiriente en la boleta.
+const MONTO_BOLETA_CON_DOCUMENTO = 700;
 
 /**
  * Servicio de Pedidos (contexto Órdenes) con lógica de negocio completa:
@@ -89,14 +93,16 @@ class PedidosService {
       tiendaId,
       cliente: clienteData,
       detalles,
-      costoEnvio = 0,
+      // costoEnvio del body NO se usa: el envío lo cotiza el backend (paso 3)
       descuentoMonto = 0,
       notas,
       metodoPago,
       metodoEnvio,
+      metodoEnvioId = null,
       direccionEnvio,
       origen = "web",
-      codigoCupon = null
+      codigoCupon = null,
+      comprobante = null
     } = data;
     // Destino de entrega: ya viene normalizado por createPedidoSchema.
     const destino = {};
@@ -117,7 +123,36 @@ class PedidosService {
       });
 
       const subtotal = itemsConTotal.reduce((sum, item) => sum + item.total, 0);
+
+      // Envío cotizado por zonas en el servidor: el cliente no puede fijar su
+      // propio costo. Sin metodoEnvioId (clientes antiguos) o en modo
+      // "coordinar"/"destino" no suma al total.
+      let costoEnvio = 0;
+      let metodoEnvioNombre = metodoEnvio || null;
+      if (metodoEnvioId) {
+        const cotizacion = await cotizarMetodoEnvio(tx, tiendaId, metodoEnvioId, {
+          ubigeo: destino.ubigeoCode,
+          subtotal: subtotal - descuentoMonto
+        });
+        if (!cotizacion) throw new ValidationError("El método de envío ya no está disponible");
+        if (!cotizacion.disponible) {
+          throw new ValidationError(`${cotizacion.nombre} no llega a tu distrito. Elige otro método de envío.`);
+        }
+        costoEnvio = cotizacion.modo === "fijo" ? cotizacion.costo : 0;
+        metodoEnvioNombre = cotizacion.nombre;
+      }
+
       const total = Math.round((subtotal - descuentoMonto + costoEnvio) * 100) / 100;
+
+      // 3.1 Comprobante: SUNAT exige identificar al adquiriente de una boleta
+      // desde S/ 700, y la factura solo si el régimen de la tienda la permite.
+      if (comprobante?.tipo === "boleta" && total >= MONTO_BOLETA_CON_DOCUMENTO && !comprobante.docNumero) {
+        throw new ValidationError(`Para boletas desde S/ ${MONTO_BOLETA_CON_DOCUMENTO} se requiere DNI o CE`);
+      }
+      if (comprobante?.tipo === "factura") {
+        const tienda = await tx.tiendas.findUnique({ where: { id: tiendaId }, select: { emiteFactura: true } });
+        if (!tienda?.emiteFactura) throw new ValidationError("Esta tienda solo emite boletas");
+      }
 
       // 4. Validar cupón e incrementar uso si viene en el pedido
       let codigoCuponGuardado = null;
@@ -171,12 +206,17 @@ class PedidosService {
           total,
           metodoPago: metodoPago || null,
           estadoPago: "pendiente",
-          metodoEnvio: metodoEnvio || null,
+          metodoEnvio: metodoEnvioNombre,
           direccionEnvio: direccionEnvio || null,
           ...destino,
           notas: notas || null,
           origen,
           codigoCupon: codigoCuponGuardado,
+          comprobante: comprobante?.tipo ?? null,
+          comprobanteDocTipo: comprobante?.docNumero ? comprobante.docTipo : null,
+          comprobanteDocNumero: comprobante?.docNumero || null,
+          razonSocial: comprobante?.tipo === "factura" ? comprobante.razonSocial : null,
+          direccionFiscal: comprobante?.tipo === "factura" ? comprobante.direccionFiscal : null,
           fechaRegistro: new Date(),
           usuarioRegistro: "storefront",
           detalles: {

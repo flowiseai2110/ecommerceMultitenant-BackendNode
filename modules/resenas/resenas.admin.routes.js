@@ -4,6 +4,7 @@ import { authMiddleware, requireTiendaAccess } from "../../kernel/tenant/index.j
 import { apiResponse } from "../../utils/apiResponse.js";
 import {
   cambiarEstadoResena,
+  generarEnlaceResena,
   getModoModeracion,
   listarResenasAdmin,
   responderResena,
@@ -14,6 +15,7 @@ import {
   configModeracionSchema,
   idParamSchema,
   listarAdminQuerySchema,
+  pedidoParamSchema,
   responderSchema,
   tiendaQuerySchema
 } from "./resenas.schema.js";
@@ -70,6 +72,25 @@ router.put(
     try {
       const data = await setModoModeracion(req.tiendaId, req.body.moderacion, req.user);
       return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENAS_CONFIG_UPDATED", data });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// GET /enlace/:pedidoId?tiendaId=X — Link "califica tu compra" para WhatsApp
+// Quien gestiona pedidos (editor+) lo pega en el mensaje de "entregado".
+// ============================================
+router.get(
+  "/enlace/:pedidoId",
+  authMiddleware,
+  requireTiendaAccess("editor"),
+  validate({ params: pedidoParamSchema, query: tiendaQuerySchema }),
+  async (req, res, next) => {
+    try {
+      const data = await generarEnlaceResena(req.tiendaId, req.params.pedidoId);
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENA_ENLACE", data });
     } catch (error) {
       next(error);
     }

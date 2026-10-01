@@ -44,6 +44,7 @@ describe("token del link de reseña", () => {
 
     expect(err).toBeInstanceOf(UnauthorizedError);
     expect(err.message).toMatch(/venció/);
+    expect(err.details).toEqual({ motivo: "ENLACE_VENCIDO" });
   });
 
   it("rechaza un JWT del mismo secreto pero de otro uso (audience distinta)", async () => {
@@ -57,8 +58,11 @@ describe("token del link de reseña", () => {
     await expect(verificarTokenResena(token, { secret: SECRET })).rejects.toBeInstanceOf(UnauthorizedError);
   });
 
-  it("rechaza basura que no es un JWT", async () => {
-    await expect(verificarTokenResena("no-es-un-token", { secret: SECRET })).rejects.toBeInstanceOf(UnauthorizedError);
+  it("rechaza basura que no es un JWT, con motivo ENLACE_INVALIDO", async () => {
+    const err = await verificarTokenResena("no-es-un-token", { secret: SECRET }).catch(e => e);
+
+    expect(err).toBeInstanceOf(UnauthorizedError);
+    expect(err.details).toEqual({ motivo: "ENLACE_INVALIDO" });
   });
 
   it("sin RESENAS_LINK_SECRET configurado falla explícitamente al firmar", async () => {

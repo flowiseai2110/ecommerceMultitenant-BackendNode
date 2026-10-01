@@ -16,8 +16,9 @@ import { config } from "../../config/index.js";
 import logger from "../../config/logger.js";
 import { InternalError } from "../../utils/errors.js";
 import {
-  buscarProductosToolDef,
-  ejecutarBuscarProductos
+  buildBuscarProductosToolDef,
+  ejecutarBuscarProductos,
+  obtenerFacetas
 } from "./tools/buscar-productos.js";
 
 // Cliente singleton perezoso: no se instancia hasta el primer uso, para no fallar
@@ -42,20 +43,22 @@ function getClient() {
 function buildSystemPrompt(tiendaNombre) {
   const nombre = tiendaNombre || "la tienda";
   return [
-    `Eres un asesor de ventas de "${nombre}", una tienda online. Tu trabajo es ayudar`,
-    "a los clientes a encontrar productos y animarlos a comprar, con un trato cálido,",
-    "cercano y honesto (español de Perú/LATAM, sin sonar robótico).",
+    `Eres el asesor de ventas de "${nombre}". Ayudas a encontrar productos y a decidir`,
+    "la compra, con trato cercano y honesto (español LATAM).",
     "",
-    "Reglas estrictas:",
-    "- Solo puedes mencionar o recomendar productos que devuelva la herramienta",
-    "  `buscar_productos`. NUNCA inventes productos, precios ni disponibilidad.",
-    "- Si la herramienta no devuelve resultados, dilo con honestidad y ofrece",
-    "  alternativas o pide más detalles al cliente.",
-    "- Solo hablas de productos de esta tienda. No compares con otras tiendas ni",
-    "  busques en internet.",
-    "- Sé breve y conversacional. Las tarjetas de producto las muestra la interfaz;",
-    "  no repitas el precio de cada producto en una lista larga, resume y recomienda.",
-    "- Si no entiendes qué busca el cliente, haz una pregunta corta para aclarar."
+    "Reglas:",
+    "- Usa buscar_productos cuando el cliente pregunte por productos, precio o disponibilidad.",
+    "- Solo menciona productos que la herramienta devuelva. Si no hay resultados, dilo y sugiere alternativas.",
+    "- Si el cliente pide para hombre, mujer, un uso o un color que la tool ofrece como filtro, úsalo.",
+    "- Si los colores, el nombre o la descripción de un producto contradicen lo pedido",
+    "  (ej: pidió negro y dice \"cuero blanco\"), no lo recomiendes.",
+    "- La interfaz ya muestra todas las tarjetas con precio y stock. Tu texto solo recomienda",
+    "  UN producto y por qué, en una frase de máximo 25 palabras. Sin listas, sin disculpas,",
+    "  sin repetir precios.",
+    "- Si la intención no está clara, haz una pregunta corta antes de buscar.",
+    "",
+    "Ejemplo de respuesta: \"Para correr te recomiendo la Cross Fit Ligera, es la más liviana;",
+    "abajo tienes más opciones.\""
   ].join("\n");
 }
 
@@ -74,6 +77,8 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
   const client = getClient();
 
   const system = buildSystemPrompt(tiendaNombre);
+  const facetas = await obtenerFacetas(tiendaId);
+  const tools = [buildBuscarProductosToolDef(facetas)];
 
   // Historial del cliente + mensaje nuevo, en el formato del Messages API.
   const messages = [
@@ -91,7 +96,7 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
         model: config.agente.modelo,
         max_tokens: config.agente.maxTokens,
         system,
-        tools: [buscarProductosToolDef],
+        tools,
         messages
       });
 
@@ -104,23 +109,39 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
         for (const bloque of respuesta.content) {
           if (bloque.type !== "tool_use") continue;
 
-          let resultado;
+          let resultadoParaElModelo;
           try {
             if (bloque.name === "buscar_productos") {
-              resultado = await ejecutarBuscarProductos({ tiendaId, input: bloque.input });
+              const resultado = await ejecutarBuscarProductos({ tiendaId, input: bloque.input, facetas });
               for (const p of resultado.productos) productosPorId.set(p.id, p);
+              // Al modelo solo le mandamos lo que necesita para decidir y redactar.
+              // categoria y descripcionCorta le permiten descartar lo que contradice
+              // lo pedido (género, "cuero blanco"). imagenUrl/imagenAlt solo las usa
+              // el frontend: mandárselas a Claude es pagar tokens sin beneficio.
+              resultadoParaElModelo = {
+                productos: resultado.productos.map(p => ({
+                  id: p.id,
+                  nombre: p.nombre,
+                  categoria: p.categoria,
+                  colores: p.colores,
+                  descripcionCorta: p.descripcionCorta,
+                  precioBase: p.precioBase,
+                  precioOferta: p.precioOferta,
+                  disponible: (p.stock ?? 0) > 0
+                }))
+              };
             } else {
-              resultado = { error: `Herramienta desconocida: ${bloque.name}` };
+              resultadoParaElModelo = { error: `Herramienta desconocida: ${bloque.name}` };
             }
           } catch (err) {
             logger.error(`[agente] tool ${bloque.name} falló: ${err.message}`);
-            resultado = { error: "No se pudo completar la búsqueda." };
+            resultadoParaElModelo = { error: "No se pudo completar la búsqueda." };
           }
 
           toolResults.push({
             type: "tool_result",
             tool_use_id: bloque.id,
-            content: JSON.stringify(resultado)
+            content: JSON.stringify(resultadoParaElModelo)
           });
         }
 

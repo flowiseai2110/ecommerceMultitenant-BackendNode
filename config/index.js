@@ -52,6 +52,9 @@ export const config = {
   // Ej: PLATFORM_BASE_DOMAIN=ecompyme.com → zapateriaalonso.ecompyme.com
   platform: {
     baseDomain: process.env.PLATFORM_BASE_DOMAIN || null,
+    // Sin baseDomain (dev local) los links a una tienda usan el modo por ruta:
+    // <storefrontUrl>/<slug>/... (ej. link "califica tu compra").
+    storefrontUrl: process.env.STOREFRONT_URL || "http://localhost:4200",
     reservedSubdomains: ["www", "api", "admin", "tiendas", "store", "app"]
   },
 
@@ -113,8 +116,9 @@ export const config = {
   agente: {
     apiKey: process.env.AGENTE_IA_API_KEY,
     modelo: process.env.AGENTE_IA_MODELO || "claude-haiku-4-5",
-    // Tope de tokens de salida por turno (respuestas de chat: cortas).
-    maxTokens: parseInt(process.env.AGENTE_IA_MAX_TOKENS) || 1024,
+    // Tope de tokens de salida por turno. Respaldo duro del "responde corto" del
+    // prompt: 1-2 frases en español caben de sobra en ~200.
+    maxTokens: parseInt(process.env.AGENTE_IA_MAX_TOKENS) || 200,
     // Tope de vueltas del loop de tool-use por turno (anti-loop infinito).
     maxToolLoops: parseInt(process.env.AGENTE_IA_MAX_TOOL_LOOPS) || 4,
     // Máximo de mensajes de historial que el cliente puede enviar (anti-abuso de contexto).

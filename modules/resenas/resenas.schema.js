@@ -42,6 +42,11 @@ export const listarProductoQuerySchema = z.object({
 
 export const tiendaQuerySchema = z.object({ tiendaId: uuid("tiendaId") });
 
+export const destacadasQuerySchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  limit: z.coerce.number().int().min(1).max(12).optional().default(6)
+});
+
 export const tokenParamSchema = z.object({ token: z.string().min(10).max(2000) });
 
 // ============================================
@@ -49,6 +54,8 @@ export const tokenParamSchema = z.object({ token: z.string().min(10).max(2000) }
 // ============================================
 
 export const idParamSchema = z.object({ id: uuid("id") });
+
+export const pedidoParamSchema = z.object({ pedidoId: uuid("pedidoId") });
 
 export const listarAdminQuerySchema = z.object({
   tiendaId: uuid("tiendaId"),

@@ -146,6 +146,7 @@ export function serializeProductoAdminList(row) {
     destacado: row.destacado,
     esServicio: row.esServicio,
     etiquetas: row.etiquetas,
+    colores: row.colores,
     imagenes: Array.isArray(row.imagenes)
       ? row.imagenes.map(img => ({ id: img.id, url: img.url, textoAlternativo: img.textoAlternativo }))
       : []
@@ -179,6 +180,7 @@ export function serializeProductoAdmin(row) {
     destacado: row.destacado,
     esServicio: row.esServicio,
     etiquetas: row.etiquetas,
+    colores: row.colores,
     metadata: row.metadata,
     fechaRegistro: row.fechaRegistro,
     usuarioRegistro: row.usuarioRegistro,

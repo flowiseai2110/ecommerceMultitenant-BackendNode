@@ -12,7 +12,10 @@ const metodosEnvioBaseSchema = {
   costoReferencial: z.coerce.number().min(0).optional().nullable(),
   instrucciones: z.string().optional().nullable(),
   activo: z.boolean().optional().default(true),
-  orden: z.coerce.number().int().min(0).optional().default(0)
+  orden: z.coerce.number().int().min(0).optional().default(0),
+  // Sin default en el base: en un update no deben pisar lo guardado
+  fueraDeZona: z.enum(["coordinar", "no_disponible"]).optional(),
+  pagoEnDestino: z.boolean().optional()
 };
 
 export const createMetodoEnvioSchema = z.object({
@@ -22,7 +25,9 @@ export const createMetodoEnvioSchema = z.object({
   costoReferencial: metodosEnvioBaseSchema.costoReferencial,
   instrucciones: metodosEnvioBaseSchema.instrucciones,
   activo: metodosEnvioBaseSchema.activo,
-  orden: metodosEnvioBaseSchema.orden
+  orden: metodosEnvioBaseSchema.orden,
+  fueraDeZona: metodosEnvioBaseSchema.fueraDeZona,
+  pagoEnDestino: metodosEnvioBaseSchema.pagoEnDestino
 });
 
 export const updateMetodoEnvioSchema = z.object({
@@ -31,7 +36,9 @@ export const updateMetodoEnvioSchema = z.object({
   costoReferencial: metodosEnvioBaseSchema.costoReferencial,
   instrucciones: metodosEnvioBaseSchema.instrucciones,
   activo: metodosEnvioBaseSchema.activo,
-  orden: metodosEnvioBaseSchema.orden
+  orden: metodosEnvioBaseSchema.orden,
+  fueraDeZona: metodosEnvioBaseSchema.fueraDeZona,
+  pagoEnDestino: metodosEnvioBaseSchema.pagoEnDestino
 }).refine(
   (data) => Object.keys(data).length > 0,
   { message: "Debe proporcionar al menos un campo para actualizar" }

@@ -63,7 +63,20 @@ const productosService = new GenericService(productosRepository, {
   allowedFilters: ["activo", "categoriaId", "destacado", "esServicio"],
   // El storefront permite marcar varias categorias a la vez (?categoriaId=a,b)
   multiValueFilters: ["categoriaId"],
-  allowedOrderBy: ["precioBase", "nombre", "fechaRegistro", "stock"]
+  allowedOrderBy: ["precioBase", "nombre", "fechaRegistro", "stock", "ratingScore"],
+  // "Mejor valorados" (?orderBy=ratingScore:desc): ratingScore es un promedio
+  // bayesiano (ver resenas.service). A igual puntaje gana el de más reseñas, e
+  // id cierra el orden para que la paginación sea estable: la mayoría de
+  // productos empata en 0 y sin desempate las páginas repetirían o saltarían filas.
+  // Los demás órdenes también empatan (mismo precio, misma fecha de carga
+  // masiva, mismo stock): id los vuelve deterministas para el scroll infinito.
+  orderByTiebreakers: {
+    ratingScore: [{ ratingCantidad: "desc" }, { id: "asc" }],
+    precioBase: [{ id: "asc" }],
+    nombre: [{ id: "asc" }],
+    fechaRegistro: [{ id: "asc" }],
+    stock: [{ id: "asc" }]
+  }
 });
 // El serializer del store define el contrato de salida campo por campo: nunca
 // expone precioCosto, stockAlerta, metadata ni auditoría al público.

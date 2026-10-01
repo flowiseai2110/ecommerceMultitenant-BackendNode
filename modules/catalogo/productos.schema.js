@@ -6,6 +6,14 @@ import { z } from "zod";
  * considera confiable.
  */
 
+// Paleta cerrada de colores: minúsculas y sin tildes para poder filtrar por
+// igualdad (el asesor IA busca "negro" en todas las tiendas por igual). El admin
+// tiene la misma lista con etiqueta y muestra de color.
+export const COLORES_PRODUCTO = [
+  "negro", "blanco", "gris", "beige", "marron", "azul", "celeste", "verde",
+  "amarillo", "naranja", "rojo", "rosado", "morado", "dorado", "plateado", "multicolor"
+];
+
 // Schema base para productos
 const productosBaseSchema = {
   tiendaId: z.string({ required_error: "El ID de tienda es requerido" }).uuid("ID de tienda inválido"),
@@ -25,6 +33,9 @@ const productosBaseSchema = {
   destacado: z.boolean().optional().default(false),
   esServicio: z.boolean().optional().default(false),
   etiquetas: z.array(z.string()).optional().default([]),
+  colores: z.array(z.enum(COLORES_PRODUCTO, { errorMap: () => ({ message: "Color inválido" }) }))
+    .max(8, "Máximo 8 colores por producto")
+    .optional(),
   metadata: z.record(z.any()).optional().nullable()
 };
 
@@ -47,6 +58,7 @@ export const createProductoSchema = z.object({
   destacado: productosBaseSchema.destacado,
   esServicio: productosBaseSchema.esServicio,
   etiquetas: productosBaseSchema.etiquetas,
+  colores: productosBaseSchema.colores,
   metadata: productosBaseSchema.metadata
 });
 
@@ -68,6 +80,7 @@ export const updateProductoSchema = z.object({
   destacado: productosBaseSchema.destacado,
   esServicio: productosBaseSchema.esServicio,
   etiquetas: productosBaseSchema.etiquetas,
+  colores: productosBaseSchema.colores,
   metadata: productosBaseSchema.metadata
 }).refine(
   (data) => Object.keys(data).length > 0,

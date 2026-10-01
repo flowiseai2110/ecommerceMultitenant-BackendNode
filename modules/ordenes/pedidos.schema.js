@@ -24,6 +24,38 @@ const textoDestino = (max) => z.string().nullish()
   });
 const coordenada = (limite) => z.number().min(-limite).max(limite).nullish().catch(null);
 
+// Comprobante que pide el comprador. Boleta: DNI/CE opcional (el mínimo de
+// S/ 700 se valida en el servicio, que es quien conoce el total real).
+// Factura: RUC + razón social + dirección fiscal obligatorios.
+const DOC_FORMATOS = {
+  DNI: /^\d{8}$/,
+  CE: /^[A-Za-z0-9]{9,12}$/,
+  RUC: /^(10|15|17|20)\d{9}$/
+};
+
+const comprobanteSchema = z.object({
+  tipo: z.enum(["boleta", "factura"]),
+  docTipo: z.enum(["DNI", "CE", "RUC"]).nullish(),
+  docNumero: z.string().trim().max(20).nullish(),
+  razonSocial: z.string().trim().max(200).nullish(),
+  direccionFiscal: z.string().trim().max(500).nullish()
+}).superRefine((c, ctx) => {
+  if (c.tipo === "factura") {
+    if (c.docTipo !== "RUC" || !c.docNumero) {
+      ctx.addIssue({ code: "custom", path: ["docNumero"], message: "La factura requiere RUC" });
+    }
+    if (!c.razonSocial) {
+      ctx.addIssue({ code: "custom", path: ["razonSocial"], message: "La factura requiere razón social" });
+    }
+    if (!c.direccionFiscal) {
+      ctx.addIssue({ code: "custom", path: ["direccionFiscal"], message: "La factura requiere dirección fiscal" });
+    }
+  }
+  if (c.docNumero && (!c.docTipo || !DOC_FORMATOS[c.docTipo].test(c.docNumero))) {
+    ctx.addIssue({ code: "custom", path: ["docNumero"], message: "Número de documento inválido" });
+  }
+});
+
 // Schema para crear pedido (desde storefront)
 export const createPedidoSchema = z.object({
   tiendaId: z.string({ required_error: "El ID de tienda es requerido" }).uuid("ID de tienda inválido"),
@@ -42,6 +74,8 @@ export const createPedidoSchema = z.object({
   // Info de envío y pago
   metodoPago: z.string().max(50).optional().nullable(),
   metodoEnvio: z.string().max(50).optional().nullable(),
+  // Con el id, el backend cotiza el envío por zonas (costoEnvio del body se ignora)
+  metodoEnvioId: z.string().uuid("ID de método de envío inválido").nullish(),
   direccionEnvio: z.string().optional().nullable(),
   // Destino de entrega (ver textoDestino/coordenada arriba)
   courier: textoDestino(50),
@@ -57,7 +91,8 @@ export const createPedidoSchema = z.object({
   descuentoMonto: z.coerce.number().min(0).optional().default(0),
   notas: z.string().optional().nullable(),
   origen: z.string().max(20).optional().default("web"),
-  codigoCupon: z.string().max(50).optional().nullable()
+  codigoCupon: z.string().max(50).optional().nullable(),
+  comprobante: comprobanteSchema.nullish()
 });
 
 // Schema para actualizar estado del pedido

@@ -7,6 +7,7 @@ import productosRoutes from "../../modules/catalogo/productos.store.routes.js";
 import metodosPagoRoutes from "../../modules/pagos/metodos-pago.store.routes.js";
 import pasarelaRoutes from "../../modules/pagos/pasarela.store.routes.js";
 import metodosEnvioRoutes from "../../modules/envios/metodos-envio.store.routes.js";
+import cotizacionEnvioRoutes from "../../modules/envios/cotizacion.store.routes.js";
 import pedidosRoutes from "../../modules/ordenes/pedidos.store.routes.js";
 import cuentaRoutes from "../../modules/ordenes/cuenta.store.routes.js";
 import resenasRoutes from "../../modules/resenas/resenas.store.routes.js";
@@ -30,6 +31,7 @@ router.use("/productos", cache(60), productosRoutes);
 router.use("/metodos-pago", cache(300), metodosPagoRoutes);
 router.use("/pagos", pasarelaRoutes);        // sin caché — crea cargos en la pasarela
 router.use("/metodos-envio", cache(300), metodosEnvioRoutes);
+router.use("/envios", cotizacionEnvioRoutes);    // sin caché — depende del destino y del carrito
 router.use("/pedidos", pedidosRoutes);       // sin caché — rastreo en tiempo real
 router.use("/cuenta", cuentaRoutes);         // sin caché — datos privados del comprador (JWT)
 router.use("/resenas", resenasRoutes);       // caché solo en GET /producto (lo fija la ruta)

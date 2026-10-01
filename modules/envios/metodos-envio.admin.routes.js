@@ -11,6 +11,9 @@ import {
   idParamSchema,
   paginationSchema
 } from "./metodos-envio.schema.js";
+import { replaceZonasSchema } from "./zonas-envio.schema.js";
+import { apiResponse } from "../../utils/apiResponse.js";
+import { NotFoundError } from "../../utils/errors.js";
 
 const metodosEnvioRepository = new GenericRepository(prisma.metodos_envio, "Método de envío");
 const metodosEnvioService = new GenericService(metodosEnvioRepository, { enableAudit: false });
@@ -70,6 +73,66 @@ router.delete(
   requireTiendaAccess("admin"),
   validate({ params: idParamSchema }),
   metodosEnvioController.delete
+);
+
+// GET - Zonas y tarifas del método (admin)
+router.get(
+  "/:id/zonas",
+  authMiddleware,
+  resolveMetodoEnvioTiendaId,
+  requireTiendaAccess("viewer"),
+  validate({ params: idParamSchema }),
+  async (req, res, next) => {
+    try {
+      const data = await prisma.zonas_envio.findMany({
+        where: { metodoEnvioId: req.params.id },
+        orderBy: { orden: "asc" }
+      });
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "ZONAS_ENVIO_LIST", data });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// PUT - Reemplaza todas las zonas del método en una transacción (admin)
+router.put(
+  "/:id/zonas",
+  authMiddleware,
+  resolveMetodoEnvioTiendaId,
+  requireTiendaAccess("admin"),
+  validate({ params: idParamSchema, body: replaceZonasSchema }),
+  async (req, res, next) => {
+    try {
+      const metodo = await prisma.metodos_envio.findUnique({
+        where: { id: req.params.id },
+        select: { id: true, tiendaId: true }
+      });
+      if (!metodo) throw new NotFoundError("Método de envío no encontrado");
+
+      const data = await prisma.$transaction(async (tx) => {
+        await tx.zonas_envio.deleteMany({ where: { metodoEnvioId: metodo.id } });
+        if (req.body.zonas.length) {
+          await tx.zonas_envio.createMany({
+            data: req.body.zonas.map((z, i) => ({
+              tiendaId: metodo.tiendaId,
+              metodoEnvioId: metodo.id,
+              nombre: z.nombre,
+              costo: z.costo,
+              diasMin: z.diasMin ?? null,
+              diasMax: z.diasMax ?? null,
+              ubigeos: z.ubigeos,
+              orden: i
+            }))
+          });
+        }
+        return tx.zonas_envio.findMany({ where: { metodoEnvioId: metodo.id }, orderBy: { orden: "asc" } });
+      });
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "ZONAS_ENVIO_UPDATED", data });
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 export default router;

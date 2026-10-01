@@ -38,6 +38,11 @@ class GenericService {
     // - allowedOrderBy: whitelist de campos ordenables. Si se define y el cliente
     //   pide otro, se cae al defaultOrderBy.
     this.allowedOrderBy = options.allowedOrderBy || null;
+    // - orderByTiebreakers: desempates por campo, ej. { ratingPromedio:
+    //   [{ ratingCantidad: "desc" }, { id: "asc" }] }. Ordenar por una columna
+    //   con muchos empates y paginar por offset repite/salta filas entre
+    //   páginas; el desempate (terminando en una clave única) lo vuelve estable.
+    this.orderByTiebreakers = options.orderByTiebreakers || null;
     // - multiValueFilters: campos cuyo valor puede llegar como lista separada
     //   por comas (?categoriaId=a,b) y se traduce a { in: [...] } para un OR
     //   dentro de la faceta. Es opt-in por modulo a proposito: un filtro exacto
@@ -281,7 +286,9 @@ class GenericService {
       return undefined;
     }
 
-    return { [field]: direction.toLowerCase() };
+    const primary = { [field]: direction.toLowerCase() };
+    const tiebreakers = this.orderByTiebreakers?.[field];
+    return tiebreakers?.length ? [primary, ...tiebreakers] : primary;
   }
 
   /**

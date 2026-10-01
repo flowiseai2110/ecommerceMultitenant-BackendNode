@@ -56,10 +56,12 @@ const svc = {
     data: [], meta: { total: 0, page: 1, limit: 10 }, resumen: { promedio: 0, cantidad: 0, distribucion: {} }
   })),
   listarResenables: jest.fn(async () => []),
+  listarResenasDestacadas: jest.fn(async () => []),
   listarResenasAdmin: jest.fn(async () => ({ data: [], meta: {} })),
   cambiarEstadoResena: jest.fn(async () => ({ id: RESENA })),
   responderResena: jest.fn(async () => ({ id: RESENA })),
   getModoModeracion: jest.fn(async () => "previa"),
+  generarEnlaceResena: jest.fn(async () => ({ url: "https://x.ecompyme.com/resenar/t", expiraEn: "2026-12-01" })),
   setModoModeracion: jest.fn(async (t, modo) => ({ moderacion: modo }))
 };
 jest.unstable_mockModule("../resenas.service.js", () => svc);
@@ -182,6 +184,16 @@ describe("lecturas del storefront", () => {
     expect(r.headers.get("cache-control")).toMatch(/max-age=60/);
   });
 
+  it("GET /destacadas es público, cacheable y respeta el límite máximo", async () => {
+    const ok = await request("GET", `/store/resenas/destacadas?tiendaId=${TIENDA}&limit=3`);
+    const excesivo = await request("GET", `/store/resenas/destacadas?tiendaId=${TIENDA}&limit=500`);
+
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get("cache-control")).toMatch(/max-age=300/);
+    expect(svc.listarResenasDestacadas).toHaveBeenCalledWith(TIENDA, 3);
+    expect(excesivo.status).toBe(400);
+  });
+
   it("GET /mis-compras exige sesión", async () => {
     const r = await request("GET", `/store/resenas/mis-compras?tiendaId=${TIENDA}`);
 
@@ -236,6 +248,16 @@ describe("admin /admin/resenas — permisos por rol", () => {
     });
 
     expect(r.status).toBe(400);
+  });
+
+  it("el link de WhatsApp exige editor (un viewer no puede generarlo)", async () => {
+    const visor = await request("GET", `/admin/resenas/enlace/${PEDIDO}?tiendaId=${TIENDA}`, { user: "visor" });
+    const editor = await request("GET", `/admin/resenas/enlace/${PEDIDO}?tiendaId=${TIENDA}`, { user: "editor" });
+
+    expect(visor.status).toBe(403);
+    expect(editor.status).toBe(200);
+    expect(editor.json.data.url).toContain("/resenar/");
+    expect(svc.generarEnlaceResena).toHaveBeenCalledWith(TIENDA, PEDIDO);
   });
 
   it("cambiar el modo de moderación exige rol admin", async () => {

@@ -53,8 +53,12 @@ export async function verificarTokenResena(token, opts = {}) {
     return { pedidoId: payload.sub, tiendaId: payload.tid };
   } catch (error) {
     const vencido = error?.code === "ERR_JWT_EXPIRED";
-    throw new UnauthorizedError(vencido
+    const err = new UnauthorizedError(vencido
       ? "El enlace para calificar venció. Pide uno nuevo a la tienda."
       : "El enlace para calificar no es válido.");
+    // El errorHandler solo expone details (no el message): la tienda usa el
+    // motivo para decirle al comprador si pedir un link nuevo o revisar el que tiene.
+    err.details = { motivo: vencido ? "ENLACE_VENCIDO" : "ENLACE_INVALIDO" };
+    throw err;
   }
 }

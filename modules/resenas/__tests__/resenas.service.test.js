@@ -4,6 +4,7 @@ import { jest } from "@jest/globals";
 // ejecuta el callback con el mismo mock como `tx`.
 const db = {
   pedidos: { findFirst: jest.fn(), findMany: jest.fn() },
+  tiendas: { findUnique: jest.fn() },
   productos: { findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
   resenas: {
     findUnique: jest.fn(), create: jest.fn(), update: jest.fn(), findMany: jest.fn(),
@@ -13,10 +14,17 @@ const db = {
   $transaction: jest.fn(fn => fn(db))
 };
 jest.unstable_mockModule("../../../config/prisma.js", () => ({ prisma: db, Prisma: {}, default: db }));
+// Config controlada: el test no depende del .env local.
+const config = {
+  platform: { baseDomain: "ecompyme.com", storefrontUrl: "http://localhost:4200/" },
+  resenas: { linkSecret: "secreto-de-prueba-de-al-menos-32-bytes!!", linkTtlDias: 60 }
+};
+jest.unstable_mockModule("../../../config/index.js", () => ({ default: config }));
 const invalidateProductoDetailCache = jest.fn();
 jest.unstable_mockModule("../../catalogo/productos.cache.js", () => ({ invalidateProductoDetailCache }));
 
 const service = await import("../resenas.service.js");
+const { verificarTokenResena } = await import("../resenas.token.js");
 const { ForbiddenError, NotFoundError, UnprocessableError } = await import("../../../utils/errors.js");
 
 const TIENDA = "t-1";
@@ -48,7 +56,7 @@ const verificar = (overrides = {}) => service.verificarCompra(db, {
 beforeEach(() => {
   resetMocks();
   db.productos.findFirst.mockResolvedValue({ id: PRODUCTO });
-  db.resenas.aggregate.mockResolvedValue({ _avg: { estrellas: null }, _count: { _all: 0 } });
+  db.resenas.aggregate.mockResolvedValue({ _avg: { estrellas: null }, _sum: { estrellas: null }, _count: { _all: 0 } });
 });
 
 describe("formatearNombreMostrado", () => {
@@ -153,13 +161,13 @@ describe("guardarResena", () => {
 
   it("con moderación automática se publica al instante y recalcula el rating", async () => {
     db.tienda_configuraciones.findUnique.mockResolvedValue({ valor: { modo: "automatica" } });
-    db.resenas.aggregate.mockResolvedValue({ _avg: { estrellas: 4 }, _count: { _all: 1 } });
+    db.resenas.aggregate.mockResolvedValue({ _avg: { estrellas: 4 }, _sum: { estrellas: 4 }, _count: { _all: 1 } });
 
     const r = await service.guardarResena(input);
 
     expect(r).toMatchObject({ estado: "aprobada", publicada: true });
     expect(db.productos.update).toHaveBeenCalledWith({
-      where: { id: PRODUCTO }, data: { ratingPromedio: 4, ratingCantidad: 1 }
+      where: { id: PRODUCTO }, data: { ratingPromedio: 4, ratingCantidad: 1, ratingScore: 4 }
     });
     // La ficha cacheada (60s) debe mostrar el rating nuevo al instante.
     expect(invalidateProductoDetailCache).toHaveBeenCalledWith(PRODUCTO);
@@ -202,15 +210,15 @@ describe("guardarResena", () => {
 
 describe("recalcularRatingProducto", () => {
   it("redondea el promedio a 2 decimales", async () => {
-    db.resenas.aggregate.mockResolvedValue({ _avg: { estrellas: 4.666666 }, _count: { _all: 3 } });
+    db.resenas.aggregate.mockResolvedValue({ _avg: { estrellas: 4.666666 }, _sum: { estrellas: 14 }, _count: { _all: 3 } });
 
     await expect(service.recalcularRatingProducto(db, PRODUCTO))
-      .resolves.toEqual({ ratingPromedio: 4.67, ratingCantidad: 3 });
+      .resolves.toEqual({ ratingPromedio: 4.67, ratingCantidad: 3, ratingScore: 4.3333 });
   });
 
   it("sin reseñas aprobadas deja 0 y 0", async () => {
     await expect(service.recalcularRatingProducto(db, PRODUCTO))
-      .resolves.toEqual({ ratingPromedio: 0, ratingCantidad: 0 });
+      .resolves.toEqual({ ratingPromedio: 0, ratingCantidad: 0, ratingScore: 0 });
   });
 
   it("solo cuenta reseñas aprobadas", async () => {
@@ -317,5 +325,88 @@ describe("moderación (admin)", () => {
     db.tienda_configuraciones.findUnique.mockResolvedValue(null);
 
     await expect(service.getModoModeracion(TIENDA)).resolves.toBe("previa");
+  });
+});
+
+describe("link 'califica tu compra'", () => {
+  afterEach(() => { config.platform.baseDomain = "ecompyme.com"; });
+
+  it("en producción usa el subdominio de la tienda", () => {
+    expect(service.urlTienda("zapateria", "resenar/abc")).toBe("https://zapateria.ecompyme.com/resenar/abc");
+  });
+
+  it("sin dominio de plataforma (dev) usa el modo por ruta, sin doble barra", () => {
+    config.platform.baseDomain = null;
+    expect(service.urlTienda("zapateria", "resenar/abc")).toBe("http://localhost:4200/zapateria/resenar/abc");
+  });
+
+  it("genera un link cuyo token prueba el pedido y la tienda", async () => {
+    db.pedidos.findFirst.mockResolvedValue({ id: PEDIDO, estado: "entregado" });
+    db.tiendas.findUnique.mockResolvedValue({ slug: "zapateria" });
+
+    const { url, expiraEn } = await service.generarEnlaceResena(TIENDA, PEDIDO);
+
+    // https://<slug>.<dominio>/resenar/<JWT de 3 partes>
+    expect(url).toMatch(/^https:\/\/zapateria\.ecompyme\.com\/resenar\/[\w-]+\.[\w-]+\.[\w-]+$/);
+    const token = url.split("/resenar/")[1];
+    await expect(verificarTokenResena(token)).resolves.toEqual({ pedidoId: PEDIDO, tiendaId: TIENDA });
+    expect(new Date(expiraEn).getTime()).toBeGreaterThan(Date.now() + 59 * 24 * 60 * 60 * 1000);
+  });
+
+  it("no emite links para pedidos no entregados", async () => {
+    db.pedidos.findFirst.mockResolvedValue({ id: PEDIDO, estado: "enviado" });
+
+    const err = await service.generarEnlaceResena(TIENDA, PEDIDO).catch(e => e);
+    expect(err).toBeInstanceOf(UnprocessableError);
+    expect(err.details).toEqual({ motivo: "PEDIDO_NO_ENTREGADO" });
+  });
+
+  it("404 si el pedido no es de la tienda", async () => {
+    db.pedidos.findFirst.mockResolvedValue(null);
+
+    await expect(service.generarEnlaceResena(TIENDA, PEDIDO)).rejects.toBeInstanceOf(NotFoundError);
+    expect(db.pedidos.findFirst.mock.calls[0][0].where).toEqual({ id: PEDIDO, tiendaId: TIENDA });
+  });
+});
+
+describe("ranking 'Mejor valorados' (promedio bayesiano)", () => {
+  it("sin reseñas el puntaje es 0 (esos productos van al final)", () => {
+    expect(service.calcularRatingScore(0, 0)).toBe(0);
+  });
+
+  it("un 5.0 con 1 reseña NO supera a un 4.9 con 40", () => {
+    const unaReseña = service.calcularRatingScore(5, 1);
+    const cuarenta = service.calcularRatingScore(4.9 * 40, 40);
+
+    expect(unaReseña).toBe(4.25);
+    expect(cuarenta).toBeGreaterThan(unaReseña);
+  });
+
+  it("con muchas reseñas el puntaje converge al promedio real", () => {
+    expect(service.calcularRatingScore(4.5 * 1000, 1000)).toBeCloseTo(4.5, 2);
+  });
+
+  it("una sola reseña mala no hunde el puntaje por debajo de otras reseñadas", () => {
+    expect(service.calcularRatingScore(1, 1)).toBe(3.25);
+  });
+});
+
+describe("listarResenasDestacadas (testimonios del home)", () => {
+  it("solo aprobadas de 4-5 estrellas con comentario, sin datos privados", async () => {
+    db.resenas.findMany.mockResolvedValue([{
+      id: "r-1", estrellas: 5, comentario: "Me encantó", nombreMostrado: "Ana G.", respuestaTienda: null,
+      fechaRespuesta: null, fechaRegistro: "2026-09-01", productoId: PRODUCTO, pedidoId: PEDIDO,
+      authUserId: USUARIO, producto: { nombre: "Polo" }
+    }]);
+
+    const r = await service.listarResenasDestacadas(TIENDA, 6);
+
+    expect(db.resenas.findMany.mock.calls[0][0]).toMatchObject({
+      where: { tiendaId: TIENDA, estado: "aprobada", estrellas: { gte: 4 }, comentario: { not: null } },
+      take: 6
+    });
+    expect(r[0]).toMatchObject({ comentario: "Me encantó", productoNombre: "Polo", nombreMostrado: "Ana G." });
+    expect(r[0]).not.toHaveProperty("pedidoId");
+    expect(r[0]).not.toHaveProperty("authUserId");
   });
 });

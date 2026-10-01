@@ -122,6 +122,8 @@ model tiendas {
   razonSocial           String?   @map("razon_social") @db.VarChar(200)
   razonComercial        String?   @map("razon_comercial") @db.VarChar(200)
   direccionFiscal       String?   @map("direccion_fiscal") @db.Text
+  // false = régimen que solo emite boletas (ej. Nuevo RUS): el checkout no ofrece factura
+  emiteFactura          Boolean   @default(true) @map("emite_factura")
 
   // Ubicación
   ubigeo                String?   @db.VarChar(8)
@@ -337,11 +339,16 @@ model productos {
   destacado             Boolean   @default(false)
   esServicio            Boolean   @default(false) @map("es_servicio")
   etiquetas             String[]
+  // Paleta fija (COLORES_PRODUCTO en productos.schema.js). Ver docs/sql/productos_colores.sql.
+  colores               String[]  @default([])
   metadata              Json?     @db.JsonB
   // Resumen de reseñas APROBADAS, desnormalizado para tarjetas y orden por
   // valoración. Lo recalcula resenas.service en cada cambio de estado.
   ratingPromedio        Float     @default(0) @map("rating_promedio")
   ratingCantidad        Int       @default(0) @map("rating_cantidad")
+  // Puntaje para "Mejor valorados" (promedio bayesiano): un 5.0 con 1 reseña
+  // no supera a un 4.9 con 40. 0 = sin reseñas (van al final).
+  ratingScore           Float     @default(0) @map("rating_score")
 
   // Auditoría
   fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
@@ -358,6 +365,7 @@ model productos {
   @@index([tiendaId, categoriaId], name: "idx_productos_tienda_categoria")
   @@index([tiendaId, slug], name: "idx_productos_tienda_slug")
   @@index([tiendaId, destacado], name: "idx_productos_tienda_destacado")
+  @@index([tiendaId, ratingScore(sort: Desc)], name: "idx_productos_tienda_rating")
 }
 
 // ============================================
@@ -504,7 +512,13 @@ model pedidos {
   referencia            String?   @db.Text
   latitud               Float?
   longitud              Float?
+  // Comprobante solicitado (boleta/factura/ninguno) + datos del adquiriente,
+  // como snapshot del pedido (ver docs/sql/pedido_comprobante_setup.sql)
   comprobante           String?   @db.VarChar(10)
+  comprobanteDocTipo    String?   @map("comprobante_doc_tipo") @db.VarChar(10)
+  comprobanteDocNumero  String?   @map("comprobante_doc_numero") @db.VarChar(20)
+  razonSocial           String?   @map("razon_social") @db.VarChar(200)
+  direccionFiscal       String?   @map("direccion_fiscal") @db.Text
   notas                 String?   @db.Text
   origen                String    @default("web") @db.VarChar(20)
   codigoCupon           String?   @map("codigo_cupon") @db.VarChar(50)
@@ -640,8 +654,35 @@ model metodos_envio {
   instrucciones         String?   @db.Text
   activo                Boolean   @default(true)
   orden                 Int       @default(0)
+  // Destino sin zona que lo cubra: "coordinar" (costo por WhatsApp) | "no_disponible" (se oculta)
+  fueraDeZona           String    @default("coordinar") @map("fuera_de_zona") @db.VarChar(20)
+  // El cliente paga el flete al courier al recoger: no suma al total del pedido
+  pagoEnDestino         Boolean   @default(false) @map("pago_en_destino")
+
+  zonas                 zonas_envio[]
 
   @@index([tiendaId, activo], name: "idx_metodos_envio_tienda_activo")
+}
+
+// Tarifa fija por zona de destino (ver docs/sql/zonas_envio_setup.sql).
+// `ubigeos` son prefijos INEI: "15" depto, "1501" provincia, "150122"
+// distrito, "*" todo el país. Gana el prefijo más específico.
+model zonas_envio {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  metodoEnvioId         String    @map("metodo_envio_id") @db.Uuid
+  nombre                String    @db.VarChar(60)
+  costo                 Decimal   @default(0) @db.Decimal(10, 2)
+  diasMin               Int?      @map("dias_min")
+  diasMax               Int?      @map("dias_max")
+  ubigeos               String[]  @default([]) @db.VarChar(6)
+  orden                 Int       @default(0)
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+
+  metodoEnvio           metodos_envio @relation(fields: [metodoEnvioId], references: [id], onDelete: Cascade)
+
+  @@index([metodoEnvioId], name: "idx_zonas_envio_metodo")
+  @@index([tiendaId], name: "idx_zonas_envio_tienda")
 }
 
 // ============================================
