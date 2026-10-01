@@ -6,8 +6,10 @@
  */
 
 import { apiResponse } from "../../utils/apiResponse.js";
+import { QuotaExceededError } from "../../utils/errors.js";
 import { responderTurno } from "./agente.service.js";
 import { serializeTurnoAgente } from "./agente.serializer.js";
+import { conConsulta } from "../consumo-ia/consumo-ia.service.js";
 
 /**
  * POST /store/agente/mensajes
@@ -18,12 +20,16 @@ export async function responder(req, res, next) {
   try {
     const { mensaje, historial } = req.body;
 
-    const turno = await responderTurno({
-      tiendaId: req.tiendaId,
-      tiendaNombre: req.tienda?.nombre,
-      mensaje,
-      historial
-    });
+    // Cuenta 1 consulta del mes de la tienda. El visitante no debe ver el
+    // consumo de la tienda: si se agotó, recibe un 402 sin cifras.
+    const { resultado: turno } = await conConsulta(req.tiendaId, "asesor", () =>
+      responderTurno({
+        tiendaId: req.tiendaId,
+        tiendaNombre: req.tienda?.nombre,
+        mensaje,
+        historial
+      })
+    );
 
     return apiResponse(res, {
       status: 200,
@@ -32,6 +38,9 @@ export async function responder(req, res, next) {
       data: serializeTurnoAgente(turno)
     });
   } catch (error) {
+    if (error instanceof QuotaExceededError) {
+      return next(new QuotaExceededError("El asesor no está disponible por ahora."));
+    }
     next(error);
   }
 }

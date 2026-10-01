@@ -16,6 +16,8 @@ import cuponesRoutes from "../../modules/cupones/cupones.admin.routes.js";
 import liveRoutes from "../../modules/live/live.admin.routes.js";
 import resenasRoutes from "../../modules/resenas/resenas.admin.routes.js";
 import studioRoutes from "../studio.routes.js";
+import asistenteRoutes from "../../modules/asistente/asistente.admin.routes.js";
+import consumoIaRoutes from "../../modules/consumo-ia/consumo-ia.admin.routes.js";
 
 const router = Router();
 
@@ -38,5 +40,7 @@ router.use("/cupones", cuponesRoutes);
 router.use("/live", liveRoutes);
 router.use("/resenas", resenasRoutes);
 router.use("/studio", studioRoutes);
+router.use("/asistente", asistenteRoutes);
+router.use("/consumo-ia", consumoIaRoutes);
 
 export default router;

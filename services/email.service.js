@@ -402,6 +402,71 @@ export async function sendNewOrderEmail(pedido, tienda) {
 }
 
 /**
+ * Avisa al dueño que su consumo mensual de IA (asesor o guía) llegó al % que
+ * configuró. Se manda una sola vez por mes y tipo (ver modules/consumo-ia).
+ */
+export async function sendConsumoIaAvisoEmail(tienda, { nombre, usadas, limite, avisoPct, reiniciaEl }) {
+  if (!tienda?.email) return { success: false, reason: "tienda sin email configurado" };
+
+  if (!hasResendApiKey()) {
+    logger.info(`📧 [DEV] Aviso consumo IA (${nombre} ${usadas}/${limite}) para: ${tienda.email}`);
+    return { success: false, reason: "RESEND_API_KEY not configured" };
+  }
+
+  const consumoUrl = `${FRONTEND_URL}/consumo-ia`;
+  const reinicio = new Date(`${reiniciaEl}T12:00:00Z`).toLocaleDateString("es-PE", { day: "numeric", month: "long" });
+  const pct = Math.min(100, Math.round((usadas / limite) * 100));
+  const efecto = nombre === "Asesor de ventas"
+    ? "el asesor dejará de responder en tu tienda"
+    : "la guía dejará de responder";
+
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 16px;">
+        <table role="presentation" style="width: 100%; max-width: 560px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px;">
+          <tr>
+            <td style="padding: 32px 32px 8px;">
+              <h1 style="margin: 0; font-size: 20px; color: #1a1a1a;">Llegaste al ${avisoPct}% de tus consultas de ${escapeHtml(nombre)}</h1>
+              <p style="margin: 12px 0 0; font-size: 15px; line-height: 1.6; color: #4a4a4a;">
+                <strong>${escapeHtml(tienda.nombre)}</strong> usó <strong>${usadas} de ${limite}</strong> consultas este mes.
+                Cuando se acaben, ${efecto} hasta el ${reinicio}.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 16px 32px;">
+              <div style="background-color: #e2e8f0; border-radius: 999px; height: 8px;">
+                <div style="background-color: ${pct >= 100 ? "#dc2626" : "#2563eb"}; width: ${pct}%; height: 8px; border-radius: 999px;"></div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 32px 32px; text-align: center;">
+              <a href="${consumoUrl}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 6px;">
+                Ver consumo en el panel
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`.trim();
+
+  return deliverEmail({
+    to: tienda.email,
+    subject: `Usaste el ${avisoPct}% de tus consultas de ${nombre} — ${tienda.nombre}`,
+    html
+  });
+}
+
+/**
  * Genera datos del email sin enviarlo (útil para preview)
  */
 export function previewInvitationEmail(invitacion, tienda, invitadorEmail) {
@@ -423,4 +488,4 @@ export function previewInvitationEmail(invitacion, tienda, invitadorEmail) {
   };
 }
 
-export default { sendInvitationEmail, previewInvitationEmail, sendNewOrderEmail };
+export default { sendInvitationEmail, previewInvitationEmail, sendNewOrderEmail, sendConsumoIaAvisoEmail };

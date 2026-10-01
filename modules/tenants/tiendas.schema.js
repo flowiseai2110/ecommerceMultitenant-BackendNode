@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { RUBROS } from "./rubros.js";
 
 /**
  * Schemas Zod de entrada para tiendas. El schema ES el contrato de entrada
@@ -22,6 +23,7 @@ const tiendasBaseSchema = {
   ubigeo: z.string().nullable().optional(),
   moneda: z.string().nullable().optional(),
   tipoNegocio: z.string().nullable().optional(),
+  rubro: z.enum(RUBROS).nullable().optional(),
   activo: z.boolean(),
   envioGratisMinimo: z.coerce.number().min(0).nullable().optional(),
   metaPixelId: z.string().max(50).nullable().optional(),
@@ -46,6 +48,7 @@ export const createTiendaSchema = z.object({
   ubigeo: tiendasBaseSchema.ubigeo,
   moneda: tiendasBaseSchema.moneda,
   tipoNegocio: tiendasBaseSchema.tipoNegocio,
+  rubro: tiendasBaseSchema.rubro,
   activo: tiendasBaseSchema.activo,
   envioGratisMinimo: tiendasBaseSchema.envioGratisMinimo,
   metaPixelId: tiendasBaseSchema.metaPixelId,
@@ -70,6 +73,7 @@ export const updateTiendaSchema = z.object({
   ubigeo: tiendasBaseSchema.ubigeo,
   moneda: tiendasBaseSchema.moneda,
   tipoNegocio: tiendasBaseSchema.tipoNegocio,
+  rubro: tiendasBaseSchema.rubro,
   activo: tiendasBaseSchema.activo,
   envioGratisMinimo: tiendasBaseSchema.envioGratisMinimo,
   metaPixelId: tiendasBaseSchema.metaPixelId,

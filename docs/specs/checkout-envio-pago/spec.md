@@ -34,7 +34,7 @@ Que el comprador vea **en el checkout** cuánto cuesta el envío a su distrito y
 **No incluye** (futuro)
 - Pasarela de pago con tarjeta en el checkout (el backend ya tiene la integración con Culqi; falta conectar el frontend).
 - Emisión electrónica del comprobante ante SUNAT (Nubefact u otro OSE/PSE).
-- Autocompletar razón social y dirección desde el RUC (consulta SUNAT vía backend).
+- Autocompletar razón social y dirección desde el RUC → implementado en [consulta-ruc](../consulta-ruc/spec.md).
 - Peso o volumen de productos en la tarifa; integración con la API del courier.
 - Varios almacenes por tienda (el modelo lo permite: las zonas cuelgan del método).
 - Ver el comprobante y las zonas en el detalle de pedido del admin; interruptor de `emiteFactura` en el admin.

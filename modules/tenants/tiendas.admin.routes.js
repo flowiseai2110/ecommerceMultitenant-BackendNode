@@ -21,6 +21,8 @@ import {
   paginationSchema
 } from "./tiendas.schema.js";
 import { updateDisenoSchema } from "../../validators/tienda-diseno.validator.js";
+import { calendarioQuerySchema, vistaPreviaQuerySchema } from "../campanas/campanas.schema.js";
+import { getCalendario, getVistaPrevia } from "../campanas/campanas.service.js";
 import { updatePlantillasWhatsappSchema } from "../../validators/tienda-plantillas-whatsapp.validator.js";
 import { listTiendasForUser, getTiendaStats } from "./tiendas.service.js";
 import {
@@ -194,6 +196,43 @@ router.put(
     try {
       const diseno = await saveDiseno(req.params.id, req.body, req.user);
       return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_UPDATED", data: diseno });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// GET /:id/campanas/calendario?anio= — Campañas del año: ventana de cada
+// preset, si está activa y si se sugiere por el rubro (docs/specs/campanas-widgets).
+router.get(
+  "/:id/campanas/calendario",
+  authMiddleware,
+  validate({ params: idParamSchema, query: calendarioQuerySchema }),
+  resolveTiendaIdFromId,
+  requireTiendaAccess("viewer"),
+  async (req, res, next) => {
+    try {
+      const data = await getCalendario(req.params.id, req.validatedQuery.anio);
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_CAMPANAS_CALENDARIO", data });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// GET /:id/diseno/vista-previa?fecha=YYYY-MM-DD — El diseño como lo vería el
+// storefront ese día (con su campaña resuelta). Solo admin: el endpoint
+// público nunca acepta fechas simuladas.
+router.get(
+  "/:id/diseno/vista-previa",
+  authMiddleware,
+  validate({ params: idParamSchema, query: vistaPreviaQuerySchema }),
+  resolveTiendaIdFromId,
+  requireTiendaAccess("editor"),
+  async (req, res, next) => {
+    try {
+      const data = await getVistaPrevia(req.params.id, req.validatedQuery.fecha);
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_VISTA_PREVIA", data });
     } catch (error) {
       next(error);
     }

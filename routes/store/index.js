@@ -14,6 +14,7 @@ import resenasRoutes from "../../modules/resenas/resenas.store.routes.js";
 import cuponesRoutes from "../../modules/cupones/cupones.store.routes.js";
 import liveRoutes from "../../modules/live/live.store.routes.js";
 import agenteRoutes from "../../modules/agente/agente.store.routes.js";
+import sunatRoutes from "../../modules/sunat/ruc.store.routes.js";
 
 const router = Router();
 
@@ -38,5 +39,6 @@ router.use("/resenas", resenasRoutes);       // caché solo en GET /producto (lo
 router.use("/cupones", cuponesRoutes);
 router.use("/live", cache(15), liveRoutes);   // caché corta: el tiempo real llega por Realtime
 router.use("/agente", agenteRoutes);          // sin caché — cada consulta es conversacional y única
+router.use("/sunat", sunatRoutes);            // caché solo en respuestas exitosas (lo fija la ruta)
 
 export default router;

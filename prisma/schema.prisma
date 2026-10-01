@@ -136,6 +136,8 @@ model tiendas {
   // Configuración general
   moneda                String?   @default("PEN") @db.VarChar(3)
   tipoNegocio           String?   @default("productos") @map("tipo_negocio") @db.VarChar(50)
+  // Qué vende (moda, alimentos...): sugiere campañas. Valores en modules/tenants/rubros.js
+  rubro                 String?   @db.VarChar(30)
   activo                Boolean   @default(true)
 
   // Auditoría
@@ -217,6 +219,11 @@ model planes {
   codigo                String    @unique @db.VarChar(50)
   nombre                String    @db.VarChar(100)
   limiteImagenesIaMes   Int?      @map("limite_imagenes_ia_mes")
+  // Consultas IA por mes (1 mensaje = 1 consulta). null = ilimitado. Ver docs/sql/consumo_ia.sql
+  limiteConsultasAsesorMes    Int? @map("limite_consultas_asesor_mes")
+  limiteConsultasAsistenteMes Int? @map("limite_consultas_asistente_mes")
+  // Tope diario de la Guía (anti-atracón, además del mensual). null = sin tope diario.
+  limiteConsultasAsistenteDia Int? @map("limite_consultas_asistente_dia")
   precioImagenExcedente Decimal?  @map("precio_imagen_excedente") @db.Decimal(10, 2)
   precioMensual         Decimal?  @map("precio_mensual") @db.Decimal(10, 2)
   orden                 Int       @default(0)
@@ -236,9 +243,14 @@ model tienda_uso_recursos {
   id                    String    @id @default(uuid()) @db.Uuid
   tiendaId              String    @map("tienda_id") @db.Uuid
   recurso               String    @db.VarChar(50)
-  periodo               String    @db.VarChar(7)
+  // "YYYY-MM" (recursos mensuales) o "YYYY-MM-DD" (recursos *_dia)
+  periodo               String    @db.VarChar(10)
   cantidadUsada         Int       @default(0) @map("cantidad_usada")
   cantidadIncluida      Int?      @map("cantidad_incluida")
+  // Solo recursos de consultas IA: costo real para la plataforma y aviso por correo (uno por mes)
+  tokensEntrada         BigInt    @default(0) @map("tokens_entrada")
+  tokensSalida          BigInt    @default(0) @map("tokens_salida")
+  avisoEnviadoEn        DateTime? @map("aviso_enviado_en") @db.Timestamptz
 
   // Auditoría
   fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { listaCampanasSchema, listaWidgetsSchema } from "../modules/campanas/campanas.schema.js";
 
 // Barra de anuncios: franja de texto sobre el header del storefront
 const anuncioSchema = z.object({
@@ -18,9 +19,13 @@ const heroSchema = z.object({
 export const updateDisenoSchema = z
   .object({
     anuncio: anuncioSchema.optional(),
-    hero: heroSchema.optional()
+    hero: heroSchema.optional(),
+    // Campañas de temporada y widgets permanentes (docs/specs/campanas-widgets).
+    // Cada clave reemplaza la lista completa: el admin edita la lista entera.
+    campanas: listaCampanasSchema.optional(),
+    widgets: listaWidgetsSchema.optional()
   })
-  .refine((data) => data.anuncio !== undefined || data.hero !== undefined, {
+  .refine((data) => Object.values(data).some((v) => v !== undefined), {
     message: "Debe proporcionar al menos una sección de diseño"
   });
 

@@ -7,6 +7,7 @@ import { apiResponse } from "../../utils/apiResponse.js";
 import { validate } from "../../middlewares/validation.middleware.js";
 import { idParamSchema, paginationSchema } from "./tiendas.schema.js";
 import { getDiseno } from "../../services/tienda-diseno.service.js";
+import { disenoPublico } from "../campanas/resolver.js";
 import { getTiendasStore, setTiendasStore } from "./tiendas.cache.js";
 
 const tiendasRepository = new GenericRepository(prisma.tiendas, "Tienda");
@@ -35,7 +36,10 @@ router.get("/", validate({ query: paginationSchema }), async (req, res, next) =>
     // segundo request público. La invalidación llega vía
     // invalidateTiendasStoreCache() al guardar el diseño en el admin.
     if (query.slug && data.length === 1) {
-      data[0].diseno = await getDiseno(data[0].id);
+      // Sin la lista de campañas (nunca se publican las futuras) y con la
+      // vigente ya resuelta en hora de Lima. La caché de 60 s hace que un
+      // cambio de campaña tarde como máximo un minuto en verse (R3.4).
+      data[0].diseno = disenoPublico(await getDiseno(data[0].id), new Date());
     }
 
     const responsePayload = { status: 200, type: "SUCCESS", code: "TIENDA_LIST", data, meta };

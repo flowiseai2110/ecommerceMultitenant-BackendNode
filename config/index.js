@@ -81,6 +81,17 @@ export const config = {
     maxCallsMes: process.env.GEMINI_MAX_CALLS_MES ? parseInt(process.env.GEMINI_MAX_CALLS_MES) : null
   },
 
+  // Padrón Reducido del RUC partido en JSON por prefijo (ver modules/sunat/ruc.service.js).
+  // Apuntar SUNAT_PADRON_URL a un fork propio para no depender del repo original.
+  sunat: {
+    padron: {
+      baseUrl: process.env.SUNAT_PADRON_URL || "https://cdn.jsdelivr.net/gh/alb3rt0ru1z/tribio-padron-ruc@latest/chunks",
+      timeoutMs: parseInt(process.env.SUNAT_PADRON_TIMEOUT_MS) || 8000,
+      // El padrón se publica una vez al día.
+      ttlMs: 6 * 60 * 60 * 1000
+    }
+  },
+
   // Pasarela de pagos (PSP) — ver pasarela-de-pagos/ para el análisis completo.
   pagos: {
     // Clave maestra (32 bytes en base64/hex) para cifrar credenciales de pasarela
@@ -125,6 +136,27 @@ export const config = {
     maxHistorial: parseInt(process.env.AGENTE_IA_MAX_HISTORIAL) || 20,
     // Rate limit específico del asesor por ventana (por sessionToken).
     rateLimitMax: parseInt(process.env.AGENTE_IA_RATE_LIMIT_MAX) || 20
+  },
+
+  // Asistente "Guía" del panel admin. Ver modules/asistente/. Reusa la API key del
+  // agente; las explicaciones paso a paso necesitan más tokens que el asesor.
+  asistente: {
+    apiKey: process.env.ASISTENTE_IA_API_KEY || process.env.AGENTE_IA_API_KEY,
+    modelo: process.env.ASISTENTE_IA_MODELO || "claude-haiku-4-5",
+    maxTokens: parseInt(process.env.ASISTENTE_IA_MAX_TOKENS) || 600,
+    maxToolLoops: parseInt(process.env.ASISTENTE_IA_MAX_TOOL_LOOPS) || 4,
+    maxHistorial: parseInt(process.env.ASISTENTE_IA_MAX_HISTORIAL) || 20,
+    // Mensajes por usuario por ventana de rateLimit.windowMs (15 min por defecto).
+    rateLimitMax: parseInt(process.env.ASISTENTE_IA_RATE_LIMIT_MAX) || 30
+  },
+
+  // Tope mensual de consultas IA para tiendas SIN plan asignado (con plan, manda
+  // planes.limite_consultas_*_mes). Ver modules/consumo-ia/.
+  consumoIa: {
+    limiteAsesorSinPlan: parseInt(process.env.CONSUMO_IA_LIMITE_ASESOR_SIN_PLAN) || 100,
+    limiteAsistenteSinPlan: parseInt(process.env.CONSUMO_IA_LIMITE_ASISTENTE_SIN_PLAN) || 50,
+    // Tope DIARIO de la Guía sin plan (con plan: planes.limite_consultas_asistente_dia).
+    limiteAsistenteDiaSinPlan: parseInt(process.env.CONSUMO_IA_LIMITE_ASISTENTE_DIA_SIN_PLAN) || 40
   },
 
   // Imágenes por defecto por folder

@@ -20,6 +20,7 @@ import {
   ejecutarBuscarProductos,
   obtenerFacetas
 } from "./tools/buscar-productos.js";
+import { sumarUso } from "../consumo-ia/consumo-ia.service.js";
 
 // Cliente singleton perezoso: no se instancia hasta el primer uso, para no fallar
 // el arranque del server si la API key aún no está configurada.
@@ -90,6 +91,9 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
   // es lo que el frontend renderiza como tarjetas.
   const productosPorId = new Map();
 
+  // Tokens de todas las vueltas: los registra modules/consumo-ia (costo real).
+  const uso = { entrada: 0, salida: 0 };
+
   try {
     for (let vuelta = 0; vuelta < config.agente.maxToolLoops; vuelta++) {
       const respuesta = await client.messages.create({
@@ -99,6 +103,7 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
         tools,
         messages
       });
+      sumarUso(uso, respuesta.usage);
 
       if (respuesta.stop_reason === "tool_use") {
         // El modelo pidió usar la tool. Ejecutamos cada llamada, SIEMPRE con el
@@ -158,7 +163,8 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
 
       return {
         mensaje: texto || "¿En qué puedo ayudarte con nuestros productos?",
-        productos: [...productosPorId.values()]
+        productos: [...productosPorId.values()],
+        uso
       };
     }
 
@@ -166,7 +172,8 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
     logger.warn("[agente] se alcanzó maxToolLoops sin end_turn");
     return {
       mensaje: "Encontré algunas opciones, ¿quieres que te dé más detalles de alguna?",
-      productos: [...productosPorId.values()]
+      productos: [...productosPorId.values()],
+      uso
     };
   } catch (err) {
     // Errores del proveedor LLM (red, rate limit, etc.). En Fase 2, aquí va el

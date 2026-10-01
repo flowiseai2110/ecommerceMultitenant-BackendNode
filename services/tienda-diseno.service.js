@@ -1,11 +1,16 @@
 import { prisma } from "../config/prisma.js";
+import config from "../config/index.js";
+import { ValidationError } from "../utils/errors.js";
+import { prefijoWidgets, urlsDeWidgetsAjenas } from "../modules/campanas/campanas.schema.js";
 
 // Personalización visual del storefront que el dueño edita desde el admin
 // (página "Diseño"). Cada clave vive como una fila en tienda_configuraciones
 // (categoria "diseno", valor JsonB), así agregar una sección nueva no
 // requiere migración de esquema.
 export const DISENO_CATEGORIA = "diseno";
-export const DISENO_CLAVES = ["anuncio", "hero"];
+// "campanas" es privada: el storefront recibe solo la campaña vigente ya
+// resuelta (ver tiendas.store.routes.js), nunca las futuras.
+export const DISENO_CLAVES = ["anuncio", "hero", "campanas", "widgets"];
 
 export async function getDiseno(tiendaId) {
   const rows = await prisma.tienda_configuraciones.findMany({
@@ -23,6 +28,13 @@ export async function getDiseno(tiendaId) {
 export async function saveDiseno(tiendaId, data, user) {
   const usuario = user?.email || user?.id || "system";
   const claves = DISENO_CLAVES.filter((clave) => data[clave] !== undefined);
+
+  // Imágenes de widgets solo desde la carpeta widgets/ de la propia tienda
+  // (R4.5): evita hotlinking, rastreo de terceros y contenido no moderado.
+  const ajenas = urlsDeWidgetsAjenas(data, prefijoWidgets(config.supabaseUrl, tiendaId));
+  if (ajenas.length > 0) {
+    throw new ValidationError("Las imágenes de los widgets deben subirse desde el panel de la tienda");
+  }
 
   await prisma.$transaction(
     claves.map((clave) =>

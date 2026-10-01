@@ -3,10 +3,10 @@ import { prisma } from "../config/prisma.js";
 // Placeholders sin precio definido todavía — ajustar precioMensual y
 // precioImagenExcedente cuando se decida la tabla de precios.
 const planes = [
-  { codigo: "free", nombre: "Free", limiteImagenesIaMes: 5, orden: 1 },
-  { codigo: "starter", nombre: "Starter", limiteImagenesIaMes: 50, orden: 2 },
-  { codigo: "pro", nombre: "Pro", limiteImagenesIaMes: 300, orden: 3 },
-  { codigo: "business", nombre: "Business", limiteImagenesIaMes: null, orden: 4 }
+  { codigo: "free", nombre: "Free", limiteImagenesIaMes: 5, limiteConsultasAsesorMes: 100, limiteConsultasAsistenteMes: 50, limiteConsultasAsistenteDia: 40, orden: 1 },
+  { codigo: "starter", nombre: "Starter", limiteImagenesIaMes: 50, limiteConsultasAsesorMes: 1000, limiteConsultasAsistenteMes: 200, limiteConsultasAsistenteDia: 100, orden: 2 },
+  { codigo: "pro", nombre: "Pro", limiteImagenesIaMes: 300, limiteConsultasAsesorMes: 5000, limiteConsultasAsistenteMes: 500, limiteConsultasAsistenteDia: 250, orden: 3 },
+  { codigo: "business", nombre: "Business", limiteImagenesIaMes: null, limiteConsultasAsesorMes: null, limiteConsultasAsistenteMes: null, limiteConsultasAsistenteDia: null, orden: 4 }
 ];
 
 for (const plan of planes) {
