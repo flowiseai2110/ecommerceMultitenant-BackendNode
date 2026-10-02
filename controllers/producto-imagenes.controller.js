@@ -18,7 +18,7 @@ export function makeUploadImagen(bucket, subfolder = "productos") {
       const parsed = uploadImagenSchema.safeParse(req.body);
       if (!parsed.success) throw new ValidationError(parsed.error.errors[0].message);
 
-      const { productoId, varianteId, textoAlternativo, orden, esPrincipal, fit } = parsed.data;
+      const { productoId, varianteId, valorOpcion, textoAlternativo, orden, esPrincipal, fit } = parsed.data;
 
       const folder = req.tiendaId ? `${req.tiendaId}/${subfolder}` : subfolder;
       const { webp, jpeg } = await processAndUploadImage(req.file.buffer, req.file.originalname, { fit, bucket, folder });
@@ -26,6 +26,7 @@ export function makeUploadImagen(bucket, subfolder = "productos") {
       const record = await service.create({
         productoId,
         varianteId: varianteId || null,
+        valorOpcion: valorOpcion || null,
         url: webp.url,
         urlJpeg: jpeg.url,
         storagePath: webp.path,
@@ -52,7 +53,7 @@ export function makeUploadImagenForProducto(bucket, subfolder = "productos") {
       if (!parsed.success) throw new ValidationError(parsed.error.errors[0].message);
 
       const productoId = req.params.id;
-      const { varianteId, textoAlternativo, orden, esPrincipal, fit } = parsed.data;
+      const { varianteId, valorOpcion, textoAlternativo, orden, esPrincipal, fit } = parsed.data;
 
       const folder = req.tiendaId ? `${req.tiendaId}/${subfolder}` : subfolder;
       const { webp, jpeg } = await processAndUploadImage(req.file.buffer, req.file.originalname, { fit, bucket, folder });
@@ -60,6 +61,7 @@ export function makeUploadImagenForProducto(bucket, subfolder = "productos") {
       const record = await service.create({
         productoId,
         varianteId: varianteId || null,
+        valorOpcion: valorOpcion || null,
         url: webp.url,
         urlJpeg: jpeg.url,
         storagePath: webp.path,

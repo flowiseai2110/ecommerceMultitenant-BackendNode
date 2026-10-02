@@ -73,7 +73,9 @@ export const updateProductoSchema = z.object({
   precioBase: productosBaseSchema.precioBase.optional(),
   precioOferta: productosBaseSchema.precioOferta,
   precioCosto: productosBaseSchema.precioCosto,
-  stock: productosBaseSchema.stock,
+  // Sin default: si el admin no manda stock (producto con variantes, donde el
+  // stock es la suma que fija producto-opciones.service) no se debe pisar con 0.
+  stock: z.coerce.number().int("El stock debe ser un número entero").min(0).optional(),
   stockAlerta: productosBaseSchema.stockAlerta,
   unidad: productosBaseSchema.unidad,
   activo: productosBaseSchema.activo,

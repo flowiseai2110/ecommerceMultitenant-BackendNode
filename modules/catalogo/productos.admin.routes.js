@@ -13,6 +13,10 @@ import {
 } from "../../kernel/tenant/index.js";
 import { makeUploadImagenForProducto } from "../../controllers/producto-imagenes.controller.js";
 import { invalidateProductoDetailCache } from "./productos.cache.js";
+import { apiResponse } from "../../utils/apiResponse.js";
+import { sincronizarVariantesSchema } from "./producto-opciones.js";
+import { sincronizarVariantes, opcionesUsadasPorTienda } from "./producto-opciones.service.js";
+import { serializeVarianteAdmin } from "./producto-variantes.serializer.js";
 import {
   createProductoSchema,
   updateProductoSchema,
@@ -49,7 +53,7 @@ const productosService = new GenericService(productosRepository, {
     },
     imagenes: {
       orderBy: { orden: "asc" },
-      select: { id: true, url: true, textoAlternativo: true, orden: true, esPrincipal: true }
+      select: { id: true, url: true, textoAlternativo: true, orden: true, esPrincipal: true, valorOpcion: true }
     }
   },
   searchFields: ["nombre", "descripcion", "descripcionCorta", "slug", "sku"],
@@ -66,7 +70,7 @@ const productosService = new GenericService(productosRepository, {
       },
       imagenes: {
         orderBy: { orden: "asc" },
-        select: { id: true, url: true, textoAlternativo: true, orden: true, esPrincipal: true }
+        select: { id: true, url: true, textoAlternativo: true, orden: true, esPrincipal: true, valorOpcion: true }
       }
     }
   },
@@ -134,6 +138,22 @@ router.get(
   productosController.findAll
 );
 
+// GET /opciones - Opciones (Talla, Tamaño...) que la tienda ya usó, para
+// autocompletar el formulario. Antes de /:id para que "opciones" no se valide como UUID.
+router.get(
+  "/opciones",
+  authMiddleware,
+  requireTiendaAccess("viewer"),
+  async (req, res, next) => {
+    try {
+      const opciones = await opcionesUsadasPorTienda(req.tiendaId);
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "OPCIONES_FOUND", data: opciones });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // GET - Obtener producto por ID
 router.get(
   "/:id",
@@ -162,6 +182,37 @@ router.put(
   validate({ params: idParamSchema, body: updateProductoSchema }),
   invalidateProductoCacheOnSuccess,
   productosController.update
+);
+
+// PUT /:id/variantes - Reemplaza opciones + matriz de variantes del producto
+// (ver producto-opciones.service.js). Desactiva en vez de borrar, por eso basta
+// rol editor (el DELETE de una variante suelta exige admin).
+router.put(
+  "/:id/variantes",
+  authMiddleware,
+  resolveProductoTiendaId,
+  requireTiendaAccess("editor"),
+  validate({ params: idParamSchema, body: sincronizarVariantesSchema }),
+  invalidateProductoCacheOnSuccess,
+  async (req, res, next) => {
+    try {
+      const resultado = await sincronizarVariantes({
+        productoId: req.params.id,
+        tiendaId: req.tiendaId,
+        opciones: req.body.opciones,
+        variantes: req.body.variantes,
+        user: req.user
+      });
+      return apiResponse(res, {
+        status: 200,
+        type: "SUCCESS",
+        code: "VARIANTES_SINCRONIZADAS",
+        data: { ...resultado, variantes: resultado.variantes.map(serializeVarianteAdmin) }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 // POST /:id/imagen - Subir imagen para un producto específico

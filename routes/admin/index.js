@@ -18,6 +18,7 @@ import resenasRoutes from "../../modules/resenas/resenas.admin.routes.js";
 import studioRoutes from "../studio.routes.js";
 import asistenteRoutes from "../../modules/asistente/asistente.admin.routes.js";
 import consumoIaRoutes from "../../modules/consumo-ia/consumo-ia.admin.routes.js";
+import disenoRoutes from "../../modules/diseno/diseno.admin.routes.js";
 
 const router = Router();
 
@@ -42,5 +43,6 @@ router.use("/resenas", resenasRoutes);
 router.use("/studio", studioRoutes);
 router.use("/asistente", asistenteRoutes);
 router.use("/consumo-ia", consumoIaRoutes);
+router.use("/diseno", disenoRoutes);
 
 export default router;

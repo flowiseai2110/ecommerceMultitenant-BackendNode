@@ -4,7 +4,13 @@ import { z } from "zod";
 const BUCKET_NAME = "tiendas";
 
 // Folders permitidos dentro de cada tienda
-const ALLOWED_FOLDERS = ["productos", "categorias", "logos", "banners", "otros"];
+const ALLOWED_FOLDERS = ["productos", "categorias", "logos", "banners", "otros", "widgets"];
+
+// Widgets de campaña (docs/specs/campanas-widgets, R5): solo PNG/WebP de
+// hasta 1 MB. Es un primer filtro por el mimetype que manda el navegador; el
+// contenido real lo verifica sharp en modules/campanas/widget-imagen.js.
+const WIDGET_MIME_TYPES = ["image/png", "image/webp"];
+const WIDGET_MAX_FILE_SIZE = 1024 * 1024;
 
 // Tipos MIME permitidos para imágenes
 const ALLOWED_MIME_TYPES = [
@@ -28,8 +34,8 @@ export const uploadImageSchema = z.object({
   tiendaId: z.string({ required_error: "El ID de tienda es requerido" }).uuid("ID de tienda inválido")
 });
 
-// Validador de archivo
-export const validateFile = (file) => {
+// Validador de archivo. `folder` ajusta las reglas (widgets es más estricto).
+export const validateFile = (file, folder) => {
   const errors = [];
 
   if (!file) {
@@ -37,12 +43,15 @@ export const validateFile = (file) => {
     return { isValid: false, errors };
   }
 
-  if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-    errors.push(`Tipo de archivo no permitido. Tipos permitidos: ${ALLOWED_MIME_TYPES.join(", ")}`);
+  const mimes = folder === "widgets" ? WIDGET_MIME_TYPES : ALLOWED_MIME_TYPES;
+  const maxSize = folder === "widgets" ? WIDGET_MAX_FILE_SIZE : MAX_FILE_SIZE;
+
+  if (!mimes.includes(file.mimetype)) {
+    errors.push(`Tipo de archivo no permitido. Tipos permitidos: ${mimes.join(", ")}`);
   }
 
-  if (file.size > MAX_FILE_SIZE) {
-    errors.push(`El archivo excede el tamaño máximo permitido (${MAX_FILE_SIZE / 1024 / 1024}MB)`);
+  if (file.size > maxSize) {
+    errors.push(`El archivo excede el tamaño máximo permitido (${maxSize / 1024 / 1024}MB)`);
   }
 
   return {

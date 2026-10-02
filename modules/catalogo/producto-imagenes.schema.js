@@ -10,6 +10,9 @@ import { z } from "zod";
 const imagenesBaseSchema = {
   productoId: z.string({ required_error: "El ID de producto es requerido" }).uuid("ID de producto inválido"),
   varianteId: z.string().uuid("ID de variante inválido").optional().nullable(),
+  // Valor de la opción principal (la primera de metadata.opciones) al que
+  // pertenece la foto: "negro", "Stitch", "Floral". null = foto general.
+  valorOpcion: z.string().trim().min(1, "Valor de opción vacío").max(30, "Valor de opción: máximo 30 caracteres").optional().nullable(),
   url: z.string({ required_error: "La URL es requerida" }).url("URL inválida").max(500, "La URL no puede exceder 500 caracteres"),
   textoAlternativo: z.string().max(200, "El texto alternativo no puede exceder 200 caracteres").optional().nullable(),
   orden: z.number().int("El orden debe ser un número entero").min(0).optional().default(0),
@@ -20,6 +23,7 @@ const imagenesBaseSchema = {
 export const createImagenSchema = z.object({
   productoId: imagenesBaseSchema.productoId,
   varianteId: imagenesBaseSchema.varianteId,
+  valorOpcion: imagenesBaseSchema.valorOpcion,
   url: imagenesBaseSchema.url,
   textoAlternativo: imagenesBaseSchema.textoAlternativo,
   orden: imagenesBaseSchema.orden,
@@ -29,6 +33,7 @@ export const createImagenSchema = z.object({
 // Schema para actualizar imagen
 export const updateImagenSchema = z.object({
   varianteId: imagenesBaseSchema.varianteId,
+  valorOpcion: imagenesBaseSchema.valorOpcion,
   url: imagenesBaseSchema.url.optional(),
   textoAlternativo: imagenesBaseSchema.textoAlternativo,
   orden: imagenesBaseSchema.orden,
@@ -54,6 +59,8 @@ export const paginationSchema = z.object({
 export const uploadImagenSchema = z.object({
   productoId: z.string({ required_error: "El ID de producto es requerido" }).uuid("ID de producto inválido"),
   varianteId: z.string().uuid("ID de variante inválido").optional().nullable(),
+  // multipart: sin valor llega "" o no llega.
+  valorOpcion: z.preprocess(v => (v === "" ? null : v), imagenesBaseSchema.valorOpcion),
   textoAlternativo: z.string().max(200, "El texto alternativo no puede exceder 200 caracteres").optional().nullable(),
   orden: z.coerce.number({ invalid_type_error: "El orden debe ser un número" }).int().min(0).optional().default(0),
   esPrincipal: z.preprocess(v => v === "true", z.boolean()).optional().default(false),
@@ -75,6 +82,7 @@ export const generarIaSchema = z.object({
 export const confirmarIaSchema = z.object({
   productoId: imagenesBaseSchema.productoId,
   varianteId: imagenesBaseSchema.varianteId,
+  valorOpcion: imagenesBaseSchema.valorOpcion,
   textoAlternativo: imagenesBaseSchema.textoAlternativo,
   orden: imagenesBaseSchema.orden,
   esPrincipal: imagenesBaseSchema.esPrincipal

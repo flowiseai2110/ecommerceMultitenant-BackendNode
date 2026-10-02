@@ -89,7 +89,7 @@ export async function confirmarImagenIA(req, res, next) {
     if (!downloaded.ok) throw new ValidationError("No se pudo descargar la imagen generada por la IA");
     const buffer = Buffer.from(await downloaded.arrayBuffer());
 
-    const { productoId, varianteId, textoAlternativo, orden, esPrincipal } = parsed.data;
+    const { productoId, varianteId, valorOpcion, textoAlternativo, orden, esPrincipal } = parsed.data;
     const folder = req.tiendaId ? `${req.tiendaId}/productos` : "productos";
 
     const { webp, jpeg } = await processAndUploadImage(buffer, `ia_${taskId}.png`, {
@@ -101,6 +101,8 @@ export async function confirmarImagenIA(req, res, next) {
     const record = await service.create({
       productoId,
       varianteId: varianteId || null,
+      // La imagen mejorada reemplaza a la original: hereda su valor de opción.
+      valorOpcion: valorOpcion || null,
       url: webp.url,
       urlJpeg: jpeg.url,
       storagePath: webp.path,

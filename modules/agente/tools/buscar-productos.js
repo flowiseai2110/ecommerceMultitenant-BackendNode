@@ -35,20 +35,32 @@ const PESO_TYPO = 0.3;
 const cacheFacetas = new MemoryCache({ max: 500 });
 const TTL_FACETAS_MS = 5 * 60 * 1000;
 
+// Tope de opciones de variante (talla, tamaño...) y de valores por opción que
+// entran a la definición de la tool: cada enum son tokens en cada turno.
+const MAX_OPCIONES_FACETA = 5;
+const MAX_VALORES_FACETA = 40;
+
+// Variantes disponibles que se le pasan al modelo por producto ("Negro / M").
+const MAX_VARIANTES_RESULTADO = 24;
+
 /**
- * Valores por los que se puede filtrar en esta tienda: sus categorías activas y
- * los colores que realmente usan sus productos activos.
+ * Valores por los que se puede filtrar en esta tienda: sus categorías activas,
+ * los colores que realmente usan sus productos activos y las opciones de
+ * variante que la tienda definió (Talla, Tamaño, Sabor...: cada negocio las
+ * nombra a su manera, ver catalogo/producto-opciones.js). El color no entra en
+ * `opciones`: tiene su propio filtro con la paleta fija.
  * @param {string} tiendaId
  * @returns {Promise<{
  *   categorias: Array<{id:string, nombre:string, categoriaPadreId:string|null}>,
- *   colores: string[]
+ *   colores: string[],
+ *   opciones: Array<{clave:string, valores:string[]}>
  * }>}
  */
 export async function obtenerFacetas(tiendaId) {
   const cached = cacheFacetas.get(tiendaId);
   if (cached) return cached;
 
-  const [categorias, filasColores] = await Promise.all([
+  const [categorias, filasColores, filasOpciones] = await Promise.all([
     prisma.categorias.findMany({
       where: { tiendaId, activo: true },
       select: { id: true, nombre: true, categoriaPadreId: true },
@@ -59,10 +71,30 @@ export async function obtenerFacetas(tiendaId) {
       FROM productos
       WHERE tienda_id = ${tiendaId}::uuid AND activo = true
       ORDER BY color
+    `,
+    prisma.$queryRaw`
+      SELECT kv.key AS clave, array_agg(DISTINCT kv.value) AS valores
+      FROM producto_variantes pv
+      JOIN productos p ON p.id = pv.producto_id
+      CROSS JOIN LATERAL jsonb_each_text(
+        CASE WHEN jsonb_typeof(pv.atributos) = 'object' THEN pv.atributos ELSE '{}'::jsonb END
+      ) kv
+      WHERE p.tienda_id = ${tiendaId}::uuid AND p.activo = true AND pv.activo = true
+        AND kv.key <> 'color'
+      GROUP BY kv.key
+      ORDER BY count(DISTINCT p.id) DESC
+      LIMIT ${MAX_OPCIONES_FACETA}
     `
   ]);
 
-  const facetas = { categorias, colores: filasColores.map(f => f.color) };
+  // "M" en un producto y "m" en otro son el mismo valor para el cliente.
+  const opciones = filasOpciones.map(f => {
+    const unicos = new Map();
+    for (const v of f.valores) if (!unicos.has(v.toLowerCase())) unicos.set(v.toLowerCase(), v);
+    return { clave: f.clave, valores: [...unicos.values()].slice(0, MAX_VALORES_FACETA) };
+  });
+
+  const facetas = { categorias, colores: filasColores.map(f => f.color), opciones };
   cacheFacetas.set(tiendaId, facetas, TTL_FACETAS_MS);
   return facetas;
 }
@@ -72,9 +104,9 @@ export async function obtenerFacetas(tiendaId) {
  * por tienda: los `enum` de `categoria` y `color` son sus valores reales, así el
  * modelo elige de una lista en vez de adivinar nombres.
  * El `tiendaId` NO está aquí a propósito: lo pone el backend, no el modelo.
- * @param {{ categorias: Array<{nombre:string}>, colores: string[] }} facetas
+ * @param {{ categorias: Array<{nombre:string}>, colores: string[], opciones?: Array<{clave:string, valores:string[]}> }} facetas
  */
-export function buildBuscarProductosToolDef({ categorias, colores }) {
+export function buildBuscarProductosToolDef({ categorias, colores, opciones = [] }) {
   const nombres = [...new Set(categorias.map(c => c.nombre))];
 
   const properties = {
@@ -116,6 +148,20 @@ export function buildBuscarProductosToolDef({ categorias, colores }) {
     };
   }
 
+  if (opciones.length > 0) {
+    properties.opciones = {
+      type: "object",
+      description:
+        "Opciones de variante que pide el cliente (talla, tamaño, etc.), elegidas de los " +
+        "valores que tiene la tienda. Úsalas solo si el cliente las menciona ('talla M', " +
+        "'el de 1 litro'). Solo devuelve productos que tienen esa combinación con stock.",
+      properties: Object.fromEntries(
+        opciones.map(o => [o.clave, { type: "string", enum: o.valores }])
+      ),
+      additionalProperties: false
+    };
+  }
+
   const filtraColor = colores.length > 0
     ? "Puede filtrar por color. "
     : "Esta tienda no tiene colores cargados: revisa nombre y descripción para confirmarlo. ";
@@ -126,7 +172,8 @@ export function buildBuscarProductosToolDef({ categorias, colores }) {
       "Busca productos en el catálogo de ESTA tienda por nombre, descripción y categoría. " +
       "Úsala siempre que el cliente pregunte por un producto, categoría, precio o " +
       "disponibilidad. Devuelve hasta 4 productos ordenados por relevancia, con su " +
-      "categoría, colores y descripción corta. " + filtraColor +
+      "categoría, colores, descripción corta y, si tiene variantes, las que hay en stock " +
+      "(ej: 'Negro / M'). " + filtraColor +
       "Solo puedes mencionar o recomendar productos que esta herramienta devuelva; " +
       "si no hay resultados, dilo con honestidad y no inventes.",
     input_schema: {
@@ -181,7 +228,13 @@ export async function ejecutarBuscarProductos({ tiendaId, input, facetas }) {
   // $queryRaw no pasa por el auto-scope de Prisma: el tienda_id va explícito.
   const filtros = [Prisma.sql`p.tienda_id = ${tiendaId}::uuid`, Prisma.sql`p.activo = true`];
   if (precioMax !== null) filtros.push(Prisma.sql`p.precio_base <= ${precioMax}`);
-  if (soloConStock) filtros.push(Prisma.sql`p.stock > 0`);
+  // productos.stock es la suma de sus variantes, pero productos con variantes
+  // viejas pueden tener un stock propio que no cuadra: basta una variante con stock.
+  if (soloConStock) {
+    filtros.push(Prisma.sql`(p.stock > 0 OR EXISTS (
+      SELECT 1 FROM producto_variantes pv WHERE pv.producto_id = p.id AND pv.activo = true AND pv.stock > 0
+    ))`);
+  }
   // Una categoría o color que no es de esta tienda se ignora (se busca sin ese filtro).
   if (typeof input?.categoria === "string") {
     const idsCategoria = idsDeCategoria(input.categoria, facetas.categorias);
@@ -190,8 +243,36 @@ export async function ejecutarBuscarProductos({ tiendaId, input, facetas }) {
     }
   }
   const color = typeof input?.color === "string" ? input.color.trim().toLowerCase() : "";
-  if (facetas.colores.includes(color)) {
+  const colorValido = facetas.colores.includes(color);
+  if (colorValido) {
     filtros.push(Prisma.sql`${color} = ANY(p.colores)`);
+  }
+
+  // "Talla M en negro" debe ser UNA variante con las dos cosas (y stock), no un
+  // producto que tiene M en azul y negro solo en L.
+  const pedidas = opcionesPedidas(input?.opciones, facetas.opciones ?? []);
+  if (pedidas.length > 0 || colorValido) {
+    const condiciones = [Prisma.sql`pv.activo = true`];
+    for (const [clave, valor] of pedidas) {
+      condiciones.push(Prisma.sql`lower(pv.atributos->>${clave}) = ${valor.toLowerCase()}`);
+    }
+    if (colorValido) {
+      condiciones.push(Prisma.sql`(pv.atributos->>'color' IS NULL OR pv.atributos->>'color' = ${color})`);
+    }
+    if (soloConStock) condiciones.push(Prisma.sql`pv.stock > 0`);
+    const tieneCombinacion = Prisma.sql`EXISTS (
+      SELECT 1 FROM producto_variantes pv WHERE pv.producto_id = p.id AND ${Prisma.join(condiciones, " AND ")}
+    )`;
+    if (pedidas.length > 0) {
+      filtros.push(tieneCombinacion);
+    } else {
+      // Solo color: los productos sin variantes por color se quedan con el
+      // filtro de p.colores de arriba.
+      filtros.push(Prisma.sql`(${tieneCombinacion} OR NOT EXISTS (
+        SELECT 1 FROM producto_variantes pv
+        WHERE pv.producto_id = p.id AND pv.activo = true AND pv.atributos->>'color' IS NOT NULL
+      ))`);
+    }
   }
 
   const palabras = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
@@ -233,20 +314,55 @@ export async function ejecutarBuscarProductos({ tiendaId, input, facetas }) {
     SELECT p.id, p.nombre, p.slug, p.precio_base AS "precioBase",
            p.precio_oferta AS "precioOferta", p.stock,
            p.descripcion_corta AS "descripcionCorta", cat.nombre AS categoria, p.colores,
-           img.url AS "imagenUrl", img.texto_alternativo AS "imagenAlt"
+           img.url AS "imagenUrl", img.texto_alternativo AS "imagenAlt",
+           var.total::int AS "totalVariantes", var.disponibles AS "variantesDisponibles"
     FROM s
     JOIN productos p ON p.id = s.id
     LEFT JOIN categorias cat ON cat.id = p.categoria_id
+    -- Si el cliente pidió un color y el producto tiene fotos por color
+    -- (opción principal Color), la tarjeta muestra esa foto; si no, la principal.
     LEFT JOIN LATERAL (
       SELECT url, texto_alternativo
       FROM producto_imagenes
-      WHERE producto_id = p.id AND es_principal = true
+      WHERE producto_id = p.id AND (es_principal = true OR valor_opcion = ${colorValido ? color : null})
+      ORDER BY (valor_opcion = ${colorValido ? color : null}) IS TRUE DESC, es_principal DESC, orden ASC
       LIMIT 1
     ) img ON true
+    LEFT JOIN LATERAL (
+      SELECT count(*) AS total,
+             coalesce(array_agg(pv.nombre ORDER BY pv.nombre) FILTER (WHERE pv.stock > 0), '{}') AS disponibles
+      FROM producto_variantes pv
+      WHERE pv.producto_id = p.id AND pv.activo = true
+    ) var ON true
     WHERE ${coincide}
     ORDER BY s.fts + ${PESO_TYPO} * s.typo DESC, p.destacado DESC, p.fecha_registro DESC
     LIMIT ${MAX_RESULTADOS}
   `;
 
-  return { productos };
+  return {
+    productos: productos.map(p => ({
+      ...p,
+      variantesDisponibles: (p.variantesDisponibles ?? []).slice(0, MAX_VARIANTES_RESULTADO)
+    }))
+  };
+}
+
+/**
+ * Opciones del input del modelo que existen en la tienda, como pares
+ * [clave, valor]. Lo que no calce con las facetas se ignora (igual que una
+ * categoría o color que no es de la tienda).
+ * @param {unknown} input - input.opciones del modelo.
+ * @param {Array<{clave:string, valores:string[]}>} facetasOpciones
+ * @returns {Array<[string, string]>}
+ */
+export function opcionesPedidas(input, facetasOpciones) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return [];
+  const pares = [];
+  for (const [clave, valor] of Object.entries(input)) {
+    if (typeof valor !== "string" || !valor.trim()) continue;
+    const faceta = facetasOpciones.find(o => o.clave === clave);
+    const real = faceta?.valores.find(v => v.toLowerCase() === valor.trim().toLowerCase());
+    if (real) pares.push([clave, real]);
+  }
+  return pares;
 }

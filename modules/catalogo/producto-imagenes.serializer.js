@@ -19,6 +19,7 @@ export function serializeImagenAdmin(row) {
     id: row.id,
     productoId: row.productoId,
     varianteId: row.varianteId,
+    valorOpcion: row.valorOpcion,
     url: row.url,
     urlJpeg: row.urlJpeg,
     storagePath: row.storagePath,

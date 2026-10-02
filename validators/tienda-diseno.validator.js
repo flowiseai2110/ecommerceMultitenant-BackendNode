@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { listaCampanasSchema, listaWidgetsSchema } from "../modules/campanas/campanas.schema.js";
+import { estructuraSchema, temaSchema } from "../modules/diseno/secciones.schema.js";
 
 // Barra de anuncios: franja de texto sobre el header del storefront
 const anuncioSchema = z.object({
@@ -23,7 +24,12 @@ export const updateDisenoSchema = z
     // Campañas de temporada y widgets permanentes (docs/specs/campanas-widgets).
     // Cada clave reemplaza la lista completa: el admin edita la lista entera.
     campanas: listaCampanasSchema.optional(),
-    widgets: listaWidgetsSchema.optional()
+    widgets: listaWidgetsSchema.optional(),
+    // Paleta + tipografía y estructura de la tienda (docs/specs/estructura-tienda).
+    // La estructura se reemplaza entera; para aplicar una plantilla está
+    // POST /:id/diseno/estructura/aplicar (arma la copia con las reglas R3).
+    tema: temaSchema.optional(),
+    estructura: estructuraSchema.optional()
   })
   .refine((data) => Object.values(data).some((v) => v !== undefined), {
     message: "Debe proporcionar al menos una sección de diseño"

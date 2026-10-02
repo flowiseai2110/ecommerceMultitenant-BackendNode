@@ -2,6 +2,7 @@ import { prisma } from "../config/prisma.js";
 import config from "../config/index.js";
 import { ValidationError } from "../utils/errors.js";
 import { prefijoWidgets, urlsDeWidgetsAjenas } from "../modules/campanas/campanas.schema.js";
+import { migrarEstructura } from "../modules/diseno/migrar.js";
 
 // Personalización visual del storefront que el dueño edita desde el admin
 // (página "Diseño"). Cada clave vive como una fila en tienda_configuraciones
@@ -10,7 +11,10 @@ import { prefijoWidgets, urlsDeWidgetsAjenas } from "../modules/campanas/campana
 export const DISENO_CATEGORIA = "diseno";
 // "campanas" es privada: el storefront recibe solo la campaña vigente ya
 // resuelta (ver tiendas.store.routes.js), nunca las futuras.
-export const DISENO_CLAVES = ["anuncio", "hero", "campanas", "widgets"];
+// "tema", "estructura" y "estructura_anterior": docs/specs/estructura-tienda.
+// El storefront las recibe resueltas en `tema`; "estructura_anterior" (para
+// "Deshacer") solo la escribe el servicio de diseño, nunca un PUT.
+export const DISENO_CLAVES = ["anuncio", "hero", "campanas", "widgets", "tema", "estructura", "estructura_anterior"];
 
 export async function getDiseno(tiendaId) {
   const rows = await prisma.tienda_configuraciones.findMany({
@@ -33,28 +37,47 @@ export async function saveDiseno(tiendaId, data, user) {
   // (R4.5): evita hotlinking, rastreo de terceros y contenido no moderado.
   const ajenas = urlsDeWidgetsAjenas(data, prefijoWidgets(config.supabaseUrl, tiendaId));
   if (ajenas.length > 0) {
-    throw new ValidationError("Las imágenes de los widgets deben subirse desde el panel de la tienda");
+    // El mensaje va también en details: el error middleware responde data = details.
+    const message = "Las imágenes de los widgets deben subirse desde el panel de la tienda";
+    throw new ValidationError(message, { message });
   }
 
-  await prisma.$transaction(
-    claves.map((clave) =>
-      prisma.tienda_configuraciones.upsert({
-        where: { uq_tienda_clave: { tiendaId, clave } },
-        create: {
-          tiendaId,
-          clave,
-          valor: data[clave],
-          categoria: DISENO_CATEGORIA,
-          usuarioRegistro: usuario
-        },
-        update: {
-          valor: data[clave],
-          fechaActualizacion: new Date(),
-          usuarioActualizacion: usuario
-        }
-      })
-    )
-  );
+  await prisma.$transaction(claves.map((clave) => upsertClave(tiendaId, clave, data[clave], usuario)));
 
   return getDiseno(tiendaId);
+}
+
+/** Upsert de una clave de diseño (sin ejecutar: para usar en $transaction). */
+export function upsertClave(tiendaId, clave, valor, usuario) {
+  return prisma.tienda_configuraciones.upsert({
+    where: { uq_tienda_clave: { tiendaId, clave } },
+    create: {
+      tiendaId,
+      clave,
+      valor,
+      categoria: DISENO_CATEGORIA,
+      usuarioRegistro: usuario
+    },
+    update: {
+      valor,
+      fechaActualizacion: new Date(),
+      usuarioActualizacion: usuario
+    }
+  });
+}
+
+/** Borra claves de diseño (sin ejecutar: para usar en $transaction). */
+export function borrarClaves(tiendaId, claves) {
+  return prisma.tienda_configuraciones.deleteMany({
+    where: { tiendaId, categoria: DISENO_CATEGORIA, clave: { in: claves } }
+  });
+}
+
+/**
+ * Diseño para el admin: la estructura migrada al formato actual (R1.4) y,
+ * en vez de la estructura anterior, solo si se puede deshacer (R3.6).
+ */
+export function disenoAdmin({ estructura_anterior, ...diseno }) {
+  const estructura = diseno.estructura ? migrarEstructura(diseno.estructura) : null;
+  return { ...diseno, estructura, puedeDeshacer: Boolean(estructura_anterior) };
 }

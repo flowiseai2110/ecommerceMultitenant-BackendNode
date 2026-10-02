@@ -15,8 +15,8 @@
 
 /**
  * Imagen de producto tal como la ve el store.
- * `orden` y `esPrincipal` solo vienen en el detalle; en las tarjetas de listado
- * llegan como undefined y JSON los omite (salida idéntica a la anterior).
+ * `orden`, `esPrincipal` y `valorOpcion` solo vienen en el detalle; en las tarjetas de
+ * listado llegan como undefined y JSON los omite (salida idéntica a la anterior).
  * @param {object} img
  * @returns {object}
  */
@@ -26,7 +26,8 @@ function serializeImagenStore(img) {
     url: img.url,
     textoAlternativo: img.textoAlternativo,
     orden: img.orden,
-    esPrincipal: img.esPrincipal
+    esPrincipal: img.esPrincipal,
+    valorOpcion: img.valorOpcion
   };
 }
 
@@ -45,6 +46,24 @@ function serializeVarianteStore(v) {
     atributos: v.atributos,
     activo: v.activo
   };
+}
+
+/**
+ * Opciones del producto (metadata.opciones) para armar el selector del store:
+ * Color, Talla, Tamaño... en el orden que las definió la tienda. Es lo único de
+ * metadata que se expone, y se copia campo por campo.
+ * @param {unknown} opciones
+ * @returns {Array<{ nombre: string, tipo: string, valores: string[] }>}
+ */
+function serializeOpcionesStore(opciones) {
+  if (!Array.isArray(opciones)) return [];
+  return opciones
+    .filter(o => o && typeof o.nombre === "string" && Array.isArray(o.valores))
+    .map(o => ({
+      nombre: o.nombre,
+      tipo: o.tipo === "color" ? "color" : "texto",
+      valores: o.valores.filter(v => typeof v === "string")
+    }));
 }
 
 /**
@@ -113,6 +132,7 @@ export function serializeProductoDetailStore(row) {
     esServicio: row.esServicio,
     etiquetas: row.etiquetas,
     ...serializeRatingStore(row),
+    opciones: serializeOpcionesStore(row.opciones),
     variantes: Array.isArray(row.variantes) ? row.variantes.map(serializeVarianteStore) : [],
     imagenes: Array.isArray(row.imagenes) ? row.imagenes.map(serializeImagenStore) : []
   };

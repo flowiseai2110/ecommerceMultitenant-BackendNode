@@ -1,6 +1,6 @@
 # Spec: campañas de temporada y widgets del storefront
 
-> Estado: **backend (Fases 1-3) y storefront (Fase 6) listos, sin commit**: la tienda muestra la campaña que resuelve el backend. Faltan la subida de imágenes para widgets (Fase 4), la pantalla de campañas del admin (Fase 5) y la verificación end-to-end con una campaña activada (Fase 7). Ver [tasks.md](tasks.md).
+> Estado: **implementado en los tres repos (Fases 0-6)**; storefront commiteado (`425c97c`), backend y admin sin commit. Falta la verificación end-to-end con sesión de admin (Fase 7). Ver [tasks.md](tasks.md).
 > Diseño técnico: [plan.md](plan.md).
 > Repos involucrados: BackendNode, FrontendAdmin, FrontendStore.
 > Depende de: personalización de tienda (estructura, tipografía y paleta), hoy simulada en `FrontendStore/src/app/state/diseno.state.ts`.
@@ -75,7 +75,8 @@ Formato: *Cuando [condición], el sistema debe [comportamiento].*
 
 ### R5 — Subida de imágenes de widgets
 - **R5.1** `POST /uploads/image` acepta `folder = "widgets"`.
-- **R5.2** Para `widgets` solo se aceptan PNG y WebP de hasta 1 MB, **nunca SVG**: un SVG puede llevar scripts y el storefront lo mostraría en su propio dominio.
+- **R5.2** Para `widgets` solo se aceptan PNG y WebP de hasta 1 MB, verificados por el contenido del archivo y no por el tipo que declara el navegador. **Nunca SVG** (puede llevar scripts) ni JPEG (sin transparencia, el sticker se vería como un recuadro).
+- **R5.4** Solo un usuario autenticado con rol `editor` o superior en la tienda puede subir imágenes a su carpeta (cualquier carpeta).
 - **R5.3** La imagen se normaliza a WebP de 512 px como máximo de lado, conservando la transparencia.
 
 ### R6 — Vista previa
@@ -84,6 +85,6 @@ Formato: *Cuando [condición], el sistema debe [comportamiento].*
 
 ## Riesgos y notas
 
-- **`POST /uploads/image` tiene `authMiddleware` comentado (TODO)** y acepta SVG para todas las carpetas. Para esta spec se cierra al menos la carpeta `widgets` (R5.2). Conviene activar la autenticación aparte, porque hoy cualquiera puede subir archivos al bucket de cualquier tienda.
+- ~~`POST /uploads/image` sin autenticación~~: **resuelto en T4.3** (JWT + rol editor en la tienda). Los SVG se siguen aceptando en las demás carpetas: se sirven desde el dominio de Supabase y el storefront los muestra con `<img>`, donde no ejecutan scripts.
 - El diseño base (estructura, tipografía y paleta) todavía no está en el backend. La paleta de una campaña se guarda con valores explícitos (hex del primario, familia de neutros y fondos), así esta spec no depende de que ese diseño base esté migrado.
 - SSR: el prerender de la home no conoce la tienda, así que la campaña siempre se pinta en el navegador. El script inline de `index.html` aplica el tema cacheado solo si `hasta` no venció.

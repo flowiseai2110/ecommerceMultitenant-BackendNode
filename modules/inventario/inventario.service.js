@@ -54,7 +54,7 @@ export async function validarYBloquearStock(tx, tiendaId, detalles) {
 
   const variantes = varianteIds.length
     ? await tx.$queryRaw`
-        SELECT pv.id, pv.stock, pv.activo
+        SELECT pv.id, pv.stock, pv.activo, pv.producto_id AS "productoId"
         FROM producto_variantes pv
         JOIN productos p ON p.id = pv.producto_id
         WHERE pv.id = ANY(${varianteIds}::uuid[])
@@ -64,11 +64,16 @@ export async function validarYBloquearStock(tx, tiendaId, detalles) {
       `
     : [];
 
-  const productos = productoIds.length
+  // También se bloquean los productos padre de las variantes: descontarStock
+  // les resta lo vendido (productos.stock = suma de sus variantes). Tomar todos
+  // los locks de productos aquí, en un solo SELECT ordenado, evita deadlocks
+  // entre pedidos que tocan variantes de los mismos productos.
+  const idsABloquear = [...new Set([...productoIds, ...variantes.map(v => v.productoId)])].sort();
+  const productos = idsABloquear.length
     ? await tx.$queryRaw`
         SELECT id, stock, activo, es_servicio AS "esServicio"
         FROM productos
-        WHERE id = ANY(${productoIds}::uuid[])
+        WHERE id = ANY(${idsABloquear}::uuid[])
           AND tienda_id = ${tiendaId}::uuid
         ORDER BY id
         FOR UPDATE
@@ -135,6 +140,7 @@ export async function descontarStock(tx, variantesADescontar, productosADesconta
     if (afectadas !== variantesADescontar.length) {
       throw new ValidationError("El stock cambió mientras se procesaba el pedido. Intenta nuevamente.");
     }
+    await ajustarStockPadres(tx, ids, cantidades.map(c => -c));
   }
 
   if (productosADescontar.length > 0) {
@@ -187,6 +193,7 @@ export async function reponerStock(tx, detalles) {
       FROM (SELECT unnest(${ids}::uuid[]) AS id, unnest(${cantidades}::int[]) AS cantidad) d
       WHERE pv.id = d.id
     `;
+    await ajustarStockPadres(tx, ids, cantidades);
   }
 
   if (reponerProductos.size > 0) {
@@ -201,4 +208,30 @@ export async function reponerStock(tx, detalles) {
       WHERE p.id = d.id AND p.es_servicio = false
     `;
   }
+}
+
+/**
+ * Mueve productos.stock del padre en lo mismo que se movieron sus variantes,
+ * para sostener productos.stock = suma de variantes (lo fija
+ * producto-opciones.service al guardar la matriz). Lo usan el listado, la
+ * tarjeta del storefront y el filtro "con stock" del asesor IA.
+ * GREATEST evita negativos en productos con variantes viejas cuyo stock propio
+ * se cargó a mano y no cuadra con la suma.
+ *
+ * @param {import("../../config/prisma.js").prisma} tx
+ * @param {string[]} varianteIds
+ * @param {number[]} deltas - Negativo al vender, positivo al reponer.
+ */
+async function ajustarStockPadres(tx, varianteIds, deltas) {
+  await tx.$executeRaw`
+    UPDATE productos p
+    SET stock = GREATEST(p.stock + x.delta, 0)
+    FROM (
+      SELECT pv.producto_id AS id, SUM(d.delta)::int AS delta
+      FROM (SELECT unnest(${varianteIds}::uuid[]) AS id, unnest(${deltas}::int[]) AS delta) d
+      JOIN producto_variantes pv ON pv.id = d.id
+      GROUP BY pv.producto_id
+    ) x
+    WHERE p.id = x.id AND p.es_servicio = false
+  `;
 }

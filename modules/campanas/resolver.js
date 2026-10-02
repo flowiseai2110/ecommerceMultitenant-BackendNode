@@ -7,6 +7,7 @@
 
 import { CAMPANA_PRESETS, buscarPreset, sugeridoPara } from "./presets.js";
 import { aIsoLima, ventana, vigente } from "./calendario.js";
+import { resolverTema } from "../diseno/resolver.js";
 
 const ANCLAS_ORDEN = ["hero-arriba-derecha", "hero-abajo-derecha", "hero-arriba-izquierda", "flotante-izquierda", "junto-logo"];
 
@@ -94,8 +95,14 @@ export function resolverCampana(campanasTienda = [], widgetsTienda = [], ahora) 
  * campañas (nunca se publican las futuras) y con la vigente resuelta.
  */
 export function disenoPublico(diseno = {}, ahora) {
-  const { campanas, ...publico } = diseno;
-  return { ...publico, campana: resolverCampana(campanas, publico.widgets, ahora) };
+  // tema/estructura viajan resueltos en `tema` (docs/specs/estructura-tienda);
+  // la estructura anterior (para "Deshacer") es solo del admin.
+  const { campanas, tema, estructura, estructura_anterior, ...publico } = diseno;
+  return {
+    ...publico,
+    campana: resolverCampana(campanas, publico.widgets, ahora),
+    tema: resolverTema({ tema, estructura, hero: publico.hero }, ahora)
+  };
 }
 
 /**

@@ -9,7 +9,7 @@ Admin · Diseño > Campañas
   GET  /admin/tiendas/:id/campanas/calendario?anio=2027   → presets con ventana calculada + estado (activa, sugerida)
   PUT  /admin/tiendas/:id/diseno { campanas, widgets }     → valida (Zod) y guarda en tienda_configuraciones
   GET  /admin/tiendas/:id/diseno/vista-previa?fecha=...    → diseno resuelto ese día
-  POST /uploads/image { folder: "widgets" }                → PNG/WebP → WebP 512 px
+  POST /uploads/image { folder: "widgets" }                → JWT + rol editor; PNG/WebP (por contenido) → WebP 512 px
 
 Storefront
   GET /store/tiendas?slug=x  → data[0].diseno = { anuncio, hero, widgets, campana: CampanaResuelta | null }
@@ -30,6 +30,8 @@ Storefront
 | Widgets en **anclas** finitas, máximo uno por ancla | Coordenadas libres se rompen entre desktop y móvil y entre variantes de hero, y pueden tapar el CTA | Posición x/y en % por breakpoint |
 | Contenido del widget como **unión discriminada** (`tipo`) | Se guarda como JSON; el polimorfismo lo resuelve el componente del storefront (`@switch`), igual que `SeccionHome` | Jerarquía de clases (no sobrevive a la serialización) |
 | Imagen solo del bucket propio, PNG/WebP, sin SVG | Evita XSS (SVG con script), hotlinking y rastreo de terceros | Aceptar cualquier URL https |
+| Formato del widget verificado con sharp (contenido), no con el mimetype | El mimetype lo declara el navegador y se falsifica; sharp solo abre lo que realmente es PNG/WebP | Confiar en `file.mimetype` |
+| Widgets normalizados a WebP 512 px | Un sticker se muestra a 128 px como máximo; 512 cubre pantallas 3x y pesa poco | Guardar el original |
 | `tiendas.rubro` como columna nueva con lista cerrada | Sugiere campañas (R2.5) y luego la estructura inicial; `tipo_negocio` ya significa otra cosa (productos/servicios/ambos) | Reutilizar `tipo_negocio` |
 | Cada clave (`campanas`, `widgets`) se reemplaza entera en el PUT | El editor del admin trabaja la lista completa, igual que `PUT /zonas`; sin CRUD por campaña ni estados intermedios | Endpoints CRUD por campaña |
 | Un preset se activa una sola vez por tienda | Dos "Día de la Madre" competirían por la misma ventana; para otra fecha está la campaña propia | Varias activaciones con prioridad |
@@ -127,8 +129,9 @@ calendario.js       // puras: fechaClave, ventana, vigente, proximaVentana, aIso
 resolver.js         // puras: efectiva, mezclarWidgets, resolverCampana, disenoPublico, calendarioAnual
 campanas.schema.js  // Zod: widgets, campañas, query del calendario y la vista previa; urlsDeWidgetsAjenas
 campanas.service.js // getCalendario(tiendaId, anio), getVistaPrevia(tiendaId, fecha): BD + funciones puras
+widget-imagen.js    // normalizarImagenWidget(buffer): verifica PNG/WebP con sharp y devuelve WebP 512 px
                     // rutas: en tenants/tiendas.admin.routes.js (comparten auth y resolveTiendaIdFromId)
-__tests__/calendario.test.js · campanas.schema.test.js · resolver.test.js
+__tests__/calendario.test.js · campanas.schema.test.js · resolver.test.js · widget-imagen.test.js
 ```
 
 - **Fechas en Lima:** Perú no tiene horario de verano, así que es UTC−5 fijo. `calendario.js` trabaja con fechas "civiles" (año, mes, día) y convierte al instante con un offset de −5 h. Así no hace falta una librería de zonas horarias.

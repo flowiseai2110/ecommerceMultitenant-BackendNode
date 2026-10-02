@@ -414,6 +414,9 @@ model producto_imagenes {
   id                    String    @id @default(uuid()) @db.Uuid
   productoId            String    @map("producto_id") @db.Uuid
   varianteId            String?   @map("variante_id") @db.Uuid
+  // Valor de la opción principal del producto al que pertenece la foto
+  // ("negro", "Stitch"); null = foto general. Ver docs/sql/producto_imagenes_valor_opcion.sql.
+  valorOpcion           String?   @map("valor_opcion") @db.VarChar(30)
   url                   String    @db.VarChar(500)
   urlJpeg               String?   @map("url_jpeg") @db.VarChar(500)
   storagePath           String?   @map("storage_path") @db.VarChar(500)

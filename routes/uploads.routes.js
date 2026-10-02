@@ -3,6 +3,8 @@ import multer from "multer";
 import crypto from "crypto";
 import { supabase } from "../config/supabase.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { requireTiendaAccess } from "../middlewares/tienda-access.middleware.js";
+import { normalizarImagenWidget } from "../modules/campanas/widget-imagen.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { uploadImageSchema, validateFile } from "../validators/uploads.validator.js";
 import config from "../config/index.js";
@@ -40,19 +42,26 @@ const BUCKET_NAME = "tiendas";
  *
  * Body (multipart/form-data):
  * - file: File (imagen)
- * - folder: string ("productos" | "categorias" | "logos" | "banners" | "otros")
+ * - folder: string ("productos" | "categorias" | "logos" | "banners" | "otros" | "widgets")
+ *   widgets: solo PNG/WebP ≤ 1 MB, se guarda como WebP de 512 px (spec campanas-widgets)
  * - tiendaId: string (requerido)
  *
+ * Requiere JWT y rol editor (o superior) en esa tienda.
  * Estructura: tiendas/{tiendaId}/{folder}/{filename}
  */
 router.post(
   "/image",
-  // authMiddleware, // TODO: Habilitar cuando el frontend envíe el token
+  // Solo miembros de la tienda con rol editor o superior pueden subir a su
+  // carpeta. requireTiendaAccess lee req.body.tiendaId, que multer completa
+  // al parsear el multipart: por eso va después de upload.single. El admin
+  // ya manda el token en todas las llamadas (authInterceptor).
+  authMiddleware,
   upload.single("file"),
+  requireTiendaAccess("editor"),
   async (req, res) => {
     try {
-      // Validar archivo
-      const fileValidation = validateFile(req.file);
+      // Validar archivo (las reglas dependen de la carpeta)
+      const fileValidation = validateFile(req.file, req.body?.folder);
       if (!fileValidation.isValid) {
         return apiResponse(res, {
           status: 400,
@@ -74,7 +83,14 @@ router.post(
       }
 
       const { folder, tiendaId } = bodyValidation.data;
-      const file = req.file;
+      let file = req.file;
+
+      // Widgets: se verifica el contenido real (no el mimetype) y se
+      // normaliza a WebP de 512 px con transparencia (R5.2, R5.3).
+      if (folder === "widgets") {
+        const buffer = await normalizarImagenWidget(file.buffer);
+        file = { ...file, buffer, size: buffer.length, mimetype: "image/webp", originalname: "widget.webp" };
+      }
 
       // Generar nombre único para el archivo
       const fileExtension = file.originalname.split(".").pop();
@@ -121,6 +137,15 @@ router.post(
       });
 
     } catch (error) {
+      // Errores de validación (p. ej. un widget que no es PNG/WebP) → 4xx.
+      if (error.statusCode && error.statusCode < 500) {
+        return apiResponse(res, {
+          status: error.statusCode,
+          type: "WARNING",
+          code: "VALIDATION_ERROR",
+          data: { message: error.message }
+        });
+      }
       return apiResponse(res, {
         status: 500,
         type: "ERROR",

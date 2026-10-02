@@ -47,18 +47,26 @@
 - [x] **T3.4** `GET /admin/tiendas/:id/diseno/vista-previa?fecha=YYYY-MM-DD` (rol `editor`) → `{ fecha, ...disenoPublico }` evaluado al mediodía de Lima de esa fecha, lejos de los límites de ventana. Sin token → 401; el servicio, probado contra la BD, responde sin la lista de campañas.
 - [ ] **T3.5** Prueba end-to-end con una campaña activada (PUT `/diseno` con `campanas` → storefront y vista previa). Necesita un token de admin y escribe en la BD: hacerla en la Fase 7 (T7.2).
 
-## Fase 4 — Subida de imágenes (backend, R5)
+## Fase 4 — Subida de imágenes (backend, R5) (hecha)
 
-- [ ] **T4.1** Carpeta `widgets` en `uploads.validator.js`; para ella solo PNG/WebP de hasta 1 MB.
-- [ ] **T4.2** Normalizar con `sharp` a WebP de 512 px conservando la transparencia.
-- [ ] **T4.3** (Recomendado, aparte) Activar `authMiddleware` en `POST /uploads/image` y quitar `image/svg+xml` de todas las carpetas.
+- [x] **T4.1** Carpeta `widgets` en `uploads.validator.js`; `validateFile(file, folder)` aplica para ella solo PNG/WebP y 1 MB (las demás carpetas siguen igual).
+- [x] **T4.2** `modules/campanas/widget-imagen.js#normalizarImagenWidget`: verifica el formato por el **contenido** con sharp (no por el mimetype, que el navegador puede falsear), rechaza JPEG/SVG/no-imágenes con 400 y guarda WebP de máx. 512 px por lado con transparencia, sin agrandar las chicas. `__tests__/widget-imagen.test.js` (6 tests con imágenes reales generadas con sharp).
+- [x] **T4.3** `POST /uploads/image` exige `authMiddleware` + `requireTiendaAccess("editor")` sobre el `tiendaId` del body (después de multer, que lo parsea). El admin ya manda el token (authInterceptor); el storefront no usa este endpoint. Probado: sin token → 401; `GET /uploads/defaults` sigue público. Los errores de validación ahora responden 400 en vez de 500.
+  - SVG en las **otras** carpetas: se mantiene. Los archivos se sirven desde el dominio de Supabase (no desde el de la tienda) y el storefront los muestra con `<img>`, donde los scripts no se ejecutan. El riesgo que quedaba era que cualquiera subiera archivos, y eso lo cierra la autenticación.
+  - Nota: el admin llama a `DELETE /uploads/image` (`image-upload.service.ts#deleteImage`), pero esa ruta no existe (404 desde antes). Fuera del alcance de esta spec.
 
-## Fase 5 — Admin (FrontendAdmin)
+## Fase 5 — Admin (FrontendAdmin) (hecha, falta probarla con sesión)
 
-- [ ] **T5.1** Diseño > Campañas: línea de tiempo anual con presets sugeridos/activos y botón Activar.
-- [ ] **T5.2** Editor de campaña: fechas, textos, paleta (selector de las paletas de la tienda) y widgets.
-- [ ] **T5.3** Editor de widgets: vista previa del hero con las anclas marcadas; al hacer clic en una, se elige figura, imagen o sello, además de tamaño, animación y si va en móvil.
-- [ ] **T5.4** Vista previa por fecha (R6).
+Página nueva **Campañas** (`/campanas`, en el menú bajo "Diseño"; rol que configura la tienda). Todo se guarda junto con "Guardar cambios" (`PUT /diseno` con `campanas` y `widgets`; cada lista se reemplaza entera).
+
+- [x] **T5.0** `'widgets'` en `ImageFolder` (`image-upload.service.ts`); `CampanaTienda`/`Widget`/`PresetCampana`... en `models/campana.model.ts`; `TiendaDiseno.campanas/widgets`; `CampanasService` (calendario y vista previa).
+- [x] **T5.1** Calendario del año (`campanas.component`): fechas en hora de Lima, etiquetas "En curso", "Sugerida para tu rubro", "Personalizada"/"Campaña propia", interruptor activar/desactivar, cambio de año, aviso si la tienda no tiene rubro, "+ Nueva campaña propia", "Restablecer" (preset) / "Eliminar" (propia).
+  - Backend: `GET /campanas/calendario` ahora también devuelve `presets` (el catálogo), que el editor muestra como valores sugeridos.
+- [x] **T5.2** Editor de campaña (`campana-editor.component`): fechas (propia) o anticipación/días después (preset), barra de anuncios, portada, cinta (una línea por mensaje), cuenta regresiva (sugerida / personalizada / ninguna), colores (sugeridos o de la tienda / personalizados: primario, grises, fondos) y widgets (sugeridos / personalizados / ninguno). Los campos vacíos muestran en gris el texto del preset y se guardan como null. Valida con las mismas reglas del backend antes de aplicar.
+- [x] **T5.3** Editor de widgets (`widgets-editor.component`): maqueta de la tienda con los 5 lugares; al elegir uno se agrega o edita su widget: figura (grilla de las 14 SVG, copia de las del storefront en `shared/widgets/figura.component.ts`), imagen (sube a `widgets/`, PNG/WebP ≤ 1 MB) o sello (texto ≤ 12 + forma), tamaño, animación, "también en celular", quitar. Se usa también para los **widgets de siempre** (permanentes).
+- [x] **T5.4** Vista previa por fecha: muestra la campaña de ese día (anuncio con su color, título, subtítulo, cinta, cuenta regresiva, widgets) o "diseño normal". Usa lo guardado; avisa si hay cambios sin guardar.
+- Backend: `saveDiseno` manda el mensaje del error de URLs ajenas en `details` (el error middleware responde `data = details`; sin esto el admin no recibía el texto).
+- Verificado: `ng build` del admin OK; backend 279 tests. **No probado en el navegador:** el admin exige iniciar sesión (Supabase). Probar con `npm start` en el admin + backend local (`apiUrl` = `localhost:3000`).
 
 ## Fase 6 — Storefront conectado (FrontendStore) (hecha)
 

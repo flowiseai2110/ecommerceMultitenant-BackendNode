@@ -10,7 +10,9 @@ import { uploadImage } from "../../middlewares/upload.middleware.js";
 import { uploadLogo, uploadBanner } from "../../controllers/tiendas-imagen.controller.js";
 import { seedMetodosPagoParaTienda } from "../../services/metodos-pago-seed.service.js";
 import { seedMetodosEnvioParaTienda } from "../../services/metodos-envio-seed.service.js";
-import { getDiseno, saveDiseno } from "../../services/tienda-diseno.service.js";
+import { disenoAdmin, saveDiseno } from "../../services/tienda-diseno.service.js";
+import { aplicarPlantilla, deshacerEstructura, getDisenoAdmin } from "../diseno/diseno.service.js";
+import { aplicarPlantillaSchema } from "../diseno/secciones.schema.js";
 import { getPlantillasWhatsapp, savePlantillasWhatsapp } from "../../services/tienda-plantillas-whatsapp.service.js";
 import { logger } from "../../config/logger.js";
 import {
@@ -176,7 +178,7 @@ router.get(
   requireTiendaAccess("viewer"),
   async (req, res, next) => {
     try {
-      const diseno = await getDiseno(req.params.id);
+      const diseno = await getDisenoAdmin(req.params.id);
       return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO", data: diseno });
     } catch (error) {
       next(error);
@@ -194,7 +196,46 @@ router.put(
   invalidateTiendasListCache,
   async (req, res, next) => {
     try {
-      const diseno = await saveDiseno(req.params.id, req.body, req.user);
+      const diseno = disenoAdmin(await saveDiseno(req.params.id, req.body, req.user));
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_UPDATED", data: diseno });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// POST /:id/diseno/estructura/aplicar — Copia una plantilla como estructura
+// de la tienda (docs/specs/estructura-tienda, R2.2/R3) o la restaura (R4.5).
+// La estructura previa queda para "Deshacer".
+router.post(
+  "/:id/diseno/estructura/aplicar",
+  authMiddleware,
+  validate({ params: idParamSchema, body: aplicarPlantillaSchema }),
+  resolveTiendaIdFromId,
+  requireTiendaAccess("admin"),
+  invalidateTiendasListCache,
+  async (req, res, next) => {
+    try {
+      const diseno = await aplicarPlantilla(req.params.id, req.body.plantillaId, req.user);
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_UPDATED", data: diseno });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// POST /:id/diseno/estructura/deshacer — Vuelve a la estructura previa a la
+// última plantilla aplicada (R3.6).
+router.post(
+  "/:id/diseno/estructura/deshacer",
+  authMiddleware,
+  validate({ params: idParamSchema }),
+  resolveTiendaIdFromId,
+  requireTiendaAccess("admin"),
+  invalidateTiendasListCache,
+  async (req, res, next) => {
+    try {
+      const diseno = await deshacerEstructura(req.params.id, req.user);
       return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_UPDATED", data: diseno });
     } catch (error) {
       next(error);

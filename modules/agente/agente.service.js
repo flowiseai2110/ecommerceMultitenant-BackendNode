@@ -132,7 +132,9 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
                   descripcionCorta: p.descripcionCorta,
                   precioBase: p.precioBase,
                   precioOferta: p.precioOferta,
-                  disponible: (p.stock ?? 0) > 0
+                  disponible: (p.stock ?? 0) > 0 || p.variantesDisponibles.length > 0,
+                  // Solo si tiene variantes: así puede responder "¿hay M en negro?".
+                  ...(p.totalVariantes > 0 ? { variantesDisponibles: p.variantesDisponibles } : {})
                 }))
               };
             } else {

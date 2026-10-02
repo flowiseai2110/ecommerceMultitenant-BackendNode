@@ -188,6 +188,7 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
              p.precio_base AS "precioBase", p.precio_oferta AS "precioOferta",
              p.stock, p.activo, p.destacado, p.es_servicio AS "esServicio", p.etiquetas,
              p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
+             p.metadata->'opciones' AS opciones,
              COALESCE(v.variantes, '[]'::json) AS variantes,
              COALESCE(i.imagenes, '[]'::json) AS imagenes
       FROM productos p
@@ -202,7 +203,7 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
       LEFT JOIN LATERAL (
         SELECT json_agg(json_build_object(
           'id', pi.id, 'url', pi.url, 'textoAlternativo', pi.texto_alternativo,
-          'orden', pi.orden, 'esPrincipal', pi.es_principal
+          'orden', pi.orden, 'esPrincipal', pi.es_principal, 'valorOpcion', pi.valor_opcion
         ) ORDER BY pi.orden ASC) AS imagenes
         FROM producto_imagenes pi
         WHERE pi.producto_id = p.id
