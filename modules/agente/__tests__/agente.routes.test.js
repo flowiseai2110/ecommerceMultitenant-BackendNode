@@ -10,7 +10,12 @@ jest.unstable_mockModule("../../../generated/prisma/client.ts", () => ({ Prisma:
 jest.unstable_mockModule("../../../config/prisma.js", () => ({ prisma: prismaStub, Prisma: {}, default: prismaStub }));
 
 const responder = jest.fn((req, res) => res.status(200).json({ ok: true }));
-jest.unstable_mockModule("../agente.controller.js", () => ({ responder }));
+const responderStream = jest.fn((req, res) => res.status(200).json({ ok: true }));
+jest.unstable_mockModule("../agente.controller.js", () => ({
+  responder,
+  responderStream,
+  recuperarConversacion: jest.fn((req, res) => res.status(200).json({ ok: true }))
+}));
 
 const { default: config } = await import("../../../config/index.js");
 const { default: agenteRoutes } = await import("../agente.store.routes.js");
@@ -39,10 +44,10 @@ afterAll(async () => {
   await new Promise(resolve => server.close(resolve));
 });
 
-beforeEach(() => responder.mockClear());
+beforeEach(() => { responder.mockClear(); responderStream.mockClear(); });
 
-function enviar({ ip, tienda = TIENDA_A, sessionToken, mensaje = "hola" }) {
-  return fetch(`${baseUrl}/store/agente/mensajes`, {
+function enviar({ ip, tienda = TIENDA_A, sessionToken, mensaje = "hola", ruta = "/mensajes" }) {
+  return fetch(`${baseUrl}/store/agente${ruta}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Forwarded-For": ip, "x-test-tienda": tienda },
     body: JSON.stringify({ sessionToken, mensaje })
@@ -90,5 +95,22 @@ describe("POST /store/agente/mensajes — rate limit", () => {
     const res = await enviar({ ip: "10.0.0.5", sessionToken: token(6), mensaje: "a".repeat(config.agente.maxCaracteres + 1) });
     expect(res.status).toBe(400);
     expect(responder).not.toHaveBeenCalled();
+  });
+
+  it("/mensajes y /mensajes/stream comparten el límite por sesión", async () => {
+    const max = config.agente.rateLimitSesionMin;
+    for (let i = 0; i < max; i++) {
+      const ruta = i % 2 === 0 ? "/mensajes" : "/mensajes/stream";
+      expect((await enviar({ ip: "10.0.0.6", sessionToken: token(7), ruta })).status).toBe(200);
+    }
+    expect((await enviar({ ip: "10.0.0.6", sessionToken: token(7), ruta: "/mensajes/stream" })).status).toBe(429);
+    expect(responderStream).toHaveBeenCalledTimes(max / 2);
+  });
+
+  it("GET /conversacion valida el sessionToken", async () => {
+    const res = await fetch(`${baseUrl}/store/agente/conversacion?sessionToken=x`, {
+      headers: { "X-Forwarded-For": "10.0.0.7", "x-test-tienda": TIENDA_A }
+    });
+    expect(res.status).toBe(400);
   });
 });

@@ -119,10 +119,18 @@ export const updateDetallesSchema = z.object({
   metodoEnvio: z.string().max(50).optional().nullable(),
   direccionEnvio: z.string().optional().nullable(),
   comprobante: z.enum(["boleta", "factura", "ninguno"]).optional().nullable(),
+  // Datos del comprobante que el admin puede corregir (ej. el cliente se equivocó de DNI)
+  comprobanteDocTipo: z.enum(["DNI", "CE", "RUC"]).optional().nullable(),
+  comprobanteDocNumero: z.string().trim().max(20).optional().nullable(),
+  razonSocial: z.string().trim().max(200).optional().nullable(),
+  direccionFiscal: z.string().trim().max(500).optional().nullable(),
   notas: z.string().optional().nullable()
 }).refine(
   (data) => Object.keys(data).length > 0,
   { message: "Debe enviar al menos un campo para actualizar" }
+).refine(
+  (d) => !d.comprobanteDocNumero || (d.comprobanteDocTipo && DOC_FORMATOS[d.comprobanteDocTipo].test(d.comprobanteDocNumero)),
+  { path: ["comprobanteDocNumero"], message: "Número de documento inválido" }
 );
 
 // Schema para validar ID en params

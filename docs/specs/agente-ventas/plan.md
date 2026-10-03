@@ -85,11 +85,65 @@ GET /store/pedidos/rastrear/:numero?tiendaId=X[&verificacion=1234]
 
 El backend nuevo es compatible con el storefront viejo: ignora `historial` y un mensaje > 500 caracteres recibe un 400 legible.
 
-## Fases 2–5
+## Fase 2 — Filtros y precios
 
-Se detallan al empezar cada fase. Puntos ya conocidos:
+Las plantillas sin LLM se responden **antes** de `conConsulta` para no gastar consulta. Los indicadores de precio se calculan en `agente.service.js` al armar el `tool_result` (`precios.js`).
 
-- **F2:** las plantillas sin LLM se responden **antes** de `conConsulta` para no gastar consulta. Los indicadores de precio se calculan en `agente.service.js` al armar el `tool_result`.
-- **F3:** SSE con `res.flushHeaders()` y `X-Accel-Buffering: no`; revisar que Railway no bufferice. El botón de WhatsApp reutiliza `tienda-plantillas-whatsapp.service.js`.
-- **F4:** `calcular_envio` reutiliza `cotizarEnvios(tiendaId, { ubigeo })`; la resolución distrito → ubigeo es una función pura testeable.
-- **F5:** el adaptador expone `crearMensaje({ system, tools, messages, maxTokens })` → `{ content, stopReason, usage }`; las métricas se guardan en `agente_conversaciones` o una tabla `agente_eventos`.
+## Fase 3 — Streaming y pase a persona
+
+### Flujo SSE
+
+```
+POST /store/agente/mensajes/stream     (mismos middlewares que /mensajes)
+  → headers: text/event-stream, Cache-Control: no-cache, no-transform, X-Accel-Buffering: no
+  atenderMensaje(…, emisor)                ← misma lógica que /mensajes
+    plantilla (sin LLM)                    → event: fin
+    responderTurno con streaming:
+      vuelta con tool_use                  → event: reinicio (borra el preámbulo)
+      buscar_productos terminó             → event: productos   (tarjetas antes que el texto)
+      delta de texto                       → event: texto
+      precio en el texto → reescribir      → event: reinicio
+      sin primer token en 4 s              → abort; tarjetas + plantilla
+    → event: fin { mensaje, productos, sugerencias, ofrecerPersona }   ← fuente de verdad
+  error (402, 500…)                        → event: error { status, code, message }
+```
+
+### Decisiones
+
+| Decisión | Por qué | Alternativa descartada |
+|---|---|---|
+| `POST` + `fetch` con lector de stream | `EventSource` solo hace GET; el mensaje va en el body | GET con el mensaje en la query |
+| `fin` trae el mensaje completo y el frontend lo reemplaza | Si hubo reescritura por precio o degradación, lo que se mostró en vivo no es lo final | Confiar en la suma de deltas |
+| `Cache-Control: no-transform` + `res.flush()` | `compression()` es global y acumularía el stream | Sacar `compression` del server |
+| Timeout de primer token solo en streaming | En JSON el cliente ya espera la respuesta completa | Timeout en ambos |
+| Degradar por lentitud con búsqueda directa (`query` = mensaje) | El cliente ve productos aunque el LLM no responda | Error |
+| Fallos consecutivos en `agente_conversaciones.fallos` | Sobrevive entre requests; se reinicia con un turno con productos | Contador en memoria |
+| Pase a persona por WhatsApp de la tienda, armado en el frontend | El storefront ya tiene `whatsappNumero`; sin tablas de asesores ni horarios | Tablas `asesores` y `horarios_atencion` (fuera de alcance) |
+| «Quiero hablar con una persona» → plantilla sin LLM | Respuesta inmediata y gratis | Que el LLM lo detecte |
+
+Qué cuenta como fallo: búsqueda sin resultados que deja el turno sin productos, error de herramienta, mensaje basura o «no me entiendes». Con 2 seguidos, la respuesta trae `ofrecerPersona: true`.
+
+### Recuperar la conversación
+
+`GET /store/agente/conversacion?sessionToken=…` devuelve los mensajes de la conversación activa (sin crearla). Las tarjetas no se guardan, así que al recargar solo vuelve el texto.
+
+### Riesgo de despliegue
+
+El storefront llama por el proxy de Vercel (`/api/v1`). Hay que verificar en producción que ni Vercel ni Railway acumulen el stream (el texto debe aparecer de a poco, no todo junto al final).
+
+## Fase 4 — Herramientas
+
+| Decisión | Por qué | Alternativa descartada |
+|---|---|---|
+| Distritos con `peru-utils` (offline, 1801 distritos) | Mismo dataset y códigos que el checkout; la tabla `ubigeos` tiene 35 filas y numeración propia | Tabla `ubigeos` / API externa |
+| `tiendas.ubigeo` solo para desempatar por depto + provincia | Viene de la tabla `ubigeos` (8 dígitos, `01` + INEI): depto y provincia coinciden con el INEI, el distrito no | Usar el código completo |
+| Envío: el modelo recibe tipo y plazo, la tarjeta los montos | Misma regla que los precios (R6): un costo en el texto sería inventado | Pasar el costo al modelo |
+| Glosario que **agrega** términos, no reemplaza | El FTS combina con OR: si el catálogo usa la jerga, se sigue encontrando | Reemplazar / pgvector |
+| `estado_pedido` con identidad del JWT, no del input | El modelo solo elige el número; un número ajeno es indistinguible de uno inexistente | Verificar con datos que da el cliente en el chat |
+| Tools en paralelo con `Promise.all` | Envío y búsqueda no dependen entre sí: una sola vuelta extra al LLM | Secuencial |
+
+## Fase 5
+
+Se detalla al empezar. Puntos ya conocidos:
+
+- El adaptador expone `crearMensaje({ system, tools, messages, maxTokens })` → `{ content, stopReason, usage }`; las métricas se guardan en `agente_conversaciones` o una tabla `agente_eventos`.

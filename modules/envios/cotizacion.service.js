@@ -25,11 +25,12 @@ export async function cotizarEnvios(tiendaId, { ubigeo = null, subtotal = 0 } = 
     prisma.metodos_envio.findMany({
       where: { tiendaId, activo: true },
       orderBy: { orden: "asc" },
-      select: metodoSelect
+      select: { ...metodoSelect, nombre: true }
     }),
     envioGratisMinimoDe(tiendaId, prisma)
   ]);
-  return metodos.map(m => cotizarMetodo(m, m.zonas, { ubigeo, subtotal, envioGratisMinimo }));
+  // nombre: lo usa el asesor IA (tool calcular_envio) para presentar las opciones.
+  return metodos.map(m => ({ nombre: m.nombre, ...cotizarMetodo(m, m.zonas, { ubigeo, subtotal, envioGratisMinimo }) }));
 }
 
 /**

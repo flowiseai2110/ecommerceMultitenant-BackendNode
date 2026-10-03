@@ -9,12 +9,17 @@
  * `config.agente.inactividadMin` minutos sin mensajes se abre otra, para que la
  * charla de ayer no contamine la de hoy.
  *
- * @see docs/specs/agente-ventas/spec.md — R1.
+ * @see docs/specs/agente-ventas/spec.md — R1, R8.
  * @see docs/sql/agente_conversaciones.sql
  */
 
 import { prisma } from "../../config/prisma.js";
 import config from "../../config/index.js";
+
+// Mensajes que devuelve la recuperación de la conversación al reabrir el chat.
+const MAX_MENSAJES_RECUPERADOS = 60;
+
+const SELECT_CONVERSACION = { id: true, turnos: true, fallos: true };
 
 /**
  * Últimos `max` mensajes en orden cronológico, empezando siempre por uno del
@@ -31,26 +36,36 @@ export function recortarHistorial(mensajes, max) {
 }
 
 /**
+ * Conversación con actividad reciente de la sesión, o null. No crea nada.
+ * @param {string} tiendaId
+ * @param {string} sessionToken
+ * @param {Date} [ahora]
+ * @returns {Promise<{id:string, turnos:number, fallos:number}|null>}
+ */
+export function obtenerConversacionActiva(tiendaId, sessionToken, ahora = new Date()) {
+  const limite = new Date(ahora.getTime() - config.agente.inactividadMin * 60 * 1000);
+  return prisma.agente_conversaciones.findFirst({
+    where: { tiendaId, sessionToken, estado: "activa", ultimaActividad: { gte: limite } },
+    orderBy: { ultimaActividad: "desc" },
+    select: SELECT_CONVERSACION
+  });
+}
+
+/**
  * Conversación activa de la sesión, o una nueva si no hay o venció por
  * inactividad.
  * @param {string} tiendaId - Server-side (req.tiendaId).
  * @param {string} sessionToken
  * @param {Date} [ahora]
- * @returns {Promise<{id:string, turnos:number}>}
+ * @returns {Promise<{id:string, turnos:number, fallos:number}>}
  */
 export async function obtenerConversacion(tiendaId, sessionToken, ahora = new Date()) {
-  const limite = new Date(ahora.getTime() - config.agente.inactividadMin * 60 * 1000);
-
-  const activa = await prisma.agente_conversaciones.findFirst({
-    where: { tiendaId, sessionToken, estado: "activa", ultimaActividad: { gte: limite } },
-    orderBy: { ultimaActividad: "desc" },
-    select: { id: true, turnos: true }
-  });
+  const activa = await obtenerConversacionActiva(tiendaId, sessionToken, ahora);
   if (activa) return activa;
 
   return prisma.agente_conversaciones.create({
     data: { tiendaId, sessionToken, ultimaActividad: ahora },
-    select: { id: true, turnos: true }
+    select: SELECT_CONVERSACION
   });
 }
 
@@ -73,19 +88,42 @@ export async function cargarHistorial(tiendaId, conversacionId) {
 }
 
 /**
+ * Mensajes de la conversación para volver a pintarlos al reabrir el chat, en
+ * orden cronológico.
+ * @param {string} tiendaId
+ * @param {string} conversacionId
+ * @returns {Promise<Array<{rol:string, contenido:string}>>}
+ */
+export async function listarMensajes(tiendaId, conversacionId) {
+  const recientes = await prisma.agente_mensajes.findMany({
+    where: { tiendaId, conversacionId },
+    orderBy: { fechaRegistro: "desc" },
+    take: MAX_MENSAJES_RECUPERADOS,
+    select: { rol: true, contenido: true }
+  });
+  return recientes.reverse();
+}
+
+/**
  * Guarda un turno completo (mensaje + respuesta) y actualiza la actividad. Se
- * llama solo si el LLM respondió: un fallo no deja medio turno guardado.
+ * llama solo si hubo respuesta: un fallo del LLM no deja medio turno guardado.
  * @param {object} params
  * @param {string} params.tiendaId
  * @param {string} params.conversacionId
  * @param {string} params.mensaje - Mensaje del cliente.
  * @param {string} params.respuesta - Texto del asesor.
  * @param {Date} params.inicio - Cuándo llegó el mensaje.
+ * @param {"sumar"|"reiniciar"|null} [params.fallo] - Cómo cambia el contador de
+ *   fallos consecutivos; null lo deja igual (ej. un saludo).
  */
-export async function guardarTurno({ tiendaId, conversacionId, mensaje, respuesta, inicio }) {
+export async function guardarTurno({ tiendaId, conversacionId, mensaje, respuesta, inicio, fallo = null }) {
   // Fechas explícitas: con el default now() de Postgres ambas filas tendrían la
   // misma hora (la de la transacción) y el orden del historial quedaría al azar.
   const fin = new Date(Math.max(Date.now(), inicio.getTime() + 1));
+
+  const data = { turnos: { increment: 1 }, ultimaActividad: fin, fechaActualizacion: fin };
+  if (fallo === "sumar") data.fallos = { increment: 1 };
+  if (fallo === "reiniciar") data.fallos = 0;
 
   await prisma.$transaction([
     prisma.agente_mensajes.createMany({
@@ -94,9 +132,6 @@ export async function guardarTurno({ tiendaId, conversacionId, mensaje, respuest
         { tiendaId, conversacionId, rol: "assistant", contenido: respuesta, fechaRegistro: fin }
       ]
     }),
-    prisma.agente_conversaciones.update({
-      where: { id: conversacionId },
-      data: { turnos: { increment: 1 }, ultimaActividad: fin, fechaActualizacion: fin }
-    })
+    prisma.agente_conversaciones.update({ where: { id: conversacionId }, data })
   ]);
 }

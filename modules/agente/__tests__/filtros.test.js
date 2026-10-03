@@ -1,4 +1,4 @@
-import { esBasura, esSaludo, enmascararPagos, clasificarMensaje, textoPlantilla, PLANTILLA } from "../filtros.js";
+import { esBasura, esSaludo, enmascararPagos, clasificarMensaje, textoPlantilla, pidePersona, PLANTILLA } from "../filtros.js";
 
 describe("esBasura", () => {
   it.each(["532 3%& '34", "???", "jjjjjj", "xkcd qwrt", "😀😀", "   "])("«%s» es basura", (t) => {
@@ -71,5 +71,25 @@ describe("textoPlantilla", () => {
 
   it("la plantilla de pago remite al checkout oficial", () => {
     expect(textoPlantilla(PLANTILLA.PAGO)).toContain("checkout");
+  });
+});
+
+describe("pidePersona", () => {
+  it.each([
+    "quiero hablar con una persona",
+    "¿Puedo hablar con un asesor?",
+    "pásame con un humano",
+    "necesito un asesor real",
+    "no me entiendes",
+    "no entiendes nada"
+  ])("«%s» pide una persona", (t) => expect(pidePersona(t)).toBe(true));
+
+  it.each(["zapatillas para persona alta", "quiero un polo", "el asesor me recomendó la negra"])(
+    "«%s» no",
+    (t) => expect(pidePersona(t)).toBe(false)
+  );
+
+  it("clasificarMensaje lo marca como plantilla persona", () => {
+    expect(clasificarMensaje("quiero hablar con una persona").plantilla).toBe(PLANTILLA.PERSONA);
   });
 });

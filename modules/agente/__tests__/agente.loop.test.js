@@ -23,6 +23,17 @@ jest.unstable_mockModule("../tools/buscar-productos.js", () => ({
   ejecutarBuscarProductos: jest.fn().mockResolvedValue({ productos })
 }));
 
+const envio = { distrito: "Santiago de Surco, Lima", ubigeo: "150140", opciones: [], envioGratisMinimo: null };
+jest.unstable_mockModule("../tools/calcular-envio.js", () => ({
+  calcularEnvioToolDef: { name: "calcular_envio", input_schema: {} },
+  ejecutarCalcularEnvio: jest.fn().mockResolvedValue({ paraModelo: { distrito: envio.distrito, opciones: [] }, envio })
+}));
+const ejecutarEstadoPedido = jest.fn().mockResolvedValue({ paraModelo: { error: "NO_AUTENTICADO" } });
+jest.unstable_mockModule("../tools/estado-pedido.js", () => ({
+  estadoPedidoToolDef: { name: "estado_pedido", input_schema: {} },
+  ejecutarEstadoPedido
+}));
+
 const { responderTurno } = await import("../agente.service.js");
 
 const usage = { input_tokens: 100, output_tokens: 20 };
@@ -76,5 +87,41 @@ describe("responderTurno — precios fuera del LLM", () => {
     expect(res.mensaje).not.toMatch(/180/);
     expect(res.mensaje).toContain("precio actualizado");
     expect(res.productos).toHaveLength(2);
+  });
+});
+
+describe("responderTurno — varias herramientas", () => {
+  beforeEach(() => create.mockReset());
+
+  it("ejecuta las tools de una vuelta en paralelo y vuelve al LLM una sola vez", async () => {
+    create
+      .mockResolvedValueOnce({
+        stop_reason: "tool_use",
+        usage,
+        content: [buscar, { type: "tool_use", id: "tu_2", name: "calcular_envio", input: { distrito: "Surco" } }]
+      })
+      .mockResolvedValueOnce({ stop_reason: "end_turn", usage, content: [texto("Llega a Surco, mira la tarjeta.")] });
+
+    const res = await turno();
+
+    expect(create).toHaveBeenCalledTimes(2);
+    const toolResults = create.mock.calls[1][0].messages.at(-1).content;
+    expect(toolResults.map(r => r.tool_use_id)).toEqual(["tu_1", "tu_2"]);
+    expect(res.envio).toEqual(envio);
+    expect(res.productos).toHaveLength(2);
+  });
+
+  it("estado_pedido recibe la identidad del servidor, no del modelo", async () => {
+    create
+      .mockResolvedValueOnce({
+        stop_reason: "tool_use",
+        usage,
+        content: [{ type: "tool_use", id: "tu_3", name: "estado_pedido", input: { numero_pedido: "PED-1", authUserId: "intruso" } }]
+      })
+      .mockResolvedValueOnce({ stop_reason: "end_turn", usage, content: [texto("Inicia sesión para verlo.")] });
+
+    await responderTurno({ tiendaId: "11111111-1111-1111-1111-111111111111", mensaje: "mi pedido", authUserId: "u-real" });
+
+    expect(ejecutarEstadoPedido.mock.calls.at(-1)[0]).toMatchObject({ authUserId: "u-real" });
   });
 });

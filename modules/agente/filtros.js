@@ -7,7 +7,10 @@
  * @see docs/specs/agente-ventas/spec.md — R5.
  */
 
-export const PLANTILLA = Object.freeze({ PAGO: "pago", BASURA: "basura", SALUDO: "saludo" });
+export const PLANTILLA = Object.freeze({ PAGO: "pago", BASURA: "basura", SALUDO: "saludo", PERSONA: "persona" });
+
+// Plantillas que cuentan como fallo de la conversación (R8.2).
+export const PLANTILLAS_FALLO = new Set([PLANTILLA.BASURA, PLANTILLA.PERSONA]);
 
 // Minúsculas, sin tildes ni signos: "¡Hola, buenas!" → "hola buenas".
 function normalizar(texto) {
@@ -69,6 +72,24 @@ export function esSaludo(texto) {
   return resto === "";
 }
 
+// "hablar con una persona", "quiero un asesor humano", "no me entiendes".
+const PIDE_PERSONA = [
+  /\b(hablar|conversar|comunicarme|chatear)\s+con\s+(una?\s+|alguien\s*|el\s+|la\s+)?(persona|humano|asesor|asesora|vendedor|vendedora|alguien|encargado|encargada)\b/,
+  /\b(quiero|necesito|pasame|paseme|comunicame)\s+(con\s+)?(una?\s+)?(persona|humano|asesor|asesora)\s*(real|humano|humana)?\b/,
+  /\b(asesor|agente|persona)\s+(real|humano|humana)\b/,
+  /\bno\s+(me\s+)?(entiendes|entiende|estas\s+entendiendo)\b/
+];
+
+/**
+ * El cliente pide una persona o dice que el asesor no lo entiende.
+ * @param {string} texto
+ * @returns {boolean}
+ */
+export function pidePersona(texto) {
+  const limpio = normalizar(texto);
+  return PIDE_PERSONA.some(re => re.test(limpio));
+}
+
 // Luhn: descarta números largos que no son tarjetas (teléfonos, DNI, pedidos).
 function pasaLuhn(digitos) {
   let suma = 0;
@@ -104,12 +125,13 @@ export function enmascararPagos(texto) {
  * Decide si el mensaje se responde con plantilla. Siempre devuelve el texto
  * enmascarado: es el que se guarda y, si no hay plantilla, el que va al LLM.
  * @param {string} mensaje
- * @returns {{ texto: string, plantilla: "pago"|"basura"|"saludo"|null }}
+ * @returns {{ texto: string, plantilla: "pago"|"basura"|"saludo"|"persona"|null }}
  */
 export function clasificarMensaje(mensaje) {
   const { texto, oculto } = enmascararPagos(mensaje);
   if (oculto) return { texto, plantilla: PLANTILLA.PAGO };
   if (esBasura(texto)) return { texto, plantilla: PLANTILLA.BASURA };
+  if (pidePersona(texto)) return { texto, plantilla: PLANTILLA.PERSONA };
   if (esSaludo(texto)) return { texto, plantilla: PLANTILLA.SALUDO };
   return { texto, plantilla: null };
 }
@@ -117,13 +139,19 @@ export function clasificarMensaje(mensaje) {
 /**
  * Texto de cada plantilla. El saludo dice que es un asistente de IA, que
  * responde al toque y que puede pasar con una persona (spec: rechazo de usuarios, punto 10).
- * @param {"pago"|"basura"|"saludo"} plantilla
- * @param {{ tiendaNombre?: string }} [ctx]
+ * @param {"pago"|"basura"|"saludo"|"persona"} plantilla
+ * @param {{ tiendaNombre?: string, conWhatsapp?: boolean }} [ctx]
  * @returns {string}
  */
-export function textoPlantilla(plantilla, { tiendaNombre } = {}) {
+export function textoPlantilla(plantilla, { tiendaNombre, conWhatsapp = false } = {}) {
   const tienda = tiendaNombre || "la tienda";
   switch (plantilla) {
+    case PLANTILLA.PERSONA:
+      return conWhatsapp
+        ? "Claro 🙂 Toca «Hablar con una persona»: se abre WhatsApp con el resumen de lo que " +
+          "conversamos, así no tienes que repetirlo."
+        : "Por ahora no puedo pasarte con una persona desde aquí. Encuentras los datos de " +
+          "contacto de la tienda al pie de la página.";
     case PLANTILLA.PAGO:
       return "Por seguridad oculté ese número 🔒 Nunca escribas datos de tu tarjeta en el chat: " +
         "el pago se hace solo en el checkout oficial de la tienda.";

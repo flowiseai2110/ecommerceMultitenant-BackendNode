@@ -13,6 +13,10 @@
 
 import { prisma, Prisma } from "../../../config/prisma.js";
 import MemoryCache from "../../../utils/memory-cache.js";
+import { expandirConsulta } from "../glosario.js";
+
+// Tope del texto libre que manda el modelo (spec: 100 caracteres).
+const MAX_CARACTERES_QUERY = 100;
 
 // Máximo de productos que la tool devuelve por búsqueda. El panel del chat es
 // angosto (no hay espacio útil para más tarjetas) y cada producto de más es
@@ -53,14 +57,21 @@ const MAX_VARIANTES_RESULTADO = 24;
  * @returns {Promise<{
  *   categorias: Array<{id:string, nombre:string, categoriaPadreId:string|null}>,
  *   colores: string[],
- *   opciones: Array<{clave:string, valores:string[]}>
+ *   opciones: Array<{clave:string, valores:string[]}>,
+ *   tienda: { rubro: string|null, ubigeo: string|null, envioGratisMinimo: number|null }
  * }>}
  */
 export async function obtenerFacetas(tiendaId) {
   const cached = cacheFacetas.get(tiendaId);
   if (cached) return cached;
 
-  const [categorias, filasColores, filasOpciones] = await Promise.all([
+  const [tienda, categorias, filasColores, filasOpciones] = await Promise.all([
+    // Rubro: glosario de jerga (glosario.js). Ubigeo: desempata distritos
+    // con el mismo nombre al cotizar envío (distritos.js).
+    prisma.tiendas.findUnique({
+      where: { id: tiendaId },
+      select: { rubro: true, ubigeo: true, envioGratisMinimo: true }
+    }),
     prisma.categorias.findMany({
       where: { tiendaId, activo: true },
       select: { id: true, nombre: true, categoriaPadreId: true },
@@ -94,7 +105,16 @@ export async function obtenerFacetas(tiendaId) {
     return { clave: f.clave, valores: [...unicos.values()].slice(0, MAX_VALORES_FACETA) };
   });
 
-  const facetas = { categorias, colores: filasColores.map(f => f.color), opciones };
+  const facetas = {
+    categorias,
+    colores: filasColores.map(f => f.color),
+    opciones,
+    tienda: {
+      rubro: tienda?.rubro ?? null,
+      ubigeo: tienda?.ubigeo ?? null,
+      envioGratisMinimo: tienda?.envioGratisMinimo != null ? Number(tienda.envioGratisMinimo) : null
+    }
+  };
   cacheFacetas.set(tiendaId, facetas, TTL_FACETAS_MS);
   return facetas;
 }
@@ -220,7 +240,10 @@ export async function ejecutarBuscarProductos({ tiendaId, input, facetas }) {
     throw new Error("buscar_productos: falta tiendaId (scope multi-tenant).");
   }
 
-  const query = typeof input?.query === "string" ? input.query.trim() : "";
+  // Jerga del rubro → términos del catálogo ("zapas" → + "zapatillas"). Ver glosario.js.
+  const query = typeof input?.query === "string"
+    ? expandirConsulta(input.query.slice(0, MAX_CARACTERES_QUERY), facetas.tienda?.rubro)
+    : "";
   const precioMax = typeof input?.precioMax === "number" ? input.precioMax : null;
   // Por defecto solo mostramos con stock; el modelo puede pedir lo contrario.
   const soloConStock = input?.soloConStock !== false;

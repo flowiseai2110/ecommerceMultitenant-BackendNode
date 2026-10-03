@@ -11,11 +11,16 @@ import { config } from "../../config/index.js";
  * @see docs/specs/agente-ventas/spec.md — R1.2, R2.
  */
 
+// Token de sesión del storefront (localStorage, crypto.randomUUID()). Ancla la
+// conversación junto con la tienda. Charset cerrado: también es clave del rate limit.
+const sessionTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{16,64}$/, "sessionToken inválido");
+
+export const conversacionQuerySchema = z.object({
+  sessionToken: sessionTokenSchema
+});
+
 export const mensajeAgenteSchema = z.object({
-  // Token de sesión del storefront (localStorage, crypto.randomUUID()). Ancla la
-  // conversación junto con la tienda. Charset cerrado: también es clave del rate limit.
-  sessionToken: z.string()
-    .regex(/^[A-Za-z0-9_-]{16,64}$/, "sessionToken inválido"),
+  sessionToken: sessionTokenSchema,
   mensaje: z.string({ required_error: "El mensaje es requerido" })
     .trim()
     .min(1, "El mensaje es requerido")

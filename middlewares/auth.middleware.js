@@ -1,4 +1,5 @@
 import { jwtVerify, createRemoteJWKSet } from "jose";
+import * as Sentry from "@sentry/node";
 import config from "../config/index.js";
 import { UnauthorizedError, ForbiddenError } from "../utils/errors.js";
 import { logger } from "../config/logger.js";
@@ -44,6 +45,8 @@ export async function authMiddleware(req, res, next) {
       exp: payload.exp
     };
 
+    // Solo el id: el email es PII y no hace falta para depurar.
+    Sentry.setUser({ id: req.user.id });
     logger.debug(`Usuario autenticado: ${req.user.email}`);
 
     next();
@@ -113,6 +116,7 @@ export async function optionalAuth(req, res, next) {
       role: payload.role || "user",
       metadata: payload.user_metadata || {}
     };
+    Sentry.setUser({ id: req.user.id });
 
     next();
   } catch {

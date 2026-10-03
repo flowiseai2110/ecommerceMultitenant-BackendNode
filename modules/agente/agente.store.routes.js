@@ -3,8 +3,9 @@ import rateLimit from "express-rate-limit";
 import config from "../../config/index.js";
 import { validate } from "../../middlewares/validation.middleware.js";
 import { requireTienda } from "../../middlewares/resolve-tienda.middleware.js";
-import { mensajeAgenteSchema } from "./agente.schema.js";
-import { responder } from "./agente.controller.js";
+import { optionalAuth } from "../../middlewares/auth.middleware.js";
+import { mensajeAgenteSchema, conversacionQuerySchema } from "./agente.schema.js";
+import { responder, responderStream, recuperarConversacion } from "./agente.controller.js";
 
 const router = Router();
 
@@ -13,6 +14,7 @@ const router = Router();
 // - por IP: el sessionToken lo elige el cliente, y rotándolo se saltaría un
 //   límite solo por sesión. Va antes de validar: la basura también cuenta.
 // - por tienda + sesión: frena el spam dentro de una conversación.
+// /mensajes y /mensajes/stream comparten los contadores.
 const MINUTO_MS = 60 * 1000;
 
 const mensajeLimite = {
@@ -40,15 +42,27 @@ const limiteSesion = rateLimit({
   legacyHeaders: false
 });
 
+// optionalAuth: con sesión, estado_pedido puede ver los pedidos del cliente (req.user).
+// Sin token (o inválido) sigue como visitante.
+const cadenaMensaje = [
+  requireTienda, limiteIp, optionalAuth, validate({ body: mensajeAgenteSchema }), limiteSesion
+];
+
 // POST /mensajes - Enviar un mensaje al asesor de ventas IA (público, storefront).
 // requireTienda garantiza que toda búsqueda quede scoped a una tienda concreta.
-router.post(
-  "/mensajes",
+router.post("/mensajes", ...cadenaMensaje, responder);
+
+// POST /mensajes/stream - Lo mismo, con la respuesta por Server-Sent Events.
+router.post("/mensajes/stream", ...cadenaMensaje, responderStream);
+
+// GET /conversacion?sessionToken=… - Mensajes de la conversación activa, para
+// reabrir el chat. No llama al LLM; comparte el límite por IP.
+router.get(
+  "/conversacion",
   requireTienda,
   limiteIp,
-  validate({ body: mensajeAgenteSchema }),
-  limiteSesion,
-  responder
+  validate({ query: conversacionQuerySchema }),
+  recuperarConversacion
 );
 
 export default router;

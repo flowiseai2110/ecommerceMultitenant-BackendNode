@@ -16,6 +16,29 @@ const CAMPOS_DESTINO = [
 // Desde este total (S/) SUNAT exige DNI/CE del adquiriente en la boleta.
 const MONTO_BOLETA_CON_DOCUMENTO = 700;
 
+// Campos que el admin puede corregir con updateDetalles.
+const CAMPOS_DETALLES = [
+  "metodoEnvio", "direccionEnvio", "comprobante", "notas",
+  "comprobanteDocTipo", "comprobanteDocNumero", "razonSocial", "direccionFiscal"
+];
+
+const PAGO_LABELS = {
+  pagado: "Pago confirmado",
+  pendiente: "Pago marcado como pendiente",
+  rechazado: "Pago rechazado",
+  reembolsado: "Pago reembolsado"
+};
+
+// Texto del historial para un cambio de estado de pago (ej. "Pago confirmado · Yape · Op. 0458").
+function notaPago(estadoPago, metodoPago, referenciaPago) {
+  const partes = [PAGO_LABELS[estadoPago] ?? `Pago: ${estadoPago}`];
+  if (estadoPago === "pagado") {
+    if (metodoPago) partes.push(metodoPago);
+    if (referenciaPago) partes.push(`Op. ${referenciaPago}`);
+  }
+  return partes.join(" · ");
+}
+
 /**
  * Servicio de Pedidos (contexto Órdenes) con lógica de negocio completa:
  * - Generación de número de pedido sin race condition (advisory lock)
@@ -383,7 +406,8 @@ class PedidosService {
             email: true,
             tipoDocumento: true,
             numeroDocumento: true,
-            direccionPredeterminada: true
+            direccionPredeterminada: true,
+            totalPedidos: true
           }
         },
         historialEstados: { orderBy: { fechaRegistro: "desc" } }
@@ -484,7 +508,8 @@ class PedidosService {
       invalidatePendientesCount(pedido.tiendaId);
     }
 
-    return updated;
+    // Pedido completo (con historial) para que el admin refresque la línea de tiempo.
+    return this.findById(updated.id, tiendaId);
   }
 
   /**
@@ -507,18 +532,23 @@ class PedidosService {
     if (referenciaPago !== undefined) updateData.referenciaPago = referenciaPago;
     if (metodoPago !== undefined) updateData.metodoPago = metodoPago;
 
-    return await prisma.pedidos.update({
-      where: { id },
-      data: updateData,
-      select: {
-        id: true,
-        numeroPedido: true,
-        estadoPago: true,
-        metodoPago: true,
-        referenciaPago: true,
-        fechaActualizacion: true
+    await prisma.$transaction(async (tx) => {
+      await tx.pedidos.update({ where: { id }, data: updateData });
+
+      // Un cambio de estado de pago queda en la línea de tiempo del pedido
+      // (el estado logístico no cambia: se registra con el actual).
+      if (estadoPago !== pedido.estadoPago) {
+        await tx.pedido_historial_estados.create({
+          data: {
+            pedidoId: id,
+            estado: pedido.estado,
+            notas: notaPago(estadoPago, updateData.metodoPago ?? pedido.metodoPago, updateData.referenciaPago ?? pedido.referenciaPago)
+          }
+        });
       }
     });
+
+    return this.findById(id, tiendaId);
   }
 
   /**
@@ -539,7 +569,7 @@ class PedidosService {
       usuarioActualizacion: user?.email || user?.id || "system"
     };
 
-    for (const campo of ["metodoEnvio", "direccionEnvio", "comprobante", "notas"]) {
+    for (const campo of CAMPOS_DETALLES) {
       if (data[campo] !== undefined) updateData[campo] = data[campo];
     }
 

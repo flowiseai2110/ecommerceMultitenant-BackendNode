@@ -35,12 +35,42 @@ export function serializeProductoCardChat(p) {
  * @param {Array}  params.productos - Productos recomendados (para tarjetas).
  * @param {string[]} [params.sugerencias] - Respuestas rápidas (botones) que el chat
  *   envía como mensaje al tocarlas.
+ * @param {boolean} [params.ofrecerPersona] - El chat destaca el pase a una persona
+ *   (lo pidió el cliente o la conversación acumuló fallos).
+ * @param {object|null} [params.envio] - Tarjeta de envío (tool calcular_envio).
+ * @param {Array} [params.pedidos] - Pedidos del cliente con sesión (tool estado_pedido).
  * @returns {object} DTO público del turno.
  */
-export function serializeTurnoAgente({ mensaje, productos = [], sugerencias = [] }) {
+export function serializeTurnoAgente({
+  mensaje, productos = [], sugerencias = [], ofrecerPersona = false, envio = null, pedidos = []
+}) {
   return {
     mensaje,
     productos: productos.map(serializeProductoCardChat),
-    sugerencias
+    sugerencias,
+    ofrecerPersona,
+    envio: envio ? serializeEnvioChat(envio) : null,
+    pedidos: pedidos.map(p => ({ numeroPedido: p.numeroPedido, estado: p.estado }))
+  };
+}
+
+/**
+ * Tarjeta de envío: montos de la BD (misma cotización que el checkout). El
+ * total final lo recalcula el backend al crear el pedido.
+ * @param {object} envio - De ejecutarCalcularEnvio.
+ */
+export function serializeEnvioChat(envio) {
+  return {
+    distrito: envio.distrito,
+    ubigeo: envio.ubigeo,
+    envioGratisMinimo: envio.envioGratisMinimo ?? null,
+    opciones: envio.opciones.map(o => ({
+      nombre: o.nombre,
+      modo: o.modo,
+      costo: o.costo,
+      costoReferencial: o.costoReferencial ?? null,
+      diasMin: o.diasMin ?? null,
+      diasMax: o.diasMax ?? null
+    }))
   };
 }

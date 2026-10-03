@@ -796,6 +796,9 @@ model agente_conversaciones {
   estado                String    @default("activa") @db.VarChar(20)
   // Turnos completos (mensaje + respuesta). Tope: AGENTE_IA_MAX_TURNOS.
   turnos                Int       @default(0)
+  // Fallos consecutivos; con AGENTE_IA_MAX_FALLOS se ofrece pasar con una persona.
+  // DDL: docs/sql/agente_conversaciones_fallos.sql
+  fallos                Int       @default(0)
   ultimaActividad       DateTime  @default(now()) @map("ultima_actividad") @db.Timestamptz
 
   // Auditoría

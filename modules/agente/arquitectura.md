@@ -174,6 +174,8 @@ AGENTE_IA_MAX_TURNOS=30            # turnos por conversación; luego plantilla s
 AGENTE_IA_INACTIVIDAD_MIN=30       # minutos sin mensajes → conversación nueva
 AGENTE_IA_RATE_LIMIT_IP_MIN=30     # mensajes por minuto por IP
 AGENTE_IA_RATE_LIMIT_SESION_MIN=10 # mensajes por minuto por tienda + sessionToken
+AGENTE_IA_PRIMER_TOKEN_MS=4000     # streaming: sin primer token → tarjetas + plantilla
+AGENTE_IA_MAX_FALLOS=2             # fallos seguidos → ofrecer pasar con una persona
 ```
 
 ### Persistencia — historial en el servidor

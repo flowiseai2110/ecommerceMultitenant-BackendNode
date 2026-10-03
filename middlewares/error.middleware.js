@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import { Prisma } from "../generated/prisma/client.ts";
 import { apiResponse } from "../utils/apiResponse.js";
 import { AppError } from "../utils/errors.js";
@@ -16,6 +17,19 @@ function sanitizeBody(body) {
     if (field in sanitized) sanitized[field] = "[REDACTED]";
   }
   return sanitized;
+}
+
+/**
+ * Envía a Sentry los errores que son bugs nuestros (5xx y queries Prisma mal
+ * armadas). Los 4xx esperables (validación, duplicados, permisos) no se envían:
+ * solo meterían ruido. El body va sanitizado porque instrument.js no captura bodies.
+ */
+function captureServerError(err, req) {
+  Sentry.withScope((scope) => {
+    scope.setContext("request_body", sanitizeBody(req.body));
+    if (err.code) scope.setTag("error.code", String(err.code));
+    Sentry.captureException(err);
+  });
 }
 
 /**
@@ -50,6 +64,7 @@ export function errorHandler(err, req, res, next) {
 
   // Errores de la aplicación (controlados)
   if (err instanceof AppError) {
+    if (err.statusCode >= 500) captureServerError(err, req);
     return apiResponse(res, {
       status: err.statusCode,
       type: err.statusCode >= 500 ? "ERROR" : "WARNING",
@@ -70,10 +85,12 @@ export function errorHandler(err, req, res, next) {
 
   // Errores de Prisma
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    return handlePrismaError(err, res);
+    return handlePrismaError(err, req, res);
   }
 
+  // Responde 400, pero es un bug: la query se armó mal en el código.
   if (err instanceof Prisma.PrismaClientValidationError) {
+    captureServerError(err, req);
     return apiResponse(res, {
       status: 400,
       type: "WARNING",
@@ -93,6 +110,7 @@ export function errorHandler(err, req, res, next) {
   }
 
   // Error no controlado
+  captureServerError(err, req);
   return apiResponse(res, {
     status: 500,
     type: "ERROR",
@@ -107,7 +125,7 @@ export function errorHandler(err, req, res, next) {
 /**
  * Maneja errores específicos de Prisma
  */
-function handlePrismaError(err, res) {
+function handlePrismaError(err, req, res) {
   const prismaErrors = {
     P2000: {
       status: 400,
@@ -171,6 +189,7 @@ function handlePrismaError(err, res) {
     code: "DATABASE_ERROR",
     message: "Error de base de datos"
   };
+  if (errorInfo.status >= 500) captureServerError(err, req);
 
   return apiResponse(res, {
     status: errorInfo.status,

@@ -1,6 +1,6 @@
 # Spec: agente de ventas IA — de asesor a agente
 
-> Estado: **Fases 1 y 2 implementadas, pendientes de prueba manual y commit** (ver [tasks.md](tasks.md)).
+> Estado: **Fases 1–4 implementadas.** Fases 3 y 4 pendientes de prueba manual y commit (ver [tasks.md](tasks.md)).
 > Diseño técnico: [plan.md](plan.md). Arquitectura de referencia: [Agente de ventas IA para ecommerce](../Agente%20de%20ventas%20IA%20para%20ecommerce%20análisis%20y%20arquitectura.md).
 > Estado actual del asesor: [modules/agente/arquitectura.md](../../../modules/agente/arquitectura.md). Spec previa: [asesor-ia-busqueda](../asesor-ia-busqueda/spec.md).
 

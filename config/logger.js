@@ -1,4 +1,6 @@
 import winston from "winston";
+import Transport from "winston-transport";
+import * as Sentry from "@sentry/node";
 import config from "./index.js";
 
 const { combine, timestamp, printf, colorize, errors } = winston.format;
@@ -51,6 +53,12 @@ if (config.nodeEnv === "production") {
       )
     })
   );
+}
+
+// Sentry Logs: los logs quedan enlazados a la traza y al error de la misma request.
+if (config.sentry.dsn) {
+  const SentryWinstonTransport = Sentry.createSentryWinstonTransport(Transport);
+  transports.push(new SentryWinstonTransport({ level: config.sentry.logLevel }));
 }
 
 export const logger = winston.createLogger({

@@ -50,6 +50,20 @@ export const config = {
     format: process.env.LOG_FORMAT || "combined"
   },
 
+  // Sentry — errores, trazas y logs. Sin DSN queda desactivado (ver instrument.js).
+  sentry: {
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
+    // Railway expone el commit desplegado; sirve para saber qué deploy introdujo un error.
+    release: process.env.SENTRY_RELEASE || process.env.RAILWAY_GIT_COMMIT_SHA,
+    // Fracción de requests trazadas. El plan gratis tiene cupo limitado de spans.
+    tracesSampleRate: process.env.SENTRY_TRACES_SAMPLE_RATE
+      ? parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE)
+      : (process.env.NODE_ENV === "production" ? 0.2 : 1.0),
+    // Nivel mínimo de Winston que se envía a Sentry Logs.
+    logLevel: process.env.SENTRY_LOG_LEVEL || "info"
+  },
+
   // Frontend URL (para links en emails)
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:4200",
 
@@ -145,6 +159,11 @@ export const config = {
     maxTurnos: parseInt(process.env.AGENTE_IA_MAX_TURNOS) || 30,
     // Minutos sin mensajes tras los que el siguiente abre una conversación nueva.
     inactividadMin: parseInt(process.env.AGENTE_IA_INACTIVIDAD_MIN) || 30,
+    // Streaming: sin primer token del modelo en este tiempo se aborta y se
+    // responde con tarjetas + plantilla.
+    primerTokenMs: parseInt(process.env.AGENTE_IA_PRIMER_TOKEN_MS) || 4000,
+    // Fallos consecutivos tras los que se ofrece pasar con una persona.
+    maxFallos: parseInt(process.env.AGENTE_IA_MAX_FALLOS) || 2,
     // Mensajes por minuto. Por IP frena la rotación de sessionToken; por sesión,
     // el spam dentro de una conversación.
     rateLimitIpMin: parseInt(process.env.AGENTE_IA_RATE_LIMIT_IP_MIN) || 30,

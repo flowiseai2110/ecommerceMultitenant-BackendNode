@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import * as Sentry from "@sentry/node";
 
 /**
  * Contexto de tenant por request vía AsyncLocalStorage (ALS).
@@ -32,6 +33,8 @@ export function runWithTenantContext(fn) {
 export function setContextTiendaId(tiendaId) {
   const store = als.getStore();
   if (store) store.tiendaId = tiendaId;
+  // Etiqueta errores, trazas y logs de la request con la tienda (scope por request).
+  if (tiendaId) Sentry.setTag("tiendaId", tiendaId);
 }
 
 /**
