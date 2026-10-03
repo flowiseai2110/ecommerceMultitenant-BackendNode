@@ -21,7 +21,12 @@ export const config = {
     // Límite específico para creación de pedidos (OWASP OAT-021 Denial of Inventory):
     // los pedidos descuentan stock al crearse, así que este endpoint necesita un
     // tope mucho más agresivo que el global
-    checkoutMax: parseInt(process.env.RATE_LIMIT_CHECKOUT_MAX) || 5
+    checkoutMax: parseInt(process.env.RATE_LIMIT_CHECKOUT_MAX) || 5,
+    // Seguimiento público de pedidos (por ventana): consultas por IP, y
+    // verificaciones FALLIDAS por pedido. Los 4 dígitos del WhatsApp son 10.000
+    // combinaciones: el tope por pedido frena la fuerza bruta desde muchas IPs.
+    rastreoMax: parseInt(process.env.RATE_LIMIT_RASTREO_MAX) || 30,
+    rastreoVerificacionMax: parseInt(process.env.RATE_LIMIT_RASTREO_VERIFICACION_MAX) || 5
   },
 
   // CORS - soporta múltiples orígenes separados por coma
@@ -132,10 +137,18 @@ export const config = {
     maxTokens: parseInt(process.env.AGENTE_IA_MAX_TOKENS) || 200,
     // Tope de vueltas del loop de tool-use por turno (anti-loop infinito).
     maxToolLoops: parseInt(process.env.AGENTE_IA_MAX_TOOL_LOOPS) || 4,
-    // Máximo de mensajes de historial que el cliente puede enviar (anti-abuso de contexto).
-    maxHistorial: parseInt(process.env.AGENTE_IA_MAX_HISTORIAL) || 20,
-    // Rate limit específico del asesor por ventana (por sessionToken).
-    rateLimitMax: parseInt(process.env.AGENTE_IA_RATE_LIMIT_MAX) || 20
+    // Mensajes previos (de la BD, nunca del cliente) que se envían al LLM por turno.
+    maxHistorial: parseInt(process.env.AGENTE_IA_MAX_HISTORIAL) || 10,
+    // Largo máximo del mensaje del cliente (el chat del storefront usa el mismo tope).
+    maxCaracteres: parseInt(process.env.AGENTE_IA_MAX_CARACTERES) || 500,
+    // Turnos por conversación; al llegar, plantilla fija sin LLM ni consulta.
+    maxTurnos: parseInt(process.env.AGENTE_IA_MAX_TURNOS) || 30,
+    // Minutos sin mensajes tras los que el siguiente abre una conversación nueva.
+    inactividadMin: parseInt(process.env.AGENTE_IA_INACTIVIDAD_MIN) || 30,
+    // Mensajes por minuto. Por IP frena la rotación de sessionToken; por sesión,
+    // el spam dentro de una conversación.
+    rateLimitIpMin: parseInt(process.env.AGENTE_IA_RATE_LIMIT_IP_MIN) || 30,
+    rateLimitSesionMin: parseInt(process.env.AGENTE_IA_RATE_LIMIT_SESION_MIN) || 10
   },
 
   // Asistente "Guía" del panel admin. Ver modules/asistente/. Reusa la API key del

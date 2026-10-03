@@ -57,24 +57,66 @@ router.post(
 );
 
 // ============================================
-// GET /rastrear/:numeroPedido?tiendaId=X — Seguimiento público de pedido
+// GET /rastrear/:numeroPedido?tiendaId=X[&verificacion=1234] — Seguimiento público
+// Dos niveles (modules/ordenes/rastreo.js): sin prueba de identidad solo estado
+// y fechas; con sesión del dueño o los últimos 4 dígitos del WhatsApp del
+// pedido, el detalle completo. El storefront ya manda el token a /store/pedidos.
 // ============================================
 const rastrearParamSchema = z.object({
   numeroPedido: z.string().min(1).max(20)
 });
 const rastrearQuerySchema = z.object({
-  tiendaId: z.string({ required_error: "El ID de tienda es requerido" }).uuid("ID de tienda inválido")
+  tiendaId: z.string({ required_error: "El ID de tienda es requerido" }).uuid("ID de tienda inválido"),
+  verificacion: z.string().regex(/^\d{4}$/, "Ingresa los últimos 4 dígitos de tu WhatsApp").optional()
+});
+
+const limiteRastreoIp = rateLimit({
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.rastreoMax,
+  message: {
+    status: 429,
+    type: "ERROR",
+    code: "TOO_MANY_REQUESTS",
+    data: { message: "Demasiadas consultas de seguimiento, intenta más tarde" }
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Por pedido y no por IP: así la fuerza bruta sobre los 10.000 códigos no se
+// reparte entre muchas IPs. Solo cuenta intentos fallidos. Quien lo dispare
+// bloquea 15 min la verificación de ese pedido, no el nivel público ni la sesión.
+const limiteVerificacion = rateLimit({
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.rastreoVerificacionMax,
+  skip: (req) => !req.validatedQuery?.verificacion,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => `${req.validatedQuery.tiendaId}:${req.params.numeroPedido.toUpperCase()}`,
+  message: {
+    status: 429,
+    type: "ERROR",
+    code: "TOO_MANY_REQUESTS",
+    data: { message: "Demasiados intentos de verificación para este pedido, intenta en unos minutos" }
+  },
+  standardHeaders: true,
+  legacyHeaders: false
 });
 
 router.get(
   "/rastrear/:numeroPedido",
+  limiteRastreoIp,
+  optionalAuth,
   validate({ params: rastrearParamSchema, query: rastrearQuerySchema }),
+  limiteVerificacion,
   async (req, res, next) => {
     try {
       const { numeroPedido } = req.params;
-      const { tiendaId } = req.query;
+      const { tiendaId, verificacion } = req.validatedQuery;
 
-      const pedido = await pedidosService.rastrear(tiendaId, numeroPedido);
+      const pedido = await pedidosService.rastrear(tiendaId, numeroPedido, {
+        verificacion,
+        authUserId: req.user?.id ?? null
+      });
 
       return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_FOUND", data: pedido });
     } catch (error) {

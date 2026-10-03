@@ -153,6 +153,7 @@ model tiendas {
   cupones               cupones[]
   usosRecursos          tienda_uso_recursos[]
   avisoLive             avisos_live?
+  conversacionesAgente  agente_conversaciones[]
 }
 
 // ============================================
@@ -779,5 +780,48 @@ model pago_eventos {
   @@index([pagoId], name: "idx_pago_eventos_pago")
 }
 
+// ============================================
+// MÓDULO: AGENTE DE VENTAS IA (asesor del storefront)
+// Historial de conversaciones del asesor. Lo guarda y lo lee SOLO el backend:
+// el historial que recibe el LLM nunca viene del cliente (ver
+// docs/specs/agente-ventas/spec.md, R1). Una conversación es (tienda,
+// sessionToken) mientras tenga actividad; tras AGENTE_IA_INACTIVIDAD_MIN se
+// abre otra. DDL: docs/sql/agente_conversaciones.sql
+// ============================================
+model agente_conversaciones {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  // Token del navegador (localStorage del storefront), no identifica a la persona.
+  sessionToken          String    @map("session_token") @db.VarChar(64)
+  estado                String    @default("activa") @db.VarChar(20)
+  // Turnos completos (mensaje + respuesta). Tope: AGENTE_IA_MAX_TURNOS.
+  turnos                Int       @default(0)
+  ultimaActividad       DateTime  @default(now()) @map("ultima_actividad") @db.Timestamptz
 
+  // Auditoría
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro       String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion    DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion  String?   @map("usuario_actualizacion") @db.VarChar(100)
 
+  // Relaciones
+  tienda                tiendas   @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+  mensajes              agente_mensajes[]
+
+  @@index([tiendaId, sessionToken, ultimaActividad(sort: Desc)], name: "idx_agente_conv_sesion")
+}
+
+model agente_mensajes {
+  id                    String    @id @default(uuid()) @db.Uuid
+  // Redundante con la conversación a propósito: entra al auto-scope de Prisma.
+  tiendaId              String    @map("tienda_id") @db.Uuid
+  conversacionId        String    @map("conversacion_id") @db.Uuid
+  rol                   String    @db.VarChar(20)                             // user | assistant
+  contenido             String    @db.Text
+  fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+
+  // Relaciones
+  conversacion          agente_conversaciones @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
+
+  @@index([conversacionId, fechaRegistro], name: "idx_agente_mensajes_conv")
+}

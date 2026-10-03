@@ -21,6 +21,13 @@ import {
   obtenerFacetas
 } from "./tools/buscar-productos.js";
 import { sumarUso } from "../consumo-ia/consumo-ia.service.js";
+import { indicadoresPrecio, contienePrecio } from "./precios.js";
+
+// Si el texto del modelo trae un monto (inventado: no recibe precios).
+const CORRECCION_PRECIO =
+  "[Nota del sistema, no del cliente] Tu respuesta mencionó un precio o monto. Reescríbela " +
+  "sin ningún precio, monto ni moneda: las tarjetas ya muestran el precio real.";
+const MENSAJE_SIN_PRECIO = "Te dejo las opciones abajo; cada tarjeta muestra su precio actualizado.";
 
 // Cliente singleton perezoso: no se instancia hasta el primer uso, para no fallar
 // el arranque del server si la API key aún no está configurada.
@@ -54,8 +61,10 @@ function buildSystemPrompt(tiendaNombre) {
     "- Si los colores, el nombre o la descripción de un producto contradicen lo pedido",
     "  (ej: pidió negro y dice \"cuero blanco\"), no lo recomiendes.",
     "- La interfaz ya muestra todas las tarjetas con precio y stock. Tu texto solo recomienda",
-    "  UN producto y por qué, en una frase de máximo 25 palabras. Sin listas, sin disculpas,",
-    "  sin repetir precios.",
+    "  UN producto y por qué, en una frase de máximo 25 palabras. Sin listas, sin disculpas.",
+    "- NUNCA escribas precios, montos ni monedas: no los conoces. Para hablar de precio usa los",
+    "  indicadores de la herramienta (tiene_oferta, es_la_mas_economica, dentro_de_presupuesto).",
+    "- Nunca pidas datos de tarjeta: el pago se hace solo en el checkout de la tienda.",
     "- Si la intención no está clara, haz una pregunta corta antes de buscar.",
     "",
     "Ejemplo de respuesta: \"Para correr te recomiendo la Cross Fit Ligera, es la más liviana;",
@@ -71,7 +80,8 @@ function buildSystemPrompt(tiendaNombre) {
  * @param {string} params.tiendaId - Inyectado server-side. Scope de toda búsqueda.
  * @param {string} [params.tiendaNombre]
  * @param {string} params.mensaje - Mensaje nuevo del cliente.
- * @param {Array<{rol:string,contenido:string}>} [params.historial] - Turnos previos.
+ * @param {Array<{rol:string,contenido:string}>} [params.historial] - Turnos previos, leídos
+ *   de la BD (agente.conversaciones.js). Nunca del body: el cliente podría inventar turnos.
  * @returns {Promise<{ mensaje: string, productos: Array }>}
  */
 export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historial = [] }) {
@@ -93,6 +103,7 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
 
   // Tokens de todas las vueltas: los registra modules/consumo-ia (costo real).
   const uso = { entrada: 0, salida: 0 };
+  let corrigioPrecio = false;
 
   try {
     for (let vuelta = 0; vuelta < config.agente.maxToolLoops; vuelta++) {
@@ -119,10 +130,14 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
             if (bloque.name === "buscar_productos") {
               const resultado = await ejecutarBuscarProductos({ tiendaId, input: bloque.input, facetas });
               for (const p of resultado.productos) productosPorId.set(p.id, p);
+              const precioMax = typeof bloque.input?.precioMax === "number" ? bloque.input.precioMax : null;
+              const indicadores = indicadoresPrecio(resultado.productos, precioMax);
               // Al modelo solo le mandamos lo que necesita para decidir y redactar.
               // categoria y descripcionCorta le permiten descartar lo que contradice
               // lo pedido (género, "cuero blanco"). imagenUrl/imagenAlt solo las usa
               // el frontend: mandárselas a Claude es pagar tokens sin beneficio.
+              // Sin precios: indicadores calculados aquí (precios.js), así no
+              // puede equivocarse en un monto.
               resultadoParaElModelo = {
                 productos: resultado.productos.map(p => ({
                   id: p.id,
@@ -130,8 +145,7 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
                   categoria: p.categoria,
                   colores: p.colores,
                   descripcionCorta: p.descripcionCorta,
-                  precioBase: p.precioBase,
-                  precioOferta: p.precioOferta,
+                  ...indicadores.get(p.id),
                   disponible: (p.stock ?? 0) > 0 || p.variantesDisponibles.length > 0,
                   // Solo si tiene variantes: así puede responder "¿hay M en negro?".
                   ...(p.totalVariantes > 0 ? { variantesDisponibles: p.variantesDisponibles } : {})
@@ -162,6 +176,21 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
         .map(b => b.text)
         .join("")
         .trim();
+
+      // El modelo no recibe precios: un monto en su texto es inventado. Se le
+      // pide reescribir una vez; si insiste, plantilla (las tarjetas ya tienen
+      // el precio real).
+      if (contienePrecio(texto)) {
+        if (!corrigioPrecio) {
+          corrigioPrecio = true;
+          logger.warn("[agente] respuesta con precio inventado, se pide reescribir");
+          messages.push({ role: "assistant", content: respuesta.content });
+          messages.push({ role: "user", content: CORRECCION_PRECIO });
+          continue;
+        }
+        logger.warn("[agente] respuesta con precio tras reescribir, se usa plantilla");
+        return { mensaje: MENSAJE_SIN_PRECIO, productos: [...productosPorId.values()], uso };
+      }
 
       return {
         mensaje: texto || "¿En qué puedo ayudarte con nuestros productos?",

@@ -5,6 +5,7 @@ import emailService from "../../services/email.service.js";
 import { logger } from "../../config/logger.js";
 import { validarYBloquearStock, descontarStock, reponerStock } from "../inventario/inventario.service.js";
 import { cotizarMetodoEnvio } from "../envios/cotizacion.service.js";
+import { nivelDeAcceso, serializarRastreo } from "./rastreo.js";
 
 // Columnas del destino de entrega en `pedidos` (ver schema.prisma).
 const CAMPOS_DESTINO = [
@@ -562,13 +563,18 @@ class PedidosService {
   }
 
   /**
-   * Seguimiento público de un pedido por su número, scopeado a la tienda.
+   * Seguimiento público de un pedido por su número, scopeado a la tienda, en
+   * dos niveles (ver rastreo.js): sin prueba de identidad solo estado y fechas;
+   * el detalle completo exige ser el dueño con sesión o los últimos 4 dígitos
+   * del WhatsApp del pedido.
    * @param {string} tiendaId - Tienda dueña del pedido (scope multi-tenant).
    * @param {string} numeroPedido - Número visible del pedido (ej. "PED-0001").
-   * @returns {Promise<object>} Pedido con detalles e historial.
+   * @param {{ verificacion?: string, authUserId?: string|null }} [solicitante]
+   * @returns {Promise<object>} Pedido recortado según el nivel de acceso.
    * @throws {NotFoundError} si no existe un pedido con ese número en la tienda.
+   * @throws {AppError} 403 VERIFICACION_INVALIDA si los dígitos no coinciden.
    */
-  async rastrear(tiendaId, numeroPedido) {
+  async rastrear(tiendaId, numeroPedido, solicitante = {}) {
     const pedido = await prisma.pedidos.findFirst({
       where: { tiendaId, numeroPedido },
       select: {
@@ -601,14 +607,17 @@ class PedidosService {
           }
         },
         historialEstados: {
-          select: { estado: true, notas: true, fechaRegistro: true },
+          select: { id: true, estado: true, notas: true, fechaRegistro: true },
           orderBy: { fechaRegistro: "asc" }
-        }
+        },
+        // Solo para decidir el nivel; serializarRastreo nunca los devuelve.
+        clienteWhatsapp: true,
+        authUserId: true
       }
     });
 
     if (!pedido) throw new NotFoundError("Pedido");
-    return pedido;
+    return serializarRastreo(pedido, nivelDeAcceso(pedido, solicitante));
   }
 
   /**

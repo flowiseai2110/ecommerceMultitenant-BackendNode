@@ -8,19 +8,34 @@ import { responder } from "./agente.controller.js";
 
 const router = Router();
 
-// Rate limit propio del asesor: cada consulta cuesta una llamada a un LLM (dinero).
-// Se limita por sessionToken (no por IP) para acotar el gasto por conversación y
-// frenar bots. Un cliente legítimo no manda decenas de mensajes por ventana.
-const agenteLimiter = rateLimit({
-  windowMs: config.rateLimit.windowMs,
-  max: config.agente.rateLimitMax,
-  keyGenerator: (req) => req.body?.sessionToken || req.ip,
-  message: {
-    status: 429,
-    type: "ERROR",
-    code: "TOO_MANY_AI_REQUESTS",
-    data: { message: "Demasiadas consultas al asesor, espera un momento." }
-  },
+// Cada consulta cuesta una llamada a un LLM (dinero), así que hay dos límites
+// por minuto (docs/specs/agente-ventas/spec.md, R3):
+// - por IP: el sessionToken lo elige el cliente, y rotándolo se saltaría un
+//   límite solo por sesión. Va antes de validar: la basura también cuenta.
+// - por tienda + sesión: frena el spam dentro de una conversación.
+const MINUTO_MS = 60 * 1000;
+
+const mensajeLimite = {
+  status: 429,
+  type: "ERROR",
+  code: "TOO_MANY_AI_REQUESTS",
+  data: { message: "Demasiadas consultas al asesor, espera un momento." }
+};
+
+const limiteIp = rateLimit({
+  windowMs: MINUTO_MS,
+  max: config.agente.rateLimitIpMin,
+  message: mensajeLimite,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const limiteSesion = rateLimit({
+  windowMs: MINUTO_MS,
+  max: config.agente.rateLimitSesionMin,
+  // Después de validate: el token ya tiene un charset cerrado.
+  keyGenerator: (req) => `${req.tiendaId}:${req.body.sessionToken}`,
+  message: mensajeLimite,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -30,8 +45,9 @@ const agenteLimiter = rateLimit({
 router.post(
   "/mensajes",
   requireTienda,
+  limiteIp,
   validate({ body: mensajeAgenteSchema }),
-  agenteLimiter,
+  limiteSesion,
   responder
 );
 

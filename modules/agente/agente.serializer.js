@@ -33,11 +33,14 @@ export function serializeProductoCardChat(p) {
  * @param {object} params
  * @param {string} params.mensaje - Texto del asesor (redactado por el modelo).
  * @param {Array}  params.productos - Productos recomendados (para tarjetas).
+ * @param {string[]} [params.sugerencias] - Respuestas rápidas (botones) que el chat
+ *   envía como mensaje al tocarlas.
  * @returns {object} DTO público del turno.
  */
-export function serializeTurnoAgente({ mensaje, productos = [] }) {
+export function serializeTurnoAgente({ mensaje, productos = [], sugerencias = [] }) {
   return {
     mensaje,
-    productos: productos.map(serializeProductoCardChat)
+    productos: productos.map(serializeProductoCardChat),
+    sugerencias
   };
 }

@@ -227,7 +227,13 @@ export async function ejecutarBuscarProductos({ tiendaId, input, facetas }) {
 
   // $queryRaw no pasa por el auto-scope de Prisma: el tienda_id va explícito.
   const filtros = [Prisma.sql`p.tienda_id = ${tiendaId}::uuid`, Prisma.sql`p.activo = true`];
-  if (precioMax !== null) filtros.push(Prisma.sql`p.precio_base <= ${precioMax}`);
+  // Contra lo que paga el cliente (la oferta si es menor), igual que
+  // precioEfectivo() en precios.js: una zapatilla de 250 en oferta a 180 entra
+  // en un presupuesto de 200.
+  if (precioMax !== null) {
+    filtros.push(Prisma.sql`(CASE WHEN p.precio_oferta > 0 AND p.precio_oferta < p.precio_base
+      THEN p.precio_oferta ELSE p.precio_base END) <= ${precioMax}`);
+  }
   // productos.stock es la suma de sus variantes, pero productos con variantes
   // viejas pueden tener un stock propio que no cuadra: basta una variante con stock.
   if (soloConStock) {

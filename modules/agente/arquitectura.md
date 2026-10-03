@@ -144,7 +144,7 @@ POST /store/agente/mensajes
   [rateLimitAgente]   → límite por sessionToken (anti-abuso/costo)
   [validate(schema)]
   → agente.controller.responder
-       → agente.service: arma historial (tiendaId, sessionToken)
+       → agente.conversaciones: historial de la BD por (tiendaId, sessionToken)
           loop tool-use:
             1. messages.create(system, tools:[buscar_productos], messages, stream)
             2. si stop_reason == "tool_use" → ejecutar buscar-productos.js (WHERE tiendaId)
@@ -161,42 +161,27 @@ POST /store/agente/mensajes
   hay resultados, dilo — no inventes."*
 - Parseo de `tool_use.input` siempre con `JSON.parse` (nunca match de string sobre el serializado).
 - Consumir crédito **antes** de llamar al LLM; **reverso** (+1) si el LLM falla (ver §7).
-- Rate limit por `sessionToken` + límite de turnos por conversación.
+- Rate limit por IP y por `tienda + sessionToken` + límite de turnos por conversación.
 
-### Variables de entorno nuevas
+### Variables de entorno
 
 ```env
-AGENTE_IA_API_KEY=            # API key del proveedor LLM (Anthropic)
+AGENTE_IA_API_KEY=                 # API key del proveedor LLM (Anthropic)
 AGENTE_IA_MODELO=claude-haiku-4-5
-AGENTE_IA_MAX_TURNOS=20       # tope de turnos por conversación
+AGENTE_IA_MAX_CARACTERES=500       # largo máximo del mensaje del cliente
+AGENTE_IA_MAX_HISTORIAL=10         # mensajes previos (de la BD) que van al LLM
+AGENTE_IA_MAX_TURNOS=30            # turnos por conversación; luego plantilla sin LLM
+AGENTE_IA_INACTIVIDAD_MIN=30       # minutos sin mensajes → conversación nueva
+AGENTE_IA_RATE_LIMIT_IP_MIN=30     # mensajes por minuto por IP
+AGENTE_IA_RATE_LIMIT_SESION_MIN=10 # mensajes por minuto por tienda + sessionToken
 ```
 
-### Persistencia (Prisma) — Fase 1
+### Persistencia — historial en el servidor
 
-```prisma
-model agente_conversaciones {
-  id            String   @id @default(uuid()) @db.Uuid
-  tiendaId      String   @map("tienda_id") @db.Uuid
-  clienteId     String?  @map("cliente_id") @db.Uuid
-  sessionToken  String   @map("session_token") @db.VarChar(64)
-  estado        String   @default("activa") @db.VarChar(20)
-  // auditoría estándar (fechaRegistro, ...)
-  @@index([tiendaId, sessionToken])
-  @@map("agente_conversaciones")
-}
-
-model agente_mensajes {
-  id              String   @id @default(uuid()) @db.Uuid
-  conversacionId  String   @map("conversacion_id") @db.Uuid
-  rol             String   @db.VarChar(20)   // "user" | "assistant"
-  contenido       String   @db.Text
-  fechaRegistro   DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
-  @@index([conversacionId, fechaRegistro])
-  @@map("agente_mensajes")
-}
-```
-
-> Aplicar con `db push` (convención del proyecto: no `migrate`, no existe carpeta de migraciones).
+Implementado en [docs/specs/agente-ventas](../../docs/specs/agente-ventas/spec.md) (R1). El historial
+que recibe el LLM sale **solo** de `agente_conversaciones` / `agente_mensajes`
+([agente.conversaciones.js](agente.conversaciones.js)); el body ya no acepta `historial`. Modelos en
+`prisma/schema.prisma`, DDL en `docs/sql/agente_conversaciones.sql` (SQL manual, no `db push`).
 
 ---
 
