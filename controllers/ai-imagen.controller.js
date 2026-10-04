@@ -92,9 +92,8 @@ export async function confirmarImagenIA(req, res, next) {
     const { productoId, varianteId, valorOpcion, textoAlternativo, orden, esPrincipal } = parsed.data;
     const folder = req.tiendaId ? `${req.tiendaId}/productos` : "productos";
 
-    const { webp, jpeg } = await processAndUploadImage(buffer, `ia_${taskId}.png`, {
+    const { webp } = await processAndUploadImage(buffer, `ia_${taskId}.png`, {
       fit: "cover",
-      bucket: "tiendas",
       folder
     });
 
@@ -104,9 +103,7 @@ export async function confirmarImagenIA(req, res, next) {
       // La imagen mejorada reemplaza a la original: hereda su valor de opción.
       valorOpcion: valorOpcion || null,
       url: webp.url,
-      urlJpeg: jpeg.url,
       storagePath: webp.path,
-      storagePathJpeg: jpeg.path,
       textoAlternativo: textoAlternativo || null,
       orden,
       esPrincipal

@@ -154,9 +154,12 @@ export const listaCampanasSchema = z
 
 // ── URLs de imágenes (R4.5) ───────────────────────────────────────────────
 
-/** Prefijo público de la carpeta de widgets de la tienda en Supabase Storage. */
-export function prefijoWidgets(supabaseUrl, tiendaId) {
-  return `${supabaseUrl.replace(/\/+$/, "")}/storage/v1/object/public/tiendas/${tiendaId}/widgets/`;
+/**
+ * Prefijo público de la carpeta de widgets de la tienda.
+ * @param {string} baseUrl - URL pública del bucket (publicBaseUrl() de storage.service.js)
+ */
+export function prefijoWidgets(baseUrl, tiendaId) {
+  return `${baseUrl.replace(/\/+$/, "")}/${tiendaId}/widgets/`;
 }
 
 /**

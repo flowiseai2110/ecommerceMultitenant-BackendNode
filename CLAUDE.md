@@ -70,6 +70,13 @@ RESEND_API_KEY=           # API key de Resend para emails
 RESEND_FROM_EMAIL=        # Email remitente
 RESEND_DEV_TO_EMAIL=      # Redirección de emails en desarrollo (free tier)
 
+STORAGE_DRIVER=supabase   # Assets públicos: supabase | r2 (ver services/storage.service.js)
+R2_ACCOUNT_ID=            # Solo con STORAGE_DRIVER=r2
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET=                # tiendas-dev / tiendas-prod
+R2_PUBLIC_URL=            # https://img-dev.ecompyme.com / https://img.ecompyme.com
+
 FRONTEND_URL=             # URL del frontend (para links en emails)
 CORS_ORIGIN=              # Orígenes permitidos, separados por coma. "*" para todos
 CORS_CREDENTIALS=false

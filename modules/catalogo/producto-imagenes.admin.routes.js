@@ -31,7 +31,7 @@ import {
 } from "./producto-imagenes.schema.js";
 import { serializeImagenAdmin } from "./producto-imagenes.serializer.js";
 
-const uploadImagen = makeUploadImagen("tiendas");
+const uploadImagen = makeUploadImagen();
 
 // Crear instancias de las capas
 const imagenesRepository = new GenericRepository(prisma.producto_imagenes, "ProductoImagen");

@@ -1,8 +1,8 @@
 import { prisma } from "../config/prisma.js";
-import config from "../config/index.js";
 import { ValidationError } from "../utils/errors.js";
 import { prefijoWidgets, urlsDeWidgetsAjenas } from "../modules/campanas/campanas.schema.js";
 import { migrarEstructura } from "../modules/diseno/migrar.js";
+import { publicBaseUrl } from "./storage.service.js";
 
 // Personalización visual del storefront que el dueño edita desde el admin
 // (página "Diseño"). Cada clave vive como una fila en tienda_configuraciones
@@ -35,7 +35,7 @@ export async function saveDiseno(tiendaId, data, user) {
 
   // Imágenes de widgets solo desde la carpeta widgets/ de la propia tienda
   // (R4.5): evita hotlinking, rastreo de terceros y contenido no moderado.
-  const ajenas = urlsDeWidgetsAjenas(data, prefijoWidgets(config.supabaseUrl, tiendaId));
+  const ajenas = urlsDeWidgetsAjenas(data, prefijoWidgets(publicBaseUrl(), tiendaId));
   if (ajenas.length > 0) {
     // El mensaje va también en details: el error middleware responde data = details.
     const message = "Las imágenes de los widgets deben subirse desde el panel de la tienda";

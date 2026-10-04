@@ -10,8 +10,8 @@ import { updateDisenoSchema } from "../../../validators/tienda-diseno.validator.
 
 const TIENDA = "11111111-1111-4111-8111-111111111111";
 const OTRA_TIENDA = "22222222-2222-4222-8222-222222222222";
-const SUPABASE = "https://abc.supabase.co";
-const PREFIJO = prefijoWidgets(SUPABASE, TIENDA);
+const BASE = "https://img.example.com";
+const PREFIJO = prefijoWidgets(BASE, TIENDA);
 
 const sello = (ancla, texto = "Nuevo") => ({ contenido: { tipo: "sello", texto, forma: "circulo" }, ancla });
 const imagen = (url, ancla = "hero-arriba-derecha") => ({ contenido: { tipo: "imagen", url }, ancla });
@@ -128,8 +128,8 @@ describe("urlsDeWidgetsAjenas (R4.5)", () => {
 
   it("detecta URLs de otra tienda, de otra carpeta, externas o con ..", () => {
     const ajenas = [
-      `${prefijoWidgets(SUPABASE, OTRA_TIENDA)}sol.webp`,
-      `${SUPABASE}/storage/v1/object/public/tiendas/${TIENDA}/logos/logo.png`,
+      `${prefijoWidgets(BASE, OTRA_TIENDA)}sol.webp`,
+      `${BASE}/${TIENDA}/logos/logo.png`,
       "https://tracker.example.com/pixel.png",
       `${PREFIJO}../logos/logo.png`
     ];
@@ -137,8 +137,8 @@ describe("urlsDeWidgetsAjenas (R4.5)", () => {
     expect(urlsDeWidgetsAjenas(data, PREFIJO)).toEqual(ajenas);
   });
 
-  it("el prefijo tolera la barra final en SUPABASE_URL", () => {
-    expect(prefijoWidgets(`${SUPABASE}/`, TIENDA)).toBe(PREFIJO);
+  it("el prefijo tolera la barra final en la URL base", () => {
+    expect(prefijoWidgets(`${BASE}/`, TIENDA)).toBe(PREFIJO);
   });
 });
 

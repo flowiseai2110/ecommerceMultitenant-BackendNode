@@ -125,6 +125,23 @@ export const config = {
     }
   },
 
+  // Almacenamiento PÚBLICO de assets de tienda (catálogo, logos, banners, QR,
+  // widgets). Lo privado o temporal (capturas de reservas, scratch de Studio/IA)
+  // sigue en Supabase Storage. Ver services/storage.service.js.
+  storage: {
+    // "supabase" (bucket tiendas) | "r2" (Cloudflare R2 servido por su CDN)
+    driver: process.env.STORAGE_DRIVER || "supabase",
+    supabaseBucket: "tiendas",
+    r2: {
+      accountId: process.env.R2_ACCOUNT_ID,
+      accessKeyId: process.env.R2_ACCESS_KEY_ID,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+      bucket: process.env.R2_BUCKET,
+      // Dominio propio conectado al bucket, ej. https://img.ecompyme.com
+      publicUrl: process.env.R2_PUBLIC_URL?.replace(/\/+$/, "")
+    }
+  },
+
   // Studio — generador de imágenes IA sin persistencia permanente.
   // Bucket separado del de assets de tienda, con limpieza automática por TTL.
   studio: {
@@ -221,6 +238,21 @@ const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 if (missingVars.length > 0) {
   console.error(`❌ Variables de entorno faltantes: ${missingVars.join(", ")}`);
   process.exit(1);
+}
+
+const STORAGE_DRIVERS = ["supabase", "r2"];
+if (!STORAGE_DRIVERS.includes(config.storage.driver)) {
+  console.error(`❌ STORAGE_DRIVER inválido: "${config.storage.driver}". Valores: ${STORAGE_DRIVERS.join(", ")}`);
+  process.exit(1);
+}
+
+if (config.storage.driver === "r2") {
+  const r2Vars = ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET", "R2_PUBLIC_URL"];
+  const missingR2 = r2Vars.filter(varName => !process.env[varName]);
+  if (missingR2.length > 0) {
+    console.error(`❌ STORAGE_DRIVER=r2 requiere: ${missingR2.join(", ")}`);
+    process.exit(1);
+  }
 }
 
 export default config;

@@ -28,7 +28,7 @@ import {
   serializeProductoAdmin
 } from "./productos.serializer.js";
 
-const uploadImagenForProducto = makeUploadImagenForProducto("tiendas");
+const uploadImagenForProducto = makeUploadImagenForProducto();
 
 // Invalida la cache pública del detalle (GET /store/productos/:id) cuando una
 // escritura admin sobre ese producto termina en éxito.

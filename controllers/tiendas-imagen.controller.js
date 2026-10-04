@@ -1,9 +1,8 @@
 import { prisma } from "../config/prisma.js";
-import { processAndUploadImage, deleteFromStorage } from "../services/image.service.js";
+import { processAndUploadImage } from "../services/image.service.js";
+import { deletePublicFiles } from "../services/storage.service.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
-
-const BUCKET = "tiendas";
 
 // Logo: 400×400, inside — preserva proporciones sin recortar ni agregar fondo
 export const uploadLogo = makeUploadTiendaImagen({
@@ -38,9 +37,8 @@ function makeUploadTiendaImagen({ urlField, storagePathField, subfolder, width, 
       });
       if (!tienda) throw new NotFoundError("Tienda");
 
-      const { webp, jpeg } = await processAndUploadImage(req.file.buffer, req.file.originalname, {
+      const { webp } = await processAndUploadImage(req.file.buffer, req.file.originalname, {
         fit,
-        bucket: BUCKET,
         folder: `${tiendaId}/${subfolder}`,
         width,
         height,
@@ -60,7 +58,7 @@ function makeUploadTiendaImagen({ urlField, storagePathField, subfolder, width, 
       const oldWebpPath = tienda[storagePathField];
       if (oldWebpPath) {
         const oldJpegPath = oldWebpPath.slice(0, -5) + ".jpg";
-        await deleteFromStorage([oldWebpPath, oldJpegPath], BUCKET);
+        await deletePublicFiles([oldWebpPath, oldJpegPath]);
       }
 
       return apiResponse(res, {

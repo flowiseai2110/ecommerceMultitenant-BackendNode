@@ -1,10 +1,10 @@
 import { Router } from "express";
 import multer from "multer";
 import crypto from "crypto";
-import { supabase } from "../config/supabase.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireTiendaAccess } from "../middlewares/tienda-access.middleware.js";
 import { normalizarImagenWidget } from "../modules/campanas/widget-imagen.js";
+import { uploadPublicFile } from "../services/storage.service.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { uploadImageSchema, validateFile } from "../validators/uploads.validator.js";
 import config from "../config/index.js";
@@ -33,12 +33,9 @@ const upload = multer({
   }
 });
 
-// Nombre del bucket único
-const BUCKET_NAME = "tiendas";
-
 /**
  * POST /api/v1/uploads/image
- * Sube una imagen a Supabase Storage
+ * Sube una imagen al almacenamiento público (Supabase o R2, según STORAGE_DRIVER)
  *
  * Body (multipart/form-data):
  * - file: File (imagen)
@@ -47,7 +44,7 @@ const BUCKET_NAME = "tiendas";
  * - tiendaId: string (requerido)
  *
  * Requiere JWT y rol editor (o superior) en esa tienda.
- * Estructura: tiendas/{tiendaId}/{folder}/{filename}
+ * Estructura: {tiendaId}/{folder}/{filename}
  */
 router.post(
   "/image",
@@ -100,15 +97,10 @@ router.post(
       // Construir path: {tiendaId}/{folder}/{filename}
       const path = `${tiendaId}/${folder}/${filename}`;
 
-      // Subir a Supabase Storage
-      const { error } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(path, file.buffer, {
-          contentType: file.mimetype,
-          upsert: false
-        });
-
-      if (error) {
+      let uploaded;
+      try {
+        uploaded = await uploadPublicFile(path, file.buffer, file.mimetype);
+      } catch (error) {
         return apiResponse(res, {
           status: 500,
           type: "ERROR",
@@ -117,17 +109,12 @@ router.post(
         });
       }
 
-      // Obtener URL pública
-      const { data: urlData } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(path);
-
       return apiResponse(res, {
         status: 201,
         type: "SUCCESS",
         code: "IMAGE_UPLOADED",
         data: {
-          url: urlData.publicUrl,
+          url: uploaded.url,
           path: path,
           folder: folder,
           filename: filename,

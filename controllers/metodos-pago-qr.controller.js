@@ -1,9 +1,8 @@
 import { prisma } from "../config/prisma.js";
-import { processAndUploadImage, deleteFromStorage } from "../services/image.service.js";
+import { processAndUploadImage } from "../services/image.service.js";
+import { deletePublicFiles } from "../services/storage.service.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
-
-const BUCKET = "tiendas";
 
 // El QR vive dentro de cuentaInfo (JsonB) como qrUrl/qrStoragePath:
 // no requiere cambio de schema (el DDL de esta base se aplica a mano).
@@ -23,7 +22,6 @@ export async function uploadQr(req, res, next) {
 
     const { webp } = await processAndUploadImage(req.file.buffer, req.file.originalname, {
       fit: "inside",
-      bucket: BUCKET,
       folder: `${metodo.tiendaId}/qr-pagos`,
       width: 600,
       height: 600
@@ -44,7 +42,7 @@ export async function uploadQr(req, res, next) {
     const oldWebpPath = metodo.cuentaInfo?.qrStoragePath;
     if (oldWebpPath) {
       const oldJpegPath = oldWebpPath.slice(0, -5) + ".jpg";
-      await deleteFromStorage([oldWebpPath, oldJpegPath], BUCKET);
+      await deletePublicFiles([oldWebpPath, oldJpegPath]);
     }
 
     return apiResponse(res, {
@@ -77,7 +75,7 @@ export async function deleteQr(req, res, next) {
 
     if (qrStoragePath) {
       const oldJpegPath = qrStoragePath.slice(0, -5) + ".jpg";
-      await deleteFromStorage([qrStoragePath, oldJpegPath], BUCKET);
+      await deletePublicFiles([qrStoragePath, oldJpegPath]);
     }
 
     return apiResponse(res, {

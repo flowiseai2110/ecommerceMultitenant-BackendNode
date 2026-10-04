@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import sharp from "sharp";
 import { supabase } from "../config/supabase.js";
+import { uploadPublicFile } from "./storage.service.js";
 
 // Dimensiones por defecto según el tipo de ajuste
 const DEFAULT_DIMENSIONS = {
@@ -12,24 +13,23 @@ const DEFAULT_DIMENSIONS = {
 };
 
 /**
- * Procesa una imagen con Sharp (en memoria) y sube dos versiones a Supabase Storage:
- * WebP (calidad 82) y JPEG (calidad 85), con las dimensiones y ajuste indicados.
+ * Procesa una imagen con Sharp (en memoria) y la sube al almacenamiento público
+ * (Supabase o R2, según STORAGE_DRIVER) como WebP (calidad 82), con las
+ * dimensiones y ajuste indicados. Ya no se genera copia JPEG:
+ * todos los navegadores soportados aceptan WebP y duplicaba el almacenamiento.
  *
  * @param {Buffer} buffer    - Buffer de la imagen original
  * @param {string} filename  - Nombre base para construir el path en Storage
  * @param {object} options
  * @param {string}  options.fit    - Tipo de ajuste Sharp (requerido): cover | contain | fill | inside | outside
- * @param {string}  options.bucket - Bucket de Supabase Storage (requerido)
+ * @param {string} [options.folder] - Carpeta dentro del bucket, ej. {tiendaId}/productos
  * @param {number} [options.width]  - Ancho en píxeles (default según fit)
  * @param {number} [options.height] - Alto en píxeles (default según fit)
- * @returns {{ webp: { url, path }, jpeg: { url, path } }}
+ * @returns {{ webp: { url, path } }}
  */
-export async function processAndUploadImage(buffer, filename, { fit, bucket, folder = "", width, height } = {}) {
+export async function processAndUploadImage(buffer, filename, { fit, folder = "", width, height } = {}) {
   if (!fit || !DEFAULT_DIMENSIONS[fit]) {
     throw new Error(`fit es requerido. Valores permitidos: ${Object.keys(DEFAULT_DIMENSIONS).join(", ")}.`);
-  }
-  if (!bucket) {
-    throw new Error("bucket es requerido.");
   }
 
   const resolvedWidth  = width  ?? DEFAULT_DIMENSIONS[fit].width;
@@ -46,56 +46,27 @@ export async function processAndUploadImage(buffer, filename, { fit, bucket, fol
   const uid = crypto.randomUUID();
   const prefix = folder ? `${folder}/` : "";
   const webpPath = `${prefix}${uid}_${baseName}.webp`;
-  const jpegPath = `${prefix}${uid}_${baseName}.jpg`;
 
-  let webpBuffer, jpegBuffer;
+  let webpBuffer;
 
   try {
-    [webpBuffer, jpegBuffer] = await Promise.all([
-      sharp(buffer)
-        .resize(resolvedWidth, resolvedHeight, { fit, withoutEnlargement: true })
-        .webp({ quality: 82 })
-        .toBuffer(),
-      sharp(buffer)
-        .resize(resolvedWidth, resolvedHeight, { fit, withoutEnlargement: true })
-        .jpeg({ quality: 85 })
-        .toBuffer(),
-    ]);
+    webpBuffer = await sharp(buffer)
+      .resize(resolvedWidth, resolvedHeight, { fit, withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer();
   } catch (err) {
     throw new Error(`Sharp no pudo procesar la imagen: ${err.message}`);
   }
 
-  const [webpResult, jpegResult] = await Promise.all([
-    supabase.storage.from(bucket).upload(webpPath, webpBuffer, {
-      contentType: "image/webp",
-      upsert: false,
-    }),
-    supabase.storage.from(bucket).upload(jpegPath, jpegBuffer, {
-      contentType: "image/jpeg",
-      upsert: false,
-    }),
-  ]);
+  const webp = await uploadPublicFile(webpPath, webpBuffer, "image/webp");
 
-  if (webpResult.error) {
-    throw new Error(`Error al subir WebP a Supabase Storage: ${webpResult.error.message}`);
-  }
-  if (jpegResult.error) {
-    // Limpiar el WebP ya subido para no dejar archivos huérfanos
-    await supabase.storage.from(bucket).remove([webpPath]);
-    throw new Error(`Error al subir JPEG a Supabase Storage: ${jpegResult.error.message}`);
-  }
-
-  const { data: webpUrlData } = supabase.storage.from(bucket).getPublicUrl(webpPath);
-  const { data: jpegUrlData } = supabase.storage.from(bucket).getPublicUrl(jpegPath);
-
-  return {
-    webp: { url: webpUrlData.publicUrl, path: webpPath },
-    jpeg: { url: jpegUrlData.publicUrl, path: jpegPath },
-  };
+  return { webp };
 }
 
 /**
- * Elimina archivos de Supabase Storage (best-effort, no lanza si falla).
+ * Elimina archivos de un bucket de Supabase Storage (best-effort, no lanza si falla).
+ * Solo para buckets privados/temporales (scratch de Studio); los assets públicos
+ * se borran con deletePublicFiles de storage.service.js.
  * @param {string[]} paths - Paths dentro del bucket a eliminar
  * @param {string}   bucket - Nombre del bucket
  */
