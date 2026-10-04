@@ -141,6 +141,19 @@ export const config = {
     rateLimitMax: parseInt(process.env.RESENAS_RATE_LIMIT_MAX) || 20
   },
 
+  // Libro de Reclamaciones (docs/specs/libro-reclamaciones). El enlace a la
+  // constancia lleva un token firmado con linkSecret; dura más que los 2 años de
+  // conservación obligatoria de las hojas.
+  libro: {
+    linkSecret: process.env.LIBRO_LINK_SECRET,
+    linkTtlDias: parseInt(process.env.LIBRO_LINK_TTL_DIAS) || 1095,
+    // Hojas por IP en la ventana del rate limit global. Bajo a propósito: una
+    // persona registra una hoja, no decenas.
+    rateLimitMax: parseInt(process.env.LIBRO_RATE_LIMIT_MAX) || 5,
+    // Sal del hash de la IP (ip_hash): sin ella no se guarda hash.
+    ipSalt: process.env.LIBRO_IP_SALT
+  },
+
   // Agente / Asesor de ventas IA. Ver modules/agente/arquitectura.md.
   // El modelo se aísla acá para poder migrar a otro proveedor sin tocar el servicio.
   agente: {

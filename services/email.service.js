@@ -136,7 +136,7 @@ function hasResendApiKey() {
  * al correo del desarrollador (RESEND_DEV_TO_EMAIL) prefijando el subject
  * con el destinatario real.
  */
-async function deliverEmail({ to, subject, html }) {
+async function deliverEmail({ to, subject, html, replyTo }) {
   const isDev = config.nodeEnv !== "production";
   const devToEmail = config.resend.devToEmail;
 
@@ -153,7 +153,8 @@ async function deliverEmail({ to, subject, html }) {
     from: config.resend.fromEmail,
     to: toEmail,
     subject: finalSubject,
-    html
+    html,
+    ...(replyTo ? { replyTo } : {})
   });
 
   if (error) {
@@ -163,6 +164,22 @@ async function deliverEmail({ to, subject, html }) {
 
   logger.info(`📧 Email enviado a ${toEmail} | ID: ${data.id}`);
   return { success: true, messageId: data.id };
+}
+
+/**
+ * Envío transaccional para los módulos que arman su propio HTML (ej. Libro de
+ * Reclamaciones). A diferencia de los send* de este archivo, LANZA si no hay
+ * API key: quien llama decide si el fallo bloquea (respuesta a un reclamo) o
+ * solo se registra (constancia).
+ * @param {{ to: string, subject: string, html: string, replyTo?: string }} email
+ * @returns {Promise<{ success: true, messageId: string }>}
+ */
+export async function sendTransactionalEmail({ to, subject, html, replyTo }) {
+  if (!hasResendApiKey()) {
+    logger.warn(`⚠️  RESEND_API_KEY no configurada: no se envió "${subject}" a ${to}`);
+    throw new Error("RESEND_API_KEY no configurada");
+  }
+  return deliverEmail({ to, subject, html, replyTo });
 }
 
 /**
@@ -201,7 +218,7 @@ export async function sendInvitationEmail(invitacion, tienda, invitadorEmail) {
   });
 }
 
-function escapeHtml(value) {
+export function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -488,4 +505,4 @@ export function previewInvitationEmail(invitacion, tienda, invitadorEmail) {
   };
 }
 
-export default { sendInvitationEmail, previewInvitationEmail, sendNewOrderEmail, sendConsumoIaAvisoEmail };
+export default { sendInvitationEmail, previewInvitationEmail, sendNewOrderEmail, sendConsumoIaAvisoEmail, sendTransactionalEmail };

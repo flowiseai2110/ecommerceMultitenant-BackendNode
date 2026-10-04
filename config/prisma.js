@@ -22,7 +22,7 @@ const TENANT_SCOPED_MODELS = new Set([
   "categorias", "productos", "producto_atributos",
   "clientes", "pedidos", "metodos_pago", "metodos_envio", "cupones",
   "pagos", "tienda_pasarela_config", "resenas",
-  "agente_conversaciones", "agente_mensajes"
+  "agente_conversaciones", "agente_mensajes", "libro_reclamaciones"
 ]);
 
 // Solo lecturas y operaciones masivas. findUnique/update/delete/create se dejan

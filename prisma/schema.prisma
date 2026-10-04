@@ -154,6 +154,7 @@ model tiendas {
   usosRecursos          tienda_uso_recursos[]
   avisoLive             avisos_live?
   conversacionesAgente  agente_conversaciones[]
+  libroReclamaciones    libro_reclamaciones[]
 }
 
 // ============================================
@@ -553,6 +554,7 @@ model pedidos {
   historialEstados      pedido_historial_estados[]
   pagos                 pagos[]
   resenas               resenas[]
+  hojasReclamacion      libro_reclamaciones[]
 
   @@unique([tiendaId, numeroPedido], name: "uq_numero_pedido")
   @@index([tiendaId], name: "idx_pedidos_tienda")
@@ -827,4 +829,103 @@ model agente_mensajes {
   conversacion          agente_conversaciones @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
 
   @@index([conversacionId, fechaRegistro], name: "idx_agente_mensajes_conv")
+}
+
+// ============================================
+// MÓDULO: LIBRO DE RECLAMACIONES (Ley 29571, DS 011-2011-PCM, DS 101-2022-PCM)
+// Spec: docs/specs/libro-reclamaciones. DDL: docs/sql/libro_reclamaciones_setup.sql
+// ============================================
+// Una fila = una Hoja de Reclamación (Anexo I). Lo que registró el consumidor
+// y el snapshot del proveedor NO se modifican ni se borran: lo impone un
+// trigger SQL. Solo cambian estado y respuesta. Conservación mínima: 2 años,
+// por eso la FK a tiendas es RESTRICT (la baja de una tienda es lógica).
+
+model libro_reclamaciones {
+  id                     String    @id @default(uuid()) @db.Uuid
+  tiendaId               String    @map("tienda_id") @db.Uuid
+  anio                   Int       @db.SmallInt
+  correlativo            Int
+  numero                 String    @db.VarChar(15)                              // "00001-2026"
+  tipo                   String    @db.VarChar(10)                              // reclamo | queja
+  // pendiente | en_atencion | respondida
+  estado                 String    @default("pendiente") @db.VarChar(20)
+  // Día hábil 15 desde el registro (modules/libro-reclamaciones/plazos.js).
+  fechaLimite            DateTime  @map("fecha_limite") @db.Date
+
+  // Snapshot del proveedor al registrarse
+  proveedorNombre        String    @map("proveedor_nombre") @db.VarChar(100)
+  proveedorRazonSocial   String?   @map("proveedor_razon_social") @db.VarChar(200)
+  proveedorRuc           String?   @map("proveedor_ruc") @db.VarChar(20)
+  proveedorDireccion     String?   @map("proveedor_direccion") @db.Text
+
+  // Consumidor
+  consumidorNombres      String    @map("consumidor_nombres") @db.VarChar(100)
+  consumidorApellidos    String    @map("consumidor_apellidos") @db.VarChar(100)
+  consumidorDocTipo      String    @map("consumidor_doc_tipo") @db.VarChar(10)  // DNI | CE | PASAPORTE
+  consumidorDocNumero    String    @map("consumidor_doc_numero") @db.VarChar(20)
+  consumidorDomicilio    String    @map("consumidor_domicilio") @db.Text
+  consumidorTelefono     String?   @map("consumidor_telefono") @db.VarChar(20)
+  consumidorEmail        String    @map("consumidor_email") @db.VarChar(100)
+  esMenor                Boolean   @default(false) @map("es_menor")
+  apoderadoNombre        String?   @map("apoderado_nombre") @db.VarChar(200)
+  apoderadoDocTipo       String?   @map("apoderado_doc_tipo") @db.VarChar(10)
+  apoderadoDocNumero     String?   @map("apoderado_doc_numero") @db.VarChar(20)
+
+  // Bien contratado
+  bienTipo               String    @map("bien_tipo") @db.VarChar(10)             // producto | servicio
+  bienDescripcion        String    @map("bien_descripcion") @db.Text
+  montoReclamado         Decimal?  @map("monto_reclamado") @db.Decimal(10, 2)
+  moneda                 String    @default("PEN") @db.VarChar(3)
+  // Solo si coincide con un pedido real de la tienda; lo escrito queda en numeroPedidoTexto.
+  pedidoId               String?   @map("pedido_id") @db.Uuid
+  numeroPedidoTexto      String?   @map("numero_pedido_texto") @db.VarChar(30)
+
+  // Detalle
+  detalle                String    @db.Text
+  pedidoConsumidor       String    @map("pedido_consumidor") @db.Text
+  medioRespuesta         String    @default("email") @map("medio_respuesta") @db.VarChar(10) // email | domicilio
+  aceptaDeclaracion      Boolean   @map("acepta_declaracion")
+  authUserId             String?   @map("auth_user_id") @db.Uuid
+  // sha256(ip + LIBRO_IP_SALT): rastrea abuso sin guardar la IP.
+  ipHash                 String?   @map("ip_hash") @db.VarChar(64)
+
+  // Respuesta del proveedor
+  respuesta              String?   @db.Text
+  accionAdoptada         String?   @map("accion_adoptada") @db.Text
+  // Envío del correo o entrega de la carta.
+  fechaRespuesta         DateTime? @map("fecha_respuesta") @db.Timestamptz
+  respondidoPor          String?   @map("respondido_por") @db.VarChar(100)
+
+  // Auditoría
+  fechaRegistro          DateTime  @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro        String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion     DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion   String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  // Relaciones
+  tienda                 tiendas   @relation(fields: [tiendaId], references: [id], onDelete: Restrict)
+  pedido                 pedidos?  @relation(fields: [pedidoId], references: [id], onDelete: SetNull)
+  eventos                libro_reclamaciones_eventos[]
+
+  @@unique([tiendaId, anio, correlativo], name: "uq_libro_correlativo")
+  @@index([tiendaId, estado, fechaLimite], name: "idx_libro_tienda_estado_limite")
+  @@index([tiendaId, fechaRegistro(sort: Desc)], name: "idx_libro_tienda_fecha")
+}
+
+// Historial append-only de la hoja: registro, correos (ok/fallo), cambios de
+// estado y respuesta. Prueba que se entregó la constancia y se respondió a tiempo.
+model libro_reclamaciones_eventos {
+  id                     String    @id @default(uuid()) @db.Uuid
+  hojaId                 String    @map("hoja_id") @db.Uuid
+  // registrada | constancia_enviada | constancia_fallo | aviso_tienda_enviado
+  // | aviso_tienda_fallo | en_atencion | respondida | respuesta_fallo
+  tipo                   String    @db.VarChar(30)
+  detalle                Json?     @db.JsonB
+  usuario                String?   @db.VarChar(100)
+  fechaRegistro          DateTime  @default(now()) @map("fecha_registro") @db.Timestamptz
+
+  // Relaciones
+  hoja                   libro_reclamaciones @relation(fields: [hojaId], references: [id], onDelete: Restrict)
+
+  @@index([hojaId, fechaRegistro], name: "idx_libro_eventos_hoja")
 }
