@@ -1,0 +1,227 @@
+import { z } from "zod";
+import { documentoValido, TIPOS_DOCUMENTO } from "../libro-reclamaciones/libro.schema.js";
+import { esRucValido } from "../sunat/ruc.service.js";
+import { MAX_NOCHES } from "./hotel/cotizar.js";
+
+/**
+ * Schemas Zod del mini booking (docs/specs/mini-booking). El schema ES el
+ * contrato de entrada (docs/ARQUITECTURA.md).
+ */
+
+export const PESTANAS = ["por_responder", "pago_por_verificar", "confirmadas", "historial"];
+export const METODOS_PAGO_MANUAL = ["yape", "plin", "transferencia"];
+export const MOTIVOS_RECHAZO = ["sin_disponibilidad", "fecha_cerrada", "otro"];
+
+const uuid = (campo) => z.string({ required_error: `${campo} es requerido` }).uuid(`${campo} inválido`);
+const fecha = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (YYYY-MM-DD)");
+const hora = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora inválida (HH:mm)");
+
+const texto = (campo, min, max) => z.string({ required_error: `${campo} es requerido` })
+  .trim()
+  .min(min, min > 1 ? `${campo} debe tener al menos ${min} caracteres` : `${campo} es requerido`)
+  .max(max, `${campo} no puede exceder ${max} caracteres`);
+
+const textoOpcional = (max) => z.string().trim().max(max, `No puede exceder ${max} caracteres`).nullish()
+  .transform(v => v || null);
+
+// Para actualizaciones parciales: ausente = no tocar; "" o null = borrar.
+const textoParcial = (max) => z.string().trim().max(max, `No puede exceder ${max} caracteres`).nullable().optional()
+  .transform(v => (v === undefined ? undefined : v || null));
+
+const monto = z.coerce.number().min(0, "El monto no puede ser negativo").max(99999999.99);
+
+// ============================================
+// STORE
+// ============================================
+
+const estadiaBase = {
+  tiendaId: uuid("tiendaId"),
+  productoId: uuid("productoId"),
+  modalidadId: uuid("modalidadId"),
+  fecha,
+  hora: hora.nullish().transform(v => v || null),
+  noches: z.coerce.number().int().min(1).max(MAX_NOCHES).nullish().transform(v => v ?? null),
+  adultos: z.coerce.number().int().min(1, "Debe haber al menos un adulto").max(50),
+  ninos: z.coerce.number().int().min(0).max(50).optional().default(0)
+};
+
+export const cotizarSchema = z.object(estadiaBase);
+
+const personaSchema = z.object({
+  nombres: texto("Nombres", 1, 100),
+  apellidos: texto("Apellidos", 1, 100),
+  docTipo: z.enum(TIPOS_DOCUMENTO, { message: "Tipo de documento inválido" }),
+  docNumero: z.string().trim().max(20)
+});
+
+export const crearSolicitudSchema = z.object({
+  ...estadiaBase,
+  // Mismos datos que hoy se piden por chat (spec R5.1).
+  titular: personaSchema.extend({
+    nacionalidad: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, "Nacionalidad inválida"),
+    nacimiento: fecha.nullish().transform(v => v || null)
+  }),
+  whatsapp: z.string({ required_error: "WhatsApp es requerido" }).trim()
+    .regex(/^\+?[0-9\s-]{9,20}$/, "Número de WhatsApp inválido"),
+  email: z.string({ required_error: "Correo es requerido" }).trim().toLowerCase().email("Correo inválido").max(100),
+  comentarios: textoOpcional(1000),
+  acompanantes: z.array(personaSchema).max(20).optional().default([]),
+  // Solo hotel con comprobante en el check-out: intención de factura (R14.3).
+  factura: z.object({
+    ruc: z.string().trim(),
+    razonSocial: texto("Razón social", 2, 200),
+    direccionFiscal: textoOpcional(300)
+  }).nullish().transform(v => v || null),
+  aceptaDatos: z.literal(true, {
+    errorMap: () => ({ message: "Debes aceptar el tratamiento de tus datos para enviar la solicitud" })
+  }),
+  // Un doble clic o un reintento con mala señal devuelve la misma reserva.
+  idempotencyKey: uuid("idempotencyKey"),
+  // Honeypot: una persona nunca llena este campo. Se valida en la ruta.
+  sitioWeb: z.string().max(500).optional()
+}).superRefine((d, ctx) => {
+  const personas = [["titular", d.titular], ...d.acompanantes.map((a, i) => [`acompanantes.${i}`, a])];
+  for (const [path, p] of personas) {
+    if (!documentoValido(p.docTipo, p.docNumero)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [...path.split("."), "docNumero"],
+        message: p.docTipo === "DNI" ? "El DNI debe tener 8 dígitos" : "Documento inválido (6 a 12 letras o números)"
+      });
+    }
+  }
+  if (d.factura && !esRucValido(d.factura.ruc)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["factura", "ruc"], message: "RUC inválido" });
+  }
+});
+
+export const tokenParamSchema = z.object({ token: z.string().min(10).max(2000) });
+
+export const capturaBodySchema = z.object({
+  metodo: z.enum(METODOS_PAGO_MANUAL, { message: "Elige cómo pagaste" }),
+  numeroOperacion: textoOpcional(40)
+});
+
+export const tiendaQuerySchema = z.object({ tiendaId: uuid("tiendaId") });
+
+export const cierresQuerySchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  desde: fecha,
+  hasta: fecha,
+  productoId: uuid("productoId").optional()
+});
+
+export const slugParamSchema = z.object({ slug: z.string().trim().min(1).max(200) });
+
+// ============================================
+// ADMIN
+// ============================================
+
+export const idParamSchema = z.object({ id: uuid("id") });
+export const productoParamSchema = z.object({ productoId: uuid("productoId") });
+
+export const listarAdminQuerySchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  pestana: z.enum(PESTANAS).optional().default("por_responder"),
+  productoId: uuid("productoId").optional(),
+  desde: fecha.optional(),
+  hasta: fecha.optional(),
+  q: z.string().trim().max(100).optional().transform(v => v || undefined),
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(20)
+});
+
+export const agendaQuerySchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  desde: fecha.optional(),
+  hasta: fecha.optional()
+});
+
+export const aceptarSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  // Ajuste antes de aceptar (descuento o recargo): nuevo total + motivo visible (R6.4).
+  nuevoTotal: monto.nullish().transform(v => v ?? null),
+  ajusteMotivo: textoOpcional(200)
+}).superRefine((d, ctx) => {
+  if (d.nuevoTotal !== null && !d.ajusteMotivo) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ajusteMotivo"], message: "Explica el ajuste al cliente" });
+  }
+});
+
+export const rechazarSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  motivoTipo: z.enum(MOTIVOS_RECHAZO).optional().default("sin_disponibilidad"),
+  motivo: textoOpcional(200)
+});
+
+export const motivoSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  motivo: textoOpcional(200)
+});
+
+export const rechazarPagoSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  motivo: texto("El motivo", 3, 200)
+});
+
+export const configSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  modoConfirmacion: z.enum(["solicitud", "pago_directo"]).optional(),
+  cobro: z.enum(["total", "adelanto", "en_destino"]).optional(),
+  adelantoPct: z.coerce.number().int().min(1).max(99).nullish(),
+  anticipacionMinHoras: z.coerce.number().int().min(0).max(720).optional(),
+  // null = sin aviso de reserva próxima.
+  avisoProximoHoras: z.coerce.number().int().min(1).max(720).nullable().optional(),
+  avisoProximoTexto: textoParcial(300),
+  maxSolicitudesAbiertas: z.coerce.number().int().min(1).max(20).optional(),
+  instrucciones: textoParcial(1000),
+  politicaCancelacion: textoParcial(2000),
+  horaCheckin: hora.optional(),
+  horaCheckout: hora.optional(),
+  comprobanteEn: z.enum(["al_pagar", "en_el_servicio"]).optional()
+}).superRefine((d, ctx) => {
+  if (d.cobro === "adelanto" && !d.adelantoPct) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adelantoPct"], message: "Indica el porcentaje de adelanto" });
+  }
+});
+
+export const crearCierreSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  productoId: uuid("productoId").nullish().transform(v => v || null),
+  fechaDesde: fecha,
+  fechaHasta: fecha,
+  motivo: textoOpcional(100)
+}).refine(d => d.fechaDesde <= d.fechaHasta, { path: ["fechaHasta"], message: "La fecha final no puede ser anterior a la inicial" });
+
+const modalidadSchema = z.object({
+  id: uuid("id").optional(),
+  tipo: z.enum(["noche", "horas"]),
+  horas: z.coerce.number().int().min(1).max(23).nullish().transform(v => v ?? null),
+  precio: monto.refine(v => v > 0, "El precio debe ser mayor a 0"),
+  precioVieSab: monto.nullish().transform(v => v || null),
+  activo: z.boolean().optional().default(true),
+  orden: z.coerce.number().int().min(0).optional().default(0)
+}).superRefine((m, ctx) => {
+  if (m.tipo === "horas" && !m.horas) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["horas"], message: "Indica cuántas horas dura el bloque" });
+  }
+});
+
+export const habitacionSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  capacidadAdultos: z.coerce.number().int().min(1).max(50),
+  capacidadNinos: z.coerce.number().int().min(0).max(50).optional().default(0),
+  capacidadMax: z.coerce.number().int().min(1).max(50),
+  porPersona: z.boolean().optional().default(false),
+  camas: textoOpcional(100),
+  amenities: z.array(z.string().trim().min(1).max(40)).max(30).optional().default([]),
+  modalidades: z.array(modalidadSchema).min(1, "Agrega al menos una modalidad (noche o por horas)").max(10)
+}).superRefine((d, ctx) => {
+  if (d.capacidadMax < d.capacidadAdultos) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["capacidadMax"], message: "El máximo de personas no puede ser menor que los adultos" });
+  }
+  const claves = d.modalidades.map(m => `${m.tipo}:${m.tipo === "horas" ? m.horas : 0}`);
+  if (new Set(claves).size !== claves.length) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["modalidades"], message: "Hay modalidades repetidas (misma cantidad de horas o dos de noche)" });
+  }
+});

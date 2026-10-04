@@ -1,0 +1,176 @@
+import { estadoEfectivo, etiquetaEstado } from "./estados.js";
+
+/**
+ * Contrato de salida del mini booking. La reserva se construye campo por campo
+ * desde `pedidos` + `reservas`: nunca se devuelve la fila cruda.
+ *
+ * Audiencias:
+ *   - store (titular, con el token de seguimiento): sin documento completo;
+ *   - admin (negocio): registro de huésped completo.
+ */
+
+const num = (v) => (v === null || v === undefined ? null : Number(v));
+
+export function etiquetaModalidad(modalidad, reserva) {
+  const horas = reserva?.horas ?? modalidad?.horas;
+  if ((modalidad?.tipo ?? (horas ? "horas" : "noche")) === "horas") return `${horas} horas`;
+  const noches = reserva?.noches;
+  return noches ? `${noches} ${noches === 1 ? "noche" : "noches"}` : "Por noche";
+}
+
+/** "44836469" → "•••••469": el titular reconoce su documento sin exponerlo entero. */
+const enmascarar = (doc) => (doc ? `${"•".repeat(Math.max(doc.length - 3, 0))}${doc.slice(-3)}` : null);
+
+const imagenPrincipal = (producto) => {
+  const img = producto?.imagenes?.find(i => i.esPrincipal) ?? producto?.imagenes?.[0];
+  return img?.url ?? null;
+};
+
+/** Último pago manual (captura) del pedido. */
+function ultimoPagoManual(pagos = []) {
+  return [...pagos].filter(p => p.proveedor === "manual")
+    .sort((a, b) => new Date(b.fechaRegistro) - new Date(a.fechaRegistro))[0] ?? null;
+}
+
+function base(pedido, ahora) {
+  const r = pedido.reserva;
+  const estado = estadoEfectivo({ estado: pedido.estado, inicio: r.inicio, fin: r.fin }, ahora);
+  return {
+    id: pedido.id,
+    codigo: pedido.numeroPedido,
+    tipo: r.tipo,
+    estado,
+    estadoEtiqueta: etiquetaEstado(estado),
+    producto: {
+      id: r.productoId,
+      nombre: r.producto?.nombre ?? pedido.detalles?.[0]?.productoNombre ?? null,
+      slug: r.producto?.slug ?? null,
+      imagenUrl: imagenPrincipal(r.producto)
+    },
+    modalidad: {
+      id: r.modalidadId,
+      tipo: r.modalidad?.tipo ?? (r.horas ? "horas" : "noche"),
+      etiqueta: etiquetaModalidad(r.modalidad, r)
+    },
+    inicio: r.inicio,
+    fin: r.fin,
+    noches: r.noches,
+    horas: r.horas,
+    adultos: r.adultos,
+    ninos: r.ninos,
+    total: num(pedido.total),
+    montoAPagar: num(r.montoAPagar),
+    saldoDestino: num(r.saldoDestino),
+    montoPagado: num(pedido.montoPagado),
+    fechaSolicitud: pedido.fechaRegistro
+  };
+}
+
+function lineas(pedido) {
+  return (pedido.detalles ?? []).map(d => ({
+    descripcion: d.varianteNombre ? `${d.productoNombre} · ${d.varianteNombre}` : d.productoNombre,
+    cantidad: d.cantidad,
+    precioUnitario: num(d.precioUnitario),
+    total: num(d.total)
+  }));
+}
+
+const ajuste = (r) => (r.ajusteMotivo ? { motivo: r.ajusteMotivo, monto: num(r.ajusteMonto) } : null);
+
+/**
+ * Página de seguimiento / confirmación del titular (spec R5.3, R6.2, R8).
+ * @param {object} pedido - con reserva (+producto, modalidad), detalles y pagos
+ * @param {{ tienda: object, config: object, metodosPago: Array, ahora?: Date }} ctx
+ */
+export function serializeReservaStore(pedido, { tienda, config, metodosPago = [], ahora = new Date() }) {
+  const r = pedido.reserva;
+  const dto = base(pedido, ahora);
+  const pago = ultimoPagoManual(pedido.pagos);
+  const esperaPago = dto.estado === "aceptada";
+  return {
+    ...dto,
+    lineas: lineas(pedido),
+    ajuste: ajuste(r),
+    motivoRechazo: dto.estado === "rechazada" ? r.motivoRechazo : null,
+    titular: {
+      nombres: r.titularNombres,
+      apellidos: r.titularApellidos,
+      docTipo: r.titularDocTipo,
+      docNumero: enmascarar(r.titularDocNumero),
+      nacionalidad: r.titularNacionalidad
+    },
+    pago: {
+      // Datos de pago solo cuando toca pagar (R6.2).
+      metodos: esperaPago ? metodosPago : [],
+      capturaSubida: Boolean(pago),
+      rechazoMotivo: pago?.estado === "fallido" && dto.estado === "aceptada" ? pago.metadata?.motivo ?? null : null
+    },
+    factura: pedido.comprobante === "factura" ? { ruc: pedido.comprobanteDocNumero, razonSocial: pedido.razonSocial } : null,
+    negocio: {
+      nombre: tienda.nombre,
+      slug: tienda.slug,
+      whatsapp: tienda.whatsappNumero,
+      direccion: tienda.direccion,
+      logoUrl: tienda.logoUrl
+    },
+    instrucciones: config.instrucciones,
+    politicaCancelacion: config.politicaCancelacion,
+    comprobanteEn: config.comprobanteEn,
+    puedeCancelar: ["solicitada", "aceptada"].includes(dto.estado)
+  };
+}
+
+/** Fila de la bandeja del admin (R11.1). */
+export function serializeReservaLista(pedido, ahora = new Date()) {
+  const r = pedido.reserva;
+  return {
+    ...base(pedido, ahora),
+    titular: `${r.titularNombres} ${r.titularApellidos}`,
+    whatsapp: pedido.clienteWhatsapp,
+    capturaSubida: Boolean(ultimoPagoManual(pedido.pagos))
+  };
+}
+
+/**
+ * Detalle completo para el negocio: registro de huésped, pagos con la URL
+ * firmada de cada captura e historial.
+ * @param {object} pedido
+ * @param {{ urlsCaptura: Map<string,string|null>, ahora?: Date }} ctx
+ */
+export function serializeReservaAdmin(pedido, { urlsCaptura = new Map(), ahora = new Date() } = {}) {
+  const r = pedido.reserva;
+  return {
+    ...base(pedido, ahora),
+    estadoGuardado: pedido.estado,
+    lineas: lineas(pedido),
+    ajuste: ajuste(r),
+    motivoRechazo: r.motivoRechazo,
+    respondidaEn: r.respondidaEn,
+    titular: {
+      nombres: r.titularNombres,
+      apellidos: r.titularApellidos,
+      docTipo: r.titularDocTipo,
+      docNumero: r.titularDocNumero,
+      nacionalidad: r.titularNacionalidad,
+      nacimiento: r.titularNacimiento ? r.titularNacimiento.toISOString().slice(0, 10) : null
+    },
+    acompanantes: r.acompanantes ?? [],
+    comentarios: r.comentarios,
+    contacto: { whatsapp: pedido.clienteWhatsapp, email: pedido.clienteEmail },
+    factura: pedido.comprobante === "factura"
+      ? { ruc: pedido.comprobanteDocNumero, razonSocial: pedido.razonSocial, direccionFiscal: pedido.direccionFiscal }
+      : null,
+    pagos: (pedido.pagos ?? []).map(p => ({
+      id: p.id,
+      proveedor: p.proveedor,
+      metodo: p.metodo,
+      monto: num(p.monto),
+      estado: p.estado,
+      numeroOperacion: p.metadata?.numeroOperacion ?? null,
+      motivo: p.metadata?.motivo ?? null,
+      capturaUrl: urlsCaptura.get(p.id) ?? null,
+      fechaRegistro: p.fechaRegistro
+    })),
+    historial: (pedido.historialEstados ?? []).map(h => ({ estado: h.estado, notas: h.notas, fecha: h.fechaRegistro }))
+  };
+}

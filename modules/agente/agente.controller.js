@@ -109,6 +109,8 @@ async function atenderMensaje(req, emisor = null) {
     responderTurno({
       tiendaId,
       tiendaNombre: req.tienda?.nombre,
+      // Vertical de la tienda (mini booking): un hotel usa otro perfil del asesor.
+      tipoNegocio: req.tienda?.tipoNegocio ?? null,
       mensaje,
       historial,
       // Del JWT (optionalAuth), nunca del body ni del modelo: estado_pedido

@@ -15,6 +15,7 @@ import { aplicarPlantilla, deshacerEstructura, getDisenoAdmin } from "../diseno/
 import { aplicarPlantillaSchema } from "../diseno/secciones.schema.js";
 import { getPlantillasWhatsapp, savePlantillasWhatsapp } from "../../services/tienda-plantillas-whatsapp.service.js";
 import { logger } from "../../config/logger.js";
+import { validarCambioTipoNegocio } from "../reservas/reservas.config.service.js";
 import {
   createTiendaSchema,
   updateTiendaSchema,
@@ -159,6 +160,7 @@ router.put(
   async (req, res, next) => {
     try {
       const { id } = req.params;
+      await validarCambioTipoNegocio(id, req.body.tipoNegocio);
       // tiendas es la raíz del tenant: no tiene campo tiendaId propio.
       // requireTiendaAccess ya verificó el acceso, así que no se pasa tiendaId.
       const record = await tiendaService.update(id, req.body, req.user, null);

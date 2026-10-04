@@ -25,6 +25,7 @@ import { sumarUso } from "../consumo-ia/consumo-ia.service.js";
 import { indicadoresPrecio, contienePrecio } from "./precios.js";
 import { calcularEnvioToolDef, ejecutarCalcularEnvio } from "./tools/calcular-envio.js";
 import { estadoPedidoToolDef, ejecutarEstadoPedido } from "./tools/estado-pedido.js";
+import { ejecutarToolHotel, systemPromptHotel, toolsHotel } from "./perfiles/hotel.js";
 
 // Si el texto del modelo trae un monto (inventado: no recibe precios).
 const CORRECCION_PRECIO =
@@ -141,12 +142,21 @@ async function llamarModelo(client, params, emisor) {
  *   sugerencias: string[], uso: object,
  *   senales: { busquedasSinResultados: number, errorHerramienta: boolean } }>}
  */
-export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historial = [], authUserId = null, emisor = null }) {
+export async function responderTurno({
+  tiendaId, tiendaNombre, tipoNegocio = null, mensaje, historial = [], authUserId = null, emisor = null
+}) {
   const client = getClient();
 
-  const system = buildSystemPrompt(tiendaNombre);
-  const facetas = await obtenerFacetas(tiendaId);
-  const tools = [buildBuscarProductosToolDef(facetas), calcularEnvioToolDef, estadoPedidoToolDef];
+  // Perfil según la vertical (mini booking): un hotel no tiene catálogo con
+  // stock ni envíos, tiene habitaciones que el hotel confirma. Lo resuelve
+  // resolveTienda junto con el tiendaId; sin dato rige el perfil de productos.
+  const esHotel = tipoNegocio === "hotel";
+
+  const system = esHotel ? systemPromptHotel(tiendaNombre) : buildSystemPrompt(tiendaNombre);
+  const facetas = esHotel ? null : await obtenerFacetas(tiendaId);
+  const tools = esHotel
+    ? toolsHotel
+    : [buildBuscarProductosToolDef(facetas), calcularEnvioToolDef, estadoPedidoToolDef];
 
   // Historial del cliente + mensaje nuevo, en el formato del Messages API.
   const messages = [
@@ -212,6 +222,14 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
           if (r.pedidos) extras.pedidos = r.pedidos;
           return r.paraModelo;
         }
+        case "ver_habitaciones":
+        case "info_hotel": {
+          if (!esHotel) return { error: `Herramienta desconocida: ${bloque.name}` };
+          const r = await ejecutarToolHotel(bloque.name, bloque.input, { tiendaId });
+          if (bloque.name === "ver_habitaciones" && r.tarjetas.length === 0) senales.busquedasSinResultados++;
+          for (const t of r.tarjetas) productosPorId.set(t.id, t);
+          return r.paraModelo;
+        }
         default:
           return { error: `Herramienta desconocida: ${bloque.name}` };
       }
@@ -236,7 +254,7 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
       } catch (err) {
         if (!(err instanceof SinPrimerTokenError)) throw err;
         logger.warn(`[agente] sin primer token en ${config.agente.primerTokenMs} ms, se degrada a tarjetas`);
-        return await degradarPorLentitud({ tiendaId, mensaje, facetas, productosPorId, emisor, terminar });
+        return await degradarPorLentitud({ tiendaId, mensaje, facetas, productosPorId, emisor, terminar, esHotel });
       }
       sumarUso(uso, respuesta.usage);
 
@@ -289,7 +307,7 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
         return terminar(MENSAJE_SIN_PRECIO);
       }
 
-      return terminar(texto || "¿En qué puedo ayudarte con nuestros productos?");
+      return terminar(texto || (esHotel ? "¿Qué habitación estás buscando?" : "¿En qué puedo ayudarte con nuestros productos?"));
     }
 
     // Se agotaron las vueltas de tool-use sin respuesta final: degradar con gracia.
@@ -307,10 +325,12 @@ export async function responderTurno({ tiendaId, tiendaNombre, mensaje, historia
  * El modelo no respondió a tiempo: el cliente ve productos igual. Si la tool
  * aún no había corrido, se busca directo con el mensaje como texto libre.
  */
-async function degradarPorLentitud({ tiendaId, mensaje, facetas, productosPorId, emisor, terminar }) {
+async function degradarPorLentitud({ tiendaId, mensaje, facetas, productosPorId, emisor, terminar, esHotel = false }) {
   if (productosPorId.size === 0) {
     try {
-      const { productos } = await ejecutarBuscarProductos({ tiendaId, input: { query: mensaje }, facetas });
+      const productos = esHotel
+        ? (await ejecutarToolHotel("ver_habitaciones", {}, { tiendaId })).tarjetas
+        : (await ejecutarBuscarProductos({ tiendaId, input: { query: mensaje }, facetas })).productos;
       for (const p of productos) productosPorId.set(p.id, p);
     } catch (err) {
       logger.error(`[agente] búsqueda de respaldo falló: ${err.message}`);

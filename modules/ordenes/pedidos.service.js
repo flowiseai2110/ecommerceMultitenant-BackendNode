@@ -47,55 +47,64 @@ function notaPago(estadoPago, metodoPago, referenciaPago) {
  * - Actualización de estadísticas del cliente
  * - Reposición de stock y reversión de estadísticas al cancelar
  */
-class PedidosService {
-  /**
-   * Genera el siguiente número de pedido para una tienda.
-   * Usa pg_advisory_xact_lock para evitar race conditions bajo concurrencia.
-   * Usa MAX sobre el campo parseado para ser robusto ante eliminaciones.
-   */
-  async #generarNumeroPedido(tiendaId, tx) {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`pedido_num_${tiendaId}`}))`;
+/**
+ * Genera el siguiente número de pedido para una tienda. Lo comparten los
+ * pedidos del ecommerce y las reservas (mini booking): una sola numeración.
+ * Usa pg_advisory_xact_lock para evitar race conditions bajo concurrencia.
+ * Usa MAX sobre el campo parseado para ser robusto ante eliminaciones.
+ */
+export async function generarNumeroPedido(tiendaId, tx) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`pedido_num_${tiendaId}`}))`;
 
-    const result = await tx.$queryRaw`
-      SELECT COALESCE(MAX(CAST(REPLACE(numero_pedido, 'PED-', '') AS INTEGER)), 0) AS max_num
-      FROM pedidos
-      WHERE tienda_id = ${tiendaId}::uuid
-    `;
+  const result = await tx.$queryRaw`
+    SELECT COALESCE(MAX(CAST(REPLACE(numero_pedido, 'PED-', '') AS INTEGER)), 0) AS max_num
+    FROM pedidos
+    WHERE tienda_id = ${tiendaId}::uuid
+  `;
 
-    const maxNum = Number(result[0]?.max_num ?? 0);
-    return `PED-${String(maxNum + 1).padStart(4, "0")}`;
+  const maxNum = Number(result[0]?.max_num ?? 0);
+  return `PED-${String(maxNum + 1).padStart(4, "0")}`;
+}
+
+/**
+ * Busca un cliente por WhatsApp dentro de una tienda.
+ * Si no existe lo crea. Si existe lo reusa tal cual está:
+ * el nombre/email de `clientes` solo lo cambia el propio cliente
+ * (ej. desde un futuro perfil/login), nunca un pedido nuevo.
+ * Los datos de contacto de ESTE pedido se guardan aparte como
+ * snapshot en `pedidos` (ver create), así el historial no se
+ * ve afectado por compras posteriores con el mismo WhatsApp.
+ */
+export async function upsertCliente(tiendaId, clienteData, tx) {
+  let cliente = await tx.clientes.findFirst({
+    where: { tiendaId, whatsappNumero: clienteData.whatsappNumero }
+  });
+
+  if (!cliente) {
+    cliente = await tx.clientes.create({
+      data: {
+        tiendaId,
+        whatsappNumero: clienteData.whatsappNumero,
+        nombre: clienteData.nombre,
+        email: clienteData.email || null,
+        tipoDocumento: clienteData.tipoDocumento || null,
+        numeroDocumento: clienteData.numeroDocumento || null,
+        fechaRegistro: new Date(),
+        usuarioRegistro: "storefront"
+      }
+    });
   }
 
-  /**
-   * Busca un cliente por WhatsApp dentro de una tienda.
-   * Si no existe lo crea. Si existe lo reusa tal cual está:
-   * el nombre/email de `clientes` solo lo cambia el propio cliente
-   * (ej. desde un futuro perfil/login), nunca un pedido nuevo.
-   * Los datos de contacto de ESTE pedido se guardan aparte como
-   * snapshot en `pedidos` (ver create), así el historial no se
-   * ve afectado por compras posteriores con el mismo WhatsApp.
-   */
+  return cliente;
+}
+
+class PedidosService {
+  async #generarNumeroPedido(tiendaId, tx) {
+    return generarNumeroPedido(tiendaId, tx);
+  }
+
   async #upsertCliente(tiendaId, clienteData, tx) {
-    let cliente = await tx.clientes.findFirst({
-      where: { tiendaId, whatsappNumero: clienteData.whatsappNumero }
-    });
-
-    if (!cliente) {
-      cliente = await tx.clientes.create({
-        data: {
-          tiendaId,
-          whatsappNumero: clienteData.whatsappNumero,
-          nombre: clienteData.nombre,
-          email: clienteData.email || null,
-          tipoDocumento: clienteData.tipoDocumento || null,
-          numeroDocumento: clienteData.numeroDocumento || null,
-          fechaRegistro: new Date(),
-          usuarioRegistro: "storefront"
-        }
-      });
-    }
-
-    return cliente;
+    return upsertCliente(tiendaId, clienteData, tx);
   }
 
   /**

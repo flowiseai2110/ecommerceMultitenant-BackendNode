@@ -171,6 +171,17 @@ export const config = {
     ipSalt: process.env.LIBRO_IP_SALT
   },
 
+  // Mini booking (docs/specs/mini-booking). El link de seguimiento de una
+  // reserva lleva un token firmado con linkSecret (estado, pago, confirmación).
+  reservas: {
+    linkSecret: process.env.RESERVAS_LINK_SECRET,
+    linkTtlDias: parseInt(process.env.RESERVAS_LINK_TTL_DIAS) || 400,
+    // Solicitudes por IP en la ventana del rate limit global (anti-abuso, R5.7).
+    rateLimitMax: parseInt(process.env.RESERVAS_RATE_LIMIT_MAX) || 10,
+    // Bucket PRIVADO de capturas de pago (docs/sql/mini_booking_setup.sql).
+    bucketCapturas: process.env.RESERVAS_BUCKET_CAPTURAS || "pagos-capturas"
+  },
+
   // Agente / Asesor de ventas IA. Ver modules/agente/arquitectura.md.
   // El modelo se aísla acá para poder migrar a otro proveedor sin tocar el servicio.
   agente: {

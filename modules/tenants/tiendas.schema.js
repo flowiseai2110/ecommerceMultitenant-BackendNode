@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { RUBROS } from "./rubros.js";
 
+/** Vertical de la tienda (docs/specs/mini-booking). Solo cambia sin pedidos ni reservas. */
+export const TIPOS_NEGOCIO = ["productos", "hotel", "tours", "eventos"];
+
 /**
  * Schemas Zod de entrada para tiendas. El schema ES el contrato de entrada
  * (ver docs/ARQUITECTURA.md).
@@ -22,7 +25,8 @@ const tiendasBaseSchema = {
   direccionFiscal: z.string({ required_error: "La direccion fiscal es requerido" }),
   ubigeo: z.string().nullable().optional(),
   moneda: z.string().nullable().optional(),
-  tipoNegocio: z.string().nullable().optional(),
+  // La columna es NOT NULL: un null del formulario se trata como "no cambiar".
+  tipoNegocio: z.enum(TIPOS_NEGOCIO, { message: "Tipo de negocio inválido" }).nullish().transform(v => v ?? undefined),
   rubro: z.enum(RUBROS).nullable().optional(),
   activo: z.boolean(),
   envioGratisMinimo: z.coerce.number().min(0).nullable().optional(),

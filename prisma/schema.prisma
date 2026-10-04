@@ -135,7 +135,8 @@ model tiendas {
 
   // Configuración general
   moneda                String?   @default("PEN") @db.VarChar(3)
-  tipoNegocio           String?   @default("productos") @map("tipo_negocio") @db.VarChar(50)
+  // productos | hotel | tours | eventos (CHECK en docs/sql/mini_booking_setup.sql)
+  tipoNegocio           String    @default("productos") @map("tipo_negocio") @db.VarChar(50)
   // Qué vende (moda, alimentos...): sugiere campañas. Valores en modules/tenants/rubros.js
   rubro                 String?   @db.VarChar(30)
   activo                Boolean   @default(true)
@@ -155,6 +156,7 @@ model tiendas {
   avisoLive             avisos_live?
   conversacionesAgente  agente_conversaciones[]
   libroReclamaciones    libro_reclamaciones[]
+  configReservas        config_reservas?
 }
 
 // ============================================
@@ -374,6 +376,10 @@ model productos {
   variantes             producto_variantes[]
   imagenes              producto_imagenes[]
   resenas               resenas[]
+  // Mini booking: ficha de hotel (1:1), fechas cerradas y reservas de este producto
+  hotelTipo             hotel_tipos_habitacion?
+  cierres               cierres_fecha[]
+  reservas              reservas[]
 
   @@index([tiendaId, activo], name: "idx_productos_tienda_activo")
   @@index([tiendaId, categoriaId], name: "idx_productos_tienda_categoria")
@@ -541,6 +547,12 @@ model pedidos {
   codigoCupon           String?   @map("codigo_cupon") @db.VarChar(50)
   fechaConfirmado       DateTime? @map("fecha_confirmado") @db.Timestamptz
   fechaEntregado        DateTime? @map("fecha_entregado") @db.Timestamptz
+  // Mini booking (docs/specs/mini-booking): compra | hotel | tour | evento.
+  // fecha_servicio = ingreso / salida del tour / inicio de la función.
+  tipo                  String    @default("compra") @db.VarChar(10)
+  fechaServicio         DateTime? @map("fecha_servicio") @db.Timestamptz
+  montoPagado           Decimal   @default(0) @map("monto_pagado") @db.Decimal(10, 2)
+  idempotencyKey        String?   @map("idempotency_key") @db.Uuid
 
   // Auditoría
   fechaRegistro         DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
@@ -555,8 +567,11 @@ model pedidos {
   pagos                 pagos[]
   resenas               resenas[]
   hojasReclamacion      libro_reclamaciones[]
+  reserva               reservas?
 
   @@unique([tiendaId, numeroPedido], name: "uq_numero_pedido")
+  @@unique([tiendaId, idempotencyKey], name: "uq_pedidos_idempotency")
+  @@index([tiendaId, tipo, fechaServicio], name: "idx_pedidos_tienda_tipo_servicio")
   @@index([tiendaId], name: "idx_pedidos_tienda")
   @@index([tiendaId, estado], name: "idx_pedidos_tienda_estado")
   @@index([tiendaId, estadoPago], name: "idx_pedidos_tienda_estado_pago")
@@ -928,4 +943,133 @@ model libro_reclamaciones_eventos {
   hoja                   libro_reclamaciones @relation(fields: [hojaId], references: [id], onDelete: Restrict)
 
   @@index([hojaId, fechaRegistro], name: "idx_libro_eventos_hoja")
+}
+
+// ============================================
+// MÓDULO: MINI BOOKING (docs/specs/mini-booking)
+// Vitrina + solicitud de reserva que el negocio confirma (hotel / hostal).
+// La reserva es un `pedidos` con tipo = hotel + una fila en `reservas`.
+// No hay inventario: el negocio acepta o rechaza; solo existen fechas cerradas.
+// SQL: docs/sql/mini_booking_setup.sql
+// ============================================
+
+// Configuración de reservas de la tienda (una fila por tienda).
+model config_reservas {
+  tiendaId               String    @id @map("tienda_id") @db.Uuid
+  modoConfirmacion       String    @default("solicitud") @map("modo_confirmacion") @db.VarChar(12) // solicitud | pago_directo
+  cobro                  String    @default("total") @db.VarChar(10)                                // total | adelanto | en_destino
+  adelantoPct            Int?      @map("adelanto_pct")
+  // Límite duro: no se puede enviar si falta menos que esto para el inicio.
+  anticipacionMinHoras   Int       @default(0) @map("anticipacion_min_horas")
+  // Límite blando: advertencia de reserva próxima (null = sin aviso).
+  avisoProximoHoras      Int?      @map("aviso_proximo_horas")
+  avisoProximoTexto      String?   @map("aviso_proximo_texto") @db.VarChar(300)
+  maxSolicitudesAbiertas Int       @default(3) @map("max_solicitudes_abiertas")
+  instrucciones          String?   @db.Text
+  politicaCancelacion    String?   @map("politica_cancelacion") @db.Text
+  horaCheckin            String    @default("14:00") @map("hora_checkin") @db.VarChar(5)
+  horaCheckout           String    @default("12:00") @map("hora_checkout") @db.VarChar(5)
+  comprobanteEn          String    @default("al_pagar") @map("comprobante_en") @db.VarChar(14) // al_pagar | en_el_servicio
+
+  // Auditoría
+  fechaRegistro          DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro        String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion     DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion   String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  tienda                 tiendas   @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+}
+
+// Fechas en que el negocio no recibe reservas. productoId null = todo el negocio.
+model cierres_fecha {
+  id                     String    @id @default(uuid()) @db.Uuid
+  tiendaId               String    @map("tienda_id") @db.Uuid
+  productoId             String?   @map("producto_id") @db.Uuid
+  fechaDesde             DateTime  @map("fecha_desde") @db.Date
+  fechaHasta             DateTime  @map("fecha_hasta") @db.Date   // inclusiva
+  motivo                 String?   @db.VarChar(100)                // visible solo en el admin
+  fechaRegistro          DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro        String?   @map("usuario_registro") @db.VarChar(100)
+
+  producto               productos? @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@index([tiendaId, fechaDesde, fechaHasta], name: "idx_cierres_tienda_rango")
+}
+
+// Ficha de hotel de un producto (tipo de habitación).
+model hotel_tipos_habitacion {
+  productoId             String    @id @map("producto_id") @db.Uuid
+  tiendaId               String    @map("tienda_id") @db.Uuid
+  capacidadAdultos       Int       @default(2) @map("capacidad_adultos")
+  capacidadNinos         Int       @default(0) @map("capacidad_ninos")
+  capacidadMax           Int       @default(2) @map("capacidad_max")
+  // Cama en dormitorio compartido: el precio se multiplica por personas.
+  porPersona             Boolean   @default(false) @map("por_persona")
+  camas                  String?   @db.VarChar(100)
+  amenities              String[]  @default([])
+
+  producto               productos @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  modalidades            hotel_modalidades[]
+
+  @@index([tiendaId], name: "idx_hotel_tipos_tienda")
+}
+
+// Modalidades de estadía de un tipo: noche y bloques de N horas ("fracción 6 h").
+model hotel_modalidades {
+  id                     String    @id @default(uuid()) @db.Uuid
+  tiendaId               String    @map("tienda_id") @db.Uuid
+  productoId             String    @map("producto_id") @db.Uuid
+  tipo                   String    @db.VarChar(6)                 // noche | horas
+  horas                  Int?                                      // solo tipo = horas
+  precio                 Decimal   @db.Decimal(10, 2)
+  precioVieSab           Decimal?  @map("precio_vie_sab") @db.Decimal(10, 2) // solo noche
+  activo                 Boolean   @default(true)
+  orden                  Int       @default(0)
+
+  tipoHabitacion         hotel_tipos_habitacion @relation(fields: [productoId], references: [productoId], onDelete: Cascade)
+  reservas               reservas[]
+
+  @@index([productoId], name: "idx_hotel_modalidades_producto")
+}
+
+// Detalle de una reserva de hotel o tour. El dinero, el cliente y el
+// comprobante viven en `pedidos`; aquí, la estadía y el titular.
+model reservas {
+  pedidoId               String    @id @map("pedido_id") @db.Uuid
+  tiendaId               String    @map("tienda_id") @db.Uuid
+  tipo                   String    @db.VarChar(5)                  // hotel | tour
+  productoId             String    @map("producto_id") @db.Uuid
+  modalidadId            String?   @map("modalidad_id") @db.Uuid
+  inicio                 DateTime  @db.Timestamptz                 // ingreso / salida del tour
+  fin                    DateTime? @db.Timestamptz                 // salida del hotel (calculada)
+  noches                 Int?
+  horas                  Int?
+  adultos                Int?
+  ninos                  Int?
+  pasajeros              Json?     @db.JsonB                       // tours (fase 2)
+
+  // Titular (registro de huésped)
+  titularNombres         String    @map("titular_nombres") @db.VarChar(100)
+  titularApellidos       String    @map("titular_apellidos") @db.VarChar(100)
+  titularDocTipo         String    @map("titular_doc_tipo") @db.VarChar(10)      // DNI | CE | PASAPORTE
+  titularDocNumero       String    @map("titular_doc_numero") @db.VarChar(20)
+  titularNacionalidad    String    @map("titular_nacionalidad") @db.VarChar(2)   // ISO 3166
+  titularNacimiento      DateTime? @map("titular_nacimiento") @db.Date
+  acompanantes           Json?     @db.JsonB
+  comentarios            String?   @db.Text
+  aceptaDatos            Boolean   @map("acepta_datos")
+
+  // Respuesta del negocio (no hay columnas de plazo: el límite es `inicio`)
+  respondidaEn           DateTime? @map("respondida_en") @db.Timestamptz
+  motivoRechazo          String?   @map("motivo_rechazo") @db.VarChar(200)
+  ajusteMonto            Decimal?  @map("ajuste_monto") @db.Decimal(10, 2)
+  ajusteMotivo           String?   @map("ajuste_motivo") @db.VarChar(200)
+  montoAPagar            Decimal   @map("monto_a_pagar") @db.Decimal(10, 2)
+  saldoDestino           Decimal   @default(0) @map("saldo_destino") @db.Decimal(10, 2)
+
+  pedido                 pedidos   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  producto               productos @relation(fields: [productoId], references: [id])
+  modalidad              hotel_modalidades? @relation(fields: [modalidadId], references: [id], onDelete: SetNull)
+
+  @@index([tiendaId, inicio], name: "idx_reservas_tienda_inicio")
 }

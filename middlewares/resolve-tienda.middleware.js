@@ -24,7 +24,7 @@ async function getTiendaBySlug(slug) {
   const tienda = await prisma.tiendas.findUnique({
     where: { slug },
     // whatsappNumero: el asesor decide si puede ofrecer el pase a una persona.
-    select: { id: true, slug: true, nombre: true, activo: true, whatsappNumero: true }
+    select: { id: true, slug: true, nombre: true, activo: true, whatsappNumero: true, tipoNegocio: true }
   });
 
   cache.set(slug, { tienda, expiresAt: Date.now() + CACHE_TTL_MS });

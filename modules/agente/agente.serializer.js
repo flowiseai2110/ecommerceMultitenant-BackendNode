@@ -24,7 +24,9 @@ export function serializeProductoCardChat(p) {
     // necesita saber si mostrar "disponible" / "agotado".
     disponible: (p.stock ?? 0) > 0,
     imagenUrl: p.imagenUrl ?? null,
-    imagenAlt: p.imagenAlt ?? null
+    imagenAlt: p.imagenAlt ?? null,
+    // Ruta propia de la tarjeta (ej. "habitaciones/<slug>" en un hotel); null = ficha de producto.
+    ruta: p.ruta ?? null
   };
 }
 

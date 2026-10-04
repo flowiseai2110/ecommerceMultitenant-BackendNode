@@ -16,6 +16,7 @@ import liveRoutes from "../../modules/live/live.store.routes.js";
 import agenteRoutes from "../../modules/agente/agente.store.routes.js";
 import sunatRoutes from "../../modules/sunat/ruc.store.routes.js";
 import libroRoutes from "../../modules/libro-reclamaciones/libro.store.routes.js";
+import reservasRoutes from "../../modules/reservas/reservas.store.routes.js";
 
 const router = Router();
 
@@ -42,5 +43,6 @@ router.use("/live", cache(15), liveRoutes);   // caché corta: el tiempo real ll
 router.use("/agente", agenteRoutes);          // sin caché — cada consulta es conversacional y única
 router.use("/sunat", sunatRoutes);            // caché solo en respuestas exitosas (lo fija la ruta)
 router.use("/libro-reclamaciones", libroRoutes); // sin caché global — la cabecera del proveedor la fija la ruta
+router.use("/reservas", reservasRoutes);          // sin caché global — cada ruta fija la suya (mini booking)
 
 export default router;

@@ -20,6 +20,7 @@ import asistenteRoutes from "../../modules/asistente/asistente.admin.routes.js";
 import consumoIaRoutes from "../../modules/consumo-ia/consumo-ia.admin.routes.js";
 import disenoRoutes from "../../modules/diseno/diseno.admin.routes.js";
 import libroRoutes from "../../modules/libro-reclamaciones/libro.admin.routes.js";
+import reservasRoutes from "../../modules/reservas/reservas.admin.routes.js";
 
 const router = Router();
 
@@ -46,5 +47,6 @@ router.use("/asistente", asistenteRoutes);
 router.use("/consumo-ia", consumoIaRoutes);
 router.use("/diseno", disenoRoutes);
 router.use("/libro-reclamaciones", libroRoutes);
+router.use("/reservas", reservasRoutes);
 
 export default router;
