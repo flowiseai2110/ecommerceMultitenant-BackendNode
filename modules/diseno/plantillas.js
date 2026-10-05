@@ -260,7 +260,8 @@ export const PLANTILLAS = congelar([
     descripcion: "Para un solo alojamiento: el lugar primero, después los espacios, servicios, reseñas y cómo llegar.",
     radio: "redondeado",
     encabezados: "editorial",
-    layout: { header: { logo: "centro" }, productCard: { cta: "boton", imagen: "vertical" } },
+    // Galería en mosaico: en un alquiler vacacional las fotos venden la casa.
+    layout: { header: { logo: "centro" }, productCard: { cta: "boton", imagen: "vertical" }, habitacion: { galeria: "mosaico", servicios: true, politicas: true, mapa: true, otras: true } },
     secciones: [
       { id: "hero", tipo: "hero", variante: "dividido", buscador: true, titulo: "Una casa para ti solo", subtitulo: "Desconéctate en un lugar pensado para descansar.", textoBoton: "Ver disponibilidad" },
       { id: "historia", tipo: "imagen-texto", fondo: "superficie", espacio: "amplio", imagen: "banner", posicionImagen: "derecha", kicker: "El lugar", titulo: "Describe tu casa en pocas palabras", texto: "Cuántas personas entran, qué tiene alrededor y por qué la gente vuelve. Escríbelo como se lo contarías a un amigo.", textoBoton: null },
@@ -271,6 +272,128 @@ export const PLANTILLAS = congelar([
       { id: "politicas", tipo: "politicas", fondo: "pagina", titulo: "Antes de reservar" },
       { id: "contacto", tipo: "contacto", titulo: "¿Quieres saber más?", texto: "Escríbenos por WhatsApp y te contamos todo sobre la casa." }
     ]
+  }),
+
+  // ── Tours (docs/specs/diseno-por-rubro, fase 2) ───────────────────────
+  // Catálogo (Viator, GetYourGuide): buscador de fecha y personas arriba, los
+  // tours con precio "desde", duración y nota, y después la confianza
+  // (por qué con nosotros, reseñas, preguntas) y lo práctico.
+  plantilla({
+    id: "tours-catalogo",
+    tipoNegocio: "tours",
+    rubro: "turismo",
+    nombre: "Catálogo",
+    descripcion: "Buscador de fecha y personas, tours con precio desde y duración, por qué viajar con ustedes, reseñas y preguntas.",
+    radio: "suave",
+    encabezados: "impacto",
+    layout: { header: { logo: "izquierda" }, productCard: { cta: "boton", imagen: "cuadrada" } },
+    secciones: [
+      { id: "hero", tipo: "hero", variante: "imagen-completa", buscador: true, titulo: "Vive el destino con guías locales", subtitulo: "Tours de día completo y caminatas, con recojo en tu hotel.", textoBoton: "Buscar tours" },
+      { id: "tours", tipo: "tours", variante: "grilla", fondo: "superficie", titulo: "Los más reservados", subtitulo: "Elige tu tour y la fecha: confirmamos la salida." },
+      { id: "servicios", tipo: "servicios", variante: "iconos", fondo: "suave", titulo: "Por qué viajar con nosotros", items: [
+        { icono: "guia", titulo: "Guías locales" },
+        { icono: "grupo", titulo: "Grupos pequeños" },
+        { icono: "calendario", titulo: "Cambio de fecha sin costo" },
+        { icono: "traslado", titulo: "Recojo en tu hotel" }
+      ] },
+      { id: "testimonios", tipo: "testimonios", fondo: "pagina", titulo: "Viajeros que ya fueron", items: [] },
+      { id: "faq", tipo: "faq", fondo: "superficie", titulo: "Preguntas frecuentes", items: [
+        { pregunta: "¿Qué pasa si llueve?", respuesta: "Escribe aquí qué haces si el clima no acompaña: si el tour sale igual, si se reprograma o si devuelves el pago." },
+        { pregunta: "¿Cómo pago?", respuesta: "Escribe aquí los medios de pago y cuánto se paga para separar el cupo." }
+      ] },
+      { id: "politicas", tipo: "politicas", fondo: "pagina", titulo: "Antes de reservar" },
+      { id: "contacto", tipo: "contacto", titulo: "¿Armamos tu viaje a medida?", texto: "Cuéntanos tus días y te proponemos un plan por WhatsApp." }
+    ]
+  }),
+
+  // Operador (Peek, Wilderness Travel): pocos tours de autor. La historia de
+  // la agencia va arriba y los tours en carrusel, con mucha foto.
+  plantilla({
+    id: "tours-operador",
+    tipoNegocio: "tours",
+    rubro: "turismo",
+    nombre: "Operador",
+    descripcion: "Para pocos tours de autor: portada inmersiva, quiénes son, los tours en carrusel, reseñas y dónde encontrarlos.",
+    radio: "redondeado",
+    encabezados: "editorial",
+    layout: { header: { logo: "centro" }, productCard: { cta: "boton", imagen: "vertical" }, tour: { galeria: "mosaico", itinerario: true, incluye: true, otros: true } },
+    secciones: [
+      { id: "hero", tipo: "hero", variante: "imagen-completa", buscador: false, titulo: "Viajes que se recuerdan", subtitulo: "Rutas pensadas por quienes las caminan desde hace años.", textoBoton: "Ver tours" },
+      { id: "historia", tipo: "imagen-texto", fondo: "superficie", espacio: "amplio", imagen: "banner", posicionImagen: "izquierda", kicker: "Quiénes somos", titulo: "Cuenta quién guía tus tours", texto: "Desde cuándo operan, quiénes son los guías y qué hace distintos a sus recorridos. Dos o tres frases bastan.", textoBoton: "Ver tours" },
+      { id: "tours", tipo: "tours", variante: "carrusel", fondo: "pagina", titulo: "Nuestros tours" },
+      { id: "servicios", tipo: "servicios", variante: "lista", fondo: "superficie", titulo: "Viajar con nosotros", items: [
+        { icono: "guia", titulo: "Guías locales" },
+        { icono: "idiomas", titulo: "Tours en español e inglés" },
+        { icono: "seguro", titulo: "Seguro de viaje incluido" }
+      ] },
+      { id: "testimonios", tipo: "testimonios", fondo: "pagina", titulo: "Lo que cuentan los viajeros", items: [] },
+      { id: "ubicacion", tipo: "ubicacion", fondo: "superficie", titulo: "Dónde encontrarnos", texto: null, cercanos: [], mapa: true },
+      { id: "politicas", tipo: "politicas", fondo: "pagina", titulo: "Antes de reservar" },
+      { id: "contacto", tipo: "contacto", titulo: "¿Tienes dudas?", texto: "Escríbenos por WhatsApp y te ayudamos a elegir tu tour." }
+    ]
+  }),
+
+  // ── Eventos con entradas (docs/specs/diseno-por-rubro, fase 3) ────────
+  // Cartelera (Joinnus, Teleticket, la web de un teatro): muchos eventos.
+  // Buscador por fecha arriba, la cartelera con fecha y precio "desde", y
+  // después lo que da confianza para pagar (entrada digital, preguntas) y lo
+  // práctico.
+  plantilla({
+    id: "eventos-cartelera",
+    tipoNegocio: "eventos",
+    rubro: "eventos",
+    nombre: "Cartelera",
+    descripcion: "Para varios eventos: buscador por fecha, cartelera con fecha y precio desde, cómo funciona la compra y preguntas.",
+    radio: "suave",
+    encabezados: "impacto",
+    layout: { header: { logo: "izquierda" }, productCard: { cta: "boton", imagen: "cuadrada" } },
+    secciones: [
+      { id: "hero", tipo: "hero", variante: "imagen-completa", buscador: true, titulo: "Lo que se viene", subtitulo: "Conciertos, obras y fiestas. Compra tus entradas en línea y entra con tu QR.", textoBoton: "Ver eventos" },
+      { id: "eventos", tipo: "eventos", variante: "grilla", fondo: "superficie", titulo: "Próximos eventos", subtitulo: "Elige la fecha, compra en línea y recibe tu entrada al instante." },
+      { id: "servicios", tipo: "servicios", variante: "iconos", fondo: "suave", titulo: "Comprar es fácil", items: [
+        { icono: "entrada", titulo: "Entrada digital con QR" },
+        { icono: "seguro", titulo: "Pago seguro" },
+        { icono: "calendario", titulo: "Recordatorio antes del evento" }
+      ] },
+      { id: "faq", tipo: "faq", fondo: "pagina", titulo: "Preguntas frecuentes", items: [
+        { pregunta: "¿Cómo recibo mi entrada?", respuesta: "Escribe aquí cómo llega la entrada (correo, WhatsApp) y si hay que imprimirla." },
+        { pregunta: "¿Puedo devolver mi entrada?", respuesta: "Escribe aquí tu política: si devuelves el dinero, si se puede cambiar de fecha o de titular." }
+      ] },
+      { id: "politicas", tipo: "politicas", fondo: "superficie", titulo: "Antes de comprar" },
+      { id: "contacto", tipo: "contacto", titulo: "¿Compras para un grupo?", texto: "Escríbenos por WhatsApp y te ayudamos con tus entradas." }
+    ]
+  }),
+
+  // Evento único (festival, conferencia, obra en temporada): un evento con
+  // una o varias fechas. El evento manda en la portada; las fechas van en
+  // agenda, y después qué hay, dónde es y las dudas.
+  plantilla({
+    id: "eventos-unico",
+    tipoNegocio: "eventos",
+    rubro: "eventos",
+    nombre: "Evento único",
+    descripcion: "Para un festival, una obra en temporada o una conferencia: el evento primero, las fechas en agenda, qué hay y cómo llegar.",
+    radio: "redondeado",
+    encabezados: "impacto",
+    // Galería en mosaico: las fotos de ediciones pasadas venden el evento.
+    layout: { header: { logo: "centro" }, productCard: { cta: "boton", imagen: "vertical" }, evento: { galeria: "mosaico", mapa: true, otros: false } },
+    secciones: [
+      { id: "hero", tipo: "hero", variante: "dividido", buscador: false, titulo: "Una noche para recordar", subtitulo: "Escribe aquí la fecha, el lugar y lo que hace único a tu evento.", textoBoton: "Comprar entradas" },
+      { id: "eventos", tipo: "eventos", variante: "agenda", fondo: "superficie", titulo: "Fechas y entradas" },
+      { id: "historia", tipo: "imagen-texto", fondo: "pagina", espacio: "amplio", imagen: "banner", posicionImagen: "izquierda", kicker: "El evento", titulo: "Cuenta qué va a vivir tu público", texto: "Quiénes se presentan, cuánto dura y qué no se pueden perder. Dos o tres frases bastan.", textoBoton: "Comprar entradas" },
+      { id: "servicios", tipo: "servicios", variante: "lista", fondo: "superficie", titulo: "Qué vas a encontrar", items: [
+        { icono: "musica", titulo: "Música en vivo" },
+        { icono: "bar", titulo: "Barra y comida" },
+        { icono: "accesible", titulo: "Acceso para sillas de ruedas" }
+      ] },
+      { id: "testimonios", tipo: "testimonios", fondo: "pagina", titulo: "Lo que dijo el público", items: [] },
+      { id: "ubicacion", tipo: "ubicacion", fondo: "superficie", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true },
+      { id: "faq", tipo: "faq", fondo: "pagina", titulo: "Preguntas frecuentes", items: [
+        { pregunta: "¿Desde qué edad se puede entrar?", respuesta: "Escribe aquí la edad mínima y si los menores entran acompañados." },
+        { pregunta: "¿A qué hora abren las puertas?", respuesta: "Escribe aquí a qué hora se puede entrar y a qué hora empieza." }
+      ] },
+      { id: "contacto", tipo: "contacto", titulo: "¿Tienes dudas?", texto: "Escríbenos por WhatsApp y te respondemos." }
+    ]
   })
 ]);
 
@@ -278,7 +401,7 @@ export const PLANTILLA_IDS = PLANTILLAS.map((p) => p.id);
 export const PLANTILLA_DEFAULT = "clasica";
 // Con qué se ve una tienda sin estructura guardada, según su tipo de negocio
 // (diseno-por-rubro H4). Los tipos sin plantillas propias usan la clásica.
-const DEFAULT_POR_NEGOCIO = Object.freeze({ hotel: "hotel-boutique" });
+const DEFAULT_POR_NEGOCIO = Object.freeze({ hotel: "hotel-boutique", tours: "tours-catalogo", eventos: "eventos-cartelera" });
 
 /** @param {string} id */
 export function buscarPlantilla(id) {

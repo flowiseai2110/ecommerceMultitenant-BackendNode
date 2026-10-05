@@ -1,6 +1,7 @@
 # Spec: diseño por tipo de negocio (hospedaje, tours, eventos)
 
-> Estado: **Fase 1 (hospedaje) en implementación** (2026-10-05). Fases 2 y 3 sin empezar.
+> Estado: **Fases 1, 1b, 2 y 3a (hospedaje, esquema del admin, tours y eventos con entradas) implementadas** (2026-10-05), falta la prueba en el navegador. Fase 3b (alquiler de locales) pendiente de especificar: es un tipo de negocio nuevo, fuera de mini booking.
+> El esquema del admin reemplaza las pestañas de estructura-tienda R7.1 (Apariencia / Inicio / Producto / Anuncio).
 > Tareas: [tasks.md](tasks.md).
 > Repos involucrados: BackendNode, FrontendAdmin, FrontendStore.
 > Base: [estructura-tienda](../estructura-tienda/spec.md) (plantillas, secciones, copia, tema). Vitrina y reservas: [mini-booking](../mini-booking/spec.md).
@@ -18,9 +19,10 @@ Que cada tipo de negocio tenga **sus plantillas y sus secciones**, editadas con 
 |---|---|---|
 | 1 | Hospedaje (`hotel`) | **Boutique**: portada con buscador de fechas, habitaciones con precio, servicios, reseñas, ubicación y políticas. **Casa única**: para un solo alojamiento, al estilo alquiler vacacional |
 | 2 | Tours (`tours`) | **Catálogo** (tipo Viator/GetYourGuide) y **Operador** (tipo Peek/Wilderness Travel) |
-| 3 | Eventos (`eventos`) | **Local propio** (por ocasión, paquetes por invitado, calendario de fechas libres, cotización) y **Varios espacios** (salones con capacidad y precio por hora) |
+| 3a | Eventos con entradas (`eventos`) | **Cartelera** (tipo Joinnus/Teleticket: buscador por fecha, varios eventos) y **Evento único** (festival, obra en temporada: el evento primero, fechas en agenda) |
+| 3b | Alquiler de locales (tipo nuevo) | **Local propio** (por ocasión, paquetes por invitado, calendario de fechas libres, cotización) y **Varios espacios** (salones con capacidad y precio por hora) |
 
-Eventos es el nicho comercial prioritario, pero depende de un tipo de negocio que todavía no existe en mini booking. Las fases 1 y 2 dejan listo el mecanismo que la 3 reutiliza.
+El 2026-10-05 se vio que `eventos` en mini booking es **venta de entradas** (funciones y tipos de entrada con cupo), mientras que el nicho comercial prioritario es el **alquiler de locales** (salones para cumpleaños, bodas, fiestas), que mini booking deja fuera ("Salones y banquetes"). Se decidió hacer primero el diseño de entradas (3a, sobre lo que ya existe) y después especificar y construir el alquiler de locales como su propia fase (3b).
 
 ## Conceptos nuevos
 
@@ -57,9 +59,22 @@ Secciones permitidas en hotel: `hero`, `habitaciones`, `servicios`, `imagen-text
 
 ### Fuera de la fase 1
 
-- Opciones de la **ficha de habitación** (galería en mosaico, barra fija abajo en el celular, bloques que se encienden o apagan). La ficha actual ya tiene fotos, capacidad, servicios, políticas y panel de solicitud. Va en la fase 1b.
-- **Esquema del admin** (cambiar las pestañas por la vista Encabezado / Página / Pie del prototipo). Sirve a los tres tipos de negocio y se hace como tarea propia, sin cambiar datos.
+- Opciones de la **ficha de habitación** y **esquema del admin**: fase 1b (abajo).
 - Disponibilidad real en el buscador. El hotel sigue confirmando (mini booking R2.6).
+
+## Fase 1b — Ficha de habitación y esquema del admin
+
+- **B1** `layout.habitacion` = `{ galeria: carrusel|mosaico, servicios, politicas, mapa, otras }`, con defaults (carrusel y todo visible). Como en el detalle de producto (estructura-tienda R5.3), el orden de los bloques es fijo. Casa única trae la galería en mosaico.
+- **B2** La ficha de habitación muestra el mapa (si la tienda tiene dirección), hasta 3 otras habitaciones y, en el celular, una barra fija con el total y el botón de solicitud.
+- **B3** El admin organiza Diseño como el esquema de la página (patrón del editor de temas de Shopify): un selector **Inicio / Ficha** y, en Inicio, los grupos **Estilo**, **Encabezado** (barra de anuncios con su interruptor y posición del logo), **Página de inicio** (portada fija + secciones con ↑↓ e interruptor) y **Pie** (informativo: se arma con los datos de la tienda). En el celular, tocar una fila abre su detalle a pantalla completa con "‹ Esquema"; en escritorio, el detalle va a la derecha. `?tab=` sigue funcionando para la Guía (`anuncio`, `inicio` = portada) y suma `apariencia`, `encabezado`, `seccion` (con `?s=<id>`) y `pie`.
+
+## Fase 2 — Tours
+
+- **T1** Plantillas `tours-catalogo` (buscador, tours con precio desde y duración, por qué viajar con nosotros, reseñas, preguntas, políticas) y `tours-operador` (portada sin buscador, quiénes somos, tours en carrusel, ubicación). Una agencia sin estructura se ve con el Catálogo.
+- **T2** Sección `tours` (grilla o carrusel, límite). Servicios, ubicación y políticas se comparten con hotel; servicios suma íconos de agencia (guía, grupo, seguro, fechas, idiomas). Políticas no muestra check-in/check-out fuera de un hotel.
+- **T3** Servicios y preguntas de la plantilla se copian ocultos y como ejemplo (H5).
+- **T4** `layout.tour` = `{ galeria: carrusel|mosaico, itinerario, incluye, otros }`. Duración, días de salida, punto de encuentro, requisitos y el panel de solicitud se muestran siempre.
+- **T5** El buscador de la portada pide fecha y personas y lleva a `/tours?fecha&personas`: la grilla muestra los tours que salen ese día de la semana y aceptan esa cantidad (las fechas cerradas las descarta la ficha). La ficha precarga las personas en el primer tipo de pasajero.
 
 ## Decisiones
 

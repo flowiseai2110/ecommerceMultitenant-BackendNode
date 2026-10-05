@@ -18,17 +18,24 @@ export const TIPOS_SECCION = [
   "hero", "categorias", "productos", "beneficios", "testimonios",
   "imagen-texto", "faq", "oferta", "cinta", "contacto",
   // Hospedaje (docs/specs/diseno-por-rubro, fase 1).
-  "habitaciones", "servicios", "ubicacion", "politicas"
+  "habitaciones", "servicios", "ubicacion", "politicas",
+  // Tours (fase 2).
+  "tours",
+  // Eventos con entradas (fase 3).
+  "eventos"
 ];
 
 // Secciones que puede usar cada tipo de negocio (docs/specs/diseno-por-rubro).
 // Las de e-commerce no existen en un hotel y las de hotel no existen en una
-// tienda de productos. Un tipo sin lista propia (tours, por ahora) usa la de
-// productos, que es lo que ve hoy.
+// tienda de productos. Un tipo sin lista propia usa la de productos.
 const TIPOS_COMUNES = ["hero", "beneficios", "testimonios", "imagen-texto", "faq", "cinta", "contacto"];
+// Servicios, ubicación y políticas sirven a todo negocio de reservas.
+const TIPOS_RESERVAS = ["servicios", "ubicacion", "politicas"];
 export const TIPOS_POR_NEGOCIO = Object.freeze({
   productos: Object.freeze([...TIPOS_COMUNES, "categorias", "productos", "oferta"]),
-  hotel: Object.freeze([...TIPOS_COMUNES, "habitaciones", "servicios", "ubicacion", "politicas"])
+  hotel: Object.freeze([...TIPOS_COMUNES, ...TIPOS_RESERVAS, "habitaciones"]),
+  tours: Object.freeze([...TIPOS_COMUNES, ...TIPOS_RESERVAS, "tours"]),
+  eventos: Object.freeze([...TIPOS_COMUNES, ...TIPOS_RESERVAS, "eventos"])
 });
 
 /** Tipos de sección permitidos para un tipo de negocio. */
@@ -42,13 +49,18 @@ export const MAX_SECCIONES = 15;
 export const MAX_POR_TIPO = Object.freeze({
   hero: 1, categorias: 1, testimonios: 1, faq: 1, oferta: 1, cinta: 1, contacto: 1,
   "imagen-texto": 3, productos: 4,
-  habitaciones: 1, servicios: 1, ubicacion: 1, politicas: 1
+  habitaciones: 1, servicios: 1, ubicacion: 1, politicas: 1, tours: 1, eventos: 1
 });
 export const ICONOS_BENEFICIO = ["envio", "pago", "cambios", "soporte", "garantia", "rapido", "calidad"];
-// Servicios de un hospedaje. El storefront tiene un ícono para cada uno.
+// Servicios de un hospedaje o de una agencia ("por qué viajar con nosotros").
+// El storefront tiene un ícono para cada uno.
 export const ICONOS_SERVICIO = [
   "wifi", "desayuno", "agua-caliente", "cochera", "recepcion", "aire", "calefaccion", "tv",
-  "lavanderia", "traslado", "mascotas", "piscina", "restaurante", "terraza", "cocina", "equipaje", "accesible", "tours"
+  "lavanderia", "traslado", "mascotas", "piscina", "restaurante", "terraza", "cocina", "equipaje", "accesible", "tours",
+  // Tours (fase 2).
+  "guia", "grupo", "seguro", "calendario", "idiomas",
+  // Eventos (fase 3).
+  "entrada", "musica", "bar"
 ];
 
 const texto = (max) => z.string().trim().min(1, "No puede estar vacío").max(max, `Máximo ${max} caracteres`);
@@ -71,7 +83,9 @@ const seccionSchema = z.discriminatedUnion("tipo", [
     titulo: textoOpcional(100),
     subtitulo: textoOpcional(300),
     textoBoton: textoOpcional(50),
-    // Hotel: llegada, noches y huéspedes sobre la portada (diseno-por-rubro H8).
+    // Buscador sobre la portada (diseno-por-rubro): hotel = llegada, noches y
+    // huéspedes (H8); tours = fecha y personas (T5); eventos = fecha (E5).
+    // Se ignora en productos.
     buscador: z.boolean().optional()
   }),
   z.object({
@@ -196,6 +210,29 @@ const seccionSchema = z.discriminatedUnion("tipo", [
     tipo: z.literal("politicas"),
     fondo,
     titulo: texto(80)
+  }),
+  // ── Tours (diseno-por-rubro, fase 2) ──
+  // Los tours salen de la vitrina; el dueño solo elige cómo se ven.
+  z.object({
+    ...base,
+    tipo: z.literal("tours"),
+    variante: z.enum(["grilla", "carrusel"]),
+    fondo,
+    titulo: texto(80),
+    subtitulo: textoOpcional(160),
+    limite: z.number().int().min(1).max(12).optional()
+  }),
+  // ── Eventos con entradas (diseno-por-rubro, fase 3) ──
+  // La cartelera sale de la vitrina. "agenda" = una fila por función,
+  // ordenada por fecha (como la programación de un teatro).
+  z.object({
+    ...base,
+    tipo: z.literal("eventos"),
+    variante: z.enum(["grilla", "carrusel", "agenda"]),
+    fondo,
+    titulo: texto(80),
+    subtitulo: textoOpcional(160),
+    limite: z.number().int().min(1).max(12).optional()
   })
 ]);
 
@@ -259,10 +296,42 @@ export const productoSchema = z.object({
   beneficios: z.array(beneficioProductoSchema).max(3, "Máximo 3 beneficios").default([])
 });
 
+// Opciones de la ficha de habitación de un hotel (docs/specs/diseno-por-rubro,
+// fase 1b). Igual que en el detalle de producto, el orden de los bloques es
+// fijo: el dueño solo elige la galería y qué bloques se muestran.
+export const habitacionSchema = z.object({
+  galeria: z.enum(["carrusel", "mosaico"]).default("carrusel"),
+  servicios: z.boolean().default(true),
+  politicas: z.boolean().default(true),
+  mapa: z.boolean().default(true),
+  otras: z.boolean().default(true)
+});
+
+// Opciones de la ficha del tour (fase 2). El panel de solicitud, la duración,
+// los días de salida y "lo que debes saber" (punto de encuentro, recojo,
+// requisitos, cancelación) se muestran siempre.
+export const tourSchema = z.object({
+  galeria: z.enum(["carrusel", "mosaico"]).default("carrusel"),
+  itinerario: z.boolean().default(true),
+  incluye: z.boolean().default(true),
+  otros: z.boolean().default(true)
+});
+
+// Opciones de la ficha del evento (fase 3). El panel de compra, las
+// funciones, el lugar y la edad mínima se muestran siempre.
+export const eventoSchema = z.object({
+  galeria: z.enum(["carrusel", "mosaico"]).default("carrusel"),
+  mapa: z.boolean().default(true),
+  otros: z.boolean().default(true)
+});
+
 export const layoutSchema = z.object({
   header: z.object({ logo: z.enum(["izquierda", "centro"]) }),
   productCard: z.object({ cta: z.enum(["slide-up", "boton"]), imagen: z.enum(["cuadrada", "vertical"]) }),
-  producto: productoSchema.default({})
+  producto: productoSchema.default({}),
+  habitacion: habitacionSchema.default({}),
+  tour: tourSchema.default({}),
+  evento: eventoSchema.default({})
 });
 
 // La estructura se migra al formato actual ANTES de validarla (R1.4): un

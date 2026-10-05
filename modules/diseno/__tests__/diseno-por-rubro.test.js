@@ -13,6 +13,8 @@ describe("plantillas por tipo de negocio (H1)", () => {
   it("las de siempre son de productos y hay dos de hotel", () => {
     expect(tipoNegocioDe(buscarPlantilla("clasica"))).toBe("productos");
     expect(PLANTILLAS.filter((p) => p.tipoNegocio === "hotel").map((p) => p.id)).toEqual(["hotel-boutique", "hotel-casa"]);
+    expect(PLANTILLAS.filter((p) => p.tipoNegocio === "tours").map((p) => p.id)).toEqual(["tours-catalogo", "tours-operador"]);
+    expect(PLANTILLAS.filter((p) => p.tipoNegocio === "eventos").map((p) => p.id)).toEqual(["eventos-cartelera", "eventos-unico"]);
   });
 
   it.each(PLANTILLAS.map((p) => p.id))("%s solo usa secciones de su tipo de negocio", (id) => {
@@ -27,7 +29,7 @@ describe("plantillas por tipo de negocio (H1)", () => {
   });
 
   it("un tipo de negocio sin lista propia usa la de productos", () => {
-    expect(tiposPermitidos("tours")).toBe(TIPOS_POR_NEGOCIO.productos);
+    expect(tiposPermitidos("otro")).toBe(TIPOS_POR_NEGOCIO.productos);
     expect(tiposPermitidos(undefined)).toBe(TIPOS_POR_NEGOCIO.productos);
   });
 });
@@ -52,11 +54,11 @@ describe("copia de las plantillas de hotel (H5)", () => {
 });
 
 describe("estructura por defecto según el tipo de negocio (H4)", () => {
-  it("un hotel sin estructura se ve con la Boutique; productos y tours siguen con la clásica", () => {
+  it("un hotel sin estructura se ve con la Boutique, tours con el Catálogo y productos con la clásica", () => {
     expect(plantillaPorDefecto("hotel").id).toBe("hotel-boutique");
     expect(resolverTema({ tipoNegocio: "hotel" }, ahora).estructura.plantillaId).toBe("hotel-boutique");
     expect(resolverTema({ tipoNegocio: "productos" }, ahora).estructura.plantillaId).toBe("clasica");
-    expect(resolverTema({ tipoNegocio: "tours" }, ahora).estructura.plantillaId).toBe("clasica");
+    expect(resolverTema({ tipoNegocio: "tours" }, ahora).estructura.plantillaId).toBe("tours-catalogo");
   });
 
   it("no publica las secciones de ejemplo del hotel", () => {
@@ -107,5 +109,73 @@ describe("schema de las secciones de hotel", () => {
     const e = base();
     e.home.secciones.push({ ...seccion(e, "habitaciones"), id: "habitaciones-2" });
     expect(estructuraSchema.safeParse(e).success).toBe(false);
+  });
+});
+
+describe("opciones de la ficha de habitación (fase 1b)", () => {
+  it("una estructura sin `habitacion` recibe los defaults", () => {
+    const e = copiarPlantilla(buscarPlantilla("hotel-boutique"));
+    expect(resolverTema({ estructura: e, tipoNegocio: "hotel" }, ahora).estructura.layout.habitacion)
+      .toEqual({ galeria: "carrusel", servicios: true, politicas: true, mapa: true, otras: true });
+  });
+
+  it("Casa única usa la galería en mosaico y el schema rechaza una galería desconocida", () => {
+    const e = copiarPlantilla(buscarPlantilla("hotel-casa"));
+    expect(e.layout.habitacion.galeria).toBe("mosaico");
+    e.layout.habitacion.galeria = "slider";
+    expect(estructuraSchema.safeParse(e).success).toBe(false);
+  });
+});
+
+describe("tours (fase 2)", () => {
+  it("la copia del Catálogo oculta servicios y preguntas de ejemplo y deja visibles los tours y las políticas", () => {
+    const e = copiarPlantilla(buscarPlantilla("tours-catalogo"));
+    expect(seccion(e, "servicios")).toMatchObject({ oculto: true, ejemplo: true });
+    expect(seccion(e, "faq")).toMatchObject({ oculto: true, ejemplo: true });
+    expect(seccion(e, "tours").oculto).toBeUndefined();
+    expect(seccion(e, "politicas").oculto).toBeUndefined();
+    expect(seccion(e, "hero")).toMatchObject({ buscador: true, titulo: null });
+  });
+
+  it("habitaciones no existe en tours ni tours en hotel", () => {
+    const tours = copiarPlantilla(buscarPlantilla("tours-catalogo")).home.secciones;
+    expect(seccionesAjenas(tours, "tours")).toEqual({});
+    expect(Object.keys(seccionesAjenas(tours, "hotel"))).toHaveLength(1);
+  });
+
+  it("layout.tour toma defaults y el Operador usa la galería en mosaico", () => {
+    const e = copiarPlantilla(buscarPlantilla("tours-catalogo"));
+    expect(resolverTema({ estructura: e, tipoNegocio: "tours" }, ahora).estructura.layout.tour)
+      .toEqual({ galeria: "carrusel", itinerario: true, incluye: true, otros: true });
+    expect(copiarPlantilla(buscarPlantilla("tours-operador")).layout.tour.galeria).toBe("mosaico");
+  });
+});
+
+describe("eventos con entradas (fase 3)", () => {
+  it("un organizador sin estructura se ve con la Cartelera, sin las secciones de ejemplo", () => {
+    const { estructura } = resolverTema({ tipoNegocio: "eventos" }, ahora);
+    expect(estructura.plantillaId).toBe("eventos-cartelera");
+    expect(estructura.home.secciones.map((s) => s.tipo)).toEqual(["hero", "eventos", "politicas", "contacto"]);
+  });
+
+  it("la clásica guardada antes de la fase 3 deja de publicarse en eventos", () => {
+    const estructura = copiarPlantilla(buscarPlantilla("clasica"));
+    expect(resolverTema({ estructura, tipoNegocio: "eventos" }, ahora).estructura.plantillaId).toBe("eventos-cartelera");
+  });
+
+  it("la sección eventos no existe en tours ni tours en eventos", () => {
+    const eventos = copiarPlantilla(buscarPlantilla("eventos-unico")).home.secciones;
+    expect(seccionesAjenas(eventos, "eventos")).toEqual({});
+    expect(Object.keys(seccionesAjenas(eventos, "tours"))).toHaveLength(1);
+  });
+
+  it("valida la variante agenda y layout.evento toma defaults", () => {
+    const e = copiarPlantilla(buscarPlantilla("eventos-unico"));
+    expect(estructuraSchema.safeParse(e).success).toBe(true);
+    expect(seccion(e, "eventos").variante).toBe("agenda");
+    expect(e.layout.evento).toEqual({ galeria: "mosaico", mapa: true, otros: false });
+    const cartelera = copiarPlantilla(buscarPlantilla("eventos-cartelera"));
+    expect(resolverTema({ estructura: cartelera, tipoNegocio: "eventos" }, ahora).estructura.layout.evento)
+      .toEqual({ galeria: "carrusel", mapa: true, otros: true });
   });
 });

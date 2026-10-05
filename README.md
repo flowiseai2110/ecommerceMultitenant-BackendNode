@@ -401,3 +401,15 @@ CREATE TABLE metodos_envio (
   
 
  #INSTRUCCIONES: 1. analiza si es necesario instalar redis como cache es sufiente otra forma de cachear los datos #LIMITES: esta aplicacion la estoy pensando implementar en Peru, Latinoamerica #salida muestra un cuadro comparativo
+
+
+ #cuentas del proyecto
+
+  
+  sentry.io
+  diegoarmando21.10@gmail.com
+  
+
+  cloudfare
+  https://dash.cloudflare.com/
+  diegoarmando21.10@gmail.com

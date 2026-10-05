@@ -76,10 +76,11 @@ describe("estructuraSchema (R4.3)", () => {
   });
 
   it("todos los presets de sección pasan el schema", () => {
-    const secciones = Object.entries(PRESETS_SECCION)
-      .filter(([tipo]) => tipo !== "hero")
-      .map(([tipo, p]) => ({ ...p, id: tipo }));
-    expect(errores(seccionesSchema, [{ ...PRESETS_SECCION.hero, id: "hero" }, ...secciones])).toEqual({});
+    // Uno por uno detrás de la portada: hay más tipos que MAX_SECCIONES.
+    const hero = { ...PRESETS_SECCION.hero, id: "hero" };
+    for (const [tipo, p] of Object.entries(PRESETS_SECCION).filter(([t]) => t !== "hero")) {
+      expect([tipo, errores(seccionesSchema, [hero, { ...p, id: tipo }])]).toEqual([tipo, {}]);
+    }
   });
 });
 

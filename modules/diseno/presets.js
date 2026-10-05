@@ -46,5 +46,9 @@ export const PRESETS_SECCION = congelar({
     ]
   },
   ubicacion: { tipo: "ubicacion", fondo: "superficie", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true },
-  politicas: { tipo: "politicas", fondo: "pagina", titulo: "Antes de reservar" }
+  politicas: { tipo: "politicas", fondo: "pagina", titulo: "Antes de reservar" },
+  // Tours (fase 2).
+  tours: { tipo: "tours", variante: "grilla", fondo: "superficie", titulo: "Nuestros tours" },
+  // Eventos con entradas (fase 3).
+  eventos: { tipo: "eventos", variante: "grilla", fondo: "superficie", titulo: "Próximos eventos" }
 });

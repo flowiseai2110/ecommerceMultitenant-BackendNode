@@ -3,7 +3,7 @@ import { buscarPaleta, PALETA_DEFAULT } from "./paletas.js";
 import { buscarTipografia, TIPOGRAFIA_DEFAULT } from "./tipografias.js";
 import { copiarPlantilla } from "./copia.js";
 import { migrarEstructura } from "./migrar.js";
-import { productoSchema } from "./secciones.schema.js";
+import { eventoSchema, habitacionSchema, productoSchema, tourSchema } from "./secciones.schema.js";
 
 /**
  * Tema tal como lo recibe el storefront (R6.1): estructura completa, paleta y
@@ -12,7 +12,8 @@ import { productoSchema } from "./secciones.schema.js";
  * - Sin estructura guardada (o ilegible): la plantilla por defecto de su tipo
  *   de negocio, con los textos de la clave `hero`. Para productos es la
  *   clásica: ninguna tienda cambia de aspecto sin que el dueño elija una
- *   plantilla (R2.4). Un hotel usa la Boutique (diseno-por-rubro H4).
+ *   plantilla (R2.4). Un hotel usa la Boutique, una agencia el Catálogo y un
+ *   organizador de eventos la Cartelera (diseno-por-rubro H4).
  * - Sin tema: la paleta y la tipografía que se ven hoy (R2.5).
  * - Las secciones ocultas no se publican, y una oferta sin fecha o vencida
  *   tampoco (R6.2).
@@ -34,8 +35,15 @@ export function resolverTema({ tema, estructura, hero, tipoNegocio } = {}, ahora
   return {
     estructura: {
       ...base,
-      // Una estructura guardada antes de que existiera `producto` toma los defaults.
-      layout: { ...base.layout, producto: productoSchema.parse(base.layout?.producto ?? {}) },
+      // Una estructura guardada antes de que existieran `producto`,
+      // `habitacion`, `tour` o `evento` toma los defaults.
+      layout: {
+        ...base.layout,
+        producto: productoSchema.parse(base.layout?.producto ?? {}),
+        habitacion: habitacionSchema.parse(base.layout?.habitacion ?? {}),
+        tour: tourSchema.parse(base.layout?.tour ?? {}),
+        evento: eventoSchema.parse(base.layout?.evento ?? {})
+      },
       home: { secciones }
     },
     paleta: buscarPaleta(tema?.paleta) ?? buscarPaleta(PALETA_DEFAULT),
