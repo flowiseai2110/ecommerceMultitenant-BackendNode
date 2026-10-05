@@ -1,6 +1,6 @@
 import { Router } from "express";
-import rateLimit from "express-rate-limit";
 import config from "../../config/index.js";
+import { crearLimitador } from "../../kernel/http/rate-limit.js";
 import { validate } from "../../middlewares/validation.middleware.js";
 import {
   authMiddleware,
@@ -24,17 +24,11 @@ import {
 const router = Router();
 
 // Anti-spam de escritura, aparte del limiter global.
-const resenaLimiter = rateLimit({
+const resenaLimiter = crearLimitador({
   windowMs: config.rateLimit.windowMs,
   max: config.resenas.rateLimitMax,
-  message: {
-    status: 429,
-    type: "ERROR",
-    code: "TOO_MANY_REVIEWS",
-    data: { message: "Enviaste demasiadas reseñas en poco tiempo, intenta más tarde" }
-  },
-  standardHeaders: true,
-  legacyHeaders: false
+  code: "TOO_MANY_REVIEWS",
+  message: "Enviaste demasiadas reseñas en poco tiempo, intenta más tarde"
 });
 
 /**

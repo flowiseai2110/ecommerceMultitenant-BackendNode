@@ -24,7 +24,10 @@ export async function getCalendario(tiendaId, anio) {
  * `fecha` llega validada como "YYYY-MM-DD".
  */
 export async function getVistaPrevia(tiendaId, fecha) {
-  const diseno = await getDiseno(tiendaId);
+  const [diseno, tienda] = await Promise.all([
+    getDiseno(tiendaId),
+    prisma.tiendas.findUnique({ where: { id: tiendaId }, select: { tipoNegocio: true } })
+  ]);
   const mediodia = new Date(inicioDiaLima(parsearFecha(fecha)).getTime() + 12 * 3_600_000);
-  return { fecha, ...disenoPublico(diseno, mediodia) };
+  return { fecha, ...disenoPublico(diseno, mediodia, tienda?.tipoNegocio) };
 }

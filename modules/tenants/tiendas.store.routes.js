@@ -39,7 +39,7 @@ router.get("/", validate({ query: paginationSchema }), async (req, res, next) =>
       // Sin la lista de campañas (nunca se publican las futuras) y con la
       // vigente ya resuelta en hora de Lima. La caché de 60 s hace que un
       // cambio de campaña tarde como máximo un minuto en verse (R3.4).
-      data[0].diseno = disenoPublico(await getDiseno(data[0].id), new Date());
+      data[0].diseno = disenoPublico(await getDiseno(data[0].id), new Date(), data[0].tipoNegocio);
     }
 
     const responsePayload = { status: 200, type: "SUCCESS", code: "TIENDA_LIST", data, meta };

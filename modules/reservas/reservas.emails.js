@@ -57,20 +57,30 @@ const fila = (etiqueta, valor) => `
   </tr>`;
 
 const esTour = (r) => r.tipo === "tour";
+const esEvento = (r) => r.tipo === "evento";
+const hora = new Intl.DateTimeFormat("es-PE", { timeZone: "America/Lima", hour: "2-digit", minute: "2-digit", hour12: false });
 
 /** Cómo se nombra al negocio y al inicio del servicio en cada vertical. */
-const voz = (r) => (esTour(r)
+const voz = (r) => (esEvento(r)
+  ? { Negocio: "El organizador", alNegocio: "al organizador", enNegocio: "en el lugar", inicio: "el inicio de la función", conf: "tu compra" }
+  : esTour(r)
   ? { Negocio: "La agencia", alNegocio: "a la agencia", enNegocio: "en destino", inicio: "la hora de salida", conf: "la disponibilidad de la salida" }
   : { Negocio: "El hotel", alNegocio: "al hotel", enNegocio: "en el hotel", inicio: "la hora de ingreso", conf: "la disponibilidad" });
 
 function textoPersonas(r) {
   if (esTour(r)) return (r.pasajeros ?? []).map(p => `${p.cantidad} ${p.nombre.toLowerCase()}`).join(", ") || "—";
+  if (esEvento(r)) return (r.entradas ?? []).map(e => `${e.nombre} × ${e.cantidad}`).join(", ") || "—";
   return `${r.adultos} ${r.adultos === 1 ? "adulto" : "adultos"}${r.ninos ? `, ${r.ninos} ${r.ninos === 1 ? "niño" : "niños"}` : ""}`;
 }
 
 /** Resumen de la estadía o del tour, igual en todos los correos. */
 function resumen(r) {
-  const detalle = esTour(r)
+  const detalle = esEvento(r)
+    ? fila("Evento", e(r.producto.nombre ?? "—")) +
+      fila("Función", e(`${fechaHora(r.inicio)}${r.evento?.funcion ? ` · ${r.evento.funcion}` : ""}`)) +
+      (r.evento?.lugar ? fila("Lugar", e(r.evento.lugar)) : "") +
+      fila("Entradas", e(textoPersonas(r)))
+    : esTour(r)
     ? fila("Tour", e(r.producto.nombre ?? "—")) +
       fila("Salida", e(fechaHora(r.inicio))) +
       (r.tour?.puntoEncuentro ? fila("Punto de encuentro", e(r.tour.puntoEncuentro)) : "") +
@@ -99,6 +109,22 @@ export function solicitudRecibidaEmail(r, url) {
         texto(`Si no la confirma antes de ${voz(r).inicio}, la solicitud se anula sola. Puedes seguir el estado desde el botón de abajo.`),
       cuerpo: resumen(r) + boton(url, "Ver mi reserva"),
       pie: "Todavía no tienes una reserva confirmada: esto es una solicitud."
+    })
+  };
+}
+
+/** Al comprador de entradas: el cupo está apartado, falta pagar. */
+export function compraPendienteEmail(r, url) {
+  const hasta = r.evento?.apartadoHasta ? hora.format(new Date(r.evento.apartadoHasta)) : null;
+  return {
+    subject: `Apartamos tus entradas ${r.codigo} — completa el pago`,
+    html: layout({
+      titulo: "Apartamos tus entradas",
+      intro:
+        texto(`Hola ${e(r.titular.nombres)}, tus entradas para <strong>${e(r.producto.nombre ?? "")}</strong> están apartadas. Para confirmarlas, paga <strong>${soles(r.montoAPagar)}</strong> y sube la captura desde el link${hasta ? ` antes de las <strong>${hasta}</strong>` : ""}.`) +
+        texto("Si no subes la captura a tiempo, las entradas vuelven a la venta."),
+      cuerpo: resumen(r) + boton(url, "Pagar y subir mi captura"),
+      pie: "Tu compra se confirma cuando el organizador verifica el pago."
     })
   };
 }
@@ -172,19 +198,23 @@ export function pagoSubidoEmail(r) {
 /** Al cliente: confirmada (spec R8). */
 export function confirmadaEmail(r, url) {
   const enHotel = r.comprobanteEn === "en_el_servicio";
+  const evento = esEvento(r);
+  const lugar = evento ? r.evento?.lugar ?? r.producto.nombre : r.negocio.nombre;
+  const direccion = evento ? r.evento?.direccion : r.negocio.direccion;
   return {
-    subject: `✅ Reserva confirmada ${r.codigo} — ${r.negocio.nombre}`,
+    subject: evento ? `✅ Entradas confirmadas ${r.codigo} — ${r.producto.nombre}` : `✅ Reserva confirmada ${r.codigo} — ${r.negocio.nombre}`,
     html: layout({
-      titulo: "¡Tu reserva está confirmada!",
+      titulo: evento ? "¡Tus entradas están confirmadas!" : "¡Tu reserva está confirmada!",
       intro:
-        texto(`Hola ${e(r.titular.nombres)}, te esperamos en <strong>${e(r.negocio.nombre)}</strong>${r.negocio.direccion ? ` (${e(r.negocio.direccion)})` : ""}.`) +
+        texto(`Hola ${e(r.titular.nombres)}, te esperamos en <strong>${e(lugar)}</strong>${direccion ? ` (${e(direccion)})` : ""}.`) +
         texto(`${enHotel ? "Pagado a cuenta" : "Pagado"}: <strong>${soles(r.montoPagado)}</strong>.${r.saldoDestino > 0 ? ` Saldo a pagar ${voz(r).enNegocio}: <strong>${soles(r.saldoDestino)}</strong>.` : ""}`) +
-        (enHotel && !esTour(r) ? texto("Los consumos durante tu estadía se pagan en el hotel. Tu boleta o factura se entrega al finalizar tu estadía.") : "") +
+        (enHotel && !esTour(r) && !evento ? texto("Los consumos durante tu estadía se pagan en el hotel. Tu boleta o factura se entrega al finalizar tu estadía.") : "") +
         (r.modalidad?.tipo === "horas" ? texto(`Tu estadía es de ${e(fechaHora(r.inicio))} a ${e(fechaHora(r.fin))}. Si llegas más tarde, la hora de salida no cambia.`) : "") +
         (r.tour?.recojo ? texto(`<strong>Recojo:</strong> ${e(r.tour.recojo)}`) : "") +
         (r.instrucciones ? texto(`<strong>Importante:</strong> ${e(r.instrucciones)}`) : ""),
       cuerpo: resumen(r) + boton(url, "Ver mi confirmación"),
-      pie: esTour(r) ? "Presenta esta confirmación o tu código de reserva en la salida." : "Presenta esta confirmación o tu código de reserva al llegar."
+      pie: esEvento(r) ? "Presenta esta confirmación o tu código de compra y tu documento en el ingreso."
+        : esTour(r) ? "Presenta esta confirmación o tu código de reserva en la salida." : "Presenta esta confirmación o tu código de reserva al llegar."
     })
   };
 }

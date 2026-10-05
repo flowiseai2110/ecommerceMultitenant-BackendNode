@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
-import rateLimit from "express-rate-limit";
 import config from "../../config/index.js";
+import { crearLimitador } from "../../kernel/http/rate-limit.js";
 import { validate } from "../../middlewares/validation.middleware.js";
 import { scopeBodyToTienda, optionalAuth } from "../../kernel/tenant/index.js";
 import { apiResponse } from "../../utils/apiResponse.js";
@@ -16,17 +16,11 @@ const router = Router();
 // descuenta stock, así que un bot creando pedidos falsos puede vaciar el
 // inventario de una tienda (OWASP OAT-021 Denial of Inventory). Un cliente
 // legítimo no crea más de un puñado de pedidos por ventana.
-const checkoutLimiter = rateLimit({
+const checkoutLimiter = crearLimitador({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.checkoutMax,
-  message: {
-    status: 429,
-    type: "ERROR",
-    code: "TOO_MANY_ORDERS",
-    data: { message: "Has creado demasiados pedidos en poco tiempo, intenta más tarde" }
-  },
-  standardHeaders: true,
-  legacyHeaders: false
+  code: "TOO_MANY_ORDERS",
+  message: "Has creado demasiados pedidos en poco tiempo, intenta más tarde"
 });
 
 // ============================================
@@ -70,36 +64,24 @@ const rastrearQuerySchema = z.object({
   verificacion: z.string().regex(/^\d{4}$/, "Ingresa los últimos 4 dígitos de tu WhatsApp").optional()
 });
 
-const limiteRastreoIp = rateLimit({
+const limiteRastreoIp = crearLimitador({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.rastreoMax,
-  message: {
-    status: 429,
-    type: "ERROR",
-    code: "TOO_MANY_REQUESTS",
-    data: { message: "Demasiadas consultas de seguimiento, intenta más tarde" }
-  },
-  standardHeaders: true,
-  legacyHeaders: false
+  code: "TOO_MANY_REQUESTS",
+  message: "Demasiadas consultas de seguimiento, intenta más tarde"
 });
 
 // Por pedido y no por IP: así la fuerza bruta sobre los 10.000 códigos no se
 // reparte entre muchas IPs. Solo cuenta intentos fallidos. Quien lo dispare
 // bloquea 15 min la verificación de ese pedido, no el nivel público ni la sesión.
-const limiteVerificacion = rateLimit({
+const limiteVerificacion = crearLimitador({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.rastreoVerificacionMax,
   skip: (req) => !req.validatedQuery?.verificacion,
   skipSuccessfulRequests: true,
   keyGenerator: (req) => `${req.validatedQuery.tiendaId}:${req.params.numeroPedido.toUpperCase()}`,
-  message: {
-    status: 429,
-    type: "ERROR",
-    code: "TOO_MANY_REQUESTS",
-    data: { message: "Demasiados intentos de verificación para este pedido, intenta en unos minutos" }
-  },
-  standardHeaders: true,
-  legacyHeaders: false
+  code: "TOO_MANY_REQUESTS",
+  message: "Demasiados intentos de verificación para este pedido, intenta en unos minutos"
 });
 
 router.get(

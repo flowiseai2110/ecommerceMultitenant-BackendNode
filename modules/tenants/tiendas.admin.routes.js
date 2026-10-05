@@ -11,7 +11,7 @@ import { uploadLogo, uploadBanner } from "../../controllers/tiendas-imagen.contr
 import { seedMetodosPagoParaTienda } from "../../services/metodos-pago-seed.service.js";
 import { seedMetodosEnvioParaTienda } from "../../services/metodos-envio-seed.service.js";
 import { disenoAdmin, saveDiseno } from "../../services/tienda-diseno.service.js";
-import { aplicarPlantilla, deshacerEstructura, getDisenoAdmin } from "../diseno/diseno.service.js";
+import { aplicarPlantilla, deshacerEstructura, getDisenoAdmin, validarEstructuraDeTienda } from "../diseno/diseno.service.js";
 import { aplicarPlantillaSchema } from "../diseno/secciones.schema.js";
 import { getPlantillasWhatsapp, savePlantillasWhatsapp } from "../../services/tienda-plantillas-whatsapp.service.js";
 import { logger } from "../../config/logger.js";
@@ -198,6 +198,8 @@ router.put(
   invalidateTiendasListCache,
   async (req, res, next) => {
     try {
+      // Solo secciones del tipo de negocio de la tienda (diseno-por-rubro H3).
+      await validarEstructuraDeTienda(req.params.id, req.body.estructura);
       const diseno = disenoAdmin(await saveDiseno(req.params.id, req.body, req.user));
       return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_UPDATED", data: diseno });
     } catch (error) {

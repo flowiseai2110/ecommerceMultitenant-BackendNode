@@ -27,6 +27,7 @@ import { calcularEnvioToolDef, ejecutarCalcularEnvio } from "./tools/calcular-en
 import { estadoPedidoToolDef, ejecutarEstadoPedido } from "./tools/estado-pedido.js";
 import { ejecutarToolHotel, systemPromptHotel, toolsHotel } from "./perfiles/hotel.js";
 import { ejecutarToolTours, systemPromptTours, toolsTours } from "./perfiles/tours.js";
+import { ejecutarToolEventos, systemPromptEventos, toolsEventos } from "./perfiles/eventos.js";
 
 /**
  * Perfiles de las verticales de reserva (mini booking). Sin perfil rige el
@@ -40,6 +41,10 @@ const PERFILES = {
   tours: {
     system: systemPromptTours, tools: toolsTours, ejecutar: ejecutarToolTours,
     busqueda: "buscar_tours", saludo: "¿Qué tour te gustaría hacer?"
+  },
+  eventos: {
+    system: systemPromptEventos, tools: toolsEventos, ejecutar: ejecutarToolEventos,
+    busqueda: "ver_eventos", saludo: "¿A qué evento te gustaría ir?"
   }
 };
 

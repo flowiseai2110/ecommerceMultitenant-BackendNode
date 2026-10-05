@@ -35,5 +35,16 @@ export const PRESETS_SECCION = congelar({
   },
   oferta: { tipo: "oferta", titulo: "Oferta por tiempo limitado", texto: "", textoBoton: "Ver ofertas", oculto: true, terminaEn: null },
   cinta: { tipo: "cinta", estilo: "primario", oculto: true, items: ["Escribe un mensaje corto", "Por ejemplo, cómo te pagan"] },
-  contacto: { tipo: "contacto", titulo: "¿Dudas? Escríbenos.", texto: "Te ayudamos a elegir por WhatsApp." }
+  contacto: { tipo: "contacto", titulo: "¿Dudas? Escríbenos.", texto: "Te ayudamos a elegir por WhatsApp." },
+  // Hospedaje (docs/specs/diseno-por-rubro).
+  habitaciones: { tipo: "habitaciones", variante: "grilla", fondo: "superficie", titulo: "Nuestras habitaciones" },
+  servicios: {
+    tipo: "servicios", variante: "iconos", fondo: "suave", titulo: "Servicios", oculto: true,
+    items: [
+      { icono: "wifi", titulo: "Escribe un servicio que ofreces" },
+      { icono: "desayuno", titulo: "Y otro más" }
+    ]
+  },
+  ubicacion: { tipo: "ubicacion", fondo: "superficie", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true },
+  politicas: { tipo: "politicas", fondo: "pagina", titulo: "Antes de reservar" }
 });

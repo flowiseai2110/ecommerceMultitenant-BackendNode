@@ -16,16 +16,40 @@ import { FORMATO_ACTUAL, migrarEstructura } from "./migrar.js";
 
 export const TIPOS_SECCION = [
   "hero", "categorias", "productos", "beneficios", "testimonios",
-  "imagen-texto", "faq", "oferta", "cinta", "contacto"
+  "imagen-texto", "faq", "oferta", "cinta", "contacto",
+  // Hospedaje (docs/specs/diseno-por-rubro, fase 1).
+  "habitaciones", "servicios", "ubicacion", "politicas"
 ];
+
+// Secciones que puede usar cada tipo de negocio (docs/specs/diseno-por-rubro).
+// Las de e-commerce no existen en un hotel y las de hotel no existen en una
+// tienda de productos. Un tipo sin lista propia (tours, por ahora) usa la de
+// productos, que es lo que ve hoy.
+const TIPOS_COMUNES = ["hero", "beneficios", "testimonios", "imagen-texto", "faq", "cinta", "contacto"];
+export const TIPOS_POR_NEGOCIO = Object.freeze({
+  productos: Object.freeze([...TIPOS_COMUNES, "categorias", "productos", "oferta"]),
+  hotel: Object.freeze([...TIPOS_COMUNES, "habitaciones", "servicios", "ubicacion", "politicas"])
+});
+
+/** Tipos de sección permitidos para un tipo de negocio. */
+export function tiposPermitidos(tipoNegocio) {
+  return TIPOS_POR_NEGOCIO[tipoNegocio] ?? TIPOS_POR_NEGOCIO.productos;
+}
+
 export const MAX_SECCIONES = 15;
 // Máximo de secciones por tipo (como el `limit` de las secciones de Shopify).
 // Los que no están aquí no tienen tope propio (solo el total).
 export const MAX_POR_TIPO = Object.freeze({
   hero: 1, categorias: 1, testimonios: 1, faq: 1, oferta: 1, cinta: 1, contacto: 1,
-  "imagen-texto": 3, productos: 4
+  "imagen-texto": 3, productos: 4,
+  habitaciones: 1, servicios: 1, ubicacion: 1, politicas: 1
 });
 export const ICONOS_BENEFICIO = ["envio", "pago", "cambios", "soporte", "garantia", "rapido", "calidad"];
+// Servicios de un hospedaje. El storefront tiene un ícono para cada uno.
+export const ICONOS_SERVICIO = [
+  "wifi", "desayuno", "agua-caliente", "cochera", "recepcion", "aire", "calefaccion", "tv",
+  "lavanderia", "traslado", "mascotas", "piscina", "restaurante", "terraza", "cocina", "equipaje", "accesible", "tours"
+];
 
 const texto = (max) => z.string().trim().min(1, "No puede estar vacío").max(max, `Máximo ${max} caracteres`);
 const textoOpcional = (max) => z.string().trim().max(max, `Máximo ${max} caracteres`).nullable().optional();
@@ -46,7 +70,9 @@ const seccionSchema = z.discriminatedUnion("tipo", [
     variante: z.enum(["imagen-completa", "compacto", "dividido", "minimal"]),
     titulo: textoOpcional(100),
     subtitulo: textoOpcional(300),
-    textoBoton: textoOpcional(50)
+    textoBoton: textoOpcional(50),
+    // Hotel: llegada, noches y huéspedes sobre la portada (diseno-por-rubro H8).
+    buscador: z.boolean().optional()
   }),
   z.object({
     ...base,
@@ -131,8 +157,63 @@ const seccionSchema = z.discriminatedUnion("tipo", [
     tipo: z.literal("contacto"),
     titulo: texto(80),
     texto: texto(400)
+  }),
+  // ── Hospedaje (docs/specs/diseno-por-rubro) ──
+  // Las habitaciones salen de la vitrina; el dueño solo elige cómo se ven.
+  z.object({
+    ...base,
+    tipo: z.literal("habitaciones"),
+    variante: z.enum(["grilla", "carrusel"]),
+    fondo,
+    titulo: texto(80),
+    subtitulo: textoOpcional(160),
+    limite: z.number().int().min(1).max(12).optional()
+  }),
+  z.object({
+    ...base,
+    tipo: z.literal("servicios"),
+    variante: z.enum(["iconos", "lista"]),
+    fondo,
+    titulo: texto(80),
+    items: z
+      .array(z.object({ icono: z.enum(ICONOS_SERVICIO), titulo: texto(40) }))
+      .min(2, "Agrega al menos 2 servicios")
+      .max(12, "Máximo 12 servicios")
+  }),
+  // La dirección es la de la tienda; "cercanos" son frases del dueño.
+  z.object({
+    ...base,
+    tipo: z.literal("ubicacion"),
+    fondo,
+    titulo: texto(80),
+    texto: textoOpcional(300),
+    cercanos: z.array(texto(60)).max(4, "Máximo 4 lugares cercanos").default([]),
+    mapa: z.boolean().default(true)
+  }),
+  // Check-in, check-out y cancelación salen de la configuración de reservas.
+  z.object({
+    ...base,
+    tipo: z.literal("politicas"),
+    fondo,
+    titulo: texto(80)
   })
 ]);
+
+/**
+ * Errores de las secciones que no corresponden al tipo de negocio de la
+ * tienda (diseno-por-rubro H3), con la ruta que el admin usa para marcar la
+ * tarjeta de la sección. Vacío si todas están permitidas.
+ */
+export function seccionesAjenas(secciones, tipoNegocio) {
+  const permitidos = tiposPermitidos(tipoNegocio);
+  const body = {};
+  secciones.forEach((s, i) => {
+    if (!permitidos.includes(s.tipo)) {
+      body[`estructura.home.secciones.${i}.tipo`] = [`La sección "${s.tipo}" no está disponible para este tipo de negocio`];
+    }
+  });
+  return body;
+}
 
 // Lista de secciones de la home (R4.3). Los errores apuntan a la sección
 // culpable para que el admin los muestre en su tarjeta.

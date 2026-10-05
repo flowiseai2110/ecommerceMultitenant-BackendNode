@@ -93,15 +93,16 @@ export function resolverCampana(campanasTienda = [], widgetsTienda = [], ahora) 
 /**
  * Diseño tal como lo recibe el storefront en `ahora`: sin la lista de
  * campañas (nunca se publican las futuras) y con la vigente resuelta.
+ * `tipoNegocio` elige la estructura por defecto (docs/specs/diseno-por-rubro).
  */
-export function disenoPublico(diseno = {}, ahora) {
+export function disenoPublico(diseno = {}, ahora, tipoNegocio) {
   // tema/estructura viajan resueltos en `tema` (docs/specs/estructura-tienda);
   // la estructura anterior (para "Deshacer") es solo del admin.
   const { campanas, tema, estructura, estructura_anterior, ...publico } = diseno;
   return {
     ...publico,
     campana: resolverCampana(campanas, publico.widgets, ahora),
-    tema: resolverTema({ tema, estructura, hero: publico.hero }, ahora)
+    tema: resolverTema({ tema, estructura, hero: publico.hero, tipoNegocio }, ahora)
   };
 }
 

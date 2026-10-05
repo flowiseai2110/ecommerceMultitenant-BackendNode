@@ -1,6 +1,6 @@
 import { Router } from "express";
-import rateLimit from "express-rate-limit";
 import config from "../../config/index.js";
+import { crearLimitador } from "../../kernel/http/rate-limit.js";
 import { validate } from "../../middlewares/validation.middleware.js";
 import { scopeBodyToTienda } from "../../kernel/tenant/index.js";
 import { apiResponse } from "../../utils/apiResponse.js";
@@ -13,17 +13,11 @@ const router = Router();
 
 // Rate limit del pago, alineado al del checkout: procesar cargos es sensible y
 // un bot no debería martillar el endpoint. Reusa el tope de checkout.
-const pagoLimiter = rateLimit({
+const pagoLimiter = crearLimitador({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.checkoutMax,
-  message: {
-    status: 429,
-    type: "ERROR",
-    code: "TOO_MANY_PAYMENTS",
-    data: { message: "Demasiados intentos de pago en poco tiempo, intenta más tarde" }
-  },
-  standardHeaders: true,
-  legacyHeaders: false
+  code: "TOO_MANY_PAYMENTS",
+  message: "Demasiados intentos de pago en poco tiempo, intenta más tarde"
 });
 
 // ============================================

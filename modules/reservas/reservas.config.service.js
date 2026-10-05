@@ -24,7 +24,12 @@ const BASE = {
   politicaCancelacion: null,
   horaCheckin: "14:00",
   horaCheckout: "12:00",
-  avisoProximoTexto: null
+  avisoProximoTexto: null,
+  // Solo eventos
+  apartadoManualMin: 120,
+  maxEntradasPorCompra: 10,
+  umbralUltimasEntradas: 20,
+  cierrePagoManualHoras: null
 };
 
 const POR_VERTICAL = {
@@ -37,7 +42,8 @@ const POR_VERTICAL = {
 
 export const CAMPOS_CONFIG = [
   "modoConfirmacion", "cobro", "adelantoPct", "anticipacionMinHoras", "avisoProximoHoras", "avisoProximoTexto",
-  "maxSolicitudesAbiertas", "instrucciones", "politicaCancelacion", "horaCheckin", "horaCheckout", "comprobanteEn"
+  "maxSolicitudesAbiertas", "instrucciones", "politicaCancelacion", "horaCheckin", "horaCheckout", "comprobanteEn",
+  "apartadoManualMin", "maxEntradasPorCompra", "umbralUltimasEntradas", "cierrePagoManualHoras"
 ];
 
 /** Defaults de una vertical, sin consultar la BD (para tests y para el seed). */
@@ -87,7 +93,10 @@ export function configPublica(config) {
     politicaCancelacion: config.politicaCancelacion,
     horaCheckin: config.horaCheckin,
     horaCheckout: config.horaCheckout,
-    comprobanteEn: config.comprobanteEn
+    comprobanteEn: config.comprobanteEn,
+    apartadoManualMin: config.apartadoManualMin,
+    maxEntradasPorCompra: config.maxEntradasPorCompra,
+    cierrePagoManualHoras: config.cierrePagoManualHoras
   };
 }
 

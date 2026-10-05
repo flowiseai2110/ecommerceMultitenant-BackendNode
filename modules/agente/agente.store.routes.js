@@ -1,6 +1,6 @@
 import { Router } from "express";
-import rateLimit from "express-rate-limit";
 import config from "../../config/index.js";
+import { crearLimitador } from "../../kernel/http/rate-limit.js";
 import { validate } from "../../middlewares/validation.middleware.js";
 import { requireTienda } from "../../middlewares/resolve-tienda.middleware.js";
 import { optionalAuth } from "../../middlewares/auth.middleware.js";
@@ -18,28 +18,22 @@ const router = Router();
 const MINUTO_MS = 60 * 1000;
 
 const mensajeLimite = {
-  status: 429,
-  type: "ERROR",
   code: "TOO_MANY_AI_REQUESTS",
-  data: { message: "Demasiadas consultas al asesor, espera un momento." }
+  message: "Demasiadas consultas al asesor, espera un momento."
 };
 
-const limiteIp = rateLimit({
+const limiteIp = crearLimitador({
   windowMs: MINUTO_MS,
   max: config.agente.rateLimitIpMin,
-  message: mensajeLimite,
-  standardHeaders: true,
-  legacyHeaders: false
+  ...mensajeLimite
 });
 
-const limiteSesion = rateLimit({
+const limiteSesion = crearLimitador({
   windowMs: MINUTO_MS,
   max: config.agente.rateLimitSesionMin,
   // Después de validate: el token ya tiene un charset cerrado.
   keyGenerator: (req) => `${req.tiendaId}:${req.body.sessionToken}`,
-  message: mensajeLimite,
-  standardHeaders: true,
-  legacyHeaders: false
+  ...mensajeLimite
 });
 
 // optionalAuth: con sesión, estado_pedido puede ver los pedidos del cliente (req.user).

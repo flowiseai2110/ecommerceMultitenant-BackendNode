@@ -37,11 +37,18 @@ const pasajerosDe = (r) => (Array.isArray(r.pasajeros) ? r.pasajeros : []).map(p
   tipoId: p.tipoId, nombre: p.nombre, cantidad: p.cantidad, precio: num(p.precio)
 }));
 
+/** Entradas de una compra de evento (snapshot guardado al comprar). */
+const entradasDe = (pedido) => (pedido.itemsEvento ?? []).map(i => ({
+  tipoId: i.tipoEntradaId, nombre: i.nombre, cantidad: i.cantidad, precio: num(i.precio)
+}));
+
 function base(pedido, ahora) {
   const r = pedido.reserva;
   const esTour = r.tipo === "tour";
+  const esEvento = r.tipo === "evento";
   const pasajeros = esTour ? pasajerosDe(r) : null;
-  const estado = estadoEfectivo({ estado: pedido.estado, inicio: r.inicio, fin: r.fin }, ahora);
+  const entradas = esEvento ? entradasDe(pedido) : null;
+  const estado = estadoEfectivo({ estado: pedido.estado, inicio: r.inicio, fin: r.fin, apartadoHasta: r.apartadoHasta }, ahora);
   return {
     id: pedido.id,
     codigo: pedido.numeroPedido,
@@ -54,8 +61,8 @@ function base(pedido, ahora) {
       slug: r.producto?.slug ?? null,
       imagenUrl: imagenPrincipal(r.producto)
     },
-    // Solo hotel: un tour no tiene modalidad de estadía.
-    modalidad: esTour ? null : {
+    // Solo hotel: tours y eventos no tienen modalidad de estadía.
+    modalidad: esTour || esEvento ? null : {
       id: r.modalidadId,
       tipo: r.modalidad?.tipo ?? (r.horas ? "horas" : "noche"),
       etiqueta: etiquetaModalidad(r.modalidad, r)
@@ -74,7 +81,20 @@ function base(pedido, ahora) {
       puntoEncuentro: r.producto?.tour?.puntoEncuentro ?? null,
       recojo: r.producto?.tour?.recojo ?? null
     } : null,
-    personas: esTour ? pasajeros.reduce((s, p) => s + p.cantidad, 0) : (r.adultos ?? 0) + (r.ninos ?? 0),
+    // Función y lugar del evento; hasta cuándo se guarda el cupo si falta pagar.
+    evento: esEvento ? {
+      funcionId: r.funcionId,
+      funcion: r.funcion?.nombre ?? null,
+      lugar: r.producto?.evento?.lugar ?? null,
+      direccion: r.producto?.evento?.direccion ?? null,
+      mapaUrl: r.producto?.evento?.mapaUrl ?? null,
+      organizador: r.producto?.evento?.organizador ?? null,
+      apartadoHasta: estado === "por_pagar" ? r.apartadoHasta : null
+    } : null,
+    entradas,
+    personas: esTour ? pasajeros.reduce((s, p) => s + p.cantidad, 0)
+      : esEvento ? entradas.reduce((s, e) => s + e.cantidad, 0)
+        : (r.adultos ?? 0) + (r.ninos ?? 0),
     total: num(pedido.total),
     montoAPagar: num(r.montoAPagar),
     saldoDestino: num(r.saldoDestino),
@@ -103,7 +123,7 @@ export function serializeReservaStore(pedido, { tienda, config, metodosPago = []
   const r = pedido.reserva;
   const dto = base(pedido, ahora);
   const pago = ultimoPagoManual(pedido.pagos);
-  const esperaPago = dto.estado === "aceptada";
+  const esperaPago = dto.estado === "aceptada" || dto.estado === "por_pagar";
   return {
     ...dto,
     lineas: lineas(pedido),
@@ -120,7 +140,7 @@ export function serializeReservaStore(pedido, { tienda, config, metodosPago = []
       // Datos de pago solo cuando toca pagar (R6.2).
       metodos: esperaPago ? metodosPago : [],
       capturaSubida: Boolean(pago),
-      rechazoMotivo: pago?.estado === "fallido" && dto.estado === "aceptada" ? pago.metadata?.motivo ?? null : null
+      rechazoMotivo: pago?.estado === "fallido" && esperaPago ? pago.metadata?.motivo ?? null : null
     },
     factura: pedido.comprobante === "factura" ? { ruc: pedido.comprobanteDocNumero, razonSocial: pedido.razonSocial } : null,
     negocio: {
@@ -133,7 +153,7 @@ export function serializeReservaStore(pedido, { tienda, config, metodosPago = []
     instrucciones: config.instrucciones,
     politicaCancelacion: config.politicaCancelacion,
     comprobanteEn: config.comprobanteEn,
-    puedeCancelar: ["solicitada", "aceptada"].includes(dto.estado)
+    puedeCancelar: ["solicitada", "aceptada", "por_pagar"].includes(dto.estado)
   };
 }
 

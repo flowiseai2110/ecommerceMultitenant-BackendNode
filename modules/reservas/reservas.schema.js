@@ -34,7 +34,7 @@ const monto = z.coerce.number().min(0, "El monto no puede ser negativo").max(999
 // STORE
 // ============================================
 
-// Superconjunto de hotel y tours: cada vertical exige sus campos al cotizar
+// Superconjunto de hotel, tours y eventos: cada vertical exige sus campos al cotizar
 // (la tienda define la vertical, y el body no la trae).
 const estadiaBase = {
   tiendaId: uuid("tiendaId"),
@@ -51,7 +51,13 @@ const estadiaBase = {
     tipoId: uuid("tipoId"),
     cantidad: z.coerce.number().int().min(0).max(200)
   })).max(10).optional().default([]),
-  idioma: z.string().trim().toLowerCase().regex(/^[a-z]{2}$/, "Idioma inválido").nullish().transform(v => v || null)
+  idioma: z.string().trim().toLowerCase().regex(/^[a-z]{2}$/, "Idioma inválido").nullish().transform(v => v || null),
+  // Eventos
+  funcionId: uuid("funcionId").nullish().transform(v => v || null),
+  entradas: z.array(z.object({
+    tipoId: uuid("tipoId"),
+    cantidad: z.coerce.number().int().min(0).max(50)
+  })).max(20).optional().default([])
 };
 
 export const cotizarSchema = z.object(estadiaBase);
@@ -215,6 +221,53 @@ export const tourSchema = z.object({
   }
 });
 
+// "YYYY-MM-DDTHH:mm" en hora de Lima (valor de un <input type="datetime-local">).
+const fechaHoraLocal = z.string().regex(/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d/, "Fecha y hora inválidas")
+  .transform(v => v.slice(0, 16));
+
+const tipoEntradaSchema = z.object({
+  id: uuid("id").optional(),
+  nombre: texto("El nombre de la entrada", 1, 80),
+  descripcion: textoOpcional(200),
+  precio: monto,
+  cupo: z.coerce.number().int().min(1, "El cupo debe ser al menos 1").max(100000),
+  ventaHasta: fechaHoraLocal.nullish().transform(v => v || null),
+  activo: z.boolean().optional().default(true),
+  orden: z.coerce.number().int().min(0).optional()
+});
+
+const funcionSchema = z.object({
+  id: uuid("id").optional(),
+  nombre: textoOpcional(80),
+  inicio: fechaHoraLocal,
+  fin: fechaHoraLocal.nullish().transform(v => v || null),
+  activa: z.boolean().optional().default(true),
+  tipos: z.array(tipoEntradaSchema).min(1, "Cada función necesita al menos un tipo de entrada").max(15)
+}).superRefine((f, ctx) => {
+  if (f.fin && f.fin <= f.inicio) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["fin"], message: "La hora de fin debe ser posterior al inicio" });
+  }
+  const nombres = f.tipos.map(t => t.nombre.toLowerCase());
+  if (new Set(nombres).size !== nombres.length) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["tipos"], message: "Hay tipos de entrada con el mismo nombre en una función" });
+  }
+  if (f.tipos.some(t => t.ventaHasta && t.ventaHasta > f.inicio)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["tipos"], message: "La venta de una entrada no puede cerrar después del inicio de la función" });
+  }
+});
+
+export const eventoSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  lugar: textoOpcional(150),
+  direccion: textoOpcional(500),
+  mapaUrl: z.string().trim().max(500).url("Link del mapa inválido").nullish().or(z.literal("")).transform(v => v || null),
+  edadMinima: z.coerce.number().int().min(0).max(99).nullish().transform(v => v ?? null),
+  organizador: textoOpcional(150),
+  funciones: z.array(funcionSchema).min(1, "Agrega al menos una función (fecha y hora)").max(60)
+});
+
+export const funcionParamSchema = z.object({ funcionId: uuid("funcionId") });
+
 export const configSchema = z.object({
   tiendaId: uuid("tiendaId"),
   modoConfirmacion: z.enum(["solicitud", "pago_directo"]).optional(),
@@ -229,7 +282,12 @@ export const configSchema = z.object({
   politicaCancelacion: textoParcial(2000),
   horaCheckin: hora.optional(),
   horaCheckout: hora.optional(),
-  comprobanteEn: z.enum(["al_pagar", "en_el_servicio"]).optional()
+  comprobanteEn: z.enum(["al_pagar", "en_el_servicio"]).optional(),
+  // Eventos
+  apartadoManualMin: z.coerce.number().int().min(10).max(1440).optional(),
+  maxEntradasPorCompra: z.coerce.number().int().min(1).max(50).optional(),
+  umbralUltimasEntradas: z.coerce.number().int().min(1).max(1000).nullable().optional(),
+  cierrePagoManualHoras: z.coerce.number().int().min(1).max(168).nullable().optional()
 }).superRefine((d, ctx) => {
   if (d.cobro === "adelanto" && !d.adelantoPct) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adelantoPct"], message: "Indica el porcentaje de adelanto" });

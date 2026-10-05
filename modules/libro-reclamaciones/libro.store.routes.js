@@ -1,6 +1,7 @@
 import { Router } from "express";
-import rateLimit from "express-rate-limit";
 import config from "../../config/index.js";
+import { crearLimitador } from "../../kernel/http/rate-limit.js";
+import { clientIp } from "../../kernel/http/client-ip.js";
 import { logger } from "../../config/logger.js";
 import { validate } from "../../middlewares/validation.middleware.js";
 import { optionalAuth, scopeBodyToTienda, scopeQueryToTienda } from "../../kernel/tenant/index.js";
@@ -15,17 +16,11 @@ const router = Router();
 
 // Anti-spam de escritura, aparte del limiter global. Sin captcha a propósito:
 // el reglamento no permite poner barreras para reclamar (spec R3.5).
-const libroLimiter = rateLimit({
+const libroLimiter = crearLimitador({
   windowMs: config.rateLimit.windowMs,
   max: config.libro.rateLimitMax,
-  message: {
-    status: 429,
-    type: "ERROR",
-    code: "TOO_MANY_CLAIMS",
-    data: { message: "Registraste varias hojas en poco tiempo. Espera unos minutos e intenta de nuevo." }
-  },
-  standardHeaders: true,
-  legacyHeaders: false
+  code: "TOO_MANY_CLAIMS",
+  message: "Registraste varias hojas en poco tiempo. Espera unos minutos e intenta de nuevo."
 });
 
 // ============================================
@@ -67,7 +62,7 @@ router.post(
         });
       }
 
-      const { hoja, tienda } = await registrarHoja(req.body, { authUserId: req.user?.id ?? null, ip: req.ip });
+      const { hoja, tienda } = await registrarHoja(req.body, { authUserId: req.user?.id ?? null, ip: clientIp(req) });
       const token = await firmarTokenHoja({ hojaId: hoja.id, tiendaId: hoja.tiendaId });
 
       // Fire-and-forget: la constancia en pantalla no espera a los correos.

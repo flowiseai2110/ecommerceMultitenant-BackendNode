@@ -14,10 +14,37 @@ export const config = {
   supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
   jwtAudience: process.env.JWT_AUDIENCE || "authenticated",
 
-  // Rate Limiting
+  // Saltos de proxy confiables delante de la app (Express "trust proxy").
+  // 1 = solo el edge de Railway. Si el tráfico pasa además por el rewrite de
+  // Vercel, el visitante queda a 2 saltos: confirmarlo con GET /api/v1/debug/ip
+  // (DEBUG_CLIENT_IP=true) antes de subirlo. Un valor mayor al real permite
+  // falsificar la IP con X-Forwarded-For.
+  trustProxyHops: Number.isInteger(parseInt(process.env.TRUST_PROXY_HOPS))
+    ? parseInt(process.env.TRUST_PROXY_HOPS)
+    : 1,
+
+  // Expone GET /api/v1/debug/ip (diagnóstico de IP real). Apagar al terminar.
+  debugClientIp: process.env.DEBUG_CLIENT_IP === "true",
+
+  // Secreto compartido con el SSR del storefront: firma el header X-Visitor-IP
+  // (ver kernel/http/client-ip.js). Sin él, el SSR cuenta como la IP de Vercel.
+  ssr: {
+    apiKey: process.env.SSR_API_KEY || ""
+  },
+
+  // Token para /api/v1/metrics (header X-Metrics-Key). Sin token, 404.
+  metrics: {
+    token: process.env.METRICS_TOKEN || ""
+  },
+
+  // Rate Limiting (por IP real del visitante, ventana común)
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutos
-    max: parseInt(process.env.RATE_LIMIT_MAX) || 100, // máximo 100 requests por ventana
+    // Lecturas (GET/HEAD): una página del storefront hace 6-10 llamadas y en
+    // Perú los móviles salen por CGNAT (muchos clientes, una IP).
+    readMax: parseInt(process.env.RATE_LIMIT_READ_MAX) || 1000,
+    // Escrituras (POST/PUT/PATCH/DELETE)
+    max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
     // Límite específico para creación de pedidos (OWASP OAT-021 Denial of Inventory):
     // los pedidos descuentan stock al crearse, así que este endpoint necesita un
     // tope mucho más agresivo que el global

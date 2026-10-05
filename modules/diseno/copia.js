@@ -8,7 +8,9 @@ import { FORMATO_ACTUAL } from "./migrar.js";
 // entrega, "100 % originales", registro sanitario): se copian ocultas hasta
 // que el dueño las revise (R3.5). La plataforma nunca publica en nombre de la
 // tienda algo que el dueño no dijo (D.L. 1044, actos de engaño).
-export const TIPOS_CON_AFIRMACIONES = new Set(["beneficios", "cinta", "faq", "imagen-texto"]);
+// `servicios` también: "desayuno incluido" o "cochera" son promesas del
+// hospedaje (docs/specs/diseno-por-rubro H5).
+export const TIPOS_CON_AFIRMACIONES = new Set(["beneficios", "cinta", "faq", "imagen-texto", "servicios"]);
 
 const clonar = (valor) => structuredClone(valor);
 const vacio = (texto) => !texto || !String(texto).trim();

@@ -6,13 +6,15 @@ import { guardarConfig, obtenerConfig } from "./reservas.config.service.js";
 import { crearCierre, eliminarCierre, listarCierres } from "./cierres.service.js";
 import { guardarFicha, listarHabitacionesAdmin, obtenerFichaAdmin } from "./hotel/habitaciones.service.js";
 import { guardarFichaTour, listarToursAdmin, obtenerFichaTourAdmin } from "./tours/tours.service.js";
+import { asistentesFuncion, guardarFichaEvento, listarEventosAdmin, obtenerFichaEventoAdmin } from "./eventos/eventos.service.js";
 import {
   aceptarReserva, agendaReservas, cancelarPorNegocio, detalleReservaAdmin, listarReservasAdmin, marcarNoShow,
   rechazarPago, rechazarReserva, resumenReservas, verificarPago
 } from "./reservas.service.js";
 import {
   aceptarSchema, agendaQuerySchema, configSchema, crearCierreSchema, habitacionSchema, idParamSchema,
-  listarAdminQuerySchema, motivoSchema, productoParamSchema, rechazarPagoSchema, rechazarSchema, tiendaQuerySchema, tourSchema
+  listarAdminQuerySchema, motivoSchema, productoParamSchema, rechazarPagoSchema, rechazarSchema, tiendaQuerySchema, tourSchema,
+  eventoSchema, funcionParamSchema
 } from "./reservas.schema.js";
 
 /**
@@ -20,7 +22,7 @@ import {
  *
  * Roles: ver, cualquier miembro (viewer+). Responder solicitudes y verificar
  * pagos, editor+ (en un hostal pequeño el recepcionista suele ser editor).
- * Configuración, habitaciones, tours y fechas cerradas, admin+.
+ * Configuración, habitaciones, tours, eventos y fechas cerradas, admin+.
  */
 
 const router = Router();
@@ -95,6 +97,31 @@ router.put("/tours/:productoId", ...gestion, validate({ params: productoParamSch
     try {
       const { tiendaId, ...data } = req.body;
       return ok(res, "TOUR_FICHA_UPDATED", await guardarFichaTour(req.tiendaId, req.params.productoId, data, req.user));
+    } catch (error) { next(error); }
+  });
+
+// ---------- Eventos (ficha, funciones y entradas de un producto) ----------
+
+router.get("/eventos", ...lectura, validate({ query: tiendaQuerySchema }), async (req, res, next) => {
+  try { return ok(res, "EVENTOS_ADMIN", await listarEventosAdmin(req.tiendaId)); } catch (error) { next(error); }
+});
+
+// Lista de asistentes de una función (control de ingreso; reemplaza a las entradas con QR).
+router.get("/eventos/funciones/:funcionId/asistentes", ...lectura, validate({ params: funcionParamSchema, query: tiendaQuerySchema }),
+  async (req, res, next) => {
+    try { return ok(res, "EVENTO_ASISTENTES", await asistentesFuncion(req.tiendaId, req.params.funcionId)); } catch (error) { next(error); }
+  });
+
+router.get("/eventos/:productoId", ...lectura, validate({ params: productoParamSchema, query: tiendaQuerySchema }),
+  async (req, res, next) => {
+    try { return ok(res, "EVENTO_FICHA", await obtenerFichaEventoAdmin(req.tiendaId, req.params.productoId)); } catch (error) { next(error); }
+  });
+
+router.put("/eventos/:productoId", ...gestion, validate({ params: productoParamSchema, body: eventoSchema }),
+  async (req, res, next) => {
+    try {
+      const { tiendaId, ...data } = req.body;
+      return ok(res, "EVENTO_FICHA_UPDATED", await guardarFichaEvento(req.tiendaId, req.params.productoId, data, req.user));
     } catch (error) { next(error); }
   });
 

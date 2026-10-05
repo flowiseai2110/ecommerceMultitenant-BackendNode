@@ -1,6 +1,6 @@
 import { Router } from "express";
-import rateLimit from "express-rate-limit";
 import config from "../../config/index.js";
+import { crearLimitador } from "../../kernel/http/rate-limit.js";
 import { validate } from "../../middlewares/validation.middleware.js";
 import { authMiddleware, requireTiendaAccess } from "../../kernel/tenant/index.js";
 import { apiResponse } from "../../utils/apiResponse.js";
@@ -12,18 +12,12 @@ import { conConsulta } from "../consumo-ia/consumo-ia.service.js";
 const router = Router();
 
 // Cada mensaje es una llamada a un LLM (dinero): límite por usuario autenticado.
-const asistenteLimiter = rateLimit({
+const asistenteLimiter = crearLimitador({
   windowMs: config.rateLimit.windowMs,
   max: config.asistente.rateLimitMax,
   keyGenerator: (req) => req.user.id,
-  message: {
-    status: 429,
-    type: "ERROR",
-    code: "TOO_MANY_AI_REQUESTS",
-    data: { message: "Hiciste muchas preguntas seguidas. Espera unos minutos y seguimos." }
-  },
-  standardHeaders: true,
-  legacyHeaders: false
+  code: "TOO_MANY_AI_REQUESTS",
+  message: "Hiciste muchas preguntas seguidas. Espera unos minutos y seguimos."
 });
 
 // El tiendaId efectivo SIEMPRE es req.tiendaId (validado por requireTiendaAccess

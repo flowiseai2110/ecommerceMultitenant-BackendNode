@@ -35,9 +35,23 @@ function congelar(obj) {
   return Object.freeze(obj);
 }
 
+// `tipoNegocio`: el de las tiendas que pueden usarla (docs/specs/diseno-por-rubro).
 function plantilla({ layout, ...resto }) {
-  return { version: 1, ...resto, layout: { ...layout, producto: PRODUCTO_DEFAULT } };
+  return { version: 1, tipoNegocio: "productos", ...resto, layout: { ...layout, producto: PRODUCTO_DEFAULT } };
 }
+
+// Servicios de ejemplo de un hospedaje: se copian ocultos (R3.5) hasta que el
+// dueño deje solo los que de verdad ofrece.
+const S = {
+  wifi: { icono: "wifi", titulo: "Wifi gratis" },
+  desayuno: { icono: "desayuno", titulo: "Desayuno incluido" },
+  agua: { icono: "agua-caliente", titulo: "Agua caliente 24 h" },
+  recepcion: { icono: "recepcion", titulo: "Recepción 24 h" },
+  cochera: { icono: "cochera", titulo: "Cochera" },
+  equipaje: { icono: "equipaje", titulo: "Guardamos tu equipaje" },
+  cocina: { icono: "cocina", titulo: "Cocina equipada" },
+  terraza: { icono: "terraza", titulo: "Terraza" }
+};
 
 // Congelado: copia.js clona antes de modificar y nunca debe mutar el
 // catálogo compartido entre requests.
@@ -207,15 +221,78 @@ export const PLANTILLAS = congelar([
       { id: "testimonios", tipo: "testimonios", fondo: "superficie", titulo: "Casas que nos eligieron", items: [] },
       { id: "beneficios", tipo: "beneficios", variante: "franja", fondo: "pagina", items: [B.envio, B.cambios, B.pago] }
     ]
+  }),
+
+  // ── Hospedaje (docs/specs/diseno-por-rubro, fase 1) ───────────────────
+  // Boutique: buscador de fechas sobre la portada, habitaciones con precio
+  // arriba, después lo que convence (servicios, la casa, reseñas) y al final
+  // lo práctico (cómo llegar, políticas). Patrón de las webs de hoteles
+  // independientes que más reservas directas consiguen.
+  plantilla({
+    id: "hotel-boutique",
+    tipoNegocio: "hotel",
+    rubro: "hospedaje",
+    nombre: "Boutique",
+    descripcion: "Portada con buscador de fechas, habitaciones con precio, servicios, reseñas, ubicación y políticas.",
+    radio: "suave",
+    encabezados: "editorial",
+    layout: { header: { logo: "izquierda" }, productCard: { cta: "boton", imagen: "cuadrada" } },
+    secciones: [
+      { id: "hero", tipo: "hero", variante: "imagen-completa", buscador: true, titulo: "Tu descanso empieza aquí", subtitulo: "Habitaciones cómodas en el mejor lugar de la ciudad.", textoBoton: "Ver habitaciones" },
+      { id: "habitaciones", tipo: "habitaciones", variante: "grilla", fondo: "superficie", titulo: "Nuestras habitaciones", subtitulo: "Elige la tuya y envía tu solicitud: confirmamos la disponibilidad." },
+      { id: "servicios", tipo: "servicios", variante: "iconos", fondo: "suave", titulo: "Servicios", items: [S.wifi, S.desayuno, S.agua, S.recepcion, S.cochera, S.equipaje] },
+      { id: "historia", tipo: "imagen-texto", fondo: "superficie", espacio: "amplio", imagen: "banner", posicionImagen: "izquierda", kicker: "Nuestra casa", titulo: "Cuenta qué hace especial a tu hospedaje", texto: "Desde cuándo reciben huéspedes, quién los atiende y qué no se encuentra en otro lugar. Dos o tres frases bastan.", textoBoton: "Ver habitaciones" },
+      { id: "testimonios", tipo: "testimonios", fondo: "pagina", titulo: "Lo que dicen nuestros huéspedes", items: [] },
+      { id: "ubicacion", tipo: "ubicacion", fondo: "superficie", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true },
+      { id: "politicas", tipo: "politicas", fondo: "pagina", titulo: "Antes de reservar" },
+      { id: "contacto", tipo: "contacto", titulo: "¿Tienes dudas?", texto: "Escríbenos por WhatsApp y te ayudamos a elegir tu habitación." }
+    ]
+  }),
+
+  // Casa única: un solo alojamiento (casa de playa, cabaña, departamento).
+  // La portada y la historia del lugar mandan; las habitaciones (o la casa
+  // entera) van después, como en un alquiler vacacional.
+  plantilla({
+    id: "hotel-casa",
+    tipoNegocio: "hotel",
+    rubro: "hospedaje",
+    nombre: "Casa única",
+    descripcion: "Para un solo alojamiento: el lugar primero, después los espacios, servicios, reseñas y cómo llegar.",
+    radio: "redondeado",
+    encabezados: "editorial",
+    layout: { header: { logo: "centro" }, productCard: { cta: "boton", imagen: "vertical" } },
+    secciones: [
+      { id: "hero", tipo: "hero", variante: "dividido", buscador: true, titulo: "Una casa para ti solo", subtitulo: "Desconéctate en un lugar pensado para descansar.", textoBoton: "Ver disponibilidad" },
+      { id: "historia", tipo: "imagen-texto", fondo: "superficie", espacio: "amplio", imagen: "banner", posicionImagen: "derecha", kicker: "El lugar", titulo: "Describe tu casa en pocas palabras", texto: "Cuántas personas entran, qué tiene alrededor y por qué la gente vuelve. Escríbelo como se lo contarías a un amigo.", textoBoton: null },
+      { id: "habitaciones", tipo: "habitaciones", variante: "grilla", fondo: "pagina", titulo: "Elige tu espacio" },
+      { id: "servicios", tipo: "servicios", variante: "lista", fondo: "superficie", titulo: "Lo que vas a encontrar", items: [S.wifi, S.cocina, S.terraza, S.cochera] },
+      { id: "testimonios", tipo: "testimonios", fondo: "pagina", titulo: "Quienes ya se quedaron", items: [] },
+      { id: "ubicacion", tipo: "ubicacion", fondo: "superficie", titulo: "Dónde queda", texto: null, cercanos: [], mapa: true },
+      { id: "politicas", tipo: "politicas", fondo: "pagina", titulo: "Antes de reservar" },
+      { id: "contacto", tipo: "contacto", titulo: "¿Quieres saber más?", texto: "Escríbenos por WhatsApp y te contamos todo sobre la casa." }
+    ]
   })
 ]);
 
 export const PLANTILLA_IDS = PLANTILLAS.map((p) => p.id);
 export const PLANTILLA_DEFAULT = "clasica";
+// Con qué se ve una tienda sin estructura guardada, según su tipo de negocio
+// (diseno-por-rubro H4). Los tipos sin plantillas propias usan la clásica.
+const DEFAULT_POR_NEGOCIO = Object.freeze({ hotel: "hotel-boutique" });
 
 /** @param {string} id */
 export function buscarPlantilla(id) {
   return PLANTILLAS.find((p) => p.id === id) ?? null;
+}
+
+/** Plantilla por defecto de un tipo de negocio (H4). */
+export function plantillaPorDefecto(tipoNegocio) {
+  return buscarPlantilla(DEFAULT_POR_NEGOCIO[tipoNegocio] ?? PLANTILLA_DEFAULT);
+}
+
+/** Tipo de negocio de una plantilla (las viejas no lo declaran: productos). */
+export function tipoNegocioDe(plantilla) {
+  return plantilla?.tipoNegocio ?? "productos";
 }
 
 /** Plantilla sugerida para un rubro (R2.3). Sin rubro → la clásica. */

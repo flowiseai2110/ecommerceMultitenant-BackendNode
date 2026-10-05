@@ -66,6 +66,6 @@ describe("copiarPlantilla", () => {
   });
 
   it("los tipos con afirmaciones son los de la spec", () => {
-    expect([...TIPOS_CON_AFIRMACIONES].sort()).toEqual(["beneficios", "cinta", "faq", "imagen-texto"]);
+    expect([...TIPOS_CON_AFIRMACIONES].sort()).toEqual(["beneficios", "cinta", "faq", "imagen-texto", "servicios"]);
   });
 });

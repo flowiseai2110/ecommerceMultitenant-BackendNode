@@ -1,6 +1,6 @@
 import { Router } from "express";
-import rateLimit from "express-rate-limit";
 import config from "../../config/index.js";
+import { crearLimitador } from "../../kernel/http/rate-limit.js";
 import { logger } from "../../config/logger.js";
 import { validate } from "../../middlewares/validation.middleware.js";
 import { optionalAuth, scopeBodyToTienda, scopeQueryToTienda } from "../../kernel/tenant/index.js";
@@ -10,6 +10,7 @@ import { configPublica, obtenerConfig } from "./reservas.config.service.js";
 import { cierresPublicos } from "./cierres.service.js";
 import { listarHabitacionesStore, obtenerHabitacionStore } from "./hotel/habitaciones.service.js";
 import { listarToursStore, obtenerTourStore } from "./tours/tours.service.js";
+import { listarEventosStore, obtenerEventoStore } from "./eventos/eventos.service.js";
 import { verificarTokenReserva } from "./reservas.token.js";
 import { uploadCaptura } from "./reservas.capturas.js";
 import {
@@ -27,17 +28,11 @@ import {
 const router = Router();
 
 // Anti-abuso de escritura, aparte del limiter global (spec R5.7).
-const solicitudesLimiter = rateLimit({
+const solicitudesLimiter = crearLimitador({
   windowMs: config.rateLimit.windowMs,
   max: config.reservas.rateLimitMax,
-  message: {
-    status: 429,
-    type: "ERROR",
-    code: "TOO_MANY_BOOKINGS",
-    data: { message: "Enviaste varias solicitudes en poco tiempo. Espera unos minutos e intenta de nuevo." }
-  },
-  standardHeaders: true,
-  legacyHeaders: false
+  code: "TOO_MANY_BOOKINGS",
+  message: "Enviaste varias solicitudes en poco tiempo. Espera unos minutos e intenta de nuevo."
 });
 
 const ok = (res, code, data, status = 200) => apiResponse(res, { status, type: "SUCCESS", code, data });
@@ -89,6 +84,24 @@ router.get("/tours/:slug", validate({ params: slugParamSchema, query: tiendaQuer
     try {
       res.set("Cache-Control", "public, max-age=60");
       return ok(res, "TOUR", await obtenerTourStore(req.validatedQuery.tiendaId, req.params.slug));
+    } catch (error) { next(error); }
+  });
+
+// GET /eventos?tiendaId= — próximos eventos con sus funciones
+router.get("/eventos", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
+  try {
+    // Cache corto: el cupo cambia con cada compra.
+    res.set("Cache-Control", "public, max-age=15");
+    return ok(res, "EVENTOS_LIST", await listarEventosStore(req.validatedQuery.tiendaId));
+  } catch (error) { next(error); }
+});
+
+// GET /eventos/:slug?tiendaId= — ficha con funciones y entradas (disponible / últimas / agotado)
+router.get("/eventos/:slug", validate({ params: slugParamSchema, query: tiendaQuerySchema }), scopeQueryToTienda,
+  async (req, res, next) => {
+    try {
+      res.set("Cache-Control", "no-store");
+      return ok(res, "EVENTO", await obtenerEventoStore(req.validatedQuery.tiendaId, req.params.slug));
     } catch (error) { next(error); }
   });
 

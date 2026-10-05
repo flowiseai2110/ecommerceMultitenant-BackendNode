@@ -2,13 +2,15 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
-import rateLimit from "express-rate-limit";
 import swaggerUi from "swagger-ui-express";
 
 import config from "./config/index.js";
 import { logger } from "./config/logger.js";
 import { prisma } from "./config/prisma.js";
 import { runWithTenantContext } from "./kernel/tenant/index.js";
+import { crearLimitador } from "./kernel/http/rate-limit.js";
+import { resolveClientIp } from "./kernel/http/client-ip.js";
+import { requireMetricsToken } from "./middlewares/metrics-auth.middleware.js";
 import routes from "./routes/index.js";
 import { swaggerSpec } from "./config/swagger.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
@@ -23,10 +25,11 @@ const app = express();
 
 // Railway (y cualquier PaaS) pone la app detrás de su proxy: sin esto,
 // req.ip es la IP del proxy y el rate limiting cuenta a TODOS los visitantes
-// como una sola IP. "1" = confiar solo en el primer salto (el edge de Railway);
-// no usar "true" porque permitiría a un cliente falsificar su IP vía
-// X-Forwarded-For y evadir el rate limit.
-app.set("trust proxy", 1);
+// como una sola IP. Se confía en un número exacto de saltos (TRUST_PROXY_HOPS,
+// por defecto 1 = edge de Railway); nunca "true", porque permitiría a un
+// cliente falsificar su IP vía X-Forwarded-For y evadir el rate limit.
+// El SSR del storefront no pasa por aquí: ver kernel/http/client-ip.js.
+app.set("trust proxy", config.trustProxyHops);
 
 // ============================================
 // MIDDLEWARES DE SEGURIDAD
@@ -46,20 +49,24 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// Rate Limiting - Protección contra ataques de fuerza bruta
-const limiter = rateLimit({
+// Rate Limiting global por IP real del visitante. Lecturas y escrituras con
+// contadores separados: navegar el catálogo no debe consumir el cupo de
+// escrituras, y las escrituras sensibles (checkout, reseñas...) tienen además
+// su propio límite por ruta.
+const esLectura = (req) => req.method === "GET" || req.method === "HEAD";
+const mensajeLimiteGlobal = { code: "TOO_MANY_REQUESTS", message: "Demasiadas solicitudes, intente más tarde" };
+app.use(crearLimitador({
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.readMax,
+  skip: (req) => !esLectura(req),
+  ...mensajeLimiteGlobal
+}));
+app.use(crearLimitador({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.max,
-  message: {
-    status: 429,
-    type: "ERROR",
-    code: "TOO_MANY_REQUESTS",
-    data: { message: "Demasiadas solicitudes, intente más tarde" }
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-});
-app.use(limiter);
+  skip: esLectura,
+  ...mensajeLimiteGlobal
+}));
 
 // ============================================
 // MIDDLEWARES DE PARSING
@@ -90,8 +97,11 @@ app.use(performanceMiddleware);
 // MÉTRICAS DE PERFORMANCE
 // ============================================
 
+// Protegidas con METRICS_TOKEN (header X-Metrics-Key). Sin token configurado
+// responden 404, igual que una ruta inexistente.
+app.use("/api/v1/metrics", requireMetricsToken);
+
 // GET /api/v1/metrics — estadísticas acumuladas por ruta (desde el último reinicio)
-// IMPORTANTE: proteger con IP allowlist o auth antes de exponer en internet
 app.get("/api/v1/metrics", (req, res) => {
   const routes = getRouteMetrics();
   res.json({
@@ -112,6 +122,35 @@ app.post("/api/v1/metrics/reset", (req, res) => {
   resetRouteMetrics();
   res.json({ status: 200, type: "SUCCESS", code: "METRICS_RESET", data: null });
 });
+
+// GET /api/v1/debug/ip — diagnóstico temporal (DEBUG_CLIENT_IP=true): qué IP
+// ve el backend y qué headers trajo la request. Abrirlo desde el dominio de
+// una tienda (pasa por el rewrite de Vercel) y compararlo con la IP real.
+// Devuelve al visitante solo sus propios datos.
+if (config.debugClientIp) {
+  app.get("/api/v1/debug/ip", (req, res) => {
+    const { ip, source } = resolveClientIp(req);
+    res.json({
+      status: 200,
+      type: "SUCCESS",
+      code: "DEBUG_IP",
+      data: {
+        clientIp: ip,
+        source,
+        trustProxyHops: config.trustProxyHops,
+        reqIp: req.ip,
+        reqIps: req.ips,
+        socket: req.socket.remoteAddress,
+        headers: {
+          "x-forwarded-for": req.get("x-forwarded-for") ?? null,
+          "x-real-ip": req.get("x-real-ip") ?? null,
+          "x-vercel-forwarded-for": req.get("x-vercel-forwarded-for") ?? null,
+          "x-vercel-id": req.get("x-vercel-id") ?? null
+        }
+      }
+    });
+  });
+}
 
 // ============================================
 // DOCUMENTACIÓN SWAGGER

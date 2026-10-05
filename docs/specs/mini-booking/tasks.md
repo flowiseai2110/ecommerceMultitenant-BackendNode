@@ -100,20 +100,38 @@
 
 ---
 
-# Fase 3 — Eventos (por implementar)
+# Fase 3 — Eventos
 
-Diseño en [plan.md](plan.md) ("Eventos", "Eventos: apartado de cupo"). Flujo distinto a hotel y tours: compra con **cupo real** apartado, sin solicitud.
+## Decisiones tomadas al implementar
+
+- **Sin entradas con QR ni validación en la puerta** (decisión del usuario, 2026-10-05). La compra confirmada (código + documento del titular) es la constancia, y el organizador controla el ingreso con la **lista de asistentes por función** (imprimible, con búsqueda por código, apellido o documento). Se descartan `entradas`, `qr_token`, `POST /admin/entradas/validar` y la pantalla con cámara.
+- **Misma tabla `reservas`** (titular, inicio/fin, montos, seguimiento, captura, bandeja) con `tipo = 'evento'`, `funcion_id` y `apartado_hasta`. Las entradas de cada compra van en `evento_compra_items` (snapshot de nombre y precio).
+- **Sin tabla de apartados**: el cupo apartado es la suma de los items de compras `pago_en_revision` o `por_pagar` con `apartado_hasta > now()` (y la función sin empezar). Lo vencido deja de contar solo, sin cron. `vendidos` sube al verificar el pago y baja si se cancela una compra confirmada.
+- **Concurrencia**: la compra crea el pedido y, en la misma transacción, bloquea los tipos (`FOR UPDATE`, orden por id), vuelve a contar el cupo y registra los items; si otra persona se llevó las últimas, 409 `AGOTADO` y no se crea nada. El CHECK `vendidos <= cupo` respalda.
+- **Estados**: `por_pagar` (cupo apartado `apartado_manual_min`, nunca después de la función) → `pago_en_revision` (no vence; el cupo sigue apartado) → `confirmada` → `completada` al terminar la función (fin o inicio + 6 h). "No corresponde" vuelve a `por_pagar` con un apartado nuevo. Sin `aceptar`/`rechazar` ni `no_show`.
+- **Entrada libre (precio 0)**: la compra nace `confirmada` y suma a `vendidos` en la misma transacción (registro de asistentes sin pago).
+- **Solo pago manual** (como hotel y tours); la pasarela sigue en T1.14. `cierre_pago_manual_horas` cierra la **venta en línea** N horas antes (es el único medio de pago).
+- **Anti-acaparamiento**: `max_solicitudes_abiertas` cuenta las compras que retienen cupo (`por_pagar` vigentes y `pago_en_revision`) del mismo WhatsApp o documento.
+- **Fechas y horas del admin** como `"YYYY-MM-DDTHH:mm"` de Lima (`<input type="datetime-local">`).
+- **Ficha**: una función o un tipo con compras no se borra (se desactiva); el cupo no baja de vendidas + apartadas (se valida con los tipos bloqueados).
+- Al organizador no se le avisa cada compra por correo (cuota de Resend): solo cuando el comprador sube la captura.
 
 ## Backend
-- [ ] **T3.1** SQL + Prisma: `eventos`, `evento_funciones`, `evento_tipos_entrada`, `evento_apartados`, `entradas`; columnas de eventos en `config_reservas` (`cierre_pago_manual_horas`, `apartado_pasarela_min`, `apartado_manual_min`, `max_entradas_por_compra`, `umbral_ultimas_entradas`).
-- [ ] **T3.2** Estados de evento (`por_pagar` → `pago_en_revision` → `confirmada` / `vencida`), con vencimiento del apartado calculado al leer.
-- [ ] **T3.3** `GET /store/eventos/:slug/funciones` con disponibilidad (`cupo − vendidos − apartados vigentes`), "Agotado" / "Últimas entradas" y métodos de pago por función (cierre del pago manual).
-- [ ] **T3.4** `POST /store/eventos/compras`: `FOR UPDATE` de los tipos, validar cupo, crear pedido `por_pagar` + apartados (idempotency key). Tests de concurrencia (dos compras por la última entrada).
-- [ ] **T3.5** Captura del pago manual, verificación del organizador y emisión de entradas (`vendidos += n`, borrar apartados, `qr_token` HMAC, código legible).
-- [ ] **T3.6** `GET /store/entradas/:token` y correo con las entradas.
-- [ ] **T3.7** Admin: CRUD de evento + funciones + tipos de entrada; bandeja de compras; `POST /admin/entradas/validar` (QR o código, uso único); búsqueda en la puerta y "verificar y emitir" (R9.7).
-- [ ] **T3.8** Asesor IA: `ver_eventos`, `ver_entradas`.
+- [x] **T3.1** `docs/sql/mini_booking_eventos.sql`: `eventos`, `evento_funciones`, `evento_tipos_entrada`, `evento_compra_items`; `reservas.funcion_id`, `reservas.apartado_hasta`, `reservas.tipo` VARCHAR(10) con `evento`; columnas de eventos en `config_reservas`; CHECKs y RLS. Prisma + `TENANT_SCOPED_MODELS`.
+- [x] **T3.2** Máquina de estados de eventos (`TRANSICIONES_EVENTO`) y vencimiento del apartado en `estadoEfectivo` / `persistirVencimientos`.
+- [x] **T3.3** `eventos/cotizar.js`: disponibilidad, estado de venta (disponible / últimas / agotado / cerrado), venta hasta, cierre de la venta en línea, máximo por compra, aviso. Tests.
+- [x] **T3.4** `eventos/eventos.service.js`: vitrina, `apartarEntradas` (FOR UPDATE + recuento), `moverVendidos`, ficha del admin, lista de asistentes. Tests.
+- [x] **T3.5** Vertical `eventos` en `reservas.service.js` (estado inicial, cupo en la transacción, verificar / rechazar pago / cancelar con el cupo). Serializer (`entradas`, `evento`) y correos (`compraPendienteEmail`, confirmación de entradas). Tests.
+- [x] **T3.6** Rutas: `GET /store/reservas/eventos[/:slug]`, `GET/PUT /admin/reservas/eventos[/:productoId]`, `GET /admin/reservas/eventos/funciones/:funcionId/asistentes`. `cotizarSchema` con `funcionId` y `entradas`; `eventoSchema`; config de eventos.
+- [x] **T3.7** Asesor IA: `ver_eventos` (estado real de las entradas, sin precios ni cantidades) e `info_organizador`. Tests.
 
-## Admin / Tienda
-- [ ] **T3.10** Admin: eventos, funciones y entradas; pantalla móvil "Validar entradas" (cámara con `BarcodeDetector` + código manual).
-- [ ] **T3.20** Tienda: grilla de eventos, ficha con funciones y entradas, compra con contador del apartado (fuera de la zona de Angular, tras `afterNextRender`), pago manual con aviso R9.6, página de entradas con QR.
+## Admin
+- [x] **T3.10** Menú y formulario de tienda para `eventos`; lista de eventos; ficha "Funciones y entradas" (lugar, mapa, organizador, edad mínima, funciones con tipos de entrada, precio, cupo, venta hasta, activar / desactivar); lista de asistentes imprimible; detalle y bandeja con entradas; configuración de venta (minutos para pagar, máximo por compra, "Últimas entradas", cierre de la venta en línea).
+
+## Tienda
+- [x] **T3.20** Cartelera (home y `/eventos`), ficha con funciones y entradas (estado por tipo, cantidades, total), compra en `/reservar?evento=&funcion=&e=` con datos del comprador, seguimiento con el cupo apartado "hasta las HH:mm", pago y captura, confirmación de compra imprimible.
+
+## Pendientes
+- [ ] **T3.30** Correr `docs/sql/mini_booking_eventos.sql` (después de los de fase 1 y 2) y `npx prisma generate`.
+- [ ] **T3.31** Recorrer en el navegador: tienda tipo eventos, evento con 2 funciones y General / VIP, comprar, subir captura, verificar, lista de asistentes; probar dos compras por la última entrada.
+- [ ] **T3.32** Pasarela (T1.14): confirmación instantánea y apartado corto (`apartado_pasarela_min`).

@@ -381,6 +381,7 @@ model productos {
   // Mini booking: ficha de hotel o de tour (1:1), fechas cerradas y reservas de este producto
   hotelTipo hotel_tipos_habitacion?
   tour      tours?
+  evento    eventos?
   cierres   cierres_fecha[]
   reservas  reservas[]
 
@@ -571,6 +572,7 @@ model pedidos {
   resenas          resenas[]
   hojasReclamacion libro_reclamaciones[]
   reserva          reservas?
+  itemsEvento      evento_compra_items[]
 
   @@unique([tiendaId, numeroPedido], name: "uq_numero_pedido")
   @@unique([tiendaId, idempotencyKey], name: "uq_pedidos_idempotency")
@@ -973,6 +975,11 @@ model config_reservas {
   horaCheckin            String  @default("14:00") @map("hora_checkin") @db.VarChar(5)
   horaCheckout           String  @default("12:00") @map("hora_checkout") @db.VarChar(5)
   comprobanteEn          String  @default("al_pagar") @map("comprobante_en") @db.VarChar(14) // al_pagar | en_el_servicio
+  // Solo eventos (fase 3)
+  apartadoManualMin      Int     @default(120) @map("apartado_manual_min") // minutos que el cupo queda apartado mientras se paga
+  maxEntradasPorCompra   Int     @default(10) @map("max_entradas_por_compra")
+  umbralUltimasEntradas  Int?    @default(20) @map("umbral_ultimas_entradas") // "Últimas entradas" si quedan menos; null = nunca
+  cierrePagoManualHoras  Int?    @map("cierre_pago_manual_horas") // sin Yape/transferencia N h antes de la función
 
   // Auditoría
   fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
@@ -1035,22 +1042,25 @@ model hotel_modalidades {
   @@index([productoId], name: "idx_hotel_modalidades_producto")
 }
 
-// Detalle de una reserva de hotel o tour. El dinero, el cliente y el
-// comprobante viven en `pedidos`; aquí, la estadía y el titular.
+// Detalle de una reserva de hotel, tour o compra de entradas. El dinero, el
+// cliente y el comprobante viven en `pedidos`; aquí, el servicio y el titular.
 model reservas {
-  pedidoId    String    @id @map("pedido_id") @db.Uuid
-  tiendaId    String    @map("tienda_id") @db.Uuid
-  tipo        String    @db.VarChar(5) // hotel | tour
-  productoId  String    @map("producto_id") @db.Uuid
-  modalidadId String?   @map("modalidad_id") @db.Uuid
-  inicio      DateTime  @db.Timestamptz // ingreso / salida del tour
-  fin         DateTime? @db.Timestamptz // salida del hotel (calculada)
-  noches      Int?
-  horas       Int?
-  adultos     Int?
-  ninos       Int?
-  pasajeros   Json?     @db.JsonB // tours: [{ tipoId, nombre, cantidad, precio }] (snapshot)
-  idioma      String?   @db.VarChar(5) // tours: idioma elegido (es, en, ...)
+  pedidoId      String    @id @map("pedido_id") @db.Uuid
+  tiendaId      String    @map("tienda_id") @db.Uuid
+  tipo          String    @db.VarChar(10) // hotel | tour | evento
+  productoId    String    @map("producto_id") @db.Uuid
+  modalidadId   String?   @map("modalidad_id") @db.Uuid
+  inicio        DateTime  @db.Timestamptz // ingreso / salida del tour
+  fin           DateTime? @db.Timestamptz // salida del hotel (calculada)
+  noches        Int?
+  horas         Int?
+  adultos       Int?
+  ninos         Int?
+  pasajeros     Json?     @db.JsonB // tours: [{ tipoId, nombre, cantidad, precio }] (snapshot)
+  idioma        String?   @db.VarChar(5) // tours: idioma elegido (es, en, ...)
+  funcionId     String?   @map("funcion_id") @db.Uuid // eventos: función comprada
+  // Eventos: hasta cuándo el cupo queda apartado esperando la captura del pago.
+  apartadoHasta DateTime? @map("apartado_hasta") @db.Timestamptz
 
   // Titular (registro de huésped)
   titularNombres      String    @map("titular_nombres") @db.VarChar(100)
@@ -1074,8 +1084,10 @@ model reservas {
   pedido    pedidos            @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
   producto  productos          @relation(fields: [productoId], references: [id])
   modalidad hotel_modalidades? @relation(fields: [modalidadId], references: [id], onDelete: SetNull)
+  funcion   evento_funciones?  @relation(fields: [funcionId], references: [id], onDelete: Restrict)
 
   @@index([tiendaId, inicio], name: "idx_reservas_tienda_inicio")
+  @@index([funcionId], name: "idx_reservas_funcion")
 }
 
 // Ficha de tour de un producto (agencia de tours, fase 2). Sin cupo por
@@ -1118,4 +1130,78 @@ model tour_tipos_pasajero {
   tour tours @relation(fields: [productoId], references: [productoId], onDelete: Cascade)
 
   @@index([productoId], name: "idx_tour_tipos_producto")
+}
+
+// Ficha de evento de un producto (fase 3). A diferencia de hotel y tours, el
+// cupo es real: cada tipo de entrada tiene un cupo y se vende sin confirmación.
+model eventos {
+  productoId  String  @id @map("producto_id") @db.Uuid
+  tiendaId    String  @map("tienda_id") @db.Uuid
+  lugar       String? @db.VarChar(150) // "Teatro Municipal de Lima"
+  direccion   String? @db.Text
+  mapaUrl     String? @map("mapa_url") @db.VarChar(500) // link de Google Maps
+  edadMinima  Int?    @map("edad_minima")
+  organizador String? @db.VarChar(150) // productora o responsable visible al comprador
+
+  producto  productos          @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  funciones evento_funciones[]
+
+  @@index([tiendaId], name: "idx_eventos_tienda")
+}
+
+// Fecha y hora de un evento ("Sábado 18:00", "Función de noche").
+model evento_funciones {
+  id         String    @id @default(uuid()) @db.Uuid
+  tiendaId   String    @map("tienda_id") @db.Uuid
+  productoId String    @map("producto_id") @db.Uuid
+  nombre     String?   @db.VarChar(80)
+  inicio     DateTime  @db.Timestamptz
+  fin        DateTime? @db.Timestamptz // null = se asume inicio + 6 h
+  activa     Boolean   @default(true)
+
+  evento       eventos                @relation(fields: [productoId], references: [productoId], onDelete: Cascade)
+  tiposEntrada evento_tipos_entrada[]
+  reservas     reservas[]
+
+  @@index([productoId, inicio], name: "idx_evento_funciones_evento")
+  @@index([tiendaId, inicio], name: "idx_evento_funciones_tienda")
+}
+
+// Tipo de entrada de una función: precio y cupo ("General", "VIP", "Preventa").
+model evento_tipos_entrada {
+  id          String    @id @default(uuid()) @db.Uuid
+  tiendaId    String    @map("tienda_id") @db.Uuid
+  funcionId   String    @map("funcion_id") @db.Uuid
+  nombre      String    @db.VarChar(80)
+  descripcion String?   @db.VarChar(200)
+  precio      Decimal   @db.Decimal(10, 2)
+  cupo        Int
+  // Confirmadas. Lo apartado (compras sin pagar o en revisión) se calcula aparte.
+  vendidos    Int       @default(0)
+  ventaHasta  DateTime? @map("venta_hasta") @db.Timestamptz // null = hasta el inicio de la función
+  activo      Boolean   @default(true)
+  orden       Int       @default(0)
+
+  funcion evento_funciones      @relation(fields: [funcionId], references: [id], onDelete: Cascade)
+  items   evento_compra_items[]
+
+  @@index([funcionId], name: "idx_evento_tipos_funcion")
+}
+
+// Entradas de una compra (snapshot de nombre y precio). El cupo apartado es la
+// suma de los items de compras `por_pagar` vigentes o `pago_en_revision`.
+model evento_compra_items {
+  id            String  @id @default(uuid()) @db.Uuid
+  tiendaId      String  @map("tienda_id") @db.Uuid
+  pedidoId      String  @map("pedido_id") @db.Uuid
+  tipoEntradaId String  @map("tipo_entrada_id") @db.Uuid
+  nombre        String  @db.VarChar(80)
+  cantidad      Int
+  precio        Decimal @db.Decimal(10, 2)
+
+  pedido      pedidos              @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  tipoEntrada evento_tipos_entrada @relation(fields: [tipoEntradaId], references: [id], onDelete: Restrict)
+
+  @@index([tipoEntradaId], name: "idx_evento_items_tipo")
+  @@index([pedidoId], name: "idx_evento_items_pedido")
 }
