@@ -3,3 +3,7 @@ node_modules
 /generated/prisma
 .claude/
 nul
+
+# Datos generados por scripts/seed-carga.mjs y resultados de k6
+/load-tests/data/
+/load-tests/resultados/

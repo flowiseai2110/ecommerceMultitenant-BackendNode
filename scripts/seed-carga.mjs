@@ -25,6 +25,10 @@
 //   --meses N          meses de historial sobre los que se reparten las fechas (6)
 //   --imagenes URLS    URLs de imagen separadas por coma, para producto_imagenes
 //                      (por defecto SEED_IMAGENES del .env o un placeholder)
+//   --owner-user-id ID user_id (Supabase Auth) de un usuario de prueba que queda
+//                      como "owner" de cada tienda: lo usa k6 para probar el admin
+//   --exportar RUTA    JSON con tiendas, productos y categorías para k6
+//                      (load-tests/data/tiendas-carga.json)
 //   --base-mb N        tamaño actual de la base de PRODUCCIÓN en MB, para que la
 //                      proyección parta de él (por defecto, el tamaño de esta
 //                      base antes de sembrar)
@@ -38,10 +42,14 @@
 
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 
 const USUARIO_SEED = "seed-carga";
 const PREFIJO_SLUG = "carga-";
 const LOTE = 1000;
+const EXPORTAR_POR_DEFECTO = "load-tests/data/tiendas-carga.json";
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Perfiles de actividad mensual por tienda para la proyección final.
 const PERFILES = [
@@ -111,7 +119,12 @@ function leerOpciones(args) {
   const baseMb = args["base-mb"] === undefined ? null : Number(args["base-mb"]);
   if (baseMb !== null && !(baseMb >= 0)) throw new Error("--base-mb debe ser un número >= 0");
 
+  const ownerUserId = args["owner-user-id"] === undefined ? null : String(args["owner-user-id"]);
+  if (ownerUserId !== null && !UUID.test(ownerUserId)) throw new Error("--owner-user-id debe ser un UUID");
+
   return {
+    ownerUserId,
+    exportar: typeof args.exportar === "string" ? args.exportar : EXPORTAR_POR_DEFECTO,
     baseBytes: baseMb === null ? null : baseMb * 1024 ** 2,
     tiendas: entero(args.tiendas, 5, "tiendas"),
     productos: rango(args.productos, "40-50"),
@@ -520,6 +533,24 @@ function imprimirProyeccion(costos, totalActual) {
     PERFILES.map((p) => `${p.nombre} = ${p.pedidos} pedidos, ${p.mensajes} mensajes, ${p.resenas} reseñas`).join("; "));
 }
 
+/** Datos que k6 necesita para recorrer las tiendas sin consultar la BD. */
+function exportarParaK6(ruta, tiendas, catalogos, pedidosPorTienda) {
+  const datos = tiendas.map((t) => {
+    const c = catalogos.get(t.id);
+    return {
+      id: t.id,
+      slug: t.fila.slug,
+      rubro: t.rubro,
+      categorias: c.categorias.map((cat) => ({ id: cat.id, slug: cat.slug })),
+      productos: c.productos.map((p) => p.id),
+      pedidos: pedidosPorTienda.get(t.id).pedidos.slice(0, 50).map((p) => p.id)
+    };
+  });
+  mkdirSync(dirname(ruta), { recursive: true });
+  writeFileSync(ruta, JSON.stringify({ generado: new Date().toISOString(), tiendas: datos }, null, 2));
+  console.log(`\n  ✔ datos para k6 en ${ruta}`);
+}
+
 // ── Comandos ─────────────────────────────────────────────────────────────────
 
 async function sembrar(prisma, opciones, servicios) {
@@ -552,6 +583,11 @@ async function sembrar(prisma, opciones, servicios) {
   let totalProductos = 0;
   for (const t of tiendas) {
     await prisma.tiendas.create({ data: { id: t.id, ...t.fila } });
+    if (opciones.ownerUserId) {
+      await prisma.usuario_tiendas.create({
+        data: { userId: opciones.ownerUserId, tiendaId: t.id, rol: "owner", usuarioRegistro: USUARIO_SEED }
+      });
+    }
     await servicios.seedMetodosPagoParaTienda(t.id);
     await servicios.seedMetodosEnvioParaTienda(t.id);
     const c = generarCatalogo(t.id, t.rubro, opciones);
@@ -623,6 +659,8 @@ async function sembrar(prisma, opciones, servicios) {
     console.log("  ⚠ Con pocos registros la medición es imprecisa (Postgres reserva páginas de 8 KB): usa más volumen.");
   }
 
+  exportarParaK6(opciones.exportar, tiendas, catalogos, pedidosPorTienda);
+
   console.log(`\nBase de datos: ${mb(inicio.total)} → ${mb(fin.total)}`);
   imprimirTablaTamanos(fin);
   imprimirProyeccion(costos, opciones.baseBytes ?? inicio.total);
@@ -651,6 +689,7 @@ async function limpiar(prisma) {
   await prisma.categorias.deleteMany({ where });
   await prisma.metodos_pago.deleteMany({ where });
   await prisma.metodos_envio.deleteMany({ where });
+  await prisma.usuario_tiendas.deleteMany({ where });
   await prisma.tiendas.deleteMany({ where: { id: { in: ids } } });
 
   console.log(`Borradas ${tiendas.length} tiendas de carga y todos sus datos.`);
