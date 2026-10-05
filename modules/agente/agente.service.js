@@ -26,6 +26,22 @@ import { indicadoresPrecio, contienePrecio } from "./precios.js";
 import { calcularEnvioToolDef, ejecutarCalcularEnvio } from "./tools/calcular-envio.js";
 import { estadoPedidoToolDef, ejecutarEstadoPedido } from "./tools/estado-pedido.js";
 import { ejecutarToolHotel, systemPromptHotel, toolsHotel } from "./perfiles/hotel.js";
+import { ejecutarToolTours, systemPromptTours, toolsTours } from "./perfiles/tours.js";
+
+/**
+ * Perfiles de las verticales de reserva (mini booking). Sin perfil rige el
+ * asesor de productos (catálogo, envíos, pedidos).
+ */
+const PERFILES = {
+  hotel: {
+    system: systemPromptHotel, tools: toolsHotel, ejecutar: ejecutarToolHotel,
+    busqueda: "ver_habitaciones", saludo: "¿Qué habitación estás buscando?"
+  },
+  tours: {
+    system: systemPromptTours, tools: toolsTours, ejecutar: ejecutarToolTours,
+    busqueda: "buscar_tours", saludo: "¿Qué tour te gustaría hacer?"
+  }
+};
 
 // Si el texto del modelo trae un monto (inventado: no recibe precios).
 const CORRECCION_PRECIO =
@@ -147,15 +163,16 @@ export async function responderTurno({
 }) {
   const client = getClient();
 
-  // Perfil según la vertical (mini booking): un hotel no tiene catálogo con
-  // stock ni envíos, tiene habitaciones que el hotel confirma. Lo resuelve
-  // resolveTienda junto con el tiendaId; sin dato rige el perfil de productos.
-  const esHotel = tipoNegocio === "hotel";
+  // Perfil según la vertical (mini booking): un hotel o una agencia no tienen
+  // catálogo con stock ni envíos, tienen habitaciones o tours que el negocio
+  // confirma. Lo resuelve resolveTienda junto con el tiendaId; sin dato rige
+  // el perfil de productos.
+  const perfil = PERFILES[tipoNegocio] ?? null;
 
-  const system = esHotel ? systemPromptHotel(tiendaNombre) : buildSystemPrompt(tiendaNombre);
-  const facetas = esHotel ? null : await obtenerFacetas(tiendaId);
-  const tools = esHotel
-    ? toolsHotel
+  const system = perfil ? perfil.system(tiendaNombre) : buildSystemPrompt(tiendaNombre);
+  const facetas = perfil ? null : await obtenerFacetas(tiendaId);
+  const tools = perfil
+    ? perfil.tools
     : [buildBuscarProductosToolDef(facetas), calcularEnvioToolDef, estadoPedidoToolDef];
 
   // Historial del cliente + mensaje nuevo, en el formato del Messages API.
@@ -222,16 +239,14 @@ export async function responderTurno({
           if (r.pedidos) extras.pedidos = r.pedidos;
           return r.paraModelo;
         }
-        case "ver_habitaciones":
-        case "info_hotel": {
-          if (!esHotel) return { error: `Herramienta desconocida: ${bloque.name}` };
-          const r = await ejecutarToolHotel(bloque.name, bloque.input, { tiendaId });
-          if (bloque.name === "ver_habitaciones" && r.tarjetas.length === 0) senales.busquedasSinResultados++;
+        default: {
+          // Solo las tools del perfil de la tienda: un hotel no puede pedir buscar_tours.
+          if (!perfil?.tools.some(t => t.name === bloque.name)) return { error: `Herramienta desconocida: ${bloque.name}` };
+          const r = await perfil.ejecutar(bloque.name, bloque.input, { tiendaId });
+          if (bloque.name === perfil.busqueda && r.tarjetas.length === 0) senales.busquedasSinResultados++;
           for (const t of r.tarjetas) productosPorId.set(t.id, t);
           return r.paraModelo;
         }
-        default:
-          return { error: `Herramienta desconocida: ${bloque.name}` };
       }
     } catch (err) {
       logger.error(`[agente] tool ${bloque.name} falló: ${err.message}`);
@@ -254,7 +269,7 @@ export async function responderTurno({
       } catch (err) {
         if (!(err instanceof SinPrimerTokenError)) throw err;
         logger.warn(`[agente] sin primer token en ${config.agente.primerTokenMs} ms, se degrada a tarjetas`);
-        return await degradarPorLentitud({ tiendaId, mensaje, facetas, productosPorId, emisor, terminar, esHotel });
+        return await degradarPorLentitud({ tiendaId, mensaje, facetas, productosPorId, emisor, terminar, perfil });
       }
       sumarUso(uso, respuesta.usage);
 
@@ -307,7 +322,7 @@ export async function responderTurno({
         return terminar(MENSAJE_SIN_PRECIO);
       }
 
-      return terminar(texto || (esHotel ? "¿Qué habitación estás buscando?" : "¿En qué puedo ayudarte con nuestros productos?"));
+      return terminar(texto || (perfil ? perfil.saludo : "¿En qué puedo ayudarte con nuestros productos?"));
     }
 
     // Se agotaron las vueltas de tool-use sin respuesta final: degradar con gracia.
@@ -325,11 +340,11 @@ export async function responderTurno({
  * El modelo no respondió a tiempo: el cliente ve productos igual. Si la tool
  * aún no había corrido, se busca directo con el mensaje como texto libre.
  */
-async function degradarPorLentitud({ tiendaId, mensaje, facetas, productosPorId, emisor, terminar, esHotel = false }) {
+async function degradarPorLentitud({ tiendaId, mensaje, facetas, productosPorId, emisor, terminar, perfil = null }) {
   if (productosPorId.size === 0) {
     try {
-      const productos = esHotel
-        ? (await ejecutarToolHotel("ver_habitaciones", {}, { tiendaId })).tarjetas
+      const productos = perfil
+        ? (await perfil.ejecutar(perfil.busqueda, {}, { tiendaId })).tarjetas
         : (await ejecutarBuscarProductos({ tiendaId, input: { query: mensaje }, facetas })).productos;
       for (const p of productos) productosPorId.set(p.id, p);
     } catch (err) {

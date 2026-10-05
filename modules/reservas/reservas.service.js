@@ -9,6 +9,8 @@ import { ESTADOS_EN_CURSO, transicionar, estadoEfectivo } from "./estados.js";
 import { obtenerConfig } from "./reservas.config.service.js";
 import { cierresDeProducto } from "./cierres.service.js";
 import { cargarHabitacionParaReserva } from "./hotel/habitaciones.service.js";
+import { cotizarTour } from "./tours/cotizar.js";
+import { cargarTourParaReserva } from "./tours/tours.service.js";
 import { firmarTokenReserva } from "./reservas.token.js";
 import { subirCaptura, urlCaptura } from "./reservas.capturas.js";
 import { serializeReservaAdmin, serializeReservaLista, serializeReservaStore } from "./reservas.serializer.js";
@@ -18,12 +20,16 @@ import {
 import { instanteLima, fechaLima, sumarDias } from "./tiempo.js";
 
 /**
- * Mini booking — reservas de hotel / hostal (docs/specs/mini-booking).
+ * Mini booking — reservas de hotel / hostal y de tours (docs/specs/mini-booking).
  *
- * Una reserva es un `pedidos` (tipo = hotel: dinero, cliente, comprobante,
- * número) + una fila en `reservas` (estadía y titular). No hay inventario: el
- * negocio acepta o rechaza. Lo no atendido a la hora de inicio se anula y lo
- * confirmado pasa a completado al terminar; ambas cosas se calculan al leer.
+ * Una reserva es un `pedidos` (tipo = hotel | tour: dinero, cliente,
+ * comprobante, número) + una fila en `reservas` (estadía o salida, y titular).
+ * No hay inventario: el negocio acepta o rechaza. Lo no atendido a la hora de
+ * inicio se anula y lo confirmado pasa a completado al terminar; ambas cosas
+ * se calculan al leer.
+ *
+ * La bandeja, los estados, el pago y los correos son comunes; cada vertical
+ * aporta su cotización (VERTICALES).
  */
 
 const SELECT_TIENDA = {
@@ -37,7 +43,8 @@ const INCLUDE_RESERVA = {
       producto: {
         select: {
           id: true, nombre: true, slug: true,
-          imagenes: { select: { url: true, esPrincipal: true }, orderBy: { orden: "asc" }, take: 3 }
+          imagenes: { select: { url: true, esPrincipal: true }, orderBy: { orden: "asc" }, take: 3 },
+          tour: { select: { duracion: true, puntoEncuentro: true, recojo: true } }
         }
       },
       modalidad: true
@@ -48,21 +55,72 @@ const INCLUDE_RESERVA = {
   historialEstados: { orderBy: { fechaRegistro: "asc" } }
 };
 
+/** Tipos de pedido que son reservas (hotel y tours; eventos van aparte). */
+export const TIPOS_RESERVA = ["hotel", "tour"];
+
 const MOTIVOS_RECHAZO = {
-  sin_disponibilidad: "No hay disponibilidad para esa fecha",
-  fecha_cerrada: "El hotel no recibe reservas esa fecha"
+  hotel: {
+    sin_disponibilidad: "No hay disponibilidad para esa fecha",
+    fecha_cerrada: "El hotel no recibe reservas esa fecha"
+  },
+  tour: {
+    sin_disponibilidad: "No hay cupo en esa salida",
+    fecha_cerrada: "No hay salida en esa fecha"
+  }
 };
 
 const usuarioDe = (user) => user?.email ?? user?.id ?? null;
 const redondear = (n) => Math.round(n * 100) / 100;
 
+/**
+ * Cotización por vertical (Strategy): carga el producto, aplica sus reglas y
+ * devuelve lo que la reserva guarda como detalle.
+ *   → { producto, c (cotización), detalle (columnas propias de `reservas`), log }
+ */
+const VERTICALES = {
+  hotel: {
+    tipoPedido: "hotel",
+    este: "este hotel",
+    async cotizar({ tiendaId, datos, config, ahora }) {
+      if (!datos.modalidadId) {
+        throw new ValidationError("Elige una modalidad de estadía", { message: "Elige una modalidad de estadía", motivo: "MODALIDAD_INVALIDA" });
+      }
+      const { producto, tipo, modalidad } = await cargarHabitacionParaReserva(tiendaId, datos.productoId, datos.modalidadId);
+      const c = await cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora });
+      return {
+        producto, c,
+        detalle: { modalidadId: modalidad.id, noches: c.noches, horas: c.horas, adultos: datos.adultos, ninos: datos.ninos },
+        log: `${modalidad.tipo}, ingreso ${c.inicio.toISOString()}`
+      };
+    }
+  },
+  tours: {
+    tipoPedido: "tour",
+    este: "esta agencia",
+    async cotizar({ tiendaId, datos, config, ahora }) {
+      const { producto, tour, tiposPasajero } = await cargarTourParaReserva(tiendaId, datos.productoId);
+      const cierres = await cierresDeProducto(tiendaId, datos.productoId, datos.fecha, datos.fecha);
+      const c = cotizarTour({
+        tour, tiposPasajero, pasajeros: datos.pasajeros, fecha: datos.fecha, hora: datos.hora,
+        idioma: datos.idioma, cierres, config, ahora
+      });
+      return {
+        producto, c,
+        detalle: { pasajeros: c.pasajeros, idioma: c.idioma },
+        log: `${c.personas} pax, salida ${c.inicio.toISOString()}`
+      };
+    }
+  }
+};
+
 async function tiendaDeReservas(tiendaId) {
   const tienda = await prisma.tiendas.findUnique({ where: { id: tiendaId }, select: SELECT_TIENDA });
   if (!tienda || !tienda.activo) throw new NotFoundError("Tienda");
-  if (tienda.tipoNegocio !== "hotel") {
-    throw new ValidationError("Esta tienda no recibe reservas de habitaciones", { message: "Esta tienda no recibe reservas de habitaciones", motivo: "TIENDA_SIN_RESERVAS" });
+  const vertical = VERTICALES[tienda.tipoNegocio];
+  if (!vertical) {
+    throw new ValidationError("Esta tienda no recibe reservas", { message: "Esta tienda no recibe reservas", motivo: "TIENDA_SIN_RESERVAS" });
   }
-  return tienda;
+  return { tienda, vertical };
 }
 
 async function metodosPagoActivos(tiendaId) {
@@ -141,14 +199,13 @@ function enviar(destino, correo, replyTo) {
  * reserva próxima y errores de reglas (sin crear nada).
  */
 export async function cotizar(datos, ahora = new Date()) {
-  await tiendaDeReservas(datos.tiendaId);
+  const { vertical } = await tiendaDeReservas(datos.tiendaId);
   const config = await obtenerConfig(datos.tiendaId);
-  const { tipo, modalidad } = await cargarHabitacionParaReserva(datos.tiendaId, datos.productoId, datos.modalidadId);
-  const cotizacion = await cotizarConCierres({ datos, tipo, modalidad, config, ahora });
-  return serializarCotizacion(cotizacion);
+  const { c } = await vertical.cotizar({ tiendaId: datos.tiendaId, datos, config, ahora });
+  return serializarCotizacion(c);
 }
 
-async function cotizarConCierres({ datos, tipo, modalidad, config, ahora }) {
+async function cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora }) {
   const desde = datos.fecha;
   const hasta = sumarDias(datos.fecha, Math.max(datos.noches ?? 1, 1));
   const cierres = await cierresDeProducto(datos.tiendaId, datos.productoId, desde, hasta);
@@ -166,23 +223,24 @@ async function cotizarConCierres({ datos, tipo, modalidad, config, ahora }) {
 }
 
 const serializarCotizacion = (c) => ({
-  inicio: c.inicio, fin: c.fin, noches: c.noches, horas: c.horas, lineas: c.lineas,
+  inicio: c.inicio, fin: c.fin, noches: c.noches, horas: c.horas, personas: c.personas ?? null, lineas: c.lineas,
   total: c.total, montoAPagar: c.montoAPagar, saldoDestino: c.saldoDestino, aviso: c.aviso, errores: c.errores
 });
 
 /** Máximo de solicitudes en curso por cliente (por WhatsApp o documento), spec R5.7. */
-async function validarSolicitudesAbiertas(tiendaId, { whatsapp, docNumero }, max, ahora) {
+async function validarSolicitudesAbiertas(tiendaId, vertical, { whatsapp, docNumero }, max, ahora) {
   const abiertas = await prisma.pedidos.count({
     where: {
       tiendaId,
-      tipo: "hotel",
+      tipo: vertical.tipoPedido,
       estado: { in: ESTADOS_EN_CURSO },
       reserva: { inicio: { gt: ahora } },
       OR: [{ clienteWhatsapp: whatsapp }, { reserva: { titularDocNumero: docNumero } }]
     }
   });
   if (abiertas >= max) {
-    throw new ValidationError(`Ya tienes ${abiertas} solicitudes en curso en este hotel. Espera la respuesta o cancela alguna.`, { message: `Ya tienes ${abiertas} solicitudes en curso en este hotel. Espera la respuesta o cancela alguna.`,
+    const message = `Ya tienes ${abiertas} solicitudes en curso en ${vertical.este}. Espera la respuesta o cancela alguna.`;
+    throw new ValidationError(message, { message,
       motivo: "MAX_SOLICITUDES_ABIERTAS"
     });
   }
@@ -195,7 +253,7 @@ async function validarSolicitudesAbiertas(tiendaId, { whatsapp, docNumero }, max
  * @returns {Promise<{ pedido: object, tienda: object, config: object, token: string, nueva: boolean }>}
  */
 export async function crearSolicitud(datos, { authUserId = null, ahora = new Date() } = {}) {
-  const tienda = await tiendaDeReservas(datos.tiendaId);
+  const { tienda, vertical } = await tiendaDeReservas(datos.tiendaId);
 
   const existente = await prisma.pedidos.findFirst({
     where: { tiendaId: tienda.id, idempotencyKey: datos.idempotencyKey },
@@ -204,15 +262,14 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
   if (existente) return resultadoSolicitud(tienda, existente.id, false);
 
   const config = await obtenerConfig(tienda.id);
-  const { producto, tipo, modalidad } = await cargarHabitacionParaReserva(tienda.id, datos.productoId, datos.modalidadId);
-  const c = await cotizarConCierres({ datos, tipo, modalidad, config, ahora });
+  const { producto, c, detalle, log } = await vertical.cotizar({ tiendaId: tienda.id, datos, config, ahora });
   if (c.errores.length) {
     throw new ValidationError(c.errores[0].mensaje, { motivo: "RESERVA_NO_VALIDA", errores: c.errores });
   }
 
   const whatsapp = datos.whatsapp.replace(/[\s-]/g, "");
   const docNumero = datos.titular.docNumero.toUpperCase();
-  await validarSolicitudesAbiertas(tienda.id, { whatsapp, docNumero }, config.maxSolicitudesAbiertas, ahora);
+  await validarSolicitudesAbiertas(tienda.id, vertical, { whatsapp, docNumero }, config.maxSolicitudesAbiertas, ahora);
 
   const estadoInicial = config.modoConfirmacion === "pago_directo" ? "aceptada" : "solicitada";
   const nombreCompleto = `${datos.titular.nombres} ${datos.titular.apellidos}`;
@@ -234,7 +291,7 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
           clienteEmail: datos.email,
           authUserId,
           numeroPedido,
-          tipo: "hotel",
+          tipo: vertical.tipoPedido,
           estado: estadoInicial,
           estadoPago: "pendiente",
           fechaServicio: c.inicio,
@@ -243,7 +300,7 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
           notas: datos.comentarios,
           origen: "web",
           idempotencyKey: datos.idempotencyKey,
-          // Solo la intención: el hotel emite el comprobante con su sistema (R14.3).
+          // Solo la intención: el negocio emite el comprobante con su sistema (R14.3).
           comprobante: datos.factura ? "factura" : null,
           comprobanteDocTipo: datos.factura ? "RUC" : null,
           comprobanteDocNumero: datos.factura?.ruc ?? null,
@@ -272,15 +329,11 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
           reserva: {
             create: {
               tiendaId: tienda.id,
-              tipo: "hotel",
+              tipo: vertical.tipoPedido,
               productoId: producto.id,
-              modalidadId: modalidad.id,
+              ...detalle,
               inicio: c.inicio,
               fin: c.fin,
-              noches: c.noches,
-              horas: c.horas,
-              adultos: datos.adultos,
-              ninos: datos.ninos,
               titularNombres: datos.titular.nombres,
               titularApellidos: datos.titular.apellidos,
               titularDocTipo: datos.titular.docTipo,
@@ -301,7 +354,7 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
       });
     }, { maxWait: 5000, timeout: 15000 });
 
-    logger.info(`🛎️ Reservas: solicitud en ${tienda.slug} (${modalidad.tipo}, ingreso ${c.inicio.toISOString()})`);
+    logger.info(`🛎️ Reservas: solicitud en ${tienda.slug} (${log})`);
     return resultadoSolicitud(tienda, pedido.id, true, config);
   } catch (error) {
     // Carrera de dos envíos con la misma clave: el índice único gana, se devuelve la primera.
@@ -411,7 +464,7 @@ export async function listarReservasAdmin(tiendaId, filtros, ahora = new Date())
   await persistirVencimientos(tiendaId);
   const { pestana, productoId, desde, hasta, q, page, limit } = filtros;
 
-  const and = [{ tiendaId, tipo: "hotel" }, wherePestana(pestana, ahora)];
+  const and = [{ tiendaId, tipo: { in: TIPOS_RESERVA } }, wherePestana(pestana, ahora)];
   if (productoId) and.push({ reserva: { productoId } });
   if (desde || hasta) {
     and.push({
@@ -452,8 +505,8 @@ export async function listarReservasAdmin(tiendaId, filtros, ahora = new Date())
 /** Badge del menú (R11.2): lo que espera una acción del negocio. */
 export async function resumenReservas(tiendaId, ahora = new Date()) {
   const [porResponder, pagoPorVerificar] = await Promise.all([
-    prisma.pedidos.count({ where: { tiendaId, tipo: "hotel", estado: "solicitada", reserva: { inicio: { gt: ahora } } } }),
-    prisma.pedidos.count({ where: { tiendaId, tipo: "hotel", estado: "pago_en_revision" } })
+    prisma.pedidos.count({ where: { tiendaId, tipo: { in: TIPOS_RESERVA }, estado: "solicitada", reserva: { inicio: { gt: ahora } } } }),
+    prisma.pedidos.count({ where: { tiendaId, tipo: { in: TIPOS_RESERVA }, estado: "pago_en_revision" } })
   ]);
   return { porResponder, pagoPorVerificar, total: porResponder + pagoPorVerificar };
 }
@@ -512,7 +565,7 @@ export async function aceptarReserva(tiendaId, pedidoId, { nuevoTotal = null, aj
 /** Rechazar con motivo visible para el cliente (R6.1). */
 export async function rechazarReserva(tiendaId, pedidoId, { motivoTipo, motivo }, user, ahora = new Date()) {
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
-  const texto = motivo || MOTIVOS_RECHAZO[motivoTipo] || null;
+  const texto = motivo || (MOTIVOS_RECHAZO[pedido.tipo] ?? MOTIVOS_RECHAZO.hotel)[motivoTipo] || null;
   await prisma.$transaction(async (tx) => {
     await aplicarAccion(tx, pedido, "rechazar", {
       ahora, datosPedido: { usuarioActualizacion: usuarioDe(user) }, nota: texto ? `Rechazada: ${texto}` : "Rechazada"
@@ -592,11 +645,11 @@ export async function cancelarPorNegocio(tiendaId, pedidoId, { motivo }, user, a
   return detalleReservaAdmin(tiendaId, pedidoId, ahora);
 }
 
-/** El cliente no llegó (R12.3): solo cuando ya pasó la hora de ingreso. */
+/** El cliente no llegó (R12.3): solo cuando ya pasó la hora de inicio (ingreso o salida del tour). */
 export async function marcarNoShow(tiendaId, pedidoId, user, ahora = new Date()) {
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
   if (pedido.reserva.inicio > ahora) {
-    throw new ConflictError("Solo se puede marcar después de la hora de ingreso", { message: "Solo se puede marcar después de la hora de ingreso", motivo: "AUN_NO_INICIA" });
+    throw new ConflictError("Solo se puede marcar después de la hora de inicio", { message: "Solo se puede marcar después de la hora de inicio", motivo: "AUN_NO_INICIA" });
   }
   await prisma.$transaction(tx => aplicarAccion(tx, pedido, "no_show", {
     ahora, datosPedido: { usuarioActualizacion: usuarioDe(user) }, nota: "El cliente no se presentó"
@@ -615,7 +668,7 @@ export async function agendaReservas(tiendaId, { desde, hasta } = {}, ahora = ne
   const filas = await prisma.pedidos.findMany({
     where: {
       tiendaId,
-      tipo: "hotel",
+      tipo: { in: TIPOS_RESERVA },
       estado: { in: ["aceptada", "pago_en_revision", "confirmada", "completada"] },
       reserva: {
         inicio: { lt: instanteLima(sumarDias(dHasta, 1)) },

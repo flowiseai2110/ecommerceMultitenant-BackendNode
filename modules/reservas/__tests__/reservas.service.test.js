@@ -10,7 +10,7 @@ const PEDIDO = "77777777-7777-4777-8777-777777777777";
 
 const prisma = {
   tiendas: { findUnique: jest.fn() },
-  pedidos: { findFirst: jest.fn(), updateMany: jest.fn(), count: jest.fn() },
+  pedidos: { findFirst: jest.fn(), updateMany: jest.fn(), count: jest.fn(), create: jest.fn() },
   reservas: { update: jest.fn() },
   pagos: { update: jest.fn(), create: jest.fn() },
   pedido_historial_estados: { create: jest.fn() },
@@ -31,6 +31,16 @@ const config = { tipoNegocio: "hotel", cobro: "total", adelantoPct: null, compro
 jest.unstable_mockModule("../reservas.config.service.js", () => ({ obtenerConfig: jest.fn(async () => config) }));
 jest.unstable_mockModule("../cierres.service.js", () => ({ cierresDeProducto: jest.fn(async () => []) }));
 jest.unstable_mockModule("../hotel/habitaciones.service.js", () => ({ cargarHabitacionParaReserva: jest.fn() }));
+const tourDb = {
+  diasSalida: [2, 3, 4, 5, 6, 7], horasSalida: ["08:00"], idiomas: ["es"], duracionHoras: 2, maxPasajeros: null
+};
+jest.unstable_mockModule("../tours/tours.service.js", () => ({
+  cargarTourParaReserva: jest.fn(async () => ({
+    producto: { id: "tour-1", nombre: "Islas Ballestas" },
+    tour: tourDb,
+    tiposPasajero: [{ id: "adulto", nombre: "Adulto", precio: 60, activo: true }]
+  }))
+}));
 jest.unstable_mockModule("../reservas.capturas.js", () => ({ subirCaptura: jest.fn(), urlCaptura: jest.fn(async () => null) }));
 
 const svc = await import("../reservas.service.js");
@@ -157,5 +167,53 @@ describe("marcarNoShow", () => {
     prisma.pedidos.findFirst.mockResolvedValue(pedido({ estado: "confirmada" }));
     await svc.marcarNoShow(TIENDA, PEDIDO, null, instanteLima("2026-09-25", "09:00"));
     expect(prisma.pedidos.updateMany.mock.calls[0][0].data.estado).toBe("no_show");
+  });
+});
+
+describe("crearSolicitud — tours", () => {
+  const datos = {
+    tiendaId: TIENDA, productoId: "tour-1", fecha: "2026-09-26", hora: "08:00", idioma: null,
+    pasajeros: [{ tipoId: "adulto", cantidad: 3 }], idempotencyKey: "k-tour",
+    titular: { nombres: "Ana", apellidos: "Ríos", docTipo: "DNI", docNumero: "12345678", nacionalidad: "PE", nacimiento: null },
+    whatsapp: "957 625 308", email: "ana@test.com", comentarios: null, acompanantes: [], factura: null
+  };
+
+  it("crea un pedido tipo tour con el snapshot de pasajeros y la salida como inicio", async () => {
+    prisma.tiendas.findUnique.mockResolvedValue({ ...tienda, tipoNegocio: "tours" });
+    prisma.pedidos.findFirst
+      .mockResolvedValueOnce(null)                                  // idempotencia
+      .mockResolvedValueOnce(pedido({ tipo: "tour" }, { tipo: "tour", modalidad: null, pasajeros: [] }));
+    prisma.pedidos.count.mockResolvedValue(0);
+    prisma.pedidos.create.mockResolvedValue({ id: PEDIDO });
+
+    const r = await svc.crearSolicitud(datos, { ahora });
+    expect(r.nueva).toBe(true);
+    const data = prisma.pedidos.create.mock.calls[0][0].data;
+    expect(data.tipo).toBe("tour");
+    expect(data.total).toBe(180);
+    expect(data.fechaServicio).toEqual(instanteLima("2026-09-26", "08:00"));
+    expect(data.reserva.create).toEqual(expect.objectContaining({
+      tipo: "tour",
+      pasajeros: [{ tipoId: "adulto", nombre: "Adulto", cantidad: 3, precio: 60 }],
+      idioma: "es",
+      fin: instanteLima("2026-09-26", "10:00")
+    }));
+    expect(data.reserva.create.modalidadId).toBeUndefined();
+    // El máximo de solicitudes abiertas se cuenta solo entre tours.
+    expect(prisma.pedidos.count.mock.calls[0][0].where.tipo).toBe("tour");
+  });
+
+  it("un lunes sin salida responde 400 con el error de la regla", async () => {
+    prisma.tiendas.findUnique.mockResolvedValue({ ...tienda, tipoNegocio: "tours" });
+    prisma.pedidos.findFirst.mockResolvedValueOnce(null);
+    await expect(svc.crearSolicitud({ ...datos, fecha: "2026-09-28" }, { ahora }))
+      .rejects.toMatchObject({ statusCode: 400, details: expect.objectContaining({ motivo: "RESERVA_NO_VALIDA" }) });
+    expect(prisma.pedidos.create).not.toHaveBeenCalled();
+  });
+
+  it("el rechazo con motivo predefinido usa el texto de la agencia", async () => {
+    prisma.pedidos.findFirst.mockResolvedValue(pedido({ tipo: "tour" }, { tipo: "tour", modalidad: null, pasajeros: [] }));
+    await svc.rechazarReserva(TIENDA, PEDIDO, { motivoTipo: "fecha_cerrada" }, null, ahora);
+    expect(prisma.reservas.update.mock.calls[0][0].data.motivoRechazo).toBe("No hay salida en esa fecha");
   });
 });

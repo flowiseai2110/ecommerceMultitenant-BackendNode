@@ -92,7 +92,7 @@ export async function getUserProfile(userId, user) {
       tiendaId: true,
       rol: true,
       tienda: {
-        select: { id: true, nombre: true, slug: true, descripcion: true, logoUrl: true, activo: true }
+        select: { id: true, nombre: true, slug: true, descripcion: true, logoUrl: true, activo: true, tipoNegocio: true }
       }
     }
   });
@@ -117,7 +117,8 @@ export async function getUserProfile(userId, user) {
             slug: ut.tienda.slug,
             descripcion: ut.tienda.descripcion,
             logoUrl: ut.tienda.logoUrl,
-            activo: ut.tienda.activo
+            activo: ut.tienda.activo,
+            tipoNegocio: ut.tienda.tipoNegocio
           }
         };
       })

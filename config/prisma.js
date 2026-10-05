@@ -24,7 +24,8 @@ const TENANT_SCOPED_MODELS = new Set([
   "pagos", "tienda_pasarela_config", "resenas",
   "agente_conversaciones", "agente_mensajes", "libro_reclamaciones",
   // Mini booking
-  "config_reservas", "cierres_fecha", "hotel_tipos_habitacion", "hotel_modalidades", "reservas"
+  "config_reservas", "cierres_fecha", "hotel_tipos_habitacion", "hotel_modalidades", "reservas",
+  "tours", "tour_tipos_pasajero"
 ]);
 
 // Solo lecturas y operaciones masivas. findUnique/update/delete/create se dejan

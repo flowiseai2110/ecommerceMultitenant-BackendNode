@@ -32,8 +32,15 @@ function ultimoPagoManual(pagos = []) {
     .sort((a, b) => new Date(b.fechaRegistro) - new Date(a.fechaRegistro))[0] ?? null;
 }
 
+/** Pasajeros de un tour (snapshot guardado al solicitar). */
+const pasajerosDe = (r) => (Array.isArray(r.pasajeros) ? r.pasajeros : []).map(p => ({
+  tipoId: p.tipoId, nombre: p.nombre, cantidad: p.cantidad, precio: num(p.precio)
+}));
+
 function base(pedido, ahora) {
   const r = pedido.reserva;
+  const esTour = r.tipo === "tour";
+  const pasajeros = esTour ? pasajerosDe(r) : null;
   const estado = estadoEfectivo({ estado: pedido.estado, inicio: r.inicio, fin: r.fin }, ahora);
   return {
     id: pedido.id,
@@ -47,7 +54,8 @@ function base(pedido, ahora) {
       slug: r.producto?.slug ?? null,
       imagenUrl: imagenPrincipal(r.producto)
     },
-    modalidad: {
+    // Solo hotel: un tour no tiene modalidad de estadía.
+    modalidad: esTour ? null : {
       id: r.modalidadId,
       tipo: r.modalidad?.tipo ?? (r.horas ? "horas" : "noche"),
       etiqueta: etiquetaModalidad(r.modalidad, r)
@@ -58,6 +66,15 @@ function base(pedido, ahora) {
     horas: r.horas,
     adultos: r.adultos,
     ninos: r.ninos,
+    pasajeros,
+    idioma: r.idioma ?? null,
+    // Lo que el pasajero necesita para llegar a la salida (confirmación, R8.1).
+    tour: esTour ? {
+      duracion: r.producto?.tour?.duracion ?? null,
+      puntoEncuentro: r.producto?.tour?.puntoEncuentro ?? null,
+      recojo: r.producto?.tour?.recojo ?? null
+    } : null,
+    personas: esTour ? pasajeros.reduce((s, p) => s + p.cantidad, 0) : (r.adultos ?? 0) + (r.ninos ?? 0),
     total: num(pedido.total),
     montoAPagar: num(r.montoAPagar),
     saldoDestino: num(r.saldoDestino),

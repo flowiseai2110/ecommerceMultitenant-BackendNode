@@ -109,7 +109,7 @@ async function atenderMensaje(req, emisor = null) {
     responderTurno({
       tiendaId,
       tiendaNombre: req.tienda?.nombre,
-      // Vertical de la tienda (mini booking): un hotel usa otro perfil del asesor.
+      // Vertical de la tienda (mini booking): hotel y tours usan otro perfil del asesor.
       tipoNegocio: req.tienda?.tipoNegocio ?? null,
       mensaje,
       historial,

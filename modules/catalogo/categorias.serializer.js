@@ -42,6 +42,7 @@ export function serializeCategoriaAdmin(row) {
     categoriaPadreId: row.categoriaPadreId,
     nombre: row.nombre,
     slug: row.slug,
+    codigo: row.codigo ?? null,
     descripcion: row.descripcion,
     imagenUrl: row.imagenUrl,
     orden: row.orden,

@@ -9,6 +9,7 @@ import { NotFoundError } from "../../utils/errors.js";
 import { configPublica, obtenerConfig } from "./reservas.config.service.js";
 import { cierresPublicos } from "./cierres.service.js";
 import { listarHabitacionesStore, obtenerHabitacionStore } from "./hotel/habitaciones.service.js";
+import { listarToursStore, obtenerTourStore } from "./tours/tours.service.js";
 import { verificarTokenReserva } from "./reservas.token.js";
 import { uploadCaptura } from "./reservas.capturas.js";
 import {
@@ -71,6 +72,23 @@ router.get("/habitaciones/:slug", validate({ params: slugParamSchema, query: tie
     try {
       res.set("Cache-Control", "public, max-age=60");
       return ok(res, "HABITACION", await obtenerHabitacionStore(req.validatedQuery.tiendaId, req.params.slug));
+    } catch (error) { next(error); }
+  });
+
+// GET /tours?tiendaId= — vitrina de la agencia
+router.get("/tours", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
+  try {
+    res.set("Cache-Control", "public, max-age=60");
+    return ok(res, "TOURS_LIST", await listarToursStore(req.validatedQuery.tiendaId));
+  } catch (error) { next(error); }
+});
+
+// GET /tours/:slug?tiendaId= — ficha con días y horas de salida y tipos de pasajero
+router.get("/tours/:slug", validate({ params: slugParamSchema, query: tiendaQuerySchema }), scopeQueryToTienda,
+  async (req, res, next) => {
+    try {
+      res.set("Cache-Control", "public, max-age=60");
+      return ok(res, "TOUR", await obtenerTourStore(req.validatedQuery.tiendaId, req.params.slug));
     } catch (error) { next(error); }
   });
 

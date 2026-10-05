@@ -34,15 +34,24 @@ const monto = z.coerce.number().min(0, "El monto no puede ser negativo").max(999
 // STORE
 // ============================================
 
+// Superconjunto de hotel y tours: cada vertical exige sus campos al cotizar
+// (la tienda define la vertical, y el body no la trae).
 const estadiaBase = {
   tiendaId: uuid("tiendaId"),
   productoId: uuid("productoId"),
-  modalidadId: uuid("modalidadId"),
   fecha,
   hora: hora.nullish().transform(v => v || null),
+  // Hotel
+  modalidadId: uuid("modalidadId").nullish().transform(v => v || null),
   noches: z.coerce.number().int().min(1).max(MAX_NOCHES).nullish().transform(v => v ?? null),
-  adultos: z.coerce.number().int().min(1, "Debe haber al menos un adulto").max(50),
-  ninos: z.coerce.number().int().min(0).max(50).optional().default(0)
+  adultos: z.coerce.number().int().min(1, "Debe haber al menos un adulto").max(50).nullish().transform(v => v ?? null),
+  ninos: z.coerce.number().int().min(0).max(50).optional().default(0),
+  // Tours
+  pasajeros: z.array(z.object({
+    tipoId: uuid("tipoId"),
+    cantidad: z.coerce.number().int().min(0).max(200)
+  })).max(10).optional().default([]),
+  idioma: z.string().trim().toLowerCase().regex(/^[a-z]{2}$/, "Idioma inválido").nullish().transform(v => v || null)
 };
 
 export const cotizarSchema = z.object(estadiaBase);
@@ -162,6 +171,48 @@ export const motivoSchema = z.object({
 export const rechazarPagoSchema = z.object({
   tiendaId: uuid("tiendaId"),
   motivo: texto("El motivo", 3, 200)
+});
+
+const listaTextos = (maxItems, maxLargo) => z.array(z.string().trim().min(1).max(maxLargo)).max(maxItems).optional().default([]);
+
+const tipoPasajeroSchema = z.object({
+  id: uuid("id").optional(),
+  nombre: texto("El nombre", 1, 60),
+  precio: monto,
+  activo: z.boolean().optional().default(true),
+  orden: z.coerce.number().int().min(0).optional()
+});
+
+export const tourSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  duracion: textoOpcional(50),
+  duracionHoras: z.coerce.number().int().min(1).max(720).nullish().transform(v => v ?? null),
+  diasSalida: z.array(z.coerce.number().int().min(1).max(7)).min(1, "Elige al menos un día de salida").max(7),
+  horasSalida: z.array(hora).min(1, "Agrega al menos una hora de salida").max(12),
+  idiomas: z.array(z.string().trim().toLowerCase().regex(/^[a-z]{2}$/, "Idioma inválido")).min(1).max(10).optional().default(["es"]),
+  itinerario: z.array(z.object({
+    dia: z.coerce.number().int().min(1).max(30).nullish().transform(v => v ?? null),
+    hora: hora.nullish().transform(v => v || null),
+    titulo: texto("El título", 1, 120),
+    descripcion: textoOpcional(1000)
+  })).max(40).optional().default([]),
+  incluye: listaTextos(30, 200),
+  noIncluye: listaTextos(30, 200),
+  queLlevar: listaTextos(30, 200),
+  requisitos: textoOpcional(1000),
+  puntoEncuentro: textoOpcional(500),
+  recojo: textoOpcional(500),
+  edadMinima: z.coerce.number().int().min(0).max(99).nullish().transform(v => v ?? null),
+  maxPasajeros: z.coerce.number().int().min(1).max(200).nullish().transform(v => v ?? null),
+  tiposPasajero: z.array(tipoPasajeroSchema).min(1, "Agrega al menos un tipo de pasajero (por ejemplo, Adulto)").max(10)
+}).superRefine((d, ctx) => {
+  const nombres = d.tiposPasajero.map(t => t.nombre.toLowerCase());
+  if (new Set(nombres).size !== nombres.length) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["tiposPasajero"], message: "Hay tipos de pasajero con el mismo nombre" });
+  }
+  if (!d.tiposPasajero.some(t => t.activo && t.precio > 0)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["tiposPasajero"], message: "Al menos un tipo de pasajero activo debe tener precio" });
+  }
 });
 
 export const configSchema = z.object({

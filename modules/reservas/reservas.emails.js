@@ -56,17 +56,34 @@ const fila = (etiqueta, valor) => `
     <td style="padding: 6px 10px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #f1f5f9;">${valor}</td>
   </tr>`;
 
-/** Resumen de la estadía, igual en todos los correos. */
+const esTour = (r) => r.tipo === "tour";
+
+/** Cómo se nombra al negocio y al inicio del servicio en cada vertical. */
+const voz = (r) => (esTour(r)
+  ? { Negocio: "La agencia", alNegocio: "a la agencia", enNegocio: "en destino", inicio: "la hora de salida", conf: "la disponibilidad de la salida" }
+  : { Negocio: "El hotel", alNegocio: "al hotel", enNegocio: "en el hotel", inicio: "la hora de ingreso", conf: "la disponibilidad" });
+
+function textoPersonas(r) {
+  if (esTour(r)) return (r.pasajeros ?? []).map(p => `${p.cantidad} ${p.nombre.toLowerCase()}`).join(", ") || "—";
+  return `${r.adultos} ${r.adultos === 1 ? "adulto" : "adultos"}${r.ninos ? `, ${r.ninos} ${r.ninos === 1 ? "niño" : "niños"}` : ""}`;
+}
+
+/** Resumen de la estadía o del tour, igual en todos los correos. */
 function resumen(r) {
-  const personas = `${r.adultos} ${r.adultos === 1 ? "adulto" : "adultos"}${r.ninos ? `, ${r.ninos} ${r.ninos === 1 ? "niño" : "niños"}` : ""}`;
+  const detalle = esTour(r)
+    ? fila("Tour", e(r.producto.nombre ?? "—")) +
+      fila("Salida", e(fechaHora(r.inicio))) +
+      (r.tour?.puntoEncuentro ? fila("Punto de encuentro", e(r.tour.puntoEncuentro)) : "") +
+      fila("Pasajeros", e(textoPersonas(r)))
+    : fila("Habitación", e(r.producto.nombre ?? "—")) +
+      fila("Estadía", e(r.modalidad.etiqueta)) +
+      fila("Ingreso", e(fechaHora(r.inicio))) +
+      fila("Salida", e(fechaHora(r.fin))) +
+      fila("Personas", e(textoPersonas(r)));
   return `
   <table role="presentation" style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;">
     ${fila("Código de reserva", `<strong>${e(r.codigo)}</strong>`)}
-    ${fila("Habitación", e(r.producto.nombre ?? "—"))}
-    ${fila("Estadía", e(r.modalidad.etiqueta))}
-    ${fila("Ingreso", e(fechaHora(r.inicio)))}
-    ${fila("Salida", e(fechaHora(r.fin)))}
-    ${fila("Personas", e(personas))}
+    ${detalle}
     ${fila("Total", `<strong>${soles(r.total)}</strong>`)}
   </table>`;
 }
@@ -78,8 +95,8 @@ export function solicitudRecibidaEmail(r, url) {
     html: layout({
       titulo: "Recibimos tu solicitud de reserva",
       intro:
-        texto(`Hola ${e(r.titular.nombres)}, enviamos tu solicitud a <strong>${e(r.negocio.nombre)}</strong>. El hotel confirmará la disponibilidad y te avisaremos por este medio.`) +
-        texto("Si no la confirma antes de la hora de ingreso, la solicitud se anula sola. Puedes seguir el estado desde el botón de abajo."),
+        texto(`Hola ${e(r.titular.nombres)}, enviamos tu solicitud a <strong>${e(r.negocio.nombre)}</strong>. ${voz(r).Negocio} confirmará ${voz(r).conf} y te avisaremos por este medio.`) +
+        texto(`Si no la confirma antes de ${voz(r).inicio}, la solicitud se anula sola. Puedes seguir el estado desde el botón de abajo.`),
       cuerpo: resumen(r) + boton(url, "Ver mi reserva"),
       pie: "Todavía no tienes una reserva confirmada: esto es una solicitud."
     })
@@ -89,12 +106,14 @@ export function solicitudRecibidaEmail(r, url) {
 /** Al negocio: nueva solicitud. */
 export function nuevaSolicitudEmail(r) {
   return {
-    subject: `🛎️ Nueva solicitud ${r.codigo}: ${r.modalidad.etiqueta} · ingreso ${fechaHora(r.inicio)}`,
+    subject: esTour(r)
+      ? `🧭 Nueva solicitud ${r.codigo}: ${r.producto.nombre} · ${r.personas} pax · salida ${fechaHora(r.inicio)}`
+      : `🛎️ Nueva solicitud ${r.codigo}: ${r.modalidad.etiqueta} · ingreso ${fechaHora(r.inicio)}`,
     html: layout({
       titulo: "Tienes una nueva solicitud de reserva",
       intro:
         texto(`<strong>${e(`${r.titular.nombres} ${r.titular.apellidos}`)}</strong> pide una reserva. WhatsApp: <strong>${e(r.contacto.whatsapp)}</strong>.`) +
-        texto("Respóndela antes de la hora de ingreso: si no, se anula sola."),
+        texto(`Respóndela antes de ${voz(r).inicio}: si no, se anula sola.`),
       cuerpo: resumen(r) + boton(`${ADMIN_URL}/reservas/${r.id}`, "Aceptar o rechazar"),
       pie: "Recibiste este correo porque tu negocio recibe reservas desde su vitrina web."
     })
@@ -103,17 +122,18 @@ export function nuevaSolicitudEmail(r) {
 
 /** Al cliente: aceptada, toca pagar. */
 export function aceptadaEmail(r, url) {
-  const ajuste = r.ajuste ? texto(`El hotel ajustó el total: <em>${e(r.ajuste.motivo)}</em>.`) : "";
-  const saldo = r.saldoDestino > 0 ? texto(`El saldo de <strong>${soles(r.saldoDestino)}</strong> se paga en el hotel.`) : "";
+  const v = voz(r);
+  const ajuste = r.ajuste ? texto(`${v.Negocio} ajustó el total: <em>${e(r.ajuste.motivo)}</em>.`) : "";
+  const saldo = r.saldoDestino > 0 ? texto(`El saldo de <strong>${soles(r.saldoDestino)}</strong> se paga ${v.enNegocio}.`) : "";
   return {
     subject: `Tu reserva ${r.codigo} fue aceptada: completa el pago`,
     html: layout({
       titulo: "¡Tu solicitud fue aceptada!",
       intro:
-        texto(`Hola ${e(r.titular.nombres)}, <strong>${e(r.negocio.nombre)}</strong> tiene disponibilidad. Para confirmar, paga <strong>${soles(r.montoAPagar)}</strong> antes de la hora de ingreso y sube la captura desde el link.`) +
+        texto(`Hola ${e(r.titular.nombres)}, <strong>${e(r.negocio.nombre)}</strong> tiene disponibilidad. Para confirmar, paga <strong>${soles(r.montoAPagar)}</strong> antes de ${v.inicio} y sube la captura desde el link.`) +
         ajuste + saldo,
       cuerpo: resumen(r) + boton(url, "Pagar y subir mi captura"),
-      pie: "Si no pagas antes de la hora de ingreso, la reserva se anula."
+      pie: `Si no pagas antes de ${v.inicio}, la reserva se anula.`
     })
   };
 }
@@ -127,7 +147,7 @@ export function rechazadaEmail(r, url) {
       intro:
         texto(`Hola ${e(r.titular.nombres)}, <strong>${e(r.negocio.nombre)}</strong> no tiene disponibilidad para tu solicitud.`) +
         (r.motivoRechazo ? texto(`Motivo: <em>${e(r.motivoRechazo)}</em>`) : "") +
-        texto("Puedes elegir otra fecha o escribirle al hotel por WhatsApp."),
+        texto(`Puedes elegir otra fecha o escribirle ${voz(r).alNegocio} por WhatsApp.`),
       cuerpo: resumen(r) + boton(url, "Ver detalles"),
       pie: "No se realizó ningún cobro."
     })
@@ -158,12 +178,13 @@ export function confirmadaEmail(r, url) {
       titulo: "¡Tu reserva está confirmada!",
       intro:
         texto(`Hola ${e(r.titular.nombres)}, te esperamos en <strong>${e(r.negocio.nombre)}</strong>${r.negocio.direccion ? ` (${e(r.negocio.direccion)})` : ""}.`) +
-        texto(`${enHotel ? "Pagado a cuenta" : "Pagado"}: <strong>${soles(r.montoPagado)}</strong>.${r.saldoDestino > 0 ? ` Saldo en el hotel: <strong>${soles(r.saldoDestino)}</strong>.` : ""}`) +
-        (enHotel ? texto("Los consumos durante tu estadía se pagan en el hotel. Tu boleta o factura se entrega al finalizar tu estadía.") : "") +
-        (r.modalidad.tipo === "horas" ? texto(`Tu estadía es de ${e(fechaHora(r.inicio))} a ${e(fechaHora(r.fin))}. Si llegas más tarde, la hora de salida no cambia.`) : "") +
+        texto(`${enHotel ? "Pagado a cuenta" : "Pagado"}: <strong>${soles(r.montoPagado)}</strong>.${r.saldoDestino > 0 ? ` Saldo a pagar ${voz(r).enNegocio}: <strong>${soles(r.saldoDestino)}</strong>.` : ""}`) +
+        (enHotel && !esTour(r) ? texto("Los consumos durante tu estadía se pagan en el hotel. Tu boleta o factura se entrega al finalizar tu estadía.") : "") +
+        (r.modalidad?.tipo === "horas" ? texto(`Tu estadía es de ${e(fechaHora(r.inicio))} a ${e(fechaHora(r.fin))}. Si llegas más tarde, la hora de salida no cambia.`) : "") +
+        (r.tour?.recojo ? texto(`<strong>Recojo:</strong> ${e(r.tour.recojo)}`) : "") +
         (r.instrucciones ? texto(`<strong>Importante:</strong> ${e(r.instrucciones)}`) : ""),
       cuerpo: resumen(r) + boton(url, "Ver mi confirmación"),
-      pie: "Presenta esta confirmación o tu código de reserva al llegar."
+      pie: esTour(r) ? "Presenta esta confirmación o tu código de reserva en la salida." : "Presenta esta confirmación o tu código de reserva al llegar."
     })
   };
 }

@@ -5,13 +5,14 @@ import { apiResponse } from "../../utils/apiResponse.js";
 import { guardarConfig, obtenerConfig } from "./reservas.config.service.js";
 import { crearCierre, eliminarCierre, listarCierres } from "./cierres.service.js";
 import { guardarFicha, listarHabitacionesAdmin, obtenerFichaAdmin } from "./hotel/habitaciones.service.js";
+import { guardarFichaTour, listarToursAdmin, obtenerFichaTourAdmin } from "./tours/tours.service.js";
 import {
   aceptarReserva, agendaReservas, cancelarPorNegocio, detalleReservaAdmin, listarReservasAdmin, marcarNoShow,
   rechazarPago, rechazarReserva, resumenReservas, verificarPago
 } from "./reservas.service.js";
 import {
   aceptarSchema, agendaQuerySchema, configSchema, crearCierreSchema, habitacionSchema, idParamSchema,
-  listarAdminQuerySchema, motivoSchema, productoParamSchema, rechazarPagoSchema, rechazarSchema, tiendaQuerySchema
+  listarAdminQuerySchema, motivoSchema, productoParamSchema, rechazarPagoSchema, rechazarSchema, tiendaQuerySchema, tourSchema
 } from "./reservas.schema.js";
 
 /**
@@ -19,7 +20,7 @@ import {
  *
  * Roles: ver, cualquier miembro (viewer+). Responder solicitudes y verificar
  * pagos, editor+ (en un hostal pequeño el recepcionista suele ser editor).
- * Configuración, habitaciones y fechas cerradas, admin+.
+ * Configuración, habitaciones, tours y fechas cerradas, admin+.
  */
 
 const router = Router();
@@ -75,6 +76,25 @@ router.put("/habitaciones/:productoId", ...gestion, validate({ params: productoP
     try {
       const { tiendaId, ...data } = req.body;
       return ok(res, "HABITACION_FICHA_UPDATED", await guardarFicha(req.tiendaId, req.params.productoId, data, req.user));
+    } catch (error) { next(error); }
+  });
+
+// ---------- Tours (ficha de tour de un producto) ----------
+
+router.get("/tours", ...lectura, validate({ query: tiendaQuerySchema }), async (req, res, next) => {
+  try { return ok(res, "TOURS_ADMIN", await listarToursAdmin(req.tiendaId)); } catch (error) { next(error); }
+});
+
+router.get("/tours/:productoId", ...lectura, validate({ params: productoParamSchema, query: tiendaQuerySchema }),
+  async (req, res, next) => {
+    try { return ok(res, "TOUR_FICHA", await obtenerFichaTourAdmin(req.tiendaId, req.params.productoId)); } catch (error) { next(error); }
+  });
+
+router.put("/tours/:productoId", ...gestion, validate({ params: productoParamSchema, body: tourSchema }),
+  async (req, res, next) => {
+    try {
+      const { tiendaId, ...data } = req.body;
+      return ok(res, "TOUR_FICHA_UPDATED", await guardarFichaTour(req.tiendaId, req.params.productoId, data, req.user));
     } catch (error) { next(error); }
   });
 
