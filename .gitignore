@@ -3,3 +3,7 @@ node_modules
 /generated/prisma
 .claude/
 nul
+
+# Pruebas de carga
+load-tests/.env.local
+load-tests/resultados/

@@ -145,11 +145,6 @@ async function sembrar() {
 
     await prisma.$transaction(async (tx) => {
       await tx.tiendas.create({ data: datos.tienda });
-      if (owner) {
-        await tx.usuario_tiendas.create({
-          data: { userId: owner.userId, tiendaId: datos.tienda.id, rol: owner.rolId, activo: true, usuarioRegistro: MARCA_SEED }
-        });
-      }
       // Igual que el onboarding real: contra entrega y recojo en tienda nacen activos.
       await seedMetodosPagoParaTienda(datos.tienda.id, {}, tx);
       await seedMetodosEnvioParaTienda(datos.tienda.id, {}, tx);
@@ -161,6 +156,17 @@ async function sembrar() {
     console.log(`✓ ${datos.tienda.slug} (${datos.tienda.nombre}) — ${n.productos} productos, ${n.variantes} variantes, ${n.pedidos} pedidos, ${n.resenas} reseñas — ${Math.round(performance.now() - t)} ms`);
   }
   console.log(`\nListo en ${Math.round((performance.now() - t0) / 1000)} s. Filas creadas:`, suma);
+
+  // Owner al final y sobre TODAS las tiendas del rango (también las que ya
+  // existían): así --owner-email se puede agregar después sin re-sembrar.
+  if (owner) {
+    const tiendas = await prisma.tiendas.findMany({ where: { slug: { in: slugs }, usuarioRegistro: MARCA_SEED }, select: { id: true } });
+    const { count } = await prisma.usuario_tiendas.createMany({
+      data: tiendas.map(t => ({ userId: owner.userId, tiendaId: t.id, rol: owner.rolId, activo: true, usuarioRegistro: MARCA_SEED })),
+      skipDuplicates: true // uq_usuario_tienda
+    });
+    console.log(`Owner ${args["owner-email"]}: vinculado a ${count} tiendas nuevas (${tiendas.length} en total).`);
+  }
 }
 
 /**

@@ -12,7 +12,7 @@ const { generarTienda, parsearRango } = await import("../generador.js");
 const { COLORES_PRODUCTO } = await import("../../../modules/catalogo/productos.schema.js");
 const { calcularRatingScore } = await import("../../../modules/resenas/resenas.service.js");
 
-const PROD = REFS_PRODUCCION[0];
+const PROD = "refconclientes";
 const POOLER = (ref) => `postgresql://postgres.${ref}:clave@aws-0-sa-east-1.pooler.supabase.com:6543/postgres`;
 
 describe("destino", () => {
@@ -22,8 +22,13 @@ describe("destino", () => {
     expect(refDeBase("postgresql://yo:clave@localhost:5432/tienda")).toBe("localhost");
   });
 
-  it("se niega con producción aunque se confirme", () => {
-    expect(() => verificarDestino({ databaseUrl: POOLER(PROD), confirmar: PROD })).toThrow(/PRODUCCIÓN/);
+  it("se niega con una base de producción aunque se confirme", () => {
+    REFS_PRODUCCION.push(PROD);
+    try {
+      expect(() => verificarDestino({ databaseUrl: POOLER(PROD), confirmar: PROD })).toThrow(/PRODUCCIÓN/);
+    } finally {
+      REFS_PRODUCCION.pop();
+    }
   });
 
   it("se niega con NODE_ENV=production", () => {

@@ -37,6 +37,12 @@ export const config = {
     token: process.env.METRICS_TOKEN || ""
   },
 
+  // Pruebas de carga: X-Carga-Key igual a CARGA_KEY salta los rate limits
+  // (ver kernel/http/rate-limit.js). Vacío = bypass desactivado.
+  carga: {
+    key: process.env.CARGA_KEY || ""
+  },
+
   // Rate Limiting (por IP real del visitante, ventana común)
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutos

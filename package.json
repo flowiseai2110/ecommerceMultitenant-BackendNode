@@ -13,7 +13,8 @@
     "prisma:seed-planes": "node prisma/seed-planes.js",
     "onboard": "node scripts/onboard-form.mjs",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "seed:carga": "node scripts/seed-carga.js"
+    "seed:carga": "node scripts/seed-carga.js",
+    "carga": "node load-tests/run.mjs"
   },
   "keywords": [
     "api",

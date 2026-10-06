@@ -4,14 +4,16 @@
  * Tres barreras, todas obligatorias:
  *  1. NODE_ENV=production → se niega.
  *  2. El proyecto de la base (ref de Supabase, o el host si no es Supabase)
- *     está en la lista de producción → se niega. La lista trae el ref de
- *     producción conocido y se amplía con SEED_CARGA_REFS_PROHIBIDOS.
+ *     está en REFS_PRODUCCION o en SEED_CARGA_REFS_PROHIBIDOS → se niega.
  *  3. --confirmar-db debe repetir exactamente ese ref: obliga a mirar a qué
- *     base apunta el .env antes de correrlo (el .env local apunta a prod).
+ *     base apunta el .env antes de correrlo.
  */
 
-// Ref del proyecto Supabase de producción (público: va en el bundle del Store).
-export const REFS_PRODUCCION = ["horszyybxnjivkuuubjd"];
+// Refs de los proyectos Supabase con CLIENTES REALES. Vacío a propósito
+// (2026-10-05): horszyybxnjivkuuubjd sirve a la app publicada, pero todo es de
+// prueba, sin clientes. El día que entre el primer cliente real, agregar aquí
+// el ref de esa base (o crear un proyecto de staging aparte).
+export const REFS_PRODUCCION = [];
 
 /**
  * Identifica el proyecto al que apunta una URL de Postgres.

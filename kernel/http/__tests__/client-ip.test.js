@@ -23,11 +23,14 @@ let baseUrl;
 beforeAll(async () => {
   config.ssr.apiKey = SECRETO;
   config.metrics.token = "token-metricas";
+  config.carga.key = "clave-carga";
 
   const app = express();
   app.set("trust proxy", 1);
   app.get("/ip", (req, res) => res.json(resolveClientIp(req)));
   app.get("/limitado", crearLimitador({ windowMs: 60_000, max: MAX, code: "TOO_MANY_REQUESTS", message: "x" }),
+    (req, res) => res.json({ ok: true }));
+  app.get("/con-skip", crearLimitador({ windowMs: 60_000, max: 1, code: "X", message: "x", skip: (req) => req.get("x-saltar") === "1" }),
     (req, res) => res.json({ ok: true }));
   app.use("/metrics", requireMetricsToken);
   app.get("/metrics", (req, res) => res.json({ ok: true }));
@@ -107,5 +110,36 @@ describe("requireMetricsToken", () => {
 
   it("con el token correcto deja pasar", async () => {
     expect((await get("/metrics", { "X-Metrics-Key": "token-metricas" })).status).toBe(200);
+  });
+});
+
+describe("bypass de pruebas de carga (X-Carga-Key)", () => {
+  it("con la clave correcta no cuenta para el límite", async () => {
+    const h = { "X-Forwarded-For": "202.6.6.6", "X-Carga-Key": "clave-carga" };
+    for (let i = 0; i < MAX + 3; i++) expect((await get("/limitado", h)).status).toBe(200);
+  });
+
+  it("con una clave incorrecta sí cuenta", async () => {
+    const h = { "X-Forwarded-For": "202.7.7.7", "X-Carga-Key": "otra" };
+    for (let i = 0; i < MAX; i++) await get("/limitado", h);
+    expect((await get("/limitado", h)).status).toBe(429);
+  });
+
+  it("sin CARGA_KEY configurada el bypass no existe", async () => {
+    config.carga.key = "";
+    try {
+      const h = { "X-Forwarded-For": "202.8.8.8", "X-Carga-Key": "" };
+      for (let i = 0; i < MAX; i++) await get("/limitado", h);
+      expect((await get("/limitado", h)).status).toBe(429);
+    } finally {
+      config.carga.key = "clave-carga";
+    }
+  });
+
+  it("respeta el skip propio del limitador", async () => {
+    const h = { "X-Forwarded-For": "202.9.9.9", "X-Saltar": "1" };
+    for (let i = 0; i < 3; i++) expect((await get("/con-skip", h)).status).toBe(200);
+    expect((await get("/con-skip", { "X-Forwarded-For": "202.9.9.9" })).status).toBe(200);
+    expect((await get("/con-skip", { "X-Forwarded-For": "202.9.9.9" })).status).toBe(429);
   });
 });
