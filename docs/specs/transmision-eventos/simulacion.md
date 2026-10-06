@@ -86,3 +86,26 @@ El costo por evento es el **peor caso** (sin la capa gratis de Mux) y, en los ev
 - Precios del mercado de Lima: [Video y Foto para Bodas](https://www.videoyfotoparabodas.com/transmisionenvivoparabodas), [Pop Comunicaciones](https://popcomunicaciones.com/streaming-para-eventos-en-lima-y-todo-el-peru/), [livestreaming.pe](https://livestreaming.pe/).
 - Tipo de cambio de referencia: [La Cámara, 14 de agosto de 2026](https://lacamara.pe/precio-del-dolar-en-peru-hoy-14-de-agosto-de-2026/).
 - Costos de Mux, Cloudflare y R2: ver [spec.md](spec.md#fuentes).
+
+---
+
+# Casos reales por tipo de evento (2026-10-06)
+
+> Script: [casos.py](casos.py). Mismos supuestos de costo. Comisiones de pasarela: Culqi con Yape 2.99 % + S/ 0.30, con tarjeta 3.99 % + S/ 0.60, más IGV; mezcla supuesta de 80 % Yape y 20 % tarjeta.
+
+| Caso | Quién paga | Modelo | Costo de video (Mux) | Costo (Cloudflare) | La plataforma cobra | Margen (Mux / Cloudflare) | Gana la tienda u organizador |
+|---|---|---|---|---|---|---|---|
+| Cumpleaños 1 h, 15 invitados | Los padres | Paquete S/ 49 | S/ 9.11 | S/ 3.21 | S/ 15 | 39 % / 79 % | S/ 34 |
+| Cumpleaños 2 h, 15 invitados | Los padres | Paquete S/ 79 | S/ 17.96 | S/ 6.11 | S/ 25 | 28 % / 76 % | S/ 54 |
+| Cumpleaños 2 h, 25 invitados | Los padres | Paquete S/ 99 | S/ 20.28 | S/ 8.80 | S/ 30 | 32 % / 71 % | S/ 69 |
+| Boda (simulación anterior) | Padrinos y esposos | Premium con videógrafo | S/ 256.76 | — | S/ 720 | 64 % | S/ 280–380 |
+| Promoción 4 h, 60 invitados virtuales | Cada familia, dentro de la cuota | S/ 10 por invitado | S/ 54.61 | — | S/ 3 por invitado (S/ 180) | 70 % | S/ 420 |
+| Deporte escolar 2 h, 80 compras | Cada padre | Ticket S/ 4 | S/ 34.43 | — | 25 % del ticket (S/ 80) | 57 % | S/ 194 (colegio) |
+| Cancha: video del partido + jugadas, 1 mes | El equipo o la empresa | S/ 50 por video | S/ 8.91 | S/ 2.97 | S/ 15 | 41 % / 80 % | S/ 35 (cancha) |
+
+## Hallazgos de los casos reales
+
+1. **Los eventos chicos cambian la elección del proveedor.** Con 15 invitados durante 1–2 h, casi todo el costo de Mux es el **encoding** ($1.92 por hora), que se paga aunque haya pocos invitados. Cloudflare no cobra encoding y sale **unas 3 veces más barato**. El crédito de $20 al mes de Mux solo cubre unas 10 horas.
+2. **Ticket de S/ 4:** la comisión de la pasarela se lleva **unos S/ 0.58 (14 %)**, por la parte fija de cada pago. Con S/ 5 baja a 12 %. Un **abono de temporada** (8 partidos por S/ 28) la baja a 5 %. Además se necesita Yape **automático** (Culqi): 80 pagos de S/ 4 no se pueden verificar a mano.
+3. **Promoción a S/ 10 por invitado:** es el caso más rentable (62–76 %) y el más fácil de vender, porque va dentro de la cuota del evento.
+4. **Cancha:** no necesita transmisión en vivo, solo grabar y guardar. Ya hay competencia especializada con cámaras fijas: FútbolREC (Perú), Beelup (17 países), Signal Play. Encaja mejor como **otro tipo de negocio** (canchas) que dentro de eventos.
