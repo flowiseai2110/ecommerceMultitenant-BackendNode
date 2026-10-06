@@ -63,6 +63,26 @@ export async function processAndUploadImage(buffer, filename, { fit, folder = ""
   return { webp };
 }
 
+// Formatos que se re-codifican. GIF (puede ser animado) y SVG (vectorial) se
+// guardan tal cual.
+export const MIMES_OPTIMIZABLES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
+
+/**
+ * Optimiza una imagen subida tal cual por el usuario: corrige la orientación
+ * EXIF (fotos de celular), la limita a `maxLado` px por lado sin agrandarla y
+ * la convierte a WebP 82. Una foto de cámara de 4-5 MB queda en ~100-200 KB.
+ * @param {Buffer} buffer
+ * @param {number} [maxLado=1200]
+ * @returns {Promise<Buffer>} WebP
+ */
+export async function optimizarImagenSubida(buffer, maxLado = 1200) {
+  return sharp(buffer)
+    .rotate()
+    .resize(maxLado, maxLado, { fit: "inside", withoutEnlargement: true })
+    .webp({ quality: 82 })
+    .toBuffer();
+}
+
 /**
  * Elimina archivos de un bucket de Supabase Storage (best-effort, no lanza si falla).
  * Solo para buckets privados/temporales (scratch de Studio); los assets públicos

@@ -5,6 +5,7 @@ import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireTiendaAccess } from "../middlewares/tienda-access.middleware.js";
 import { normalizarImagenWidget } from "../modules/campanas/widget-imagen.js";
 import { uploadPublicFile } from "../services/storage.service.js";
+import { optimizarImagenSubida, MIMES_OPTIMIZABLES } from "../services/image.service.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { uploadImageSchema, validateFile } from "../validators/uploads.validator.js";
 import config from "../config/index.js";
@@ -87,6 +88,21 @@ router.post(
       if (folder === "widgets") {
         const buffer = await normalizarImagenWidget(file.buffer);
         file = { ...file, buffer, size: buffer.length, mimetype: "image/webp", originalname: "widget.webp" };
+      } else if (MIMES_OPTIMIZABLES.has(file.mimetype)) {
+        // Antes se guardaba el original: fotos de categoría de 3-5 MB hacían
+        // pesar la portada del storefront 10 MB (Lighthouse, Fase 4).
+        let buffer;
+        try {
+          buffer = await optimizarImagenSubida(file.buffer);
+        } catch {
+          return apiResponse(res, {
+            status: 400,
+            type: "WARNING",
+            code: "VALIDATION_ERROR",
+            data: { file: ["La imagen está dañada o no se pudo procesar"] }
+          });
+        }
+        file = { ...file, buffer, size: buffer.length, mimetype: "image/webp", originalname: "imagen.webp" };
       }
 
       // Generar nombre único para el archivo
