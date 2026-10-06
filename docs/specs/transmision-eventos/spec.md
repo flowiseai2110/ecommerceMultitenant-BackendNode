@@ -1,6 +1,6 @@
 # Spec: Transmisión en vivo de eventos privados
 
-> Estado: **análisis y diseño en revisión** (2026-10-06). Cobro, paquetes, excedente y grabación ya decididos. Sin implementar.
+> Estado: **análisis y diseño en revisión** (2026-10-06). Cobro, paquetes, excedente y grabación ya decididos. Rentabilidad simulada en [simulacion.md](simulacion.md). Sin implementar.
 > Diseño técnico: pendiente (`plan.md`, cuando se cierren las [preguntas abiertas](#preguntas-abiertas)).
 > Repos involucrados: BackendNode, FrontendAdmin, FrontendStore.
 > Relacionado: [mini-booking](../mini-booking/spec.md) (eventos, funciones y entradas), [aviso-live](../aviso-live/spec.md) (aviso con enlaces a TikTok/YouTube/Facebook) y [verticales-reserva/eventos.md](../verticales-reserva/eventos.md) (entradas con QR, modalidad virtual).
@@ -58,7 +58,7 @@ Lo que nos diferencia:
 | **Privacidad** | Baja: quien tiene el enlace de YouTube entra | Alta: enlace por invitado, video firmado y con vencimiento | Alta en la página propia; en Facebook y YouTube depende de esas plataformas |
 | **Calidad** | La de YouTube | Hasta 1080p, unos 5 s de retraso, se adapta a la conexión de cada invitado | Igual que Privado |
 | **Grabación** | La de YouTube (en el canal del negocio) | Opcional: **30 días** en línea + descarga | Incluida: **90 días** en línea + descarga por **1 año** |
-| **Retransmisión a Facebook y YouTube** | — | — | ✅ |
+| **Retransmisión a Facebook y YouTube** | — | — | ✅ se cobra **por hora y por destino** (ver [simulación](simulacion.md)) |
 | **Resumen con IA** (resumen, momentos clave, capítulos) | — | — | ✅ |
 | **Costo para la plataforma** (3 h, 40 invitados) | **$0** | **≈ $6** | **≈ $13 + IA** |
 | **Consume horas del paquete** | No | Sí | Sí |
@@ -92,7 +92,7 @@ La mayoría de las vistas de una grabación familiar ocurren en la primera seman
 | **Básico** | La que guarde YouTube en el canal del negocio | — | $0 |
 | **Privado** | **30 días** | Durante los mismos 30 días | ≈ $0.54 + $0.10 |
 | **Premium** | **90 días** | **1 año** | ≈ $1.62 + $1.22 |
-| **Adicional: "Guardar 1 año"** | 1 año en línea | 1 año | ≈ $6.50 → precio sugerido $15 |
+| **Adicional: "Guardar 1 año"** | Se mantiene el plazo del plan (no se alarga en Mux) | 1 año en R2 | ≈ $1.22 → precio sugerido S/ 50. Guardarla 1 año en Mux costaría ≈ $6.50 y deja el margen en 47 % (ver [simulación](simulacion.md)) |
 
 Reglas:
 - **"Solo en vivo":** el anfitrión puede pedir que no se grabe (como EventLive). Es la opción más privada.
