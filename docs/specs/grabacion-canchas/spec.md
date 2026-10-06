@@ -65,16 +65,54 @@ Todo en español claro, cobrado con Yape y **conectado con las reservas** de la 
 
 ## Equipo e instalación
 
-**Una cámara por cancha, fija y alta, que ve toda la cancha.** No se necesita un camarógrafo.
+**Una cámara panorámica (180°) por cancha, fija y alta, que ve toda la cancha.** No se necesita un camarógrafo.
 
-| Pieza | Ejemplo | Precio aproximado | Para qué |
-|---|---|---|---|
-| Cámara IP 4K exterior PoE, gran angular | Reolink P330 / P430 (105°), Hikvision equivalente | ≈ €90 (unos S/ 350–450 en Perú, por verificar) | Ver la cancha completa de día y de noche |
-| Mini PC o Raspberry Pi 5 | Con ffmpeg o MediaMTX | ≈ S/ 300–500 (uno sirve para varias canchas del mismo local) | Toma el video de la cámara (RTSP) y lo envía a la nube (SRT) solo en los horarios de partido |
-| Switch PoE + cable | 4–8 puertos | ≈ S/ 150 | Da energía y red a las cámaras |
-| Poste o soporte a 6–8 m + instalación | — | ≈ S/ 300–500 | Altura para ver toda la cancha |
-| Carteles con QR | Impresos | ≈ S/ 20 | "Marca tu jugada" |
-| **Total por local con 1 cancha** | | **≈ S/ 1,200–1,800** | |
+### Qué debe tener la cámara para un partido (no es lo mismo que vigilar)
+
+| Requisito | Por qué | Mínimo |
+|---|---|---|
+| **Ver toda la cancha** | Un gol en una esquina no puede quedar fuera | Panorámica de **180°** en el medio de la banda, o gran angular de 100°+ detrás de un arco |
+| **Fluidez** | Las cámaras de seguridad graban a 15–20 cuadros por segundo y la pelota se ve "a saltos" | **25 fps o más** |
+| **Color de noche** | La mayoría de partidos son de noche. El infrarrojo da imagen en blanco y negro | Lente luminoso (F1.0–F1.6) y **infrarrojo apagado**: se usan los reflectores |
+| **Contraluz** | Reflectores de frente | WDR de 120 dB o más |
+| **Exterior** | Lluvia, polvo, sol | IP66/IP67, alimentación PoE |
+| **Micrófono** | Para la fase 3: detectar jugadas por los gritos y aplausos | Micrófono integrado |
+| **Envío directo a la nube (RTMP)** | Sin RTMP hace falta un mini PC en la cancha | Deseable |
+
+### Opciones
+
+| Nivel | Cámara | Precio aprox. (fuera de Perú) | Cuadros por segundo | Lo bueno | Lo malo |
+|---|---|---|---|---|---|
+| **Piloto / económico** | **Reolink Duo 3 PoE** (2 lentes, 16 MP, 180°) | US$ 120–220 | 20 fps | La más barata con 180°; mucha resolución para hacer zoom en los clips | 20 fps; infrarrojo (de noche hay que usar los reflectores); marca con poca presencia en Perú; necesita mini PC |
+| ⭐ **Recomendada** | **Dahua IPC-PFW5849-A180-E2-ASTE** (WizMind, 2 lentes, 180°) | US$ 210–330 | **25 fps** a 8 MP | Color de noche hasta 40 m, micrófono, Dahua tiene distribuidores y técnicos en Perú. Muchas Dahua de la serie 3 o superior envían RTMP directo (sin mini PC) | Hay que confirmar el RTMP en este modelo |
+| Alternativa | **Hikvision DS-2CD2387G2P-LSU/SL** (ColorVu, 180°) | ≈ €275 | 20 fps | Lentes F1.0 (la mejor de noche), micrófono, IP67, Hikvision está muy presente en Perú | 20 fps; necesita mini PC |
+| Deportiva con IA (no para revender) | **Veo Cam 3** | US$ 1,199–1,998 + US$ 799 al año | 60 fps en 4K | Sigue la pelota sola; la usan más de 40,000 clubes | Cara, portátil (no fija) y con **su propia plataforma**: compite con nosotros |
+| Deportiva con IA (no para revender) | **Pixellot Air NXT** | ≈ US$ 949 + US$ 69–167 al mes | 30 fps | Muy buena para transmisiones | Igual que Veo: plataforma propia y suscripción |
+
+**Recomendación:**
+- **Estandarizar en un solo modelo**, la **Dahua panorámica**: 25 fps, color de noche, micrófono, posible envío directo y soporte local. Un solo modelo simplifica la instalación, la configuración remota y la garantía.
+- La **Hikvision ColorVu** queda como alternativa donde el distribuidor la tenga a mejor precio.
+- La **Reolink Duo 3** queda solo para el piloto o una cancha muy económica.
+- Veo y Pixellot son excelentes, pero traen su propia plataforma y su suscripción, así que no sirven para nuestro modelo. Solo tienen sentido para academias que necesitan análisis táctico.
+
+**Ubicación:** en el medio de la banda, a **5–8 m de altura** (en el poste de un reflector o un poste propio), apuntando a la cancha. En fútbol 5 basta una cámara. En fútbol 7 u 8, si la cancha es larga, se pueden poner dos gran angulares, una detrás de cada arco.
+
+### Kit por cancha
+
+| Pieza | Precio aproximado |
+|---|---|
+| Cámara panorámica Dahua o Hikvision | S/ 900–1,300 (por confirmar con distribuidores en Perú) |
+| Mini PC (solo si la cámara no envía RTMP; uno sirve para varias canchas) | S/ 300–500 |
+| Switch PoE + cable exterior | S/ 150–250 |
+| Poste o soporte + instalación | S/ 300–600 |
+| Carteles con QR | S/ 20 |
+| **Total** | **≈ S/ 1,700–2,600** |
+
+**Venderlo o prestarlo:**
+- **Venta instalada:** a unos **S/ 2,500–3,200** (≈ 25–30 % de margen) y la cancha paga una cuota menor.
+- **Comodato:** la plataforma lo pone y lo recupera con la cuota y su parte de las ventas en unos 4–8 meses.
+
+En el piloto conviene probar **la Dahua y la Reolink lado a lado, de noche, en una cancha real**, antes de comprar en cantidad.
 
 **Internet:** se necesita una **subida estable de 4–6 Mbps por cámara**. Muchas canchas no la tienen. Opciones:
 - Contratar fibra con buena subida.
@@ -111,7 +149,7 @@ Supuestos: un video vendido lo ven 8 personas 15 minutos; hay 4 jugadas por part
 - La cancha gana con cada venta, así que le conviene promoverlo.
 - La plataforma gana más cuanto más se use.
 
-Con el comodato, el equipo (S/ 1,200–1,800) se recupera en unos **3–6 meses** de margen.
+Con el comodato, el equipo (S/ 1,700–2,600) se recupera en unos **4–8 meses** de margen.
 
 **El modelo A** (suscripción) sirve para la cancha que quiere regalar el video a sus clientes como diferencial, o subir S/ 10 el precio de la hora "con video".
 
@@ -156,7 +194,8 @@ Con el comodato, el equipo (S/ 1,200–1,800) se recupera en unos **3–6 meses*
 ## Por verificar
 
 - [ ] Que el *live instant clipping* de Cloudflare permita crear un clip de los últimos N segundos desde nuestro backend, y cuánto tarda.
-- [ ] Qué cámaras envían RTMP o SRT directamente (sin mini PC) y su precio real en Perú.
+- [ ] Si la Dahua IPC-PFW5849-A180 envía RTMP directo, y los precios reales de Dahua y Hikvision con distribuidores en Perú.
+- [ ] Prueba nocturna de 25 fps frente a 20 fps con una pelota en movimiento.
 - [ ] Precios de FútbolREC, y si Beelup ya opera en Perú.
 - [ ] Velocidad de subida típica del internet en canchas de Lima norte y sur.
 - [ ] Número de canchas sintéticas en Lima y en provincias (no hay una cifra pública).
@@ -175,5 +214,7 @@ Con el comodato, el equipo (S/ 1,200–1,800) se recupera en unos **3–6 meses*
 - Competencia en Perú: [FútbolREC](https://futbolrec.com/), [Canchas Matamula](https://canchasfutbol.com/peru/lima/lince/canchas-matamula/), [Signal Play](https://signal-play.com.ar/clubes).
 - Precios de canchas en Lima: [Líbero](https://libero.pe/ocio/curiosidades/2022/08/19/cuanto-cuesta-alquilar-cancha-sintetica-jugar-mis-amigos-en-lima-centro-civico-74939), [Municipalidad de Pueblo Libre](https://www.gob.pe/58127-alquilar-las-canchas-de-los-complejos-deportivos-de-pueblo-libre).
 - Cloudflare: [live instant clipping](https://developers.cloudflare.com/stream/stream-live/live-instant-clipping), [precios](https://developers.cloudflare.com/stream/pricing/index.md).
+- Cámaras deportivas: [Veo – comparativa 2026](https://www.veo.com/en-us/article/soccer-camera-systems-compared), [Pixellot vs Veo vs XbotGo](https://sportssteps.com/pixellot-vs-veo-vs-xbotgo-best-ai-cameras-youth-sports/), [Zone14 – cámaras para fútbol 2026](https://zone14.ai/en/blog/the-5-best-cameras-for-football-video-analysis-2026/).
+- Cámaras panorámicas: [Reolink Duo 3 PoE (review)](https://mariushosting.com/reolink-duo-3-poe-review/), [Dahua IPC-PFW5849-A180](https://www.kaina24.lt/p/dahua-ipc-pfw5849-a180-e2-aste/), [Hikvision DS-2CD2387G2P-LSU/SL](https://shop.ascend.de/en/products/hikvision-ds-2cd2387g2p-lsu-sl-311323800), [RTMP en Dahua](https://securitycamcenter.com/how-to-stream-ip-camera-to-youtube-live/).
 - Cámaras: [Reolink P330](https://www.domadoo.fr/es/productos-de-domotica/8179-reolink-camara-exterior-4k-onvif-poe-p330-b-8mp-6976930224356.html), [Reolink P430](https://www.ldlc.com/es-es/ficha/PB00734910.html).
 - Comisiones de Culqi: [kom.pe](https://kom.pe/pasarelas-pago-tienda-virtual-peru-2026/).
