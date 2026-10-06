@@ -15,13 +15,13 @@ export const config = {
   jwtAudience: process.env.JWT_AUDIENCE || "authenticated",
 
   // Saltos de proxy confiables delante de la app (Express "trust proxy").
-  // 1 = solo el edge de Railway. Si el tráfico pasa además por el rewrite de
-  // Vercel, el visitante queda a 2 saltos: confirmarlo con GET /api/v1/debug/ip
-  // (DEBUG_CLIENT_IP=true) antes de subirlo. Un valor mayor al real permite
-  // falsificar la IP con X-Forwarded-For.
+  // Railway tiene 2: su edge (reescribe X-Forwarded-For con la IP del cliente)
+  // y un proxy interno (100.64.x). Verificado en producción el 2026-10-05 con
+  // GET /api/v1/debug/ip. Un valor mayor al real permitiría falsificar la IP.
+  // El rewrite de Vercel NO se resuelve con esto: llega como IP de Vercel.
   trustProxyHops: Number.isInteger(parseInt(process.env.TRUST_PROXY_HOPS))
     ? parseInt(process.env.TRUST_PROXY_HOPS)
-    : 1,
+    : 2,
 
   // Expone GET /api/v1/debug/ip (diagnóstico de IP real). Apagar al terminar.
   debugClientIp: process.env.DEBUG_CLIENT_IP === "true",

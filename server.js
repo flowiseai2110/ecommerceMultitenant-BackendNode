@@ -26,7 +26,7 @@ const app = express();
 // Railway (y cualquier PaaS) pone la app detrás de su proxy: sin esto,
 // req.ip es la IP del proxy y el rate limiting cuenta a TODOS los visitantes
 // como una sola IP. Se confía en un número exacto de saltos (TRUST_PROXY_HOPS,
-// por defecto 1 = edge de Railway); nunca "true", porque permitiría a un
+// por defecto 2 = edge + proxy interno de Railway); nunca "true", porque permitiría a un
 // cliente falsificar su IP vía X-Forwarded-For y evadir el rate limit.
 // El SSR del storefront no pasa por aquí: ver kernel/http/client-ip.js.
 app.set("trust proxy", config.trustProxyHops);
@@ -42,12 +42,21 @@ app.use(helmet());
 app.use(compression());
 
 // CORS - Configuración
-app.use(cors({
-  origin: config.cors.origin,
-  credentials: config.cors.credentials,
+// El navegador del storefront llama a la API directo (no por el rewrite de
+// Vercel, que ocultaba la IP real) desde el dominio de cada tienda, incluidos
+// dominios propios que no se conocen de antemano. /store es público y no usa
+// cookies (el JWT del comprador va en Authorization): se abre a cualquier
+// origen. El resto de la API (admin) mantiene la lista CORS_ORIGIN.
+const corsBase = {
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+  allowedHeaders: ["Content-Type", "Authorization"],
+  // Cachea el preflight (Chrome topa en 2 h): menos OPTIONS por visita.
+  maxAge: 7200
+};
+const esRutaStore = (req) => req.path === "/api/v1/store" || req.path.startsWith("/api/v1/store/");
+app.use(cors((req, callback) => callback(null, esRutaStore(req)
+  ? { ...corsBase, origin: "*", credentials: false }
+  : { ...corsBase, origin: config.cors.origin, credentials: config.cors.credentials })));
 
 // Rate Limiting global por IP real del visitante. Lecturas y escrituras con
 // contadores separados: navegar el catálogo no debe consumir el cupo de
