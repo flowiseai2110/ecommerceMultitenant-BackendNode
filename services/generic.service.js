@@ -52,6 +52,10 @@ class GenericService {
     //   producto_variantes, producto_imagenes), nombre de la relación al padre
     //   que sí la tiene. El filtro tiendaId se traduce a { <relación>: { tiendaId } }.
     this.tenantRelation = options.tenantRelation || null;
+    // - baseWhere: condición fija que se suma (AND) a todo listado, sin importar
+    //   los filtros del cliente. Ej. el storefront nunca lista los productos de
+    //   un evento privado.
+    this.baseWhere = options.baseWhere || null;
   }
 
   /**
@@ -84,7 +88,7 @@ class GenericService {
       page: parseInt(page) || undefined,
       limit: parseInt(limit) || undefined,
       orderBy: this.parseOrderBy(orderBy) || this.defaultOrderBy || undefined,
-      where: this.buildWhereClause(filters),
+      where: this.baseWhere ? { AND: [this.buildWhereClause(filters), this.baseWhere] } : this.buildWhereClause(filters),
       ...(resolvedSelect ? { select: resolvedSelect } : { include: resolvedInclude })
     };
 

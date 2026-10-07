@@ -15,6 +15,7 @@ import routes from "./routes/index.js";
 import { swaggerSpec } from "./config/swagger.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 import { performanceMiddleware, getRouteMetrics, resetRouteMetrics } from "./middlewares/performance.middleware.js";
+import { iniciarJobTransmisiones } from "./jobs/transmisiones.job.js";
 
 // Soporte para serializar BigInt a JSON
 BigInt.prototype.toJSON = function() {
@@ -81,8 +82,14 @@ app.use(crearLimitador({
 // MIDDLEWARES DE PARSING
 // ============================================
 
-// Parse JSON bodies
-app.use(express.json({ limit: "10mb" }));
+// Parse JSON bodies. Los webhooks guardan además el cuerpo crudo: su firma se
+// calcula sobre los bytes exactos (ej. Cloudflare Stream).
+app.use(express.json({
+  limit: "10mb",
+  verify: (req, res, buf) => {
+    if (req.originalUrl.startsWith("/api/v1/webhooks/")) req.rawBody = Buffer.from(buf);
+  }
+}));
 
 // Parse URL-encoded bodies
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
@@ -222,6 +229,9 @@ async function startServer() {
       logger.info(`Ambiente: ${config.nodeEnv}`);
       logger.info(`API disponible en http://localhost:${PORT}/api/v1`);
     });
+
+    // Corte, señal y limpieza de las transmisiones en vivo (plan Privado).
+    iniciarJobTransmisiones();
   } catch (error) {
     logger.error("Error al iniciar el servidor:", error);
     process.exit(1);

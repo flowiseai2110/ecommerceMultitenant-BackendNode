@@ -17,6 +17,7 @@ import agenteRoutes from "../../modules/agente/agente.store.routes.js";
 import sunatRoutes from "../../modules/sunat/ruc.store.routes.js";
 import libroRoutes from "../../modules/libro-reclamaciones/libro.store.routes.js";
 import reservasRoutes from "../../modules/reservas/reservas.store.routes.js";
+import transmisionesRoutes from "../../modules/transmisiones/transmisiones.store.routes.js";
 
 const router = Router();
 
@@ -44,5 +45,6 @@ router.use("/agente", agenteRoutes);          // sin caché — cada consulta es
 router.use("/sunat", sunatRoutes);            // caché solo en respuestas exitosas (lo fija la ruta)
 router.use("/libro-reclamaciones", libroRoutes); // sin caché global — la cabecera del proveedor la fija la ruta
 router.use("/reservas", reservasRoutes);          // sin caché global — cada ruta fija la suya (mini booking)
+router.use("/transmisiones", transmisionesRoutes);  // sin caché — página del invitado (enlace firmado)
 
 export default router;

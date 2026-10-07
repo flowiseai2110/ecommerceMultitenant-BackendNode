@@ -61,6 +61,9 @@ const productosService = new GenericService(productosRepository, {
   // Read-policy store: sin tiendaId (subdominio o ?tiendaId=) no se lista nada.
   requireTiendaId: true,
   allowedFilters: ["activo", "categoriaId", "destacado", "esServicio"],
+  // El producto de un evento privado (cumpleaños, boda) no se lista ni se busca
+  // (docs/specs/transmision-eventos, R1.4).
+  baseWhere: { NOT: { evento: { is: { privado: true } } } },
   // El storefront permite marcar varias categorias a la vez (?categoriaId=a,b)
   multiValueFilters: ["categoriaId"],
   allowedOrderBy: ["precioBase", "nombre", "fechaRegistro", "stock", "ratingScore"],
@@ -125,6 +128,7 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
           LIMIT 1
         ) img ON true
         WHERE p.tienda_id = ${tiendaId}::uuid AND p.activo = true AND p.destacado = true
+          AND NOT EXISTS (SELECT 1 FROM eventos e WHERE e.producto_id = p.id AND e.privado)
         ORDER BY p.id DESC
         LIMIT ${take}
       )
@@ -144,6 +148,7 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
           LIMIT 1
         ) img ON true
         WHERE p.tienda_id = ${tiendaId}::uuid AND p.activo = true
+          AND NOT EXISTS (SELECT 1 FROM eventos e WHERE e.producto_id = p.id AND e.privado)
         ORDER BY p.fecha_registro DESC
         LIMIT ${take}
       )
@@ -209,6 +214,7 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
         WHERE pi.producto_id = p.id
       ) i ON true
       WHERE p.id = ${id}::uuid
+        AND NOT EXISTS (SELECT 1 FROM eventos e WHERE e.producto_id = p.id AND e.privado)
     `;
 
     if (!rows[0]) {

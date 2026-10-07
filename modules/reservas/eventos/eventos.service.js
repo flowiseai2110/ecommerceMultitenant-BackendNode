@@ -183,7 +183,7 @@ const tipoIdsDe = (productos) => productos.flatMap(p => p.evento.funciones.flatM
 /** Eventos con al menos una función futura, ordenados por la más próxima. */
 export async function listarEventosStore(tiendaId, ahora = new Date()) {
   const [productos, config] = await Promise.all([
-    prisma.productos.findMany({ where: { tiendaId, activo: true, evento: { isNot: null } }, select: SELECT_EVENTO_STORE(ahora) }),
+    prisma.productos.findMany({ where: { tiendaId, activo: true, evento: { is: { privado: false } } }, select: SELECT_EVENTO_STORE(ahora) }),
     obtenerConfig(tiendaId)
   ]);
   const conFunciones = productos.filter(p => p.evento.funciones.some(f => f.tiposEntrada.length));
@@ -195,7 +195,7 @@ export async function listarEventosStore(tiendaId, ahora = new Date()) {
 
 export async function obtenerEventoStore(tiendaId, slug, ahora = new Date()) {
   const [p, config] = await Promise.all([
-    prisma.productos.findFirst({ where: { tiendaId, slug, activo: true, evento: { isNot: null } }, select: SELECT_EVENTO_STORE(ahora) }),
+    prisma.productos.findFirst({ where: { tiendaId, slug, activo: true, evento: { is: { privado: false } } }, select: SELECT_EVENTO_STORE(ahora) }),
     obtenerConfig(tiendaId)
   ]);
   if (!p) throw new NotFoundError("Evento", "Evento no encontrado");
@@ -207,7 +207,7 @@ export async function obtenerEventoStore(tiendaId, slug, ahora = new Date()) {
 export async function cargarFuncionParaCompra(tiendaId, productoId, funcionId, ahora = new Date()) {
   if (!funcionId) throw new ValidationError("Elige la función", { message: "Elige la función", motivo: "FUNCION_REQUERIDA" });
   const funcion = await prisma.evento_funciones.findFirst({
-    where: { id: funcionId, productoId, tiendaId, evento: { producto: { activo: true } } },
+    where: { id: funcionId, productoId, tiendaId, evento: { privado: false, producto: { activo: true } } },
     include: {
       tiposEntrada: { orderBy: ORDEN_TIPOS },
       evento: { include: { producto: { select: { id: true, nombre: true } } } }
@@ -248,8 +248,10 @@ export async function listarEventosAdmin(tiendaId, ahora = new Date()) {
       nombre: p.nombre,
       slug: p.slug,
       activo: p.activo,
+      privado: p.evento?.privado ?? false,
       imagenUrl: (p.imagenes.find(i => i.esPrincipal) ?? p.imagenes[0])?.url ?? null,
-      configurada: futuras.some(f => f.tiposEntrada.some(t => t.activo)),
+      // Un evento privado no vende entradas: basta con una función próxima.
+      configurada: p.evento?.privado ? futuras.length > 0 : futuras.some(f => f.tiposEntrada.some(t => t.activo)),
       lugar: p.evento?.lugar ?? null,
       proximaFuncion: futuras[0] ? { id: futuras[0].id, inicio: futuras[0].inicio } : null,
       funcionesFuturas: futuras.length,
@@ -267,12 +269,14 @@ function serializarFichaAdmin(e, apartadas) {
     mapaUrl: e.mapaUrl,
     edadMinima: e.edadMinima,
     organizador: e.organizador,
+    privado: e.privado,
     funciones: e.funciones.map(f => ({
       id: f.id,
       nombre: f.nombre,
       inicio: aLocal(f.inicio),
       fin: aLocal(f.fin),
       activa: f.activa,
+      transmision: f.transmision ? { id: f.transmision.id, plan: f.transmision.plan, estado: f.transmision.estado } : null,
       tipos: f.tiposEntrada.map(t => ({
         id: t.id,
         nombre: t.nombre,
@@ -289,7 +293,12 @@ function serializarFichaAdmin(e, apartadas) {
   };
 }
 
-const INCLUDE_FICHA = { funciones: { orderBy: { inicio: "asc" }, include: { tiposEntrada: { orderBy: ORDEN_TIPOS } } } };
+const INCLUDE_FICHA = {
+  funciones: {
+    orderBy: { inicio: "asc" },
+    include: { tiposEntrada: { orderBy: ORDEN_TIPOS }, transmision: { select: { id: true, plan: true, estado: true } } }
+  }
+};
 
 /** Ficha de evento de un producto (null si todavía no la tiene). */
 export async function obtenerFichaEventoAdmin(tiendaId, productoId, ahora = new Date()) {
@@ -313,7 +322,8 @@ export async function guardarFichaEvento(tiendaId, productoId, data, user, ahora
   await productoDeTienda(tiendaId, productoId);
   const usuario = user?.email ?? user?.id ?? null;
   const ficha = {
-    lugar: data.lugar, direccion: data.direccion, mapaUrl: data.mapaUrl, edadMinima: data.edadMinima, organizador: data.organizador
+    lugar: data.lugar, direccion: data.direccion, mapaUrl: data.mapaUrl, edadMinima: data.edadMinima, organizador: data.organizador,
+    privado: data.privado
   };
 
   await prisma.$transaction(async (tx) => {
@@ -321,7 +331,7 @@ export async function guardarFichaEvento(tiendaId, productoId, data, user, ahora
 
     const existentes = await tx.evento_funciones.findMany({
       where: { productoId, tiendaId },
-      include: { tiposEntrada: { include: { _count: { select: { items: true } } } } }
+      include: { tiposEntrada: { include: { _count: { select: { items: true } } } }, transmision: { select: { id: true } } }
     });
     const tiposExistentes = new Map(existentes.flatMap(f => f.tiposEntrada.map(t => [t.id, { ...t, funcionId: f.id }])));
     const funcionesExistentes = new Map(existentes.map(f => [f.id, f]));
@@ -335,6 +345,12 @@ export async function guardarFichaEvento(tiendaId, productoId, data, user, ahora
 
     for (const id of idsFunciones) {
       if (!funcionesExistentes.has(id)) throw new ValidationError("Una de las funciones no pertenece a este evento", { message: "Una de las funciones no pertenece a este evento" });
+    }
+    // Borrarla se llevaría la transmisión y los enlaces de los invitados (docs/specs/transmision-eventos).
+    for (const f of existentes) {
+      if (!idsFunciones.has(f.id) && f.transmision) {
+        throw conflicto("Una función tiene una transmisión con invitados: desactívala en lugar de borrarla", "FUNCION_CON_TRANSMISION");
+      }
     }
     for (const [id, t] of tiposExistentes) {
       const seBorra = !idsTipos.has(id) || !idsFunciones.has(t.funcionId);

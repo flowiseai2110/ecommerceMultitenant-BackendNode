@@ -206,6 +206,37 @@ export const config = {
 
   // Mini booking (docs/specs/mini-booking). El link de seguimiento de una
   // reserva lleva un token firmado con linkSecret (estado, pago, confirmación).
+  // Transmisión de eventos (docs/specs/transmision-eventos). El enlace de cada
+  // invitado lleva un token firmado con linkSecret, sin vencimiento propio: las
+  // fechas en que vale salen de la transmisión.
+  transmisiones: {
+    linkSecret: process.env.TRANSMISIONES_LINK_SECRET,
+    // Firma el token de sesión de la App Transmitir (si falta, usa linkSecret).
+    appSecret: process.env.TRANSMISIONES_APP_SECRET || process.env.TRANSMISIONES_LINK_SECRET,
+    // Job de corte, señal y limpieza (jobs/transmisiones.job.js). "false" lo apaga
+    // (ej. en una réplica extra o en scripts).
+    jobs: process.env.TRANSMISIONES_JOBS !== "false"
+  },
+
+  // Video en vivo de los planes Privado y Premium (services/streaming/).
+  // Ver docs/specs/transmision-eventos/fase0.md para obtener cada valor.
+  streaming: {
+    driver: process.env.STREAMING_DRIVER || "cloudflare",
+    cloudflare: {
+      accountId: process.env.CF_STREAM_ACCOUNT_ID,
+      apiToken: process.env.CF_STREAM_API_TOKEN,
+      // <CODE> de customer-<CODE>.cloudflarestream.com
+      customerCode: process.env.CF_STREAM_CUSTOMER_CODE,
+      signingKeyId: process.env.CF_STREAM_SIGNING_KEY_ID,
+      // JWK en base64, tal cual lo devuelve POST /stream/keys
+      signingKeyJwk: process.env.CF_STREAM_SIGNING_KEY_JWK,
+      // Secret del webhook de videos (PUT /stream/webhook)
+      webhookSecret: process.env.CF_STREAM_WEBHOOK_SECRET,
+      // Secret del destino de Notifications (avisos de conectado/desconectado)
+      notificacionesSecret: process.env.CF_NOTIFICATIONS_SECRET
+    }
+  },
+
   reservas: {
     linkSecret: process.env.RESERVAS_LINK_SECRET,
     linkTtlDias: parseInt(process.env.RESERVAS_LINK_TTL_DIAS) || 400,

@@ -1,8 +1,8 @@
 # Spec: Transmisión en vivo de eventos privados
 
-> Estado: **análisis y diseño en revisión** (2026-10-06). Cobro, paquetes, excedente y grabación ya decididos. Rentabilidad simulada en [simulacion.md](simulacion.md). Sin implementar.
-> Diseño técnico: pendiente (`plan.md`, cuando se cierren las [preguntas abiertas](#preguntas-abiertas)).
-> Repos involucrados: BackendNode, FrontendAdmin, FrontendStore.
+> Estado: **plan por fases aprobado** (2026-10-06). Cobro, paquetes, excedente, grabación y proveedor (**Cloudflare Stream**) ya decididos. Rentabilidad simulada en [simulacion.md](simulacion.md), con costos de Mux: hay que recalcularla con Cloudflare en la Fase 0. Sin implementar.
+> Diseño técnico y fases: [plan.md](plan.md). Las [preguntas abiertas](#preguntas-abiertas) se deciden en la fase que las necesita.
+> Repos involucrados: BackendNode, FrontendAdmin, FrontendStore y **App Transmitir** (proyecto aparte, Android; ver [App Transmitir](#app-transmitir-proyecto-aparte)).
 > Relacionado: [mini-booking](../mini-booking/spec.md) (eventos, funciones y entradas), [aviso-live](../aviso-live/spec.md) (aviso con enlaces a TikTok/YouTube/Facebook) y [verticales-reserva/eventos.md](../verticales-reserva/eventos.md) (entradas con QR, modalidad virtual).
 
 ## Problema
@@ -107,7 +107,9 @@ Reglas:
 
 ## Proveedor de video
 
-**Decisión: Mux** para los planes Privado y Premium, detrás de una **interfaz de proveedor** (como `services/storage.service.js` con supabase/r2 y `modules/pagos/pasarela/payment-provider.js`). Así se puede cambiar a Cloudflare Stream u otro si el volumen o el precio lo justifican.
+> **Actualización (2026-10-06): se elige Cloudflare Stream** como proveedor inicial, porque deja más margen en los eventos chicos, que son los más comunes (ver [casos.py](casos.py)). Qué cambia en cada punto: [plan.md](plan.md#qué-cambia-en-la-spec-al-usar-cloudflare-en-vez-de-mux). El análisis de abajo se mantiene como referencia.
+
+**Propuesta original: Mux** para los planes Privado y Premium, detrás de una **interfaz de proveedor** (como `services/storage.service.js` con supabase/r2 y `modules/pagos/pasarela/payment-provider.js`). Así se puede cambiar a Cloudflare Stream u otro si el volumen o el precio lo justifican.
 
 | Criterio | Mux | Cloudflare Stream |
 |---|---|---|
@@ -286,7 +288,7 @@ Formato: *Cuando [condición], el sistema debe [comportamiento].*
 ### R5 — Transmitir (quien graba)
 
 - **R5.1** El admin muestra los datos de conexión (URL RTMPS, clave de transmisión y enlace SRT) **solo** al rol `editor` o superior. La clave está oculta por defecto y se puede copiar.
-- **R5.2** Si se confirma que funciona con Mux, el admin muestra un **QR** que configura Larix Broadcaster de un escaneo.
+- **R5.2** El admin muestra un **QR para vincular la App Transmitir** (ver R11.1). Reemplaza al QR de Larix que se había propuesto.
 - **R5.3** El admin incluye una **guía de equipo y configuración** (ver [Guía de equipo](#guía-de-equipo-para-el-admin)).
 - **R5.4** **Transmisión de prueba:** un botón crea una transmisión temporal de 10 minutos, sin grabación y sin consumir horas, para comprobar la señal y la calidad en el local.
 - **R5.5** El admin regenera la clave de transmisión si se filtró.
@@ -368,7 +370,7 @@ tienda_uso_recursos
   recurso = 'transmision_minutos'
 ```
 
-Variables de entorno nuevas: `STREAMING_DRIVER=mux`, `MUX_TOKEN_ID`, `MUX_TOKEN_SECRET`, `MUX_SIGNING_KEY_ID`, `MUX_SIGNING_PRIVATE_KEY`, `MUX_WEBHOOK_SECRET`.
+Variables de entorno nuevas: `STREAMING_DRIVER=cloudflare`, `CF_STREAM_ACCOUNT_ID`, `CF_STREAM_API_TOKEN`, `CF_STREAM_SIGNING_KEY_ID`, `CF_STREAM_SIGNING_KEY_JWK`, `CF_STREAM_WEBHOOK_SECRET`, `CF_NOTIFICATIONS_SECRET` (ver [plan.md](plan.md)). Con `STREAMING_DRIVER=mux` se usarían las variables `MUX_*`.
 
 ## Guía de equipo (para el admin)
 
@@ -376,7 +378,7 @@ Va dentro del admin, en español claro. Mux recibe video por **RTMPS** y **SRT**
 
 ### Con celular (lo más común)
 
-- **App recomendada:** **Larix Broadcaster** (iOS y Android, gratis, RTMPS y SRT). Una alternativa más fácil es **PRISM Live Studio**.
+- **App:** **Larix Broadcaster** (iOS y Android, RTMPS y SRT) **no es gratis para eventos reales**. La versión gratis transmite 30 min limpios, luego 30 min con un aviso encima, y después se corta. Larix Premium cuesta $9.99 al mes o $119 al año, y lo paga la tienda (verificado el 2026-10-06). Alternativas gratis por probar en la Fase 0: **PRISM Live Studio** y **IRL Pro** (Android). En una laptop, **OBS Studio** es gratis y sin límite. Ver [fase0.md](fase0.md).
 - **Celulares:** cualquier gama media-alta de los últimos 3 años con estabilización óptica. Por ejemplo: iPhone 13 o más nuevo, Samsung Galaxy S23 o más nuevo, Galaxy A55/A56, Google Pixel 7 o más nuevo.
 - **Lo que más mejora la transmisión (más que el celular):**
   1. **Micrófono inalámbrico** (DJI Mic, Rode Wireless GO, Hollyland Lark M2). El audio es la queja número uno.
@@ -392,6 +394,51 @@ Va dentro del admin, en español claro. Mux recibe video por **RTMPS** y **SRT**
 - **Sin laptop:** YoloBox Mini (pantalla, gráficos, 4G o WiFi).
 - **Varias cámaras:** Blackmagic ATEM Mini Pro.
 - **Mala señal en el local:** cable de red si el local lo tiene, un router 4G/5G propio de respaldo o, para profesionales, LiveU Solo.
+
+## App Transmitir (proyecto aparte)
+
+> Decidido el 2026-10-06. Se desarrolla **en otro repositorio**, en **3 semanas**, empezando ahora. Mientras tanto, las pruebas funcionales y el circuito completo del ecommerce se hacen con **Larix Broadcaster** (versión gratis, 30 min por transmisión).
+
+### Por qué
+
+- Larix no es gratis para eventos reales: corta a los 60 min (los últimos 30 con un aviso encima) y Premium cuesta $9.99 al mes.
+- Copiar la URL y la clave a mano es justo el paso donde se equivoca alguien que no es técnico.
+- Una app propia tiene la marca de la plataforma, pone el logo de la tienda encima del video y muestra el tiempo del paquete y los invitados conectados.
+
+### Tecnología
+
+- **Android primero**, en **Kotlin nativo** con [RootEncoder](https://github.com/pedroSG94/RootEncoder) (Apache 2.0): RTMPS, SRT, cambio de bitrate en vivo y logos encima del video.
+- **iOS después**, con [HaishinKit](https://github.com/HaishinKit/HaishinKit.swift) (BSD-3). Mientras tanto, en iPhone se usa Larix Premium o Moblin.
+- Distribución: APK directo para el piloto; luego Google Play ($25 una sola vez).
+
+### Requisitos (R11)
+
+- **R11.1 Vincular por QR:** en el admin, el botón **"Transmitir con este celular"** muestra un QR con un **código de vinculación** de un solo uso, que vence a los 10 minutos. La app lo escanea y el backend le entrega los datos de conexión de **esa** transmisión. La clave nunca se muestra ni se copia.
+- **R11.2 Una sola pantalla:** la cámara, un botón grande **Empezar / Terminar**, el estado (Conectando / En vivo / Reconectando), el tiempo transcurrido, el tiempo restante del paquete y los invitados conectados.
+- **R11.3 Configuración automática:** 1080p a 30 fps y 4.5 Mbps, keyframe cada 2 s, AAC a 128 kbps. Baja sola a 720p si la señal es débil. No hay pantalla de ajustes técnicos.
+- **R11.4 No cortarse:**
+  - sigue transmitiendo con la pantalla bloqueada (servicio en primer plano);
+  - mantiene la pantalla encendida;
+  - se reconecta sola si cambia la red (de wifi a datos) o se cae la señal.
+- **R11.5 Avisos en español claro antes de empezar:** "Activa No molestar", "Conecta el cargador", "Tu señal está débil". Durante la transmisión avisa si el celular se calienta o si queda poca batería.
+- **R11.6 Logo de la tienda** encima del video (opcional, lo activa la tienda).
+- **R11.7 Transmisión de prueba** (R5.4) desde la misma app.
+- **R11.8 Aviso de los 15 minutos:** la app muestra el aviso, pero la decisión de extender sigue en el admin y en el contacto de la transmisión (R7.5), porque el celular que transmite puede estar en No molestar.
+- **R11.9** La app **no guarda** la clave al terminar. Para volver a transmitir se vincula otra vez.
+
+### Contrato con el backend
+
+Lo construye el backend en la Fase 2 ([plan.md](plan.md)). Las rutas son una propuesta y se ajustan al implementar:
+
+| Endpoint | Quién lo llama | Qué hace |
+|---|---|---|
+| `POST /admin/transmisiones/:id/vinculaciones` | Admin (rol `editor` o superior) | Crea el código de vinculación (un solo uso, 10 min) y devuelve el contenido del QR |
+| `POST /app-transmitir/vincular` | App, con el código del QR | Canjea el código. Devuelve `transmisionId`, el nombre del evento, la URL RTMPS, la clave, los datos SRT, el logo de la tienda y un **token de sesión de la app** que vale hasta el fin de la ventana de la función |
+| `GET /app-transmitir/estado` | App (token de sesión) | Estado, tiempo restante e invitados conectados, consultado cada 15–30 s |
+| `POST /app-transmitir/terminar` | App (token de sesión) | Termina la transmisión (igual que R6.3) |
+
+- El código de vinculación se guarda **hasheado**.
+- Si se regenera la clave (R5.5), las sesiones de app de esa transmisión quedan anuladas.
 
 ## Competencia
 
@@ -424,7 +471,7 @@ Va dentro del admin, en español claro. Mux recibe video por **RTMPS** y **SRT**
 
 ## Por verificar
 
-Estos datos salen de búsquedas en la web; las páginas oficiales de Mux y Cloudflare no se pudieron abrir desde el entorno de análisis. Hay que confirmarlos antes de `plan.md`.
+Estos datos salen de búsquedas en la web; las páginas oficiales de Mux y Cloudflare no se pudieron abrir desde el entorno de análisis. Los que tienen que ver con Mux quedan en segundo plano; los de Cloudflare están en la Fase 0 de [plan.md](plan.md#fase-0-verificación-técnica-sin-código-de-producción).
 
 - [ ] Si el plan Pay as you go de Mux tiene cuota mensual fija, y si el crédito de $20 al mes sigue vigente.
 - [ ] Precio del encoding en vivo de Mux ($0.032/min) y de la retransmisión ($0.02/min por destino).
@@ -442,13 +489,21 @@ Estos datos salen de búsquedas en la web; las páginas oficiales de Mux y Cloud
 1. **Cobro:** horas de transmisión con tope de invitados. La unidad es "1 hora para hasta 50 invitados", con factores de 0.7 / 1 / 1.6 / 2.8 según el tope (ver [Modelo de cobro](#modelo-de-cobro)).
 2. **Paquete:** **ambos**, horas en el plan mensual (no se acumulan) y paquetes prepagados (vencen a los 12 meses). Los dos son rentables con la regla de 1.3× el peor caso.
 3. **Al agotarse:** aviso **cuando quedan 15 minutos**. El excedente **siempre se confirma** con la tienda (o lo autorizó al activar con un tope). Sin confirmación, se corta 5 minutos después.
-4. **Grabación:** Privado 30 días en línea + descarga; Premium 90 días en línea + descarga por 1 año; adicional "Guardar 1 año"; opción "Solo en vivo".
+4. **Grabación:** Privado 30 días en línea + descarga; Premium 90 días en línea + descarga por 1 año; adicional "Guardar 1 año"; opción "Solo en vivo". Los plazos en línea se revisan en la Fase 0, porque guardar en Cloudflare cuesta más que en Mux.
+5. **Proveedor inicial: Cloudflare Stream** (no Mux). No cobra encoding y deja entre 71 y 79 % de margen en los eventos chicos. Los factores de invitados (0.7 / 1 / 1.6 / 2.8) y los precios se recalculan con sus costos ([plan.md](plan.md#factores-de-invitados-hay-que-recalcularlos)).
+6. **Cobro de paquetes y excedente: manual** al inicio (Yape o transferencia a la plataforma, alta por script). El cobro automático a las tiendas queda para después.
+7. **Preguntas abiertas:** se deciden al llegar a la fase que las necesita ([plan.md](plan.md#decisiones-pendientes-por-fase)).
+8. **App propia para transmitir:** [App Transmitir](#app-transmitir-proyecto-aparte), Android en Kotlin con RootEncoder, en otro repositorio y en 3 semanas desde ahora. Larix (versión gratis) solo para las pruebas mientras tanto.
+9. **Invitaciones solo nominativas** (pregunta abierta 1, decidida el 2026-10-06 al empezar la Fase 1): un enlace por invitado con nombre obligatorio. No hay enlace comodín.
+10. **Horas incluidas y factores** (pregunta abierta 3, decidida el 2026-10-06 al empezar la Fase 2): Free 0 h, Starter 0 h, Pro 3 h y Business 6 h al mes. Factores 0.5 / 1 / 2 / 4 para 25 / 50 / 100 / 200 invitados (proporcionales al costo de Cloudflare).
 
 ## Preguntas abiertas
 
-1. **Invitaciones:** ¿siempre nominativas (propuesta: nombre obligatorio, para ver quién se conectó) o también un enlace "comodín" para grupos familiares?
+> Se deciden en la fase que las necesita: la 1 al inicio de la Fase 1, la 3 al inicio de la Fase 2, y la 2 y la 4 al inicio de la Fase 3 ([plan.md](plan.md#decisiones-pendientes-por-fase)).
+
+1. ~~**Invitaciones:** ¿siempre nominativas o también un enlace "comodín"?~~ **Decidido: solo nominativas** (decisión 9).
 2. **Precios finales en soles** de los planes mensuales, los paquetes y el excedente (este spec usa dólares por el costo de Mux).
-3. **Horas incluidas** en cada plan mensual de la plataforma (propuesta: 3 h al mes en el plan con eventos).
+3. ~~**Horas incluidas** en cada plan mensual~~ **Decidido: Free 0, Starter 0, Pro 3 h, Business 6 h** (decisión 10).
 4. **Tope de excedente** por tienda (propuesta: 2 h) y cuándo se cobra.
 
 ## Fuentes

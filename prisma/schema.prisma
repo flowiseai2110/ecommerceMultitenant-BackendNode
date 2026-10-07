@@ -230,6 +230,9 @@ model planes {
   limiteConsultasAsistenteDia Int?     @map("limite_consultas_asistente_dia")
   precioImagenExcedente       Decimal? @map("precio_imagen_excedente") @db.Decimal(10, 2)
   precioMensual               Decimal? @map("precio_mensual") @db.Decimal(10, 2)
+  // Horas de transmisión en vivo (plan Privado) incluidas por mes; no se acumulan.
+  // docs/specs/transmision-eventos (R7). 0 = solo con paquete.
+  horasTransmisionMes         Int      @default(0) @map("horas_transmision_mes")
   orden                       Int      @default(0)
   activo                      Boolean  @default(true)
 
@@ -879,8 +882,8 @@ model libro_reclamaciones {
   proveedorDireccion   String? @map("proveedor_direccion") @db.Text
 
   // Consumidor
-  consumidorNombres   String  @map("consumidor_nombres") @db.VarChar(100)
-  consumidorApellidos String  @map("consumidor_apellidos") @db.VarChar(100)
+  consumidorNombres   String  @map("consumidor_nombres") @db.VarChar(150)
+  consumidorApellidos String  @map("consumidor_apellidos") @db.VarChar(150)
   consumidorDocTipo   String  @map("consumidor_doc_tipo") @db.VarChar(10) // DNI | CE | PASAPORTE
   consumidorDocNumero String  @map("consumidor_doc_numero") @db.VarChar(20)
   consumidorDomicilio String  @map("consumidor_domicilio") @db.Text
@@ -1142,6 +1145,10 @@ model eventos {
   mapaUrl     String? @map("mapa_url") @db.VarChar(500) // link de Google Maps
   edadMinima  Int?    @map("edad_minima")
   organizador String? @db.VarChar(150) // productora o responsable visible al comprador
+  // Evento de un cliente (cumpleaños, boda): no sale en la vitrina, la búsqueda
+  // ni el asesor, y no vende entradas. Se ve solo con una invitación a su
+  // transmisión (docs/specs/transmision-eventos, R1.4).
+  privado     Boolean @default(false)
 
   producto  productos          @relation(fields: [productoId], references: [id], onDelete: Cascade)
   funciones evento_funciones[]
@@ -1162,6 +1169,7 @@ model evento_funciones {
   evento       eventos                @relation(fields: [productoId], references: [productoId], onDelete: Cascade)
   tiposEntrada evento_tipos_entrada[]
   reservas     reservas[]
+  transmision  evento_transmisiones?
 
   @@index([productoId, inicio], name: "idx_evento_funciones_evento")
   @@index([tiendaId, inicio], name: "idx_evento_funciones_tienda")
@@ -1204,4 +1212,129 @@ model evento_compra_items {
 
   @@index([tipoEntradaId], name: "idx_evento_items_tipo")
   @@index([pedidoId], name: "idx_evento_items_pedido")
+}
+
+// ============================================
+// MÓDULO: TRANSMISIÓN DE EVENTOS (docs/specs/transmision-eventos)
+// Una transmisión por función de un evento. Fase 1: plan Básico (YouTube
+// "no listado" incrustado en una página privada). Los invitados entran con un
+// enlace firmado por invitado (/:slug/t/:token). DDL: docs/sql/transmisiones_setup.sql
+// ============================================
+model evento_transmisiones {
+  id        String @id @default(uuid()) @db.Uuid
+  tiendaId  String @map("tienda_id") @db.Uuid
+  funcionId String @unique @map("funcion_id") @db.Uuid
+
+  plan   String @default("basico") @db.VarChar(20) // basico | privado | premium
+  estado String @default("programada") @db.VarChar(20) // programada | cancelada (las etapas en vivo salen de la hora)
+
+  // Duración contratada. Copia de (fin - inicio) de la función, o la que indica
+  // el admin si la función no tiene fin (R1.2).
+  duracionMin    Int     @map("duracion_min")
+  // Plan Básico: id del video de YouTube que se incrusta.
+  youtubeVideoId String? @map("youtube_video_id") @db.VarChar(20)
+
+  // Plan Privado (Fase 2): video propio en Cloudflare Stream.
+  proveedor          String?   @db.VarChar(20) // cloudflare
+  entradaId          String?   @map("entrada_id") @db.VarChar(64) // live input del proveedor
+  // Datos de conexión (URL RTMPS, clave, SRT) cifrados con utils/crypto.js (R9.4).
+  claveCifrada       String?   @map("clave_cifrada") @db.Text
+  // Sube al regenerar la clave: invalida las sesiones de la App Transmitir.
+  claveVersion       Int       @default(1) @map("clave_version")
+  // Tope de invitados (25 | 50 | 100 | 200) y su factor de descuento (0.5 | 1 | 2 | 4).
+  maxInvitados       Int?      @map("max_invitados")
+  factor             Decimal?  @db.Decimal(3, 1)
+  // La entrada solo acepta señal en la prueba y en la ventana del evento (la maneja el job).
+  habilitada         Boolean   @default(false)
+  pruebaHasta        DateTime? @map("prueba_hasta") @db.Timestamptz
+  // Señal que llega del celular: sin_senal | conectada | desconectada
+  senal              String    @default("sin_senal") @db.VarChar(20)
+  senalEn            DateTime? @map("senal_en") @db.Timestamptz
+  inicioRealEn       DateTime? @map("inicio_real_en") @db.Timestamptz
+  // Corte (job, a los 5 min del fin) o "Terminar" del admin (R6.3, R7.8).
+  terminadaEn        DateTime? @map("terminada_en") @db.Timestamptz
+  minutosUsados      Int?      @map("minutos_usados")
+  minutosDescontados Int?      @map("minutos_descontados")
+  // Videos y entrada borrados en el proveedor ("Solo en vivo" en la Fase 2).
+  limpiadaEn         DateTime? @map("limpiada_en") @db.Timestamptz
+
+  // Consentimiento del anfitrión (R9.1, Ley 29733): sin él no se activa.
+  anfitrionNombre   String   @map("anfitrion_nombre") @db.VarChar(150)
+  anfitrionEmail    String?  @map("anfitrion_email") @db.VarChar(150)
+  consentimientoEn  DateTime @map("consentimiento_en") @db.Timestamptz
+  consentimientoPor String   @map("consentimiento_por") @db.VarChar(100)
+
+  // Auditoría
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  funcion       evento_funciones            @relation(fields: [funcionId], references: [id], onDelete: Cascade)
+  invitaciones  evento_invitaciones[]
+  vinculaciones transmision_vinculaciones[]
+
+  @@index([tiendaId], name: "idx_evento_transmisiones_tienda")
+}
+
+// Un enlace por invitado (siempre nominativo, decisión 2026-10-06). El token
+// firmado lleva el id y la versión: regenerar sube la versión y el enlace
+// anterior deja de servir. Las fechas en que vale se leen de la transmisión.
+model evento_invitaciones {
+  id            String @id @default(uuid()) @db.Uuid
+  tiendaId      String @map("tienda_id") @db.Uuid
+  transmisionId String @map("transmision_id") @db.Uuid
+
+  nombre   String  @db.VarChar(100)
+  telefono String? @db.VarChar(20)
+  estado   String  @default("activa") @db.VarChar(20) // activa | anulada
+  version  Int     @default(1)
+
+  primeraConexionEn DateTime? @map("primera_conexion_en") @db.Timestamptz
+  ultimaConexionEn  DateTime? @map("ultima_conexion_en") @db.Timestamptz
+  // Una sola sesión por enlace (R4.3): el último dispositivo que la reclama gana.
+  sesionId          String?   @map("sesion_id") @db.VarChar(40)
+  sesionVistaEn     DateTime? @map("sesion_vista_en") @db.Timestamptz
+
+  // Auditoría
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  transmision evento_transmisiones @relation(fields: [transmisionId], references: [id], onDelete: Cascade)
+
+  @@index([transmisionId], name: "idx_evento_invitaciones_transmision")
+  @@index([tiendaId], name: "idx_evento_invitaciones_tienda")
+}
+
+// Webhooks del proveedor de video (Cloudflare Stream y Notifications). El par
+// (proveedor, eventoId) único garantiza idempotencia, como pago_eventos (R10.2).
+model transmision_eventos_proveedor {
+  id            String    @id @default(uuid()) @db.Uuid
+  proveedor     String    @db.VarChar(20)
+  eventoId      String    @map("evento_id") @db.VarChar(120)
+  tipo          String    @db.VarChar(60)
+  entradaId     String?   @map("entrada_id") @db.VarChar(64)
+  payload       Json?     @db.JsonB
+  fechaRegistro DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+
+  @@unique([proveedor, eventoId], name: "uq_transmision_evento_proveedor")
+}
+
+// Código de un solo uso del QR "Transmitir con este celular" (App Transmitir,
+// R11.1). Se guarda solo el hash. Vence a los 10 minutos.
+model transmision_vinculaciones {
+  id              String    @id @default(uuid()) @db.Uuid
+  tiendaId        String    @map("tienda_id") @db.Uuid
+  transmisionId   String    @map("transmision_id") @db.Uuid
+  codigoHash      String    @unique @map("codigo_hash") @db.VarChar(64)
+  venceEn         DateTime  @map("vence_en") @db.Timestamptz
+  usadoEn         DateTime? @map("usado_en") @db.Timestamptz
+  fechaRegistro   DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro String?   @map("usuario_registro") @db.VarChar(100)
+
+  transmision evento_transmisiones @relation(fields: [transmisionId], references: [id], onDelete: Cascade)
+
+  @@index([transmisionId], name: "idx_transmision_vinculaciones_transmision")
 }

@@ -5,6 +5,8 @@ import imagesRoutes from "./images.routes.js";
 import adminRoutes from "./admin/index.js";
 import storeRoutes from "./store/index.js";
 import webhooksRoutes from "../modules/pagos/pasarela.webhook.routes.js";
+import streamWebhooksRoutes from "../modules/transmisiones/transmisiones.webhook.routes.js";
+import appTransmitirRoutes from "../modules/transmisiones/transmisiones.app.routes.js";
 
 const router = Router();
 
@@ -51,7 +53,12 @@ router.use("/images", imagesRoutes);
 
 // Webhooks de pasarelas de pago (server-to-server, público, verificado por
 // idempotencia + reconfirmación contra el proveedor). Fuera de /admin y /store.
+// Webhooks del proveedor de video (firma sobre req.rawBody). Antes que /:proveedor de pagos.
+router.use("/webhooks/stream", streamWebhooksRoutes);
 router.use("/webhooks", webhooksRoutes);
+
+// App Transmitir (docs/specs/transmision-eventos, R11): QR + token de sesión propio.
+router.use("/app-transmitir", appTransmitirRoutes);
 
 // ============================================
 // RUTAS DE ADMINISTRACIÓN — /api/v1/admin/...

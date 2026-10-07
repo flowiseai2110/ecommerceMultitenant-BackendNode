@@ -39,7 +39,7 @@ function monto(hoja) {
 const fila = (etiqueta, valor) => `
   <tr>
     <td style="padding: 6px 10px; width: 38%; font-size: 13px; color: #64748b; border-bottom: 1px solid #f1f5f9; vertical-align: top;">${etiqueta}</td>
-    <td style="padding: 6px 10px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #f1f5f9;">${valor}</td>
+    <td style="padding: 6px 10px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #f1f5f9; word-break: break-word; overflow-wrap: anywhere;">${valor}</td>
   </tr>`;
 
 const seccion = (titulo, filas) => `
@@ -54,7 +54,7 @@ export function renderHojaHTML(hoja) {
   const p = hoja.proveedor;
   const c = hoja.consumidor;
   return `
-  <div style="border: 2px solid #1e293b; border-radius: 8px; padding: 18px;">
+  <div class="lr-hoja" style="border: 2px solid #1e293b; border-radius: 8px; padding: 18px;">
     <table role="presentation" style="width: 100%; border-collapse: collapse;">
       <tr>
         <td style="vertical-align: top;">
@@ -117,19 +117,28 @@ function layout({ titulo, intro, cuerpo, pie }) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${titulo}</title>
+  <!-- Pantallas angostas (celular): menos margen para que la hoja quepa. Los clientes
+       que ignoran <style> usan los estilos en línea, pensados para escritorio. -->
+  <style>
+    @media only screen and (max-width: 480px) {
+      .lr-fondo { padding: 12px 6px !important; }
+      .lr-caja { padding-left: 16px !important; padding-right: 16px !important; }
+      .lr-hoja { padding: 12px !important; }
+    }
+  </style>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
-      <td align="center" style="padding: 32px 12px;">
+      <td align="center" class="lr-fondo" style="padding: 32px 12px;">
         <table role="presentation" style="width: 100%; max-width: 640px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
           <tr>
-            <td style="padding: 30px 32px 10px;">
+            <td class="lr-caja" style="padding: 30px 32px 10px;">
               <h1 style="margin: 0 0 12px; font-size: 21px; font-weight: 600; color: #1a1a1a;">${titulo}</h1>
               ${intro}
             </td>
           </tr>
-          <tr><td style="padding: 10px 32px 26px;">${cuerpo}</td></tr>
+          <tr><td class="lr-caja" style="padding: 10px 32px 26px;">${cuerpo}</td></tr>
           <tr>
             <td style="padding: 18px; background-color: #f8fafc; border-radius: 0 0 8px 8px; text-align: center;">
               <p style="margin: 0; font-size: 12px; color: #94a3b8;">${pie}</p>

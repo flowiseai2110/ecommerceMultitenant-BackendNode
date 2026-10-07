@@ -242,7 +242,8 @@ const funcionSchema = z.object({
   inicio: fechaHoraLocal,
   fin: fechaHoraLocal.nullish().transform(v => v || null),
   activa: z.boolean().optional().default(true),
-  tipos: z.array(tipoEntradaSchema).min(1, "Cada función necesita al menos un tipo de entrada").max(15)
+  // Mínimo 1 salvo en un evento privado (no vende entradas): lo exige eventoSchema.
+  tipos: z.array(tipoEntradaSchema).max(15)
 }).superRefine((f, ctx) => {
   if (f.fin && f.fin <= f.inicio) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["fin"], message: "La hora de fin debe ser posterior al inicio" });
@@ -263,7 +264,16 @@ export const eventoSchema = z.object({
   mapaUrl: z.string().trim().max(500).url("Link del mapa inválido").nullish().or(z.literal("")).transform(v => v || null),
   edadMinima: z.coerce.number().int().min(0).max(99).nullish().transform(v => v ?? null),
   organizador: textoOpcional(150),
+  // Evento de un cliente (cumpleaños, boda): fuera de la vitrina y sin venta de entradas.
+  privado: z.boolean().optional().default(false),
   funciones: z.array(funcionSchema).min(1, "Agrega al menos una función (fecha y hora)").max(60)
+}).superRefine((e, ctx) => {
+  if (e.privado) return;
+  e.funciones.forEach((f, i) => {
+    if (!f.tipos.length) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["funciones", i, "tipos"], message: "Cada función necesita al menos un tipo de entrada" });
+    }
+  });
 });
 
 export const funcionParamSchema = z.object({ funcionId: uuid("funcionId") });

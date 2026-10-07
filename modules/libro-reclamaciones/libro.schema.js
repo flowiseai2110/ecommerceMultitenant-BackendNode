@@ -35,18 +35,18 @@ export const crearHojaSchema = z.object({
   tiendaId: uuid("tiendaId"),
   tipo: z.enum(TIPOS_HOJA, { message: "Elige si es un reclamo o una queja" }),
 
-  consumidorNombres: texto("Nombres", 1, 100),
-  consumidorApellidos: texto("Apellidos", 1, 100),
+  consumidorNombres: texto("Nombres", 1, 150),
+  consumidorApellidos: texto("Apellidos", 1, 150),
   consumidorDocTipo: z.enum(TIPOS_DOCUMENTO, { message: "Tipo de documento inválido" }),
   consumidorDocNumero: z.string().trim().max(20),
   consumidorDomicilio: texto("Domicilio", 5, 300),
-  consumidorTelefono: z.string().trim().regex(/^[0-9+\s-]{6,20}$/, "Teléfono inválido").nullish()
+  consumidorTelefono: z.string().trim().regex(/^[0-9+\s-]{6,20}$/, "Celular inválido").nullish()
     .or(z.literal("")).transform(v => v || null),
   consumidorEmail: z.string({ required_error: "Correo es requerido" }).trim().toLowerCase()
     .email("Correo inválido").max(100),
 
   esMenor: z.boolean().optional().default(false),
-  apoderadoNombre: textoOpcional(200, "Nombre del apoderado demasiado largo"),
+  apoderadoNombre: textoOpcional(150, "Nombre del apoderado demasiado largo"),
   apoderadoDocTipo: z.enum(TIPOS_DOCUMENTO).nullish().transform(v => v || null),
   apoderadoDocNumero: textoOpcional(20, "Documento del apoderado inválido"),
 
