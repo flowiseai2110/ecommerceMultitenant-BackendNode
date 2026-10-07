@@ -3,11 +3,13 @@ import { validate } from "../../middlewares/validation.middleware.js";
 import { authMiddleware, requireTiendaAccess } from "../../kernel/tenant/index.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import {
-  activar, agregarInvitados, anularInvitacion, cancelar, crearVinculacion, datosConexion, editar, iniciarPrueba,
-  listarTransmisiones, obtenerPorFuncion, regenerarClave, regenerarInvitacion, terminar
+  activar, agregarInvitados, anularInvitacion, borrarGrabacionAhora, cancelar, crearVinculacion, datosConexion, editar, extender,
+  guardarAnio, horasTienda, iniciarPrueba, listarTransmisiones, obtenerPorFuncion, regenerarClave, regenerarInvitacion, terminar,
+  terminarALaHora
 } from "./transmisiones.service.js";
 import {
-  activarSchema, editarSchema, funcionParamSchema, idParamSchema, invitacionParamSchema, invitadosSchema, tiendaQuerySchema
+  activarSchema, editarSchema, extenderSchema, funcionParamSchema, idParamSchema, invitacionParamSchema, invitadosSchema,
+  tiendaQuerySchema
 } from "./transmisiones.schema.js";
 
 /**
@@ -27,6 +29,11 @@ const gestion = [authMiddleware, requireTiendaAccess("editor")];
 
 router.get("/", ...lectura, validate({ query: tiendaQuerySchema }), async (req, res, next) => {
   try { return ok(res, "TRANSMISIONES", await listarTransmisiones(req.tiendaId)); } catch (error) { next(error); }
+});
+
+// Horas de la tienda este mes: plan, paquetes, excedente (Fase 3).
+router.get("/horas", ...lectura, validate({ query: tiendaQuerySchema }), async (req, res, next) => {
+  try { return ok(res, "TRANSMISION_HORAS", await horasTienda(req.tiendaId)); } catch (error) { next(error); }
 });
 
 router.get("/funciones/:funcionId", ...lectura, validate({ params: funcionParamSchema, query: tiendaQuerySchema }),
@@ -93,6 +100,29 @@ router.post("/:id/prueba", ...gestion, validate({ params: idParamSchema, body: t
 router.post("/:id/terminar", ...gestion, validate({ params: idParamSchema, body: tiendaQuerySchema }), async (req, res, next) => {
   try { return ok(res, "TRANSMISION_TERMINADA", await terminar(req.tiendaId, req.params.id, req.user)); } catch (error) { next(error); }
 });
+
+// ---------- Extensión y excedente (Fase 3) ----------
+
+router.post("/:id/extender", ...gestion, validate({ params: idParamSchema, body: extenderSchema }), async (req, res, next) => {
+  try { return ok(res, "TRANSMISION_EXTENDIDA", await extender(req.tiendaId, req.params.id, req.body.minutos, req.user)); } catch (error) { next(error); }
+});
+
+router.post("/:id/terminar-a-la-hora", ...gestion, validate({ params: idParamSchema, body: tiendaQuerySchema }), async (req, res, next) => {
+  try { return ok(res, "TRANSMISION_SIN_EXTENSION", await terminarALaHora(req.tiendaId, req.params.id, req.user)); } catch (error) { next(error); }
+});
+
+// ---------- Grabación (Fase 4) ----------
+
+// "Guardar 1 año" (S/ 50, cargo manual a la tienda).
+router.post("/:id/guardar-anio", ...gestion, validate({ params: idParamSchema, body: tiendaQuerySchema }), async (req, res, next) => {
+  try { return ok(res, "TRANSMISION_GRABACION_GUARDADA", await guardarAnio(req.tiendaId, req.params.id, req.user)); } catch (error) { next(error); }
+});
+
+// R9.3: borrar la grabación antes de su plazo, a pedido del anfitrión. admin+: no se puede deshacer.
+router.post("/:id/borrar-grabacion", authMiddleware, requireTiendaAccess("admin"), validate({ params: idParamSchema, body: tiendaQuerySchema }),
+  async (req, res, next) => {
+    try { return ok(res, "TRANSMISION_GRABACION_BORRADA", await borrarGrabacionAhora(req.tiendaId, req.params.id, req.user)); } catch (error) { next(error); }
+  });
 
 // QR "Transmitir con este celular" (App Transmitir, R11.1).
 router.post("/:id/vinculaciones", ...gestion, validate({ params: idParamSchema, body: tiendaQuerySchema }), async (req, res, next) => {

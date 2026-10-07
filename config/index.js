@@ -138,7 +138,12 @@ export const config = {
   sunat: {
     padron: {
       baseUrl: process.env.SUNAT_PADRON_URL || "https://cdn.jsdelivr.net/gh/alb3rt0ru1z/tribio-padron-ruc@latest/chunks",
-      timeoutMs: parseInt(process.env.SUNAT_PADRON_TIMEOUT_MS) || 8000,
+      // Respaldo si jsDelivr falla o tarda: el mismo repo servido directo por GitHub.
+      fallbackUrl: process.env.SUNAT_PADRON_FALLBACK_URL || "https://raw.githubusercontent.com/alb3rt0ru1z/tribio-padron-ruc/main/chunks",
+      // Por fuente, cubre cabeceras + cuerpo. Los trozos pesan hasta ~15 MB
+      // (prefijos 10xxx y 206xx) y en frío jsDelivr tarda 6-9 s en servirlos:
+      // con 8 s la mitad de las consultas daban SUNAT_NO_DISPONIBLE.
+      timeoutMs: parseInt(process.env.SUNAT_PADRON_TIMEOUT_MS) || 15000,
       // El padrón se publica una vez al día.
       ttlMs: 6 * 60 * 60 * 1000
     }
@@ -215,7 +220,10 @@ export const config = {
     appSecret: process.env.TRANSMISIONES_APP_SECRET || process.env.TRANSMISIONES_LINK_SECRET,
     // Job de corte, señal y limpieza (jobs/transmisiones.job.js). "false" lo apaga
     // (ej. en una réplica extra o en scripts).
-    jobs: process.env.TRANSMISIONES_JOBS !== "false"
+    jobs: process.env.TRANSMISIONES_JOBS !== "false",
+    // Bucket PRIVADO de R2 (mismas credenciales R2_*) donde se copia el MP4 de
+    // las grabaciones con "Guardar 1 año". Nunca se sirve público: solo con URL firmada.
+    bucketGrabaciones: process.env.R2_BUCKET_GRABACIONES
   },
 
   // Video en vivo de los planes Privado y Premium (services/streaming/).

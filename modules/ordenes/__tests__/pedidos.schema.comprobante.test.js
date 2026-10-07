@@ -40,14 +40,11 @@ describe("createPedidoSchema — comprobante", () => {
     expect(parse({ ...factura, docNumero: "10456789012" }).success).toBe(true);
   });
 
-  it("la factura exige RUC, razón social y dirección fiscal", () => {
+  it("la factura solo exige el RUC: razón social y dirección salen de SUNAT", () => {
     const r = parse({ tipo: "factura" });
     expect(r.success).toBe(false);
-    expect(mensajes(r)).toEqual(expect.arrayContaining([
-      "La factura requiere RUC",
-      "La factura requiere razón social",
-      "La factura requiere dirección fiscal"
-    ]));
+    expect(mensajes(r)).toEqual(["La factura requiere RUC"]);
+    expect(parse({ tipo: "factura", docTipo: "RUC", docNumero: "20100047218" }).success).toBe(true);
   });
 
   it("rechaza RUC con prefijo inválido o factura con DNI", () => {

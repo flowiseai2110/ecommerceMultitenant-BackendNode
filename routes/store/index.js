@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { resolveTienda } from "../../middlewares/resolve-tienda.middleware.js";
 import { cache } from "../../utils/cache.js";
+import { cacheRespuesta } from "../../utils/store-cache.js";
 import tiendasRoutes from "../../modules/tenants/tiendas.store.routes.js";
 import categoriasRoutes from "../../modules/catalogo/categorias.store.routes.js";
 import productosRoutes from "../../modules/catalogo/productos.store.routes.js";
@@ -21,6 +22,12 @@ import transmisionesRoutes from "../../modules/transmisiones/transmisiones.store
 
 const router = Router();
 
+/** Un live activo no se sirve desde memoria después de su expiraEn. */
+function ttlHastaExpirar(body) {
+  const expiraEn = body?.data?.expiraEn;
+  return expiraEn ? new Date(expiraEn).getTime() - Date.now() : Infinity;
+}
+
 // Resuelve la tienda a partir del subdominio (zapateriaalonso.ecompyme.com)
 // o, si no aplica (dev local, dominio propio aún no soportado), del slug
 // explícito en query/params. Deja req.tienda / req.tiendaId disponibles
@@ -30,17 +37,20 @@ router.use(resolveTienda);
 // Rutas públicas del storefront — no requieren autenticación
 // Filtrar siempre por ?tiendaId= para scope multi-tenant
 router.use("/tiendas", cache(300), tiendasRoutes);
-router.use("/categorias", cache(300), categoriasRoutes);
+router.use("/categorias", cache(300), cacheRespuesta("categorias"), categoriasRoutes);
 router.use("/productos", cache(60), productosRoutes);
-router.use("/metodos-pago", cache(300), metodosPagoRoutes);
+router.use("/metodos-pago", cache(300), cacheRespuesta("metodos-pago"), metodosPagoRoutes);
 router.use("/pagos", pasarelaRoutes);        // sin caché — crea cargos en la pasarela
-router.use("/metodos-envio", cache(300), metodosEnvioRoutes);
-router.use("/envios", cotizacionEnvioRoutes);    // sin caché — depende del destino y del carrito
+router.use("/metodos-envio", cache(300), cacheRespuesta("envios"), metodosEnvioRoutes);
+// Cotizar: sin caché HTTP, pero sí en memoria por URL (ubigeo+subtotal). El pedido
+// vuelve a cotizar dentro de su transacción, así que una cotización vieja no se cobra.
+router.use("/envios", cacheRespuesta("envios"), cotizacionEnvioRoutes);
 router.use("/pedidos", pedidosRoutes);       // sin caché — rastreo en tiempo real
 router.use("/cuenta", cuentaRoutes);         // sin caché — datos privados del comprador (JWT)
-router.use("/resenas", resenasRoutes);       // caché solo en GET /producto (lo fija la ruta)
+router.use("/resenas", resenasRoutes);       // caché solo en GET /producto y /destacadas (lo fija la ruta)
 router.use("/cupones", cuponesRoutes);
-router.use("/live", cache(15), liveRoutes);   // caché corta: el tiempo real llega por Realtime
+// Caché corta: el tiempo real llega por Realtime. En memoria nunca pasa de expiraEn.
+router.use("/live", cache(15), cacheRespuesta("live", { ttlDe: ttlHastaExpirar }), liveRoutes);
 router.use("/agente", agenteRoutes);          // sin caché — cada consulta es conversacional y única
 router.use("/sunat", sunatRoutes);            // caché solo en respuestas exitosas (lo fija la ruta)
 router.use("/libro-reclamaciones", libroRoutes); // sin caché global — la cabecera del proveedor la fija la ruta

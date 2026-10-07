@@ -7,6 +7,7 @@ import storeRoutes from "./store/index.js";
 import webhooksRoutes from "../modules/pagos/pasarela.webhook.routes.js";
 import streamWebhooksRoutes from "../modules/transmisiones/transmisiones.webhook.routes.js";
 import appTransmitirRoutes from "../modules/transmisiones/transmisiones.app.routes.js";
+import transmisionAccionRoutes from "../modules/transmisiones/transmisiones.accion.routes.js";
 
 const router = Router();
 
@@ -59,6 +60,9 @@ router.use("/webhooks", webhooksRoutes);
 
 // App Transmitir (docs/specs/transmision-eventos, R11): QR + token de sesión propio.
 router.use("/app-transmitir", appTransmitirRoutes);
+
+// Enlace del aviso de 15 min de una transmisión (token firmado del correo, sin sesión).
+router.use("/transmision-accion", transmisionAccionRoutes);
 
 // ============================================
 // RUTAS DE ADMINISTRACIÓN — /api/v1/admin/...

@@ -82,11 +82,13 @@ export const crearSolicitudSchema = z.object({
   comentarios: textoOpcional(1000),
   acompanantes: z.array(personaSchema).max(20).optional().default([]),
   // Solo hotel con comprobante en el check-out: intención de factura (R14.3).
+  // Solo el RUC: razón social y dirección salen del padrón de SUNAT en el
+  // servicio (datosFactura). Las otras claves se aceptan pero se ignoran.
   factura: z.object({
     ruc: z.string().trim(),
-    razonSocial: texto("Razón social", 2, 200),
-    direccionFiscal: textoOpcional(300)
-  }).nullish().transform(v => v || null),
+    razonSocial: z.string().max(200).nullish(),
+    direccionFiscal: z.string().max(300).nullish()
+  }).nullish().transform(v => v ? { ruc: v.ruc } : null),
   aceptaDatos: z.literal(true, {
     errorMap: () => ({ message: "Debes aceptar el tratamiento de tus datos para enviar la solicitud" })
   }),

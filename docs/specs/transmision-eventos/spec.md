@@ -496,15 +496,17 @@ Estos datos salen de búsquedas en la web; las páginas oficiales de Mux y Cloud
 8. **App propia para transmitir:** [App Transmitir](#app-transmitir-proyecto-aparte), Android en Kotlin con RootEncoder, en otro repositorio y en 3 semanas desde ahora. Larix (versión gratis) solo para las pruebas mientras tanto.
 9. **Invitaciones solo nominativas** (pregunta abierta 1, decidida el 2026-10-06 al empezar la Fase 1): un enlace por invitado con nombre obligatorio. No hay enlace comodín.
 10. **Horas incluidas y factores** (pregunta abierta 3, decidida el 2026-10-06 al empezar la Fase 2): Free 0 h, Starter 0 h, Pro 3 h y Business 6 h al mes. Factores 0.5 / 1 / 2 / 4 para 25 / 50 / 100 / 200 invitados (proporcionales al costo de Cloudflare).
+11. **Paquetes y excedente** (preguntas abiertas 2 y 4, decididas el 2026-10-06 al empezar la Fase 3): paquetes prepagados de 10 h por S/ 250 y de 25 h por S/ 550, que vencen a los 12 meses. Excedente a S/ 20 por cada 30 min de paquete (minutos × factor), con tope de 2 h por tienda al mes; se cobra a mano con el siguiente pago.
+12. **Grabación** (decidida el 2026-10-07 al empezar la Fase 4): en Privado está incluida y activada por defecto (30 días para ver y descargar). "Guardar 1 año" cuesta S/ 50, como cargo manual a la tienda. El MP4 se copia a R2 privado solo en ese caso.
 
 ## Preguntas abiertas
 
 > Se deciden en la fase que las necesita: la 1 al inicio de la Fase 1, la 3 al inicio de la Fase 2, y la 2 y la 4 al inicio de la Fase 3 ([plan.md](plan.md#decisiones-pendientes-por-fase)).
 
 1. ~~**Invitaciones:** ¿siempre nominativas o también un enlace "comodín"?~~ **Decidido: solo nominativas** (decisión 9).
-2. **Precios finales en soles** de los planes mensuales, los paquetes y el excedente (este spec usa dólares por el costo de Mux).
+2. ~~**Precios finales en soles**~~ **Decidido: paquetes de 10 h por S/ 250 y de 25 h por S/ 550** (decisión 11). Los planes mensuales no cambian de precio.
 3. ~~**Horas incluidas** en cada plan mensual~~ **Decidido: Free 0, Starter 0, Pro 3 h, Business 6 h** (decisión 10).
-4. **Tope de excedente** por tienda (propuesta: 2 h) y cuándo se cobra.
+4. ~~**Tope de excedente**~~ **Decidido: S/ 20 por 30 min, tope de 2 h por tienda al mes, cobro manual con el siguiente pago** (decisión 11).
 
 ## Fuentes
 

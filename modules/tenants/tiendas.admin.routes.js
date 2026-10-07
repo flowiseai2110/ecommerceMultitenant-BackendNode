@@ -7,7 +7,7 @@ import { validate } from "../../middlewares/validation.middleware.js";
 import { authMiddleware, requireAnyMembership, requireTiendaAccess, resolveTiendaId } from "../../kernel/tenant/index.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import { uploadImage } from "../../middlewares/upload.middleware.js";
-import { uploadLogo, uploadBanner } from "../../controllers/tiendas-imagen.controller.js";
+import { uploadLogo, uploadBanner, deleteLogo, deleteBanner } from "../../controllers/tiendas-imagen.controller.js";
 import { seedMetodosPagoParaTienda } from "../../services/metodos-pago-seed.service.js";
 import { seedMetodosEnvioParaTienda } from "../../services/metodos-envio-seed.service.js";
 import { disenoAdmin, saveDiseno } from "../../services/tienda-diseno.service.js";
@@ -340,6 +340,27 @@ router.post(
   requireTiendaAccess("admin"),
   invalidateTiendasListCache,
   uploadBanner
+);
+
+// DELETE /:id/logo y /:id/banner — Quitar logo o banner (desde Diseño)
+router.delete(
+  "/:id/logo",
+  authMiddleware,
+  validate({ params: idParamSchema }),
+  resolveTiendaIdFromId,
+  requireTiendaAccess("admin"),
+  invalidateTiendasListCache,
+  deleteLogo
+);
+
+router.delete(
+  "/:id/banner",
+  authMiddleware,
+  validate({ params: idParamSchema }),
+  resolveTiendaIdFromId,
+  requireTiendaAccess("admin"),
+  invalidateTiendasListCache,
+  deleteBanner
 );
 
 router.delete(

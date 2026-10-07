@@ -85,3 +85,60 @@ export async function verificarTokenApp(token, opts = {}) {
     throw new UnauthorizedError("La sesión de la app ya no es válida. Vuelve a escanear el QR");
   }
 }
+
+// ============================================
+// Aviso de los 15 minutos (R7.5): enlace del correo para extender sin sesión
+// ============================================
+
+const AUDIENCE_ACCION = "transmision-accion";
+
+/** Vale hasta media hora después del corte. Quien lo tiene puede extender (y autorizar excedente). */
+export async function firmarTokenAccion({ transmisionId, tiendaId, expiraEn }, opts = {}) {
+  return new SignJWT({ tid: tiendaId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(transmisionId)
+    .setAudience(AUDIENCE_ACCION)
+    .setIssuedAt()
+    .setExpirationTime(Math.floor(expiraEn.getTime() / 1000))
+    .sign(secretKey(opts.secret));
+}
+
+/** @throws {NotFoundError} token alterado, vencido o de otro uso */
+export async function verificarTokenAccion(token, opts = {}) {
+  const key = secretKey(opts.secret);
+  try {
+    const { payload } = await jwtVerify(token, key, { audience: AUDIENCE_ACCION, algorithms: ["HS256"] });
+    if (!payload.sub || !payload.tid) throw new Error("payload incompleto");
+    return { transmisionId: payload.sub, tiendaId: payload.tid };
+  } catch {
+    throw new NotFoundError("Transmisión", "Este enlace ya venció o no es válido");
+  }
+}
+
+// ============================================
+// Grabación (Fase 4): enlace del anfitrión para ver y descargar
+// ============================================
+
+const AUDIENCE_ANFITRION = "transmision-anfitrion";
+
+/** Sin vencimiento propio: los plazos (30 días o 1 año) se leen de la BD. */
+export async function firmarTokenAnfitrion({ transmisionId, tiendaId }, opts = {}) {
+  return new SignJWT({ tid: tiendaId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(transmisionId)
+    .setAudience(AUDIENCE_ANFITRION)
+    .setIssuedAt()
+    .sign(secretKey(opts.secret));
+}
+
+/** @throws {NotFoundError} token alterado o de otro uso */
+export async function verificarTokenAnfitrion(token, opts = {}) {
+  const key = secretKey(opts.secret);
+  try {
+    const { payload } = await jwtVerify(token, key, { audience: AUDIENCE_ANFITRION, algorithms: ["HS256"] });
+    if (!payload.sub || !payload.tid) throw new Error("payload incompleto");
+    return { transmisionId: payload.sub, tiendaId: payload.tid };
+  } catch {
+    throw new NotFoundError("Grabación", "Este enlace no es válido");
+  }
+}

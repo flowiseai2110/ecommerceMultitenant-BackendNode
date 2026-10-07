@@ -59,6 +59,34 @@ const iguales = (a, b) => {
 
 const RECORDING = { mode: "automatic", requireSignedURLs: true, timeoutSeconds: 60 };
 
+const baseCliente = () => `https://customer-${cf().customerCode}.cloudflarestream.com`;
+
+/** Token RS256 firmado aquí (sin llamar a la API), máx. 24 h. */
+async function firmar(id, expiraEn, extra = {}) {
+  const key = await llave();
+  const ahora = Date.now();
+  const exp = Math.min(expiraEn.getTime(), ahora + MAX_TOKEN_MS);
+  return new SignJWT({ kid: cf().signingKeyId, ...extra })
+    .setProtectedHeader({ alg: "RS256", kid: cf().signingKeyId })
+    .setSubject(id)
+    .setNotBefore(Math.floor(ahora / 1000) - 60)
+    .setExpirationTime(Math.floor(exp / 1000))
+    .sign(key);
+}
+
+/** Video de Cloudflare → { id, estado: procesando | lista | error, duracionSeg, creadoEn }. */
+function normalizarVideo(v) {
+  const s = v?.status?.state;
+  return {
+    id: v.uid,
+    estado: s === "ready" ? "lista" : s === "error" ? "error" : "procesando",
+    duracionSeg: v.duration > 0 ? Math.round(v.duration) : null,
+    creadoEn: v.created ? new Date(v.created) : null
+  };
+}
+
+const estadoDescarga = (s) => (s === "ready" ? "lista" : s === "error" ? "error" : "pendiente");
+
 export default class CloudflareStreamProvider extends StreamingProvider {
   get nombre() {
     return "cloudflare";
@@ -108,17 +136,48 @@ export default class CloudflareStreamProvider extends StreamingProvider {
     await api("DELETE", `/live_inputs/${entradaId}`);
   }
 
+  // ---------- Grabaciones (Fase 4) ----------
+
+  /** Borra solo la entrada: según Cloudflare, sus grabaciones se conservan. */
+  async borrarSoloEntrada(entradaId) {
+    await api("DELETE", `/live_inputs/${entradaId}`);
+  }
+
+  async listarVideos(entradaId) {
+    const videos = (await api("GET", `/live_inputs/${entradaId}/videos`)) ?? [];
+    return videos.map(normalizarVideo);
+  }
+
+  async estadoVideo(videoId) {
+    return normalizarVideo(await api("GET", `/${videoId}`));
+  }
+
+  async borrarVideo(videoId) {
+    await api("DELETE", `/${videoId}`);
+  }
+
+  /** Pide a Cloudflare que genere el MP4 descargable (tarda unos minutos en videos largos). */
+  async pedirDescarga(videoId) {
+    const r = await api("POST", `/${videoId}/downloads`);
+    return estadoDescarga(r?.default?.status);
+  }
+
+  async estadoDescarga(videoId) {
+    const r = await api("GET", `/${videoId}/downloads`);
+    return estadoDescarga(r?.default?.status);
+  }
+
+  /** URL firmada del MP4 (token con downloadable: true). Cada descarga se cobra como minutos entregados. */
+  async urlDescarga(videoId, { expiraEn, nombreArchivo }) {
+    const token = await firmar(videoId, expiraEn, { downloadable: true });
+    const nombre = nombreArchivo ? `?filename=${encodeURIComponent(nombreArchivo.slice(0, 120))}` : "";
+    return `${baseCliente()}/${token}/downloads/default.mp4${nombre}`;
+  }
+
   async urlReproduccion(id, { expiraEn }) {
-    const key = await llave();
-    const ahora = Date.now();
-    const exp = new Date(Math.min(expiraEn.getTime(), ahora + MAX_TOKEN_MS));
-    const token = await new SignJWT({ kid: cf().signingKeyId })
-      .setProtectedHeader({ alg: "RS256", kid: cf().signingKeyId })
-      .setSubject(id)
-      .setNotBefore(Math.floor(ahora / 1000) - 60)
-      .setExpirationTime(Math.floor(exp.getTime() / 1000))
-      .sign(key);
-    const base = `https://customer-${cf().customerCode}.cloudflarestream.com/${token}`;
+    const exp = new Date(Math.min(expiraEn.getTime(), Date.now() + MAX_TOKEN_MS));
+    const token = await firmar(id, exp);
+    const base = `${baseCliente()}/${token}`;
     return { iframeUrl: `${base}/iframe`, hlsUrl: `${base}/manifest/video.m3u8`, expiraEn: exp };
   }
 

@@ -6,6 +6,7 @@ import { logger } from "../../config/logger.js";
 import { validarYBloquearStock, descontarStock, reponerStock } from "../inventario/inventario.service.js";
 import { cotizarMetodoEnvio } from "../envios/cotizacion.service.js";
 import { nivelDeAcceso, serializarRastreo } from "./rastreo.js";
+import { datosFactura } from "../sunat/ruc.service.js";
 
 // Columnas del destino de entrega en `pedidos` (ver schema.prisma).
 const CAMPOS_DESTINO = [
@@ -141,6 +142,11 @@ class PedidosService {
     const destino = {};
     for (const campo of CAMPOS_DESTINO) destino[campo] = data[campo] ?? null;
 
+    // Factura: los datos salen del padrón de SUNAT, nunca del body. Se consulta
+    // fuera de la transacción para no tener filas bloqueadas esperando la red
+    // (casi siempre es un acierto de caché: el checkout lo acaba de consultar).
+    const factura = comprobante?.tipo === "factura" ? await datosFactura(comprobante.docNumero) : null;
+
     return await prisma.$transaction(async (tx) => {
       // 1. Validar stock y bloquear las filas involucradas (FOR UPDATE).
       const { variantesADescontar, productosADescontar } =
@@ -248,8 +254,8 @@ class PedidosService {
           comprobante: comprobante?.tipo ?? null,
           comprobanteDocTipo: comprobante?.docNumero ? comprobante.docTipo : null,
           comprobanteDocNumero: comprobante?.docNumero || null,
-          razonSocial: comprobante?.tipo === "factura" ? comprobante.razonSocial : null,
-          direccionFiscal: comprobante?.tipo === "factura" ? comprobante.direccionFiscal : null,
+          razonSocial: factura?.razonSocial ?? null,
+          direccionFiscal: factura?.direccionFiscal ?? null,
           fechaRegistro: new Date(),
           usuarioRegistro: "storefront",
           detalles: {

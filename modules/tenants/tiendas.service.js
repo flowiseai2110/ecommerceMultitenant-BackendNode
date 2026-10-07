@@ -98,7 +98,7 @@ export async function getTiendaStats(tiendaId) {
       (SELECT COUNT(*) FROM pedidos WHERE tienda_id = ${tiendaId}::uuid AND estado = 'pendiente') AS pedidos_pendientes,
       (SELECT COUNT(*) FROM clientes WHERE tienda_id = ${tiendaId}::uuid) AS clientes,
       (SELECT COUNT(*) FROM usuario_tiendas WHERE tienda_id = ${tiendaId}::uuid AND activo = true) AS miembros,
-      (SELECT COALESCE(SUM(total), 0) FROM pedidos WHERE tienda_id = ${tiendaId}::uuid) AS ventas_total
+      (SELECT COALESCE(SUM(total), 0) FROM pedidos WHERE tienda_id = ${tiendaId}::uuid AND estado <> 'cancelado') AS ventas_total
   `;
 
   return {

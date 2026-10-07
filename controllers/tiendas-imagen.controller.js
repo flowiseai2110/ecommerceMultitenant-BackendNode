@@ -72,3 +72,46 @@ function makeUploadTiendaImagen({ urlField, storagePathField, subfolder, width, 
     }
   };
 }
+
+// Quitar logo/banner: limpia el campo y borra los archivos (best-effort)
+export const deleteLogo = makeDeleteTiendaImagen({ urlField: "logoUrl", storagePathField: "logoStoragePath" });
+export const deleteBanner = makeDeleteTiendaImagen({ urlField: "bannerUrl", storagePathField: "bannerStoragePath" });
+
+function makeDeleteTiendaImagen({ urlField, storagePathField }) {
+  return async function (req, res, next) {
+    try {
+      const tiendaId = req.params.id;
+
+      const tienda = await prisma.tiendas.findUnique({
+        where: { id: tiendaId },
+        select: { id: true, [storagePathField]: true },
+      });
+      if (!tienda) throw new NotFoundError("Tienda");
+
+      await prisma.tiendas.update({
+        where: { id: tiendaId },
+        data: {
+          [urlField]:         null,
+          [storagePathField]: null,
+          fechaActualizacion:   new Date(),
+          usuarioActualizacion: req.user?.email || req.user?.id,
+        },
+      });
+
+      const oldWebpPath = tienda[storagePathField];
+      if (oldWebpPath) {
+        const oldJpegPath = oldWebpPath.slice(0, -5) + ".jpg";
+        await deletePublicFiles([oldWebpPath, oldJpegPath]);
+      }
+
+      return apiResponse(res, {
+        status: 200,
+        type: "SUCCESS",
+        code: "TIENDAS_UPDATED",
+        data: { id: tiendaId, [urlField]: null },
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+}

@@ -2,6 +2,7 @@ import { prisma } from "../config/prisma.js";
 import config from "../config/index.js";
 import { NotFoundError } from "../utils/errors.js";
 import { setContextTiendaId } from "../kernel/tenant/tenant-store.js";
+import MemoryCache from "../utils/memory-cache.js";
 
 const CACHE_TTL_MS = 60 * 1000;
 
@@ -10,14 +11,18 @@ const CACHE_TTL_MS = 60 * 1000;
  * Evita una consulta a BD en cada request del storefront — la tienda
  * de un cliente cambia de slug con muy poca frecuencia.
  *
+ * También guarda los slugs inexistentes (tienda null) para no consultar la BD
+ * en cada intento; el tope del LRU evita que ?tienda= con valores aleatorios
+ * haga crecer la caché sin límite.
+ *
  * En despliegues con múltiples instancias, reemplazar por Redis
  * (mismo contrato: getBySlug/invalidate) sin tocar el middleware.
  */
-const cache = new Map();
+const cache = new MemoryCache({ max: 1000 });
 
 async function getTiendaBySlug(slug) {
   const cached = cache.get(slug);
-  if (cached && cached.expiresAt > Date.now()) {
+  if (cached) {
     return cached.tienda;
   }
 
@@ -27,7 +32,7 @@ async function getTiendaBySlug(slug) {
     select: { id: true, slug: true, nombre: true, activo: true, whatsappNumero: true, tipoNegocio: true }
   });
 
-  cache.set(slug, { tienda, expiresAt: Date.now() + CACHE_TTL_MS });
+  cache.set(slug, { tienda }, CACHE_TTL_MS);
   return tienda;
 }
 

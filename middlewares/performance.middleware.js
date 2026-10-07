@@ -51,7 +51,8 @@ export function resetRouteMetrics() {
  * Middleware de monitoreo de performance.
  * - Mide duración exacta de cada request.
  * - Acumula estadísticas por ruta en memoria.
- * - Emite warn para requests lentos (> 500ms) y error para muy lentos (> 2s).
+ * - Emite warn para requests lentos (> 500ms) y muy lentos (> 2s). Lento no es
+ *   un error: con level error, los checkouts lentos llenarían la cuota de Sentry.
  * - Emite info para requests normales (visible en producción con LOG_LEVEL=info).
  */
 export function performanceMiddleware(req, res, next) {
@@ -81,7 +82,7 @@ export function performanceMiddleware(req, res, next) {
     };
 
     if (ms >= MS_ERR) {
-      logger.error(`[PERF] MUY LENTO ${ms}ms — ${req.method} ${route}`, meta);
+      logger.warn(`[PERF] MUY LENTO ${ms}ms — ${req.method} ${route}`, meta);
     } else if (ms >= MS_WARN) {
       logger.warn(`[PERF] LENTO ${ms}ms — ${req.method} ${route}`, meta);
     } else {

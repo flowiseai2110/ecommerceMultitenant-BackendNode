@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { TOPES_PRIVADO } from "./transmisiones.reglas.js";
+import { EXTENSIONES_MIN, EXTENSION_AUTO_OPCIONES, TOPES_PRIVADO } from "./transmisiones.reglas.js";
 
 /**
  * Schemas Zod de la transmisión de eventos (docs/specs/transmision-eventos).
@@ -29,7 +29,14 @@ const telefono = z.string().trim()
   .regex(/^\+?[\d\s-]{6,20}$/, "Teléfono inválido (solo números, de 6 a 20)")
   .nullish().or(z.literal("")).transform(v => (v ? v.replace(/[\s-]/g, "") : null));
 
+const extensionAuto = z.coerce.number().int()
+  .refine(m => EXTENSION_AUTO_OPCIONES.includes(m), { message: "La extensión automática puede ser de 0, 30 o 60 minutos" });
+
 export const tiendaQuerySchema = z.object({ tiendaId: uuid("tiendaId") });
+
+const minutosExtension = z.coerce.number().int().refine(m => EXTENSIONES_MIN.includes(m), { message: "Puedes extender 30 minutos o 1 hora" });
+export const extenderSchema = z.object({ tiendaId: uuid("tiendaId"), minutos: minutosExtension });
+export const accionExtenderSchema = z.object({ minutos: minutosExtension });
 export const funcionParamSchema = z.object({ funcionId: uuid("funcionId") });
 export const idParamSchema = z.object({ id: uuid("id") });
 export const invitacionParamSchema = z.object({ id: uuid("id"), invitacionId: uuid("invitacionId") });
@@ -46,6 +53,14 @@ export const activarSchema = z.object({
   duracionMin: duracionMin.nullish().transform(v => v ?? null),
   anfitrionNombre: texto("El nombre del anfitrión", 2, 150),
   anfitrionEmail: email,
+  // Contacto de la transmisión (otro celular): recibe el aviso de los 15 min (R7.5).
+  contactoNombre: z.string().trim().max(100).nullish().transform(v => v || null),
+  contactoEmail: email,
+  contactoTelefono: telefono,
+  // R7.6: extender sola hasta 30 min o 1 h si hace falta (0 = no).
+  extensionAutoMaxMin: extensionAuto.optional().default(0),
+  // R8.1.3: grabación incluida y activada por defecto; false = "Solo en vivo".
+  grabar: z.boolean().optional().default(true),
   consentimiento: z.literal(true, {
     errorMap: () => ({ message: "Confirma que el anfitrión autorizó la transmisión" })
   })
@@ -64,7 +79,12 @@ export const editarSchema = z.object({
   youtubeUrl: z.string().trim().min(1, "Pega el enlace del live de YouTube").max(500).optional(),
   duracionMin: duracionMin.optional(),
   anfitrionNombre: texto("El nombre del anfitrión", 2, 150).optional(),
-  anfitrionEmail: email.optional()
+  anfitrionEmail: email.optional(),
+  contactoNombre: z.string().trim().max(100).nullable().optional().transform(v => (v === undefined ? undefined : v || null)),
+  contactoEmail: email.optional(),
+  contactoTelefono: telefono.optional(),
+  extensionAutoMaxMin: extensionAuto.optional(),
+  grabar: z.boolean().optional()
 });
 
 export const invitadosSchema = z.object({

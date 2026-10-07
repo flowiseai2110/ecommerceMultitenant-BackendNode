@@ -41,8 +41,7 @@ Que al escribir un RUC válido en la factura se rellenen solos la razón social 
 - Bloqueo de la factura si el RUC no está ACTIVO.
 
 **No incluye** (futuro)
-- Exigir el dígito verificador en `createPedidoSchema`. El test `pedidos.schema.comprobante.test.js` usa `20123456789`, que no lo cumple.
-- Revalidar en el servidor, al crear el pedido, que el RUC esté ACTIVO.
+- Exigir el dígito verificador en `createPedidoSchema`. Igual se exige en la práctica: `datosFactura` lo valida al crear el pedido.
 - Consulta de DNI (RENIEC no tiene un dato abierto equivalente).
 - Fork propio de tribio-padron-ruc (ver riesgo en [plan.md](plan.md)).
 - Autocompletado del RUC en el admin (datos de facturación de la tienda).
@@ -59,13 +58,23 @@ Formato: *Cuando [condición], el sistema debe [comportamiento].*
 ### R2 — Consulta
 - **R2.1** Cuando el RUC es válido, el backend debe devolver razón social, estado, condición, tipo de contribuyente, ubigeo y dirección. Si figura `-` en la dirección, debe devolver `null`.
 - **R2.2** Cuando el RUC no figura en el padrón, debe responder 404 ("El RUC no figura en el padrón de SUNAT").
-- **R2.3** Cuando el CDN falla o tarda más de `SUNAT_PADRON_TIMEOUT_MS` (8 s por defecto), debe responder 503 `SUNAT_NO_DISPONIBLE`.
+- **R2.3** Cuando jsDelivr falla o tarda más de `SUNAT_PADRON_TIMEOUT_MS` (15 s por defecto, cabeceras + cuerpo), debe reintentar con GitHub directo (`SUNAT_PADRON_FALLBACK_URL`). Si ambas fuentes fallan, debe responder 503 `SUNAT_NO_DISPONIBLE`.
+  - Nota (2026-10-07): los trozos no pesan 1–2 MB como se midió con `20100`; los de prefijos `10xxx` y `206xx` llegan a ~15 MB y en frío tardan 6–9 s. Con el timeout original de 8 s fallaban a menudo. Por memoria, solo se cachean 2 trozos (~40 MB de heap el más grande) y aparte los RUC ya consultados.
 - **R2.4** Solo las respuestas 200 llevan `Cache-Control: public, max-age=3600`. Un 503 no se cachea.
 
 ### R3 — Checkout
 - **R3.1** Al completar un RUC válido, el checkout debe mostrar "Buscando en SUNAT…" y luego rellenar la razón social y la dirección fiscal ("dirección, Distrito - Provincia - Departamento"). Los nombres salen del dataset INEI (`peru-utils`) a partir del ubigeo.
 - **R3.2** Debe mostrar `SUNAT: <estado> · <condición>`: verde si está ACTIVO y HABIDO, ámbar si está NO HABIDO, rojo si no está activo.
 - **R3.3** Cuando el RUC no está ACTIVO, no debe dejar avanzar con factura ("El RUC figura como BAJA DEFINITIVA en SUNAT").
-- **R3.4** Cuando la consulta responde 404 o falla, debe avisar y dejar que el comprador complete los datos a mano. **La consulta ayuda, no bloquea.**
+- **R3.4** ~~Cuando la consulta responde 404 o falla, debe dejar completar los datos a mano.~~ Reemplazado por R4 (2026-10-07).
 - **R3.5** Si el RUC viene precargado desde la cuenta del cliente, debe consultarse automáticamente.
 - **R3.6** Si el comprador cambia el RUC mientras una consulta está en curso, la respuesta vieja debe descartarse.
+
+### R4 — Los datos de la factura vienen solo de SUNAT (2026-10-07)
+- **R4.1** El comprador solo escribe el RUC. El checkout y la solicitud de reserva no tienen cajas de razón social ni dirección: se muestran como tarjeta de solo lectura (`app-ruc-verificado`).
+- **R4.2** Al crear el pedido o la reserva, el backend toma razón social y dirección del padrón (`datosFactura`). Lo que mande el navegador en esos campos se ignora.
+- **R4.3** Cuando el RUC no figura en el padrón (404), no se puede pedir factura: "Revisa el número o pide boleta". El backend responde 400.
+- **R4.4** Cuando el RUC no está ACTIVO, no se puede pedir factura (frontend y backend).
+- **R4.5** Cuando el padrón no responde (503), el checkout ofrece Reintentar y deja continuar con "verificaremos tu RUC al emitir la factura". El backend acepta el pedido con razón social null; el vendedor la completa al emitir.
+- **R4.6** La dirección del adquiriente no es obligatoria en la factura electrónica: si el padrón no tiene domicilio (frecuente en RUC 10), se guarda null y no se pide.
+- **R4.7** Al cambiar el RUC se limpian la razón social y la dirección del RUC anterior antes de mostrar las del nuevo.

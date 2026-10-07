@@ -6,15 +6,18 @@ import { decryptSecret, encryptSecret } from "../../utils/crypto.js";
 import { getStreamingProvider } from "../../services/streaming/index.js";
 import { urlTienda } from "../resenas/resenas.service.js";
 import {
-  firmarTokenApp, firmarTokenInvitacion, verificarTokenApp, verificarTokenInvitacion
+  firmarTokenApp, firmarTokenInvitacion, verificarTokenAccion, verificarTokenAnfitrion, verificarTokenApp, verificarTokenInvitacion
 } from "./transmisiones.token.js";
 import { urlVideoYoutube, youtubeVideoId } from "./transmisiones.youtube.js";
 import { saldoHoras, textoMinutos } from "./transmisiones.horas.js";
-import { limpiarEntrada, sincronizarHabilitacion, terminarTransmision } from "./transmisiones.envivo.js";
+import { borrarGrabacion, enlaceAnfitrion, partesConEnlaces } from "./transmisiones.grabaciones.js";
 import {
-  FACTORES, PRUEBA_MIN, TOPES_PRIVADO, corteEn, duracionEfectiva, enlaceWhatsapp, esVideoPropio, etapaTransmision,
-  finEnVivo, finTransmision, grabacionHasta, hayVideo, minutosADescontar, periodoTransmision, salaAbreEn, sesionViva,
-  topeInvitaciones
+  extenderTransmision, limpiarEntrada, noExtender, opcionesExtension, sincronizarHabilitacion, terminarTransmision
+} from "./transmisiones.envivo.js";
+import {
+  DIAS_GUARDAR_ANIO, FACTORES, PRECIO_GUARDAR_ANIO, PRUEBA_MIN, TOPES_PRIVADO, conGrabacion, corteEn, descargaHasta,
+  duracionEfectiva, enlaceWhatsapp, esVideoPropio, etapaTransmision, finEnVivo, finTransmision, grabacionHasta, hayVideo,
+  minutosADescontar, periodoTransmision, salaAbreEn, sesionViva, topeInvitaciones
 } from "./transmisiones.reglas.js";
 
 /**
@@ -65,7 +68,7 @@ async function tiendaDeEventos(tiendaId) {
 async function funcionDeTienda(tiendaId, funcionId) {
   const funcion = await prisma.evento_funciones.findFirst({
     where: { id: funcionId, tiendaId },
-    include: { ...INCLUDE_FUNCION, transmision: { include: { invitaciones: { orderBy: { fechaRegistro: "asc" } } } } }
+    include: { ...INCLUDE_FUNCION, transmision: { include: { invitaciones: { orderBy: { fechaRegistro: "asc" } }, excedente: true, grabaciones: { orderBy: { orden: "asc" } }, cargos: true } } }
   });
   if (!funcion) throw new NotFoundError("Función", "Esa función del evento no existe");
   return funcion;
@@ -74,7 +77,7 @@ async function funcionDeTienda(tiendaId, funcionId) {
 async function transmisionDeTienda(tiendaId, id) {
   const transmision = await prisma.evento_transmisiones.findFirst({
     where: { id, tiendaId },
-    include: { funcion: { include: INCLUDE_FUNCION }, invitaciones: { orderBy: { fechaRegistro: "asc" } } }
+    include: { funcion: { include: INCLUDE_FUNCION }, invitaciones: { orderBy: { fechaRegistro: "asc" } }, excedente: true, grabaciones: { orderBy: { orden: "asc" } }, cargos: true }
   });
   if (!transmision) throw new NotFoundError("Transmisión", "Esa transmisión no existe");
   return transmision;
@@ -125,6 +128,29 @@ async function serializarInvitacion(inv, { tienda, evento, funcion, ahora }) {
   };
 }
 
+/** Estado de la grabación para el admin (Fase 4, R8.1). */
+async function serializarGrabacion(t, funcion, ahora) {
+  const partes = (t.grabaciones ?? []).filter(g => g.estado !== "borrada" || g.r2Key);
+  const cargo = (t.cargos ?? []).find(c => c.tipo === "guardar_anio" && c.estado !== "anulado");
+  const terminada = !!t.terminadaEn;
+  return {
+    grabar: t.grabar,
+    guardarAnio: t.guardarAnio,
+    // Mientras está en línea se ve y se descarga; con "Guardar 1 año", la descarga sigue en R2.
+    enLineaHasta: grabacionHasta(t, funcion),
+    descargaHasta: descargaHasta(t, funcion),
+    borradaEn: t.grabacionBorradaEn,
+    partes: partes.map(g => ({
+      orden: g.orden, estado: g.estado, duracionSeg: g.duracionSeg, mp4Estado: g.mp4Estado, copiadaR2: !!g.r2CopiadaEn
+    })),
+    avisoListaEn: t.avisoGrabacionEn,
+    enlaceAnfitrion: terminada && t.grabar && !t.grabacionBorradaEn && partes.length ? await enlaceAnfitrion(t) : null,
+    cargoGuardarAnio: cargo ? { monto: Number(cargo.monto), estado: cargo.estado } : null,
+    puedeGuardarAnio: terminada && t.grabar && !t.guardarAnio && !t.grabacionBorradaEn && partes.some(g => g.estado === "lista") && ahora < grabacionHasta(t, funcion),
+    precioGuardarAnio: PRECIO_GUARDAR_ANIO
+  };
+}
+
 async function serializarTransmision(t, funcion, tienda, ahora) {
   const evento = funcion.evento.producto.nombre;
   const invitaciones = await Promise.all(t.invitaciones.map(inv => serializarInvitacion(inv, { tienda, evento, funcion, ahora })));
@@ -169,6 +195,18 @@ async function serializarTransmision(t, funcion, tienda, ahora) {
       minutosADescontar: minutosADescontar(contratados, t.factor),
       minutosUsados: t.minutosUsados,
       minutosDescontados: t.minutosDescontados,
+      // Fase 3: extensión, aviso de 15 min, contacto y excedente (R7.5-R7.7).
+      extensionMin: t.extensionMin,
+      extensionAutoMaxMin: t.extensionAutoMaxMin,
+      noExtender: t.noExtender,
+      avisoFinEn: t.avisoFinEn,
+      contacto: { nombre: t.contactoNombre, email: t.contactoEmail, telefono: t.contactoTelefono },
+      excedente: t.excedente
+        ? { estado: t.excedente.estado, minutosAutorizados: t.excedente.minutosAutorizados, minutos: t.excedente.minutos, monto: Number(t.excedente.monto) }
+        : null,
+      opcionesExtension: enCurso(t) && ["espera", "en_vivo"].includes(etapa) ? await opcionesExtension(t, ahora) : [],
+      // Fase 4: grabación (R8.1)
+      grabacion: await serializarGrabacion(t, funcion, ahora),
       // Para que el negocio vea la señal (prueba o en vivo) sin ser invitado.
       vistaPreviaUrl: enCurso(t) && t.entradaId
         ? (await provider().urlReproduccion(t.entradaId, { expiraEn: new Date(ahora.getTime() + 3 * 60 * MS_MIN) })).iframeUrl
@@ -268,7 +306,11 @@ export async function activar(tiendaId, funcionId, data, user, ahora = new Date(
     anfitrionEmail: data.anfitrionEmail,
     consentimientoEn: ahora,
     consentimientoPor: usuario,
-    usuarioRegistro: usuario
+    usuarioRegistro: usuario,
+    // Contacto de la transmisión: recibe el aviso de los 15 min (R7.5).
+    contactoNombre: data.contactoNombre ?? null,
+    contactoEmail: data.contactoEmail ?? null,
+    contactoTelefono: data.contactoTelefono ?? null
   };
 
   if (data.plan === "basico") {
@@ -311,7 +353,11 @@ export async function activar(tiendaId, funcionId, data, user, ahora = new Date(
         claveCifrada: encryptSecret(JSON.stringify(conexion)),
         maxInvitados: data.maxInvitados,
         factor,
-        habilitada
+        habilitada,
+        // R7.6: autorización previa para extender sola hasta 30 min o 1 h.
+        extensionAutoMaxMin: data.extensionAutoMaxMin ?? 0,
+        // R8.1.3: grabación incluida y activada por defecto; false = "Solo en vivo".
+        grabar: data.grabar ?? true
       }
     });
   } catch (error) {
@@ -344,6 +390,18 @@ export async function editar(tiendaId, id, data, user, ahora = new Date()) {
   }
   if (data.anfitrionNombre !== undefined) cambios.anfitrionNombre = data.anfitrionNombre;
   if (data.anfitrionEmail !== undefined) cambios.anfitrionEmail = data.anfitrionEmail;
+  for (const campo of ["contactoNombre", "contactoEmail", "contactoTelefono"]) {
+    if (data[campo] !== undefined) cambios[campo] = data[campo];
+  }
+  if (data.extensionAutoMaxMin !== undefined) {
+    exigirVideoPropio(t);
+    cambios.extensionAutoMaxMin = data.extensionAutoMaxMin;
+  }
+  // "Solo en vivo" o grabar: se elige hasta que termina (R8.1.3).
+  if (data.grabar !== undefined) {
+    exigirVideoPropio(t);
+    cambios.grabar = data.grabar;
+  }
 
   await prisma.evento_transmisiones.update({
     where: { id },
@@ -376,6 +434,100 @@ export async function terminar(tiendaId, id, user, ahora = new Date()) {
   exigirVideoPropio(t);
   exigirEnCurso(t);
   await terminarTransmision(t, { motivo: usuarioDe(user), ahora });
+  return obtenerPorFuncion(tiendaId, t.funcionId, ahora);
+}
+
+/** R7.5: extender 30 min o 1 h desde el admin. Usa horas o, si no quedan, autoriza excedente. */
+export async function extender(tiendaId, id, minutos, user, ahora = new Date()) {
+  await tiendaDeEventos(tiendaId);
+  const t = await transmisionDeTienda(tiendaId, id);
+  await extenderTransmision(t, minutos, { quien: usuarioDe(user), ahora });
+  return obtenerPorFuncion(tiendaId, t.funcionId, ahora);
+}
+
+/** "Terminar a la hora": no aplicar la extensión automática. */
+export async function terminarALaHora(tiendaId, id, user, ahora = new Date()) {
+  await tiendaDeEventos(tiendaId);
+  const t = await transmisionDeTienda(tiendaId, id);
+  exigirVideoPropio(t);
+  exigirEnCurso(t);
+  await noExtender(t, usuarioDe(user), ahora);
+  return obtenerPorFuncion(tiendaId, t.funcionId, ahora);
+}
+
+/** Horas de la tienda este mes (plan, paquetes y excedente), para la tarjeta "Tus horas". */
+export async function horasTienda(tiendaId, ahora = new Date()) {
+  await tiendaDeEventos(tiendaId);
+  const periodo = periodoTransmision({ inicio: ahora });
+  const [saldo, excedentes] = await Promise.all([
+    saldoHoras(tiendaId, periodo, { ahora }),
+    prisma.transmision_excedentes.findMany({
+      where: { tiendaId, estado: { in: ["por_cobrar", "cobrado"] } },
+      orderBy: { autorizadoEn: "desc" },
+      take: 12,
+      include: { transmision: { select: { funcion: { select: { inicio: true, evento: { select: { producto: { select: { nombre: true } } } } } } } } }
+    })
+  ]);
+  return {
+    ...saldo,
+    excedentes: excedentes.map(e => ({
+      id: e.id,
+      evento: e.transmision.funcion.evento.producto.nombre,
+      fecha: e.transmision.funcion.inicio,
+      minutos: e.minutos,
+      monto: Number(e.monto),
+      estado: e.estado,
+      cobradoEn: e.cobradoEn
+    }))
+  };
+}
+
+// ---------- Grabación (Fase 4) ----------
+
+/**
+ * "Guardar 1 año" (S/ 50, cargo manual): la descarga sigue 1 año en R2. Solo
+ * mientras la grabación está en línea, para copiar el MP4 antes de borrarlo.
+ */
+export async function guardarAnio(tiendaId, id, user, ahora = new Date()) {
+  await tiendaDeEventos(tiendaId);
+  const t = await transmisionDeTienda(tiendaId, id);
+  exigirVideoPropio(t);
+  if (!t.terminadaEn || !conGrabacion(t)) throw noProcesable("Esta transmisión no tiene una grabación para guardar", "SIN_GRABACION");
+  if (t.guardarAnio) throw noProcesable("La grabación ya se guarda por 1 año", "YA_GUARDADA");
+  if (ahora >= grabacionHasta(t, t.funcion)) throw noProcesable("La grabación ya venció: no se puede guardar", "VENCIDA");
+  if (!t.grabaciones.some(g => g.estado === "lista")) throw noProcesable("La grabación todavía se está procesando. Intenta en unos minutos", "PROCESANDO");
+
+  const usuario = usuarioDe(user);
+  await prisma.$transaction(async (tx) => {
+    await tx.transmision_cargos.upsert({
+      where: { uq_transmision_cargo_tipo: { transmisionId: id, tipo: "guardar_anio" } },
+      create: { tiendaId, transmisionId: id, tipo: "guardar_anio", monto: PRECIO_GUARDAR_ANIO, autorizadoPor: usuario, autorizadoEn: ahora },
+      update: { estado: "por_cobrar", monto: PRECIO_GUARDAR_ANIO, autorizadoPor: usuario, autorizadoEn: ahora, fechaActualizacion: ahora }
+    });
+    // Nuevo plazo: el aviso de "la descarga vence" se calcula sobre el año.
+    await tx.evento_transmisiones.update({
+      where: { id },
+      data: { guardarAnio: true, avisoDescargaEn: null, fechaActualizacion: ahora, usuarioActualizacion: usuario }
+    });
+  });
+  logger.info(`Transmisión ${id}: "Guardar ${DIAS_GUARDAR_ANIO} días" por ${usuario}`);
+  return obtenerPorFuncion(tiendaId, t.funcionId, ahora);
+}
+
+/** R9.3: el anfitrión pidió borrar la grabación antes de su plazo. No se puede deshacer. */
+export async function borrarGrabacionAhora(tiendaId, id, user, ahora = new Date()) {
+  await tiendaDeEventos(tiendaId);
+  const t = await transmisionDeTienda(tiendaId, id);
+  exigirVideoPropio(t);
+  if (!t.terminadaEn || !t.limpiadaEn) throw noProcesable("La grabación se puede borrar cuando la transmisión termina", "EN_CURSO");
+  if (t.grabacionBorradaEn) throw noProcesable("La grabación ya está borrada", "YA_BORRADA");
+  await borrarGrabacion(t, ahora);
+  // Un "Guardar 1 año" sin cobrar deja de tener sentido.
+  await prisma.transmision_cargos.updateMany({
+    where: { transmisionId: id, tipo: "guardar_anio", estado: "por_cobrar" },
+    data: { estado: "anulado", fechaActualizacion: ahora, usuarioActualizacion: usuarioDe(user) }
+  });
+  logger.info(`Grabación de la transmisión ${id} borrada a pedido por ${usuarioDe(user)}`);
   return obtenerPorFuncion(tiendaId, t.funcionId, ahora);
 }
 
@@ -588,7 +740,7 @@ async function invitacionDeToken(token, tiendaIdResuelta) {
   if (tiendaIdResuelta && tiendaIdResuelta !== tiendaId) throw noValido;
   const inv = await prisma.evento_invitaciones.findFirst({
     where: { id: invitacionId, tiendaId },
-    include: { transmision: { include: { funcion: { include: INCLUDE_FUNCION } } } }
+    include: { transmision: { include: { funcion: { include: INCLUDE_FUNCION }, grabaciones: { where: { estado: "lista" }, orderBy: { orden: "asc" } } } } }
   });
   if (!inv || inv.version !== version || inv.estado !== "activa") throw noValido;
   return inv;
@@ -610,10 +762,18 @@ export async function paginaInvitado(token, tiendaIdResuelta, ahora = new Date()
     data: { ultimaConexionEn: ahora, ...(inv.primeraConexionEn ? {} : { primeraConexionEn: ahora }) }
   });
 
+  // Grabación del Privado (Fase 4): partes listas, mientras siga en línea.
+  const conPartes = conGrabacion(t) && t.grabaciones.length > 0 && ahora < grabacionHasta(t, funcion);
+
   let video = null;
-  if (hayVideo(t, etapa)) {
+  if (hayVideo(t, etapa, { hayGrabacion: conPartes })) {
     if (!esVideoPropio(t) && t.youtubeVideoId) {
       video = { proveedor: "youtube", id: t.youtubeVideoId };
+    } else if (etapa === "terminada") {
+      // Los invitados ven la grabación; descargarla es del anfitrión (R8.1.1).
+      const expiraEn = new Date(ahora.getTime() + 4 * 60 * MS_MIN);
+      const partes = await Promise.all(t.grabaciones.map(async g => (await provider().urlReproduccion(g.videoId, { expiraEn })).iframeUrl));
+      video = { proveedor: provider().nombre, iframeUrl: partes[0], partes };
     } else if (esVideoPropio(t) && t.entradaId) {
       // Token de reproducción hasta media hora después del corte (máx. 24 h, lo limita el proveedor).
       const { iframeUrl } = await provider().urlReproduccion(t.entradaId, { expiraEn: new Date(finEnVivo(t, funcion).getTime() + 30 * MS_MIN) });
@@ -658,9 +818,98 @@ export async function latidoInvitado(token, tiendaIdResuelta, { sesionId, reclam
     throw new ConflictError(message, { message, motivo: "OTRO_DISPOSITIVO" });
   }
   await prisma.evento_invitaciones.update({ where: { id: inv.id }, data: { sesionId, sesionVistaEn: ahora } });
+  const etapa = etapaTransmision(t, t.funcion, ahora);
+  // Minutos vistos estimados (un latido ≈ 30 s de video) para el costo real (R10.3).
+  if (esVideoPropio(t) && etapa === "en_vivo") {
+    await prisma.evento_transmisiones.update({ where: { id: t.id }, data: { minutosVistos: { increment: 0.5 } } });
+  }
   return {
-    etapa: etapaTransmision(t, t.funcion, ahora),
+    etapa,
     senal: esVideoPropio(t) ? t.senal : null,
     terminadaEn: t.terminadaEn
+  };
+}
+
+// ============================================
+// Enlace del aviso de 15 minutos (R7.5), sin sesión
+// ============================================
+
+async function transmisionDeAccion(token) {
+  const { transmisionId, tiendaId } = await verificarTokenAccion(token);
+  const t = await prisma.evento_transmisiones.findFirst({
+    where: { id: transmisionId, tiendaId },
+    include: { funcion: { include: INCLUDE_FUNCION }, excedente: true }
+  });
+  if (!t || !esVideoPropio(t)) throw new NotFoundError("Transmisión", "Este enlace ya venció o no es válido");
+  return t;
+}
+
+async function datosAccion(t, ahora) {
+  const etapa = etapaTransmision(t, t.funcion, ahora);
+  const tienda = await prisma.tiendas.findUnique({ where: { id: t.tiendaId }, select: { nombre: true, logoUrl: true } });
+  return {
+    tienda,
+    evento: t.funcion.evento.producto.nombre,
+    etapa,
+    senal: t.senal,
+    fin: finTransmision(t, t.funcion),
+    corteEn: corteEn(t, t.funcion),
+    extensionMin: t.extensionMin,
+    noExtender: t.noExtender,
+    terminada: !!t.terminadaEn || t.estado === "cancelada",
+    opciones: enCurso(t) ? await opcionesExtension(t, ahora) : [],
+    ahora
+  };
+}
+
+export async function accionInfo(token, ahora = new Date()) {
+  return datosAccion(await transmisionDeAccion(token), ahora);
+}
+
+export async function accionExtender(token, minutos, ahora = new Date()) {
+  const t = await transmisionDeAccion(token);
+  await extenderTransmision(t, minutos, { quien: `enlace del aviso${t.contactoEmail ? ` (${t.contactoEmail})` : ""}`, ahora });
+  return datosAccion(await transmisionDeAccion(token), ahora);
+}
+
+export async function accionTerminarALaHora(token, ahora = new Date()) {
+  const t = await transmisionDeAccion(token);
+  exigirEnCurso(t);
+  await noExtender(t, "enlace del aviso", ahora);
+  return datosAccion(await transmisionDeAccion(token), ahora);
+}
+
+// ============================================
+// Página del anfitrión (Fase 4, R8.1.1): ver y descargar la grabación
+// ============================================
+
+/**
+ * Lo que ve el anfitrión con su enlace (/:slug/grabacion/:token): las partes
+ * con su reproductor (mientras esté en línea) y su descarga (MP4 firmado de
+ * Cloudflare, o de R2 con "Guardar 1 año"). Cualquier problema responde 404.
+ */
+export async function paginaAnfitrion(token, tiendaIdResuelta, ahora = new Date()) {
+  const { transmisionId, tiendaId } = await verificarTokenAnfitrion(token);
+  const noValido = new NotFoundError("Grabación", "Este enlace no es válido");
+  if (tiendaIdResuelta && tiendaIdResuelta !== tiendaId) throw noValido;
+  const t = await prisma.evento_transmisiones.findFirst({
+    where: { id: transmisionId, tiendaId },
+    include: { funcion: { include: INCLUDE_FUNCION }, grabaciones: { orderBy: { orden: "asc" } } }
+  });
+  if (!t || !esVideoPropio(t) || !t.grabar) throw noValido;
+  const tienda = await prisma.tiendas.findUnique({ where: { id: tiendaId }, select: { nombre: true, logoUrl: true } });
+
+  const vence = descargaHasta(t, t.funcion);
+  const disponible = !t.grabacionBorradaEn && ahora < vence;
+  return {
+    tienda,
+    evento: { nombre: t.funcion.evento.producto.nombre, imagenUrl: t.funcion.evento.producto.imagenes[0]?.url ?? null },
+    fecha: t.funcion.inicio,
+    anfitrion: t.anfitrionNombre,
+    estado: !disponible ? "vencida" : !t.terminadaEn ? "pendiente" : t.grabaciones.some(g => g.estado === "procesando") ? "procesando" : "lista",
+    enLineaHasta: grabacionHasta(t, t.funcion),
+    descargaHasta: vence,
+    guardarAnio: t.guardarAnio,
+    partes: disponible ? await partesConEnlaces(t, ahora) : []
   };
 }

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
+import { invalidarAlEscribir } from "../../utils/store-cache.js";
 import tiendasRoutes from "../../modules/tenants/tiendas.admin.routes.js";
 import categoriasRoutes from "../../modules/catalogo/categorias.admin.routes.js";
 import productosRoutes from "../../modules/catalogo/productos.admin.routes.js";
@@ -28,21 +29,23 @@ const router = Router();
 // Auth requerida en todas las rutas de administración
 router.use(authMiddleware);
 
-router.use("/tiendas", tiendasRoutes);
-router.use("/categorias", categoriasRoutes);
+// Las escrituras exitosas limpian la caché en memoria del storefront
+// (utils/store-cache.js). Tiendas → "envios": cotizar usa envioGratisMinimo.
+router.use("/tiendas", invalidarAlEscribir("envios"), tiendasRoutes);
+router.use("/categorias", invalidarAlEscribir("categorias"), categoriasRoutes);
 router.use("/productos", productosRoutes);
 router.use("/producto-variantes", productoVariantesRoutes);
 router.use("/producto-imagenes", productoImagenesRoutes);
 router.use("/producto-atributos", productoAtributosRoutes);
 router.use("/users", usersRoutes);
 router.use("/invitations", invitationsRoutes);
-router.use("/metodos-pago", metodosPagoRoutes);
+router.use("/metodos-pago", invalidarAlEscribir("metodos-pago"), metodosPagoRoutes);
 router.use("/pasarela-config", pasarelaConfigRoutes);
 router.use("/pedidos", pedidosRoutes);
-router.use("/metodos-envio", metodosEnvioRoutes);
+router.use("/metodos-envio", invalidarAlEscribir("envios"), metodosEnvioRoutes);
 router.use("/cupones", cuponesRoutes);
-router.use("/live", liveRoutes);
-router.use("/resenas", resenasRoutes);
+router.use("/live", invalidarAlEscribir("live"), liveRoutes);
+router.use("/resenas", invalidarAlEscribir("resenas"), resenasRoutes);
 router.use("/studio", studioRoutes);
 router.use("/asistente", asistenteRoutes);
 router.use("/consumo-ia", consumoIaRoutes);

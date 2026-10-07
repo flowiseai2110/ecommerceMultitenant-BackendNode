@@ -4,6 +4,7 @@ import { ConflictError, NotFoundError, ValidationError } from "../../utils/error
 import { sendTransactionalEmail } from "../../services/email.service.js";
 import { urlTienda } from "../resenas/resenas.service.js";
 import { generarNumeroPedido, upsertCliente } from "../ordenes/pedidos.service.js";
+import { datosFactura } from "../sunat/ruc.service.js";
 import { cotizarHotel, montoACuenta } from "./hotel/cotizar.js";
 import { ESTADOS_EN_CURSO, transicionar, estadoEfectivo } from "./estados.js";
 import { obtenerConfig } from "./reservas.config.service.js";
@@ -322,6 +323,8 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
   await validarSolicitudesAbiertas(tienda.id, vertical, { whatsapp, docNumero }, config.maxSolicitudesAbiertas, ahora);
 
   const estadoInicial = vertical.estadoInicial?.(c) ?? (config.modoConfirmacion === "pago_directo" ? "aceptada" : "solicitada");
+  // Fuera de la transacción: es una consulta de red (ver pedidos.service).
+  const factura = datos.factura ? await datosFactura(datos.factura.ruc) : null;
   const nombreCompleto = `${datos.titular.nombres} ${datos.titular.apellidos}`;
 
   try {
@@ -356,8 +359,8 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
           comprobante: datos.factura ? "factura" : null,
           comprobanteDocTipo: datos.factura ? "RUC" : null,
           comprobanteDocNumero: datos.factura?.ruc ?? null,
-          razonSocial: datos.factura?.razonSocial ?? null,
-          direccionFiscal: datos.factura?.direccionFiscal ?? null,
+          razonSocial: factura?.razonSocial ?? null,
+          direccionFiscal: factura?.direccionFiscal ?? null,
           fechaRegistro: ahora,
           usuarioRegistro: "storefront",
           detalles: {

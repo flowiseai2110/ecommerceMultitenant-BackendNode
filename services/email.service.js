@@ -505,4 +505,127 @@ export function previewInvitationEmail(invitacion, tienda, invitadorEmail) {
   };
 }
 
-export default { sendInvitationEmail, previewInvitationEmail, sendNewOrderEmail, sendConsumoIaAvisoEmail, sendTransactionalEmail };
+/**
+ * Aviso de los 15 minutos de una transmisión en vivo (docs/specs/transmision-eventos, R7.5).
+ * Va al correo del negocio y al contacto de la transmisión. El botón abre una
+ * página con enlace firmado para extender sin iniciar sesión.
+ * @param {{ to: string[], tiendaNombre: string, evento: string, minutosRestantes: number, corte: Date,
+ *           accionUrl: string, opciones: { minutos: number, texto: string, permitido: boolean }[] }} datos
+ */
+export async function sendTransmisionAvisoFinEmail({ to, tiendaNombre, evento, minutosRestantes, corte, accionUrl, opciones }) {
+  if (!hasResendApiKey()) {
+    logger.info(`📧 [DEV] Aviso de fin de transmisión (${evento}, quedan ${minutosRestantes} min) para: ${to.join(", ")} · ${accionUrl}`);
+    return { success: false, reason: "RESEND_API_KEY not configured" };
+  }
+
+  const horaCorte = corte.toLocaleTimeString("es-PE", { timeZone: "America/Lima", hour: "numeric", minute: "2-digit", hour12: true });
+  const filas = opciones.filter(o => o.permitido).map(o =>
+    `<li style="margin: 4px 0;">Extender ${o.minutos === 60 ? "1 hora" : "30 minutos"}: <strong>${escapeHtml(o.texto)}</strong></li>`).join("");
+
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 16px;">
+        <table role="presentation" style="width: 100%; max-width: 560px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px;">
+          <tr>
+            <td style="padding: 32px 32px 8px;">
+              <h1 style="margin: 0; font-size: 20px; color: #1a1a1a;">Te quedan ${minutosRestantes} minutos de transmisión</h1>
+              <p style="margin: 12px 0 0; font-size: 15px; line-height: 1.6; color: #4a4a4a;">
+                La transmisión de <strong>${escapeHtml(evento)}</strong> (${escapeHtml(tiendaNombre)}) se corta sola a las <strong>${horaCorte}</strong>.
+                ¿Quieres extenderla?
+              </p>
+              ${filas ? `<ul style="margin: 12px 0 0; padding-left: 20px; font-size: 15px; color: #4a4a4a;">${filas}</ul>` : ""}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 24px 32px 32px; text-align: center;">
+              <a href="${accionUrl}" style="display: inline-block; padding: 12px 24px; background-color: #dc2626; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 6px;">
+                Extender o terminar a la hora
+              </a>
+              <p style="margin: 16px 0 0; font-size: 13px; color: #6b7280;">Si no haces nada, la transmisión termina a la hora y no se cobra nada extra.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`.trim();
+
+  return deliverEmail({ to, subject: `Te quedan ${minutosRestantes} min de transmisión — ${evento}`, html });
+}
+
+const TEXTOS_GRABACION = {
+  lista: {
+    titulo: (e) => `La grabación de ${e} está lista`,
+    cuerpo: (hasta) => `Puedes verla y descargarla hasta el <strong>${hasta}</strong>. Después se borra y no queda copia.`,
+    boton: "Ver y descargar la grabación"
+  },
+  por_borrar: {
+    titulo: (e) => `La grabación de ${e} se borrará pronto`,
+    cuerpo: (hasta) => `Se borrará el <strong>${hasta}</strong>. Descárgala antes, o pídele al negocio que la guarde 1 año más para descargarla.`,
+    boton: "Descargar la grabación"
+  },
+  descarga_por_borrar: {
+    titulo: (e) => `La descarga de ${e} vence pronto`,
+    cuerpo: (hasta) => `El archivo de la grabación se borrará el <strong>${hasta}</strong>. Si aún no lo descargaste, hazlo antes de esa fecha.`,
+    boton: "Descargar la grabación"
+  }
+};
+
+/**
+ * Grabación de una transmisión (docs/specs/transmision-eventos, R8.1, R8.1.2):
+ * lista, se borra en 7 días o vence la descarga de 1 año. Va al anfitrión y al negocio.
+ * @param {{ to: string[], tipo: "lista"|"por_borrar"|"descarga_por_borrar", tiendaNombre: string, evento: string,
+ *           enlace: string, hasta: Date }} datos
+ */
+export async function sendTransmisionGrabacionEmail({ to, tipo, tiendaNombre, evento, enlace, hasta }) {
+  const t = TEXTOS_GRABACION[tipo];
+  const fecha = hasta.toLocaleDateString("es-PE", { timeZone: "America/Lima", day: "numeric", month: "long", year: "numeric" });
+  if (!hasResendApiKey()) {
+    logger.info(`📧 [DEV] Grabación (${tipo}) de ${evento} hasta ${fecha} para: ${to.join(", ")} · ${enlace}`);
+    return { success: false, reason: "RESEND_API_KEY not configured" };
+  }
+
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 16px;">
+        <table role="presentation" style="width: 100%; max-width: 560px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px;">
+          <tr>
+            <td style="padding: 32px 32px 8px;">
+              <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280;">${escapeHtml(tiendaNombre)}</p>
+              <h1 style="margin: 0; font-size: 20px; color: #1a1a1a;">${escapeHtml(t.titulo(evento))}</h1>
+              <p style="margin: 12px 0 0; font-size: 15px; line-height: 1.6; color: #4a4a4a;">${t.cuerpo(fecha)}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 24px 32px 32px; text-align: center;">
+              <a href="${enlace}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 6px;">
+                ${t.boton}
+              </a>
+              <p style="margin: 16px 0 0; font-size: 13px; color: #6b7280;">No compartas este enlace: con él se puede descargar la grabación.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`.trim();
+
+  return deliverEmail({ to, subject: t.titulo(evento), html });
+}
+
+export default {
+  sendInvitationEmail, previewInvitationEmail, sendNewOrderEmail, sendConsumoIaAvisoEmail, sendTransactionalEmail, sendTransmisionAvisoFinEmail,
+  sendTransmisionGrabacionEmail
+};

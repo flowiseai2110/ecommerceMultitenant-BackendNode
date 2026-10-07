@@ -45,6 +45,26 @@ export class StreamingProvider {
    */
   async urlReproduccion(id, opts) { throw new Error("urlReproduccion no implementado"); }
 
+  // ---------- Grabaciones (Fase 4) ----------
+
+  /** Borra solo la entrada: sus grabaciones se conservan. */
+  async borrarSoloEntrada(entradaId) { throw new Error("borrarSoloEntrada no implementado"); }
+
+  /** @returns {Promise<{ id: string, estado: "procesando"|"lista"|"error", duracionSeg: number|null, creadoEn: Date|null }[]>} */
+  async listarVideos(entradaId) { throw new Error("listarVideos no implementado"); }
+
+  async estadoVideo(videoId) { throw new Error("estadoVideo no implementado"); }
+
+  async borrarVideo(videoId) { throw new Error("borrarVideo no implementado"); }
+
+  /** Genera el MP4 descargable. @returns {Promise<"pendiente"|"lista"|"error">} */
+  async pedirDescarga(videoId) { throw new Error("pedirDescarga no implementado"); }
+
+  async estadoDescarga(videoId) { throw new Error("estadoDescarga no implementado"); }
+
+  /** URL firmada del MP4. @param {{ expiraEn: Date, nombreArchivo?: string }} opts */
+  async urlDescarga(videoId, opts) { throw new Error("urlDescarga no implementado"); }
+
   /**
    * Verifica un webhook y lo traduce a un evento normalizado, o null si no es válido.
    * @param {{ tipo: "videos" | "notificaciones", headers: object, rawBody: Buffer }} req

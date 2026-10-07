@@ -1235,28 +1235,50 @@ model evento_transmisiones {
   youtubeVideoId String? @map("youtube_video_id") @db.VarChar(20)
 
   // Plan Privado (Fase 2): video propio en Cloudflare Stream.
-  proveedor          String?   @db.VarChar(20) // cloudflare
-  entradaId          String?   @map("entrada_id") @db.VarChar(64) // live input del proveedor
+  proveedor           String?   @db.VarChar(20) // cloudflare
+  entradaId           String?   @map("entrada_id") @db.VarChar(64) // live input del proveedor
   // Datos de conexión (URL RTMPS, clave, SRT) cifrados con utils/crypto.js (R9.4).
-  claveCifrada       String?   @map("clave_cifrada") @db.Text
+  claveCifrada        String?   @map("clave_cifrada") @db.Text
   // Sube al regenerar la clave: invalida las sesiones de la App Transmitir.
-  claveVersion       Int       @default(1) @map("clave_version")
+  claveVersion        Int       @default(1) @map("clave_version")
   // Tope de invitados (25 | 50 | 100 | 200) y su factor de descuento (0.5 | 1 | 2 | 4).
-  maxInvitados       Int?      @map("max_invitados")
-  factor             Decimal?  @db.Decimal(3, 1)
+  maxInvitados        Int?      @map("max_invitados")
+  factor              Decimal?  @db.Decimal(3, 1)
   // La entrada solo acepta señal en la prueba y en la ventana del evento (la maneja el job).
-  habilitada         Boolean   @default(false)
-  pruebaHasta        DateTime? @map("prueba_hasta") @db.Timestamptz
+  habilitada          Boolean   @default(false)
+  pruebaHasta         DateTime? @map("prueba_hasta") @db.Timestamptz
   // Señal que llega del celular: sin_senal | conectada | desconectada
-  senal              String    @default("sin_senal") @db.VarChar(20)
-  senalEn            DateTime? @map("senal_en") @db.Timestamptz
-  inicioRealEn       DateTime? @map("inicio_real_en") @db.Timestamptz
+  senal               String    @default("sin_senal") @db.VarChar(20)
+  senalEn             DateTime? @map("senal_en") @db.Timestamptz
+  inicioRealEn        DateTime? @map("inicio_real_en") @db.Timestamptz
   // Corte (job, a los 5 min del fin) o "Terminar" del admin (R6.3, R7.8).
-  terminadaEn        DateTime? @map("terminada_en") @db.Timestamptz
-  minutosUsados      Int?      @map("minutos_usados")
-  minutosDescontados Int?      @map("minutos_descontados")
-  // Videos y entrada borrados en el proveedor ("Solo en vivo" en la Fase 2).
-  limpiadaEn         DateTime? @map("limpiada_en") @db.Timestamptz
+  terminadaEn         DateTime? @map("terminada_en") @db.Timestamptz
+  minutosUsados       Int?      @map("minutos_usados")
+  minutosDescontados  Int?      @map("minutos_descontados")
+  // Fase 3: minutos extra confirmados (R7.5-R7.7) y extensión automática autorizada al activar (0, 30 o 60).
+  extensionMin        Int       @default(0) @map("extension_min")
+  extensionAutoMaxMin Int       @default(0) @map("extension_auto_max_min")
+  // "Terminar a la hora": no se aplica la extensión automática.
+  noExtender          Boolean   @default(false) @map("no_extender")
+  // Aviso de los 15 minutos (se vuelve a enviar tras cada extensión).
+  avisoFinEn          DateTime? @map("aviso_fin_en") @db.Timestamptz
+  // Contacto de la transmisión: otro celular que recibe el aviso (el que transmite está en No molestar).
+  contactoNombre      String?   @map("contacto_nombre") @db.VarChar(100)
+  contactoEmail       String?   @map("contacto_email") @db.VarChar(150)
+  contactoTelefono    String?   @map("contacto_telefono") @db.VarChar(20)
+  // Minutos vistos estimados con el latido de los invitados (costo real, R10.3).
+  minutosVistos       Decimal   @default(0) @map("minutos_vistos") @db.Decimal(10, 1)
+  // Fase 4: grabación (R8.1). Privado: 30 días en línea + descarga, incluida y
+  // activada por defecto; false = "Solo en vivo". "Guardar 1 año" alarga solo la
+  // descarga (MP4 copiado a R2 privado).
+  grabar              Boolean   @default(true)
+  guardarAnio         Boolean   @default(false) @map("guardar_anio")
+  avisoGrabacionEn    DateTime? @map("aviso_grabacion_en") @db.Timestamptz
+  avisoBorradoEn      DateTime? @map("aviso_borrado_en") @db.Timestamptz
+  avisoDescargaEn     DateTime? @map("aviso_descarga_en") @db.Timestamptz
+  grabacionBorradaEn  DateTime? @map("grabacion_borrada_en") @db.Timestamptz
+  // Entrada borrada en el proveedor (las grabaciones se conservan aparte).
+  limpiadaEn          DateTime? @map("limpiada_en") @db.Timestamptz
 
   // Consentimiento del anfitrión (R9.1, Ley 29733): sin él no se activa.
   anfitrionNombre   String   @map("anfitrion_nombre") @db.VarChar(150)
@@ -1273,6 +1295,10 @@ model evento_transmisiones {
   funcion       evento_funciones            @relation(fields: [funcionId], references: [id], onDelete: Cascade)
   invitaciones  evento_invitaciones[]
   vinculaciones transmision_vinculaciones[]
+  movimientos   transmision_movimientos[]
+  excedente     transmision_excedentes?
+  grabaciones   transmision_grabaciones[]
+  cargos        transmision_cargos[]
 
   @@index([tiendaId], name: "idx_evento_transmisiones_tienda")
 }
@@ -1337,4 +1363,138 @@ model transmision_vinculaciones {
   transmision evento_transmisiones @relation(fields: [transmisionId], references: [id], onDelete: Cascade)
 
   @@index([transmisionId], name: "idx_transmision_vinculaciones_transmision")
+}
+
+// ============================================
+// TRANSMISIÓN: paquetes de horas, movimientos y excedente (Fase 3, cobro manual)
+// Todo en minutos "de paquete" (minutos transmitidos × factor del tope).
+// ============================================
+
+// Paquete prepagado (10 h o 25 h). Lo da de alta la plataforma tras cobrarlo a
+// mano (scripts/transmision-paquete.js). Vence a los 12 meses (R7.4).
+model transmision_paquetes {
+  id             String   @id @default(uuid()) @db.Uuid
+  tiendaId       String   @map("tienda_id") @db.Uuid
+  minutos        Int
+  minutosUsados  Int      @default(0) @map("minutos_usados")
+  precio         Decimal  @db.Decimal(10, 2)
+  moneda         String   @default("PEN") @db.VarChar(3)
+  referenciaPago String?  @map("referencia_pago") @db.VarChar(120) // "Yape 123456", "Transferencia BCP …"
+  compradoEn     DateTime @default(now()) @map("comprado_en") @db.Timestamptz
+  venceEn        DateTime @map("vence_en") @db.Timestamptz
+  estado         String   @default("activo") @db.VarChar(20) // activo | anulado
+
+  // Auditoría
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  movimientos transmision_movimientos[]
+
+  @@index([tiendaId, venceEn], name: "idx_transmision_paquetes_tienda")
+}
+
+// De dónde salió cada minuto descontado de una transmisión (R7.3): plan del
+// mes → paquete (el que vence primero) → excedente. "absorbido" = lo que no
+// estaba cubierto ni confirmado: no se cobra (R7.6), lo asume la plataforma.
+model transmision_movimientos {
+  id            String    @id @default(uuid()) @db.Uuid
+  tiendaId      String    @map("tienda_id") @db.Uuid
+  transmisionId String    @map("transmision_id") @db.Uuid
+  fuente        String    @db.VarChar(20) // plan | paquete | excedente | absorbido
+  paqueteId     String?   @map("paquete_id") @db.Uuid
+  periodo       String    @db.VarChar(7) // "YYYY-MM" del inicio de la función (Lima)
+  minutos       Int
+  fechaRegistro DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+
+  transmision evento_transmisiones  @relation(fields: [transmisionId], references: [id], onDelete: Cascade)
+  paquete     transmision_paquetes? @relation(fields: [paqueteId], references: [id], onDelete: Restrict)
+
+  @@index([tiendaId, periodo, fuente], name: "idx_transmision_movimientos_tienda")
+  @@index([transmisionId], name: "idx_transmision_movimientos_transmision")
+}
+
+// Excedente confirmado de una transmisión (R7.6, R7.7): se cobra a mano con el
+// siguiente pago de la tienda. autorizado → por_cobrar (al terminar, con lo
+// realmente usado) → cobrado. "anulado" si al final no se usó.
+model transmision_excedentes {
+  id                 String    @id @default(uuid()) @db.Uuid
+  tiendaId           String    @map("tienda_id") @db.Uuid
+  transmisionId      String    @unique @map("transmision_id") @db.Uuid
+  periodo            String    @db.VarChar(7)
+  minutosAutorizados Int       @map("minutos_autorizados")
+  minutos            Int       @default(0)
+  monto              Decimal   @default(0) @db.Decimal(10, 2)
+  estado             String    @default("autorizado") @db.VarChar(20) // autorizado | por_cobrar | cobrado | anulado
+  autorizadoPor      String    @map("autorizado_por") @db.VarChar(100)
+  autorizadoEn       DateTime  @map("autorizado_en") @db.Timestamptz
+  cobradoEn          DateTime? @map("cobrado_en") @db.Timestamptz
+  referenciaCobro    String?   @map("referencia_cobro") @db.VarChar(120)
+
+  // Auditoría
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  transmision evento_transmisiones @relation(fields: [transmisionId], references: [id], onDelete: Cascade)
+
+  @@index([tiendaId, periodo, estado], name: "idx_transmision_excedentes_tienda")
+}
+
+// ============================================
+// TRANSMISIÓN: grabaciones y cargos (Fase 4)
+// ============================================
+
+// Una parte grabada de la transmisión. Cloudflare crea un video nuevo cada vez
+// que la señal se reconecta después de 60 s (Fase 0), así que una transmisión
+// puede tener varias partes. Borrar la entrada no borra estos videos.
+model transmision_grabaciones {
+  id            String    @id @default(uuid()) @db.Uuid
+  tiendaId      String    @map("tienda_id") @db.Uuid
+  transmisionId String    @map("transmision_id") @db.Uuid
+  videoId       String    @unique @map("video_id") @db.VarChar(64)
+  orden         Int       @default(1)
+  grabadaEn     DateTime  @map("grabada_en") @db.Timestamptz
+  estado        String    @default("procesando") @db.VarChar(20) // procesando | lista | error | borrada
+  duracionSeg   Int?      @map("duracion_seg")
+  // MP4 descargable en el proveedor: sin_pedir | pendiente | lista | error
+  mp4Estado     String    @default("sin_pedir") @map("mp4_estado") @db.VarChar(20)
+  // Copia en R2 privado ("Guardar 1 año")
+  r2Key         String?   @map("r2_key") @db.VarChar(300)
+  r2Bytes       BigInt?   @map("r2_bytes")
+  r2CopiadaEn   DateTime? @map("r2_copiada_en") @db.Timestamptz
+  borradaEn     DateTime? @map("borrada_en") @db.Timestamptz
+
+  fechaRegistro      DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  fechaActualizacion DateTime? @map("fecha_actualizacion") @db.Timestamptz
+
+  transmision evento_transmisiones @relation(fields: [transmisionId], references: [id], onDelete: Cascade)
+
+  @@index([transmisionId], name: "idx_transmision_grabaciones_transmision")
+  @@index([estado, mp4Estado], name: "idx_transmision_grabaciones_estado")
+}
+
+// Cargos manuales a la tienda distintos del excedente (hoy: "Guardar 1 año", S/ 50).
+// Se cobran a mano con el siguiente pago (scripts/transmision-excedentes.js).
+model transmision_cargos {
+  id              String    @id @default(uuid()) @db.Uuid
+  tiendaId        String    @map("tienda_id") @db.Uuid
+  transmisionId   String    @map("transmision_id") @db.Uuid
+  tipo            String    @db.VarChar(30) // guardar_anio
+  monto           Decimal   @db.Decimal(10, 2)
+  estado          String    @default("por_cobrar") @db.VarChar(20) // por_cobrar | cobrado | anulado
+  autorizadoPor   String    @map("autorizado_por") @db.VarChar(100)
+  autorizadoEn    DateTime  @map("autorizado_en") @db.Timestamptz
+  cobradoEn       DateTime? @map("cobrado_en") @db.Timestamptz
+  referenciaCobro String?   @map("referencia_cobro") @db.VarChar(120)
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  transmision evento_transmisiones @relation(fields: [transmisionId], references: [id], onDelete: Cascade)
+
+  @@unique([transmisionId, tipo], name: "uq_transmision_cargo_tipo")
+  @@index([tiendaId, estado], name: "idx_transmision_cargos_tienda")
 }

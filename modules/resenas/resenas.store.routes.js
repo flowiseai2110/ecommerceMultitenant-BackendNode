@@ -9,6 +9,7 @@ import {
   scopeQueryToTienda
 } from "../../kernel/tenant/index.js";
 import { apiResponse } from "../../utils/apiResponse.js";
+import { cacheRespuesta, invalidarAlEscribir } from "../../utils/store-cache.js";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../../utils/errors.js";
 import { verificarTokenResena } from "./resenas.token.js";
 import { guardarResena, listarResenasDestacadas, listarResenasProducto, listarResenables } from "./resenas.service.js";
@@ -48,6 +49,7 @@ async function tokenDeTienda(token, tiendaIdEsperado) {
 // ============================================
 router.get(
   "/producto/:productoId",
+  cacheRespuesta("resenas"),
   validate({ params: productoParamSchema, query: listarProductoQuerySchema }),
   scopeQueryToTienda,
   async (req, res, next) => {
@@ -71,6 +73,7 @@ router.get(
 // ============================================
 router.get(
   "/destacadas",
+  cacheRespuesta("resenas"),
   validate({ query: destacadasQuerySchema }),
   scopeQueryToTienda,
   async (req, res, next) => {
@@ -131,6 +134,7 @@ router.get(
 router.post(
   "/",
   resenaLimiter,
+  invalidarAlEscribir("resenas"), // con moderación automática se publica al instante
   optionalAuth,
   scopeBodyToTienda,
   validate({ body: crearResenaSchema }),

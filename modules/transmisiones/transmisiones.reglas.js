@@ -24,9 +24,13 @@ export const TOPE_BASICO = 300;
 export const topeInvitaciones = (t) => (t.plan === "basico" ? TOPE_BASICO : t.maxInvitados);
 export const esVideoPropio = (t) => t.plan === "privado" || t.plan === "premium";
 
-/** Fin de la transmisión: el de la función o, si no tiene, inicio + la duración indicada (R1.2). */
+/**
+ * Fin de la transmisión: el de la función o, si no tiene, inicio + la duración
+ * indicada (R1.2), más los minutos extra confirmados (R7.5).
+ */
 export function finTransmision(transmision, funcion) {
-  return funcion.fin ?? new Date(funcion.inicio.getTime() + transmision.duracionMin * MS_MIN);
+  const base = funcion.fin ?? new Date(funcion.inicio.getTime() + transmision.duracionMin * MS_MIN);
+  return new Date(base.getTime() + (transmision.extensionMin ?? 0) * MS_MIN);
 }
 
 /** Minutos contratados (la duración efectiva de la función). */
@@ -35,7 +39,7 @@ export const duracionEfectiva = (transmision, funcion) =>
 
 export const salaAbreEn = (funcion) => new Date(funcion.inicio.getTime() - SALA_ABRE_MIN * MS_MIN);
 
-/** Corte automático: fin + 5 min (R7.8). La extensión confirmada llega en la Fase 3. */
+/** Corte automático: fin (con las extensiones) + 5 min (R7.8). */
 export const corteEn = (transmision, funcion) => new Date(finTransmision(transmision, funcion).getTime() + MARGEN_CORTE_MIN * MS_MIN);
 
 /** Hasta cuándo se ve video en vivo: Básico, el fin; Privado, el corte o "Terminar". */
@@ -68,11 +72,15 @@ export function etapaTransmision(transmision, funcion, ahora = new Date()) {
   return "terminada";
 }
 
-/** ¿La página del invitado muestra el reproductor en esta etapa? */
-export function hayVideo(transmision, etapa) {
-  return esVideoPropio(transmision)
-    ? ["espera", "en_vivo"].includes(etapa)
-    : ["espera", "en_vivo", "terminada"].includes(etapa);
+/**
+ * ¿La página del invitado muestra el reproductor en esta etapa? En Privado,
+ * al terminar solo si hay grabación lista (Fase 4).
+ * @param {{ hayGrabacion?: boolean }} [opts]
+ */
+export function hayVideo(transmision, etapa, { hayGrabacion = false } = {}) {
+  if (!esVideoPropio(transmision)) return ["espera", "en_vivo", "terminada"].includes(etapa);
+  if (etapa === "terminada") return hayGrabacion;
+  return ["espera", "en_vivo"].includes(etapa);
 }
 
 /**
@@ -135,4 +143,125 @@ export function mensajeInvitacion({ nombre, evento, inicio, enlace }) {
 export function enlaceWhatsapp({ telefono, ...datos }) {
   const numero = numeroWhatsapp(telefono);
   return `https://wa.me/${numero ?? ""}?text=${encodeURIComponent(mensajeInvitacion(datos))}`;
+}
+
+// ============================================
+// Fase 3: paquetes, extensión y excedente (cobro manual)
+// ============================================
+
+/** Paquetes prepagados: horas → precio en soles (decisión 2026-10-06). Vencen a los 12 meses. */
+export const PAQUETES = { 10: 250, 25: 550 };
+export const MESES_VIGENCIA_PAQUETE = 12;
+/** Excedente: S/ 20 por bloque de 30 min de paquete, con tope de 2 h por tienda al mes. */
+export const PRECIO_BLOQUE_EXCEDENTE = 20;
+export const BLOQUE_EXCEDENTE_MIN = 30;
+export const TOPE_EXCEDENTE_MES_MIN = 120;
+/** Aviso cuando quedan 15 min (R7.5) y extensiones posibles. */
+export const AVISO_FIN_MIN = 15;
+export const EXTENSIONES_MIN = [30, 60];
+export const EXTENSION_MAX_MIN = 180;
+export const EXTENSION_AUTO_OPCIONES = [0, 30, 60];
+
+/** Monto del excedente: bloques de 30 min redondeados hacia arriba. */
+export const montoExcedente = (minutos) =>
+  minutos > 0 ? Math.ceil(minutos / BLOQUE_EXCEDENTE_MIN) * PRECIO_BLOQUE_EXCEDENTE : 0;
+
+/** ¿Ya toca el aviso de los 15 minutos? */
+export function tocaAvisoFin(transmision, funcion, ahora = new Date()) {
+  if (!esVideoPropio(transmision) || transmision.terminadaEn || transmision.estado === "cancelada" || transmision.avisoFinEn) return false;
+  const fin = finTransmision(transmision, funcion).getTime();
+  return ahora.getTime() >= fin - AVISO_FIN_MIN * MS_MIN && ahora.getTime() < fin + MARGEN_CORTE_MIN * MS_MIN;
+}
+
+/** ¿Toca extender sola 30 min? Al llegar al fin, con señal y si se autorizó al activar (R7.6). */
+export function tocaExtensionAuto(transmision, funcion, ahora = new Date()) {
+  if (!esVideoPropio(transmision) || transmision.terminadaEn || transmision.estado === "cancelada" || transmision.noExtender) return false;
+  if ((transmision.extensionMin ?? 0) + 30 > (transmision.extensionAutoMaxMin ?? 0)) return false;
+  return transmision.senal === "conectada" && ahora >= finTransmision(transmision, funcion) && ahora < corteEn(transmision, funcion);
+}
+
+/**
+ * Reparte los minutos descontados de una transmisión (R7.3): primero el plan
+ * del mes, luego los paquetes (el que vence primero) y al final el excedente
+ * confirmado. Lo que no alcance ni esté confirmado queda "absorbido": nunca se
+ * cobra sin confirmación (R7.6).
+ * @param {{ minutos: number, planRestante: number, paquetes: {id: string, restante: number}[], excedenteAutorizado: number }} p
+ */
+export function asignarConsumo({ minutos, planRestante, paquetes, excedenteAutorizado }) {
+  let resto = Math.max(0, minutos);
+  const plan = Math.min(resto, Math.max(0, planRestante));
+  resto -= plan;
+  const dePaquetes = [];
+  for (const p of paquetes) {
+    if (!resto) break;
+    const usar = Math.min(resto, Math.max(0, p.restante));
+    if (usar) dePaquetes.push({ id: p.id, minutos: usar });
+    resto -= usar;
+  }
+  const excedente = Math.min(resto, Math.max(0, excedenteAutorizado));
+  return { plan, paquetes: dePaquetes, excedente, absorbido: resto - excedente };
+}
+
+/**
+ * Saldo del mes `periodo` contando lo reservado por las transmisiones que
+ * todavía no terminan: cada una usa primero el plan de SU mes y luego la bolsa
+ * común de paquetes. Devuelve lo que queda para una transmisión nueva de ese mes.
+ * @param {{ periodo: string, planRestantePorMes: Record<string, number>, planIncluido: number,
+ *           paquetesRestante: number, reservas: {periodo: string, minutos: number}[] }} p
+ */
+export function saldoConReservas({ periodo, planRestantePorMes, planIncluido, paquetesRestante, reservas }) {
+  const plan = { ...planRestantePorMes };
+  const restoPlan = (m) => (m in plan ? plan[m] : planIncluido);
+  let bolsa = Math.max(0, paquetesRestante);
+  let reservadas = 0;
+  for (const r of reservas) {
+    reservadas += r.minutos;
+    const delPlan = Math.min(r.minutos, Math.max(0, restoPlan(r.periodo)));
+    plan[r.periodo] = restoPlan(r.periodo) - delPlan;
+    bolsa = Math.max(0, bolsa - (r.minutos - delPlan));
+  }
+  const planDisponible = Math.max(0, restoPlan(periodo));
+  return { reservadas, planDisponible, paquetesDisponible: bolsa, disponibles: planDisponible + bolsa };
+}
+
+// ============================================
+// Fase 4: grabación (R8.1)
+// ============================================
+
+/** Privado: la grabación se ve y se descarga 30 días (el plazo del enlace). "Guardar 1 año" alarga solo la descarga. */
+export const DIAS_GUARDAR_ANIO = 365;
+export const PRECIO_GUARDAR_ANIO = 50;
+/** Aviso al anfitrión 7 días antes de cada borrado (R8.1.2). */
+export const AVISO_BORRADO_DIAS = 7;
+/** Una "parte" más corta que esto es un parpadeo de la señal: se descarta. */
+export const PARTE_MIN_SEG = 10;
+
+/** Hasta cuándo se puede descargar el MP4: el plazo en línea o, con "Guardar 1 año", un año desde el fin. */
+export function descargaHasta(transmision, funcion) {
+  if (!transmision.guardarAnio) return grabacionHasta(transmision, funcion);
+  return new Date(finTransmision(transmision, funcion).getTime() + DIAS_GUARDAR_ANIO * MS_DIA);
+}
+
+/** ¿La transmisión tiene (o tendrá) grabación? Solo Privado/Premium con "grabar" y sin borrar. */
+export const conGrabacion = (t) => esVideoPropio(t) && t.grabar && !t.grabacionBorradaEn && t.estado !== "cancelada";
+
+/** Aviso "tu grabación se borra en 7 días" (en línea). */
+export function tocaAvisoBorrado(transmision, funcion, ahora = new Date()) {
+  if (!conGrabacion(transmision) || !transmision.terminadaEn || transmision.avisoBorradoEn) return false;
+  const limite = grabacionHasta(transmision, funcion).getTime();
+  return ahora.getTime() >= limite - AVISO_BORRADO_DIAS * MS_DIA && ahora.getTime() < limite;
+}
+
+/** Aviso "la descarga de 1 año vence en 7 días". */
+export function tocaAvisoDescarga(transmision, funcion, ahora = new Date()) {
+  if (!conGrabacion(transmision) || !transmision.guardarAnio || transmision.avisoDescargaEn) return false;
+  const limite = descargaHasta(transmision, funcion).getTime();
+  return ahora.getTime() >= limite - AVISO_BORRADO_DIAS * MS_DIA && ahora.getTime() < limite;
+}
+
+/** Nombre de archivo para la descarga: "cumpleanos-de-mateo-parte-1.mp4". */
+export function nombreArchivo(evento, orden, total) {
+  const base = String(evento).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) || "grabacion";
+  return total > 1 ? `${base}-parte-${orden}.mp4` : `${base}.mp4`;
 }

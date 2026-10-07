@@ -215,7 +215,36 @@ Además, Stream se compra en **bloques prepagados** de minutos guardados y entre
   - `cobradoEn` se marca a mano.
 - **Costo real por tienda** (minutos entregados × precio de Stream), para compararlo con lo cobrado (R10.3).
 
-> ⏸ **Preguntas abiertas 2 y 4** (precios finales en soles; tope de excedente y cuándo se cobra): **se deciden al empezar esta fase.**
+> ✅ **Preguntas abiertas 2 y 4 decididas (2026-10-06):** paquetes de **10 h por S/ 250** y **25 h por S/ 550** (vencen a los 12 meses). Excedente a **S/ 20 por 30 min** de paquete, con tope de **2 h por tienda al mes**, cobrado a mano con el siguiente pago.
+
+**Implementado (2026-10-06):**
+- **BD:** [docs/sql/transmisiones_fase3.sql](../../sql/transmisiones_fase3.sql):
+  - en `evento_transmisiones`: extensión, extensión automática, "Terminar a la hora", aviso de fin, contacto y minutos vistos;
+  - tablas nuevas `transmision_paquetes`, `transmision_movimientos` y `transmision_excedentes`;
+  - reglas (CHECK) y RLS.
+- **Saldo** (`transmisiones.horas.js`):
+  - plan del mes + paquetes vigentes, menos lo **reservado** por transmisiones pendientes;
+  - cada reserva usa primero el plan de su mes y luego la bolsa común de paquetes;
+  - el excedente lleva su propio tope mensual.
+- **Reparto al terminar** (R7.3), dentro de la transacción del corte: plan del mes → paquetes (el que vence primero, bloqueados con `FOR UPDATE`) → excedente confirmado → "absorbido".
+  - Lo absorbido no se cobra (R7.6): lo asume la plataforma y queda registrado.
+  - Un excedente que no se usó queda **anulado**; si se usó, pasa a `por_cobrar` con el monto real.
+- **Extensión** (R7.5-R7.7): 30 min o 1 h (máximo 3 h por transmisión), desde el admin o desde el enlace del correo.
+  - Usa horas si quedan; si no, autoriza excedente (registra quién lo confirmó) hasta el tope del mes.
+  - Corre el fin, el corte y el aviso.
+- **Extensión automática** (R7.6): se autoriza al activar (0, 30 o 60 min). El job la aplica al llegar al fin, solo si la señal sigue llegando y nadie eligió "Terminar a la hora".
+- **Aviso de 15 min** (R7.5): correo con Resend al negocio y al contacto de la transmisión, una sola vez por cada fin.
+  - Lleva un enlace firmado (`transmision-accion`, vence 30 min después del corte) a la página pública `/transmision/accion/:token` del admin, con los botones Extender y Terminar a la hora.
+  - El GET solo informa, así que un lector de correo que precarga el enlace no extiende nada.
+- **Admin:**
+  - al activar: contacto y "si hace falta, extender sola";
+  - en vivo: opciones de extensión con su precio (paquete o S/), aviso en rojo a los 15 min y "Terminar a la hora";
+  - tarjeta "Tus horas" (plan, paquetes, excedentes) y excedente por cobrar al terminar.
+- **Cobro manual:**
+  - `scripts/transmision-paquete.js` (alta, listar, anular; simula sin `--aplicar`);
+  - `scripts/transmision-excedentes.js` (listar, cobrar, reporte del mes).
+- **Costo real** (R10.3): `minutos_vistos` se estima con el latido de los invitados (≈ 30 s por latido) × $1 / 1,000 min. Va en el reporte de `transmision-excedentes.js`.
+- **No incluido:** el aviso por WhatsApp o push (WhatsApp Business tiene costo por mensaje). Por ahora solo correo y el panel del admin.
 
 ### Fase 4: grabación
 
@@ -223,6 +252,35 @@ Además, Stream se compra en **bloques prepagados** de minutos guardados y entre
 - Webhook de video listo → se pide el MP4 por la API de downloads y se copia a un **bucket privado de R2**, distinto del de imágenes. La descarga va con URL prefirmada (R8.1.1). Hay que agregar `@aws-sdk/s3-request-presigner`.
 - Jobs: aviso 7 días antes de cada borrado, borrado en Stream y borrado en R2 (R8.1.2, R9.3).
 - "Solo en vivo" (R8.1.3), borrado anticipado si lo pide el anfitrión, y "Guardar 1 año" (solo alarga la descarga en R2).
+
+> ✅ **Decidido (2026-10-07):** en Privado la grabación está **incluida y activada por defecto** (30 días para ver y descargar). "Guardar 1 año" cuesta **S/ 50**, como cargo manual a la tienda.
+
+**Implementado (2026-10-07):**
+- **BD:** [docs/sql/transmisiones_fase4.sql](../../sql/transmisiones_fase4.sql):
+  - en `evento_transmisiones`: `grabar`, `guardar_anio`, avisos (lista, por borrar, descarga por vencer) y fecha de borrado;
+  - tablas nuevas `transmision_grabaciones` (una fila por parte) y `transmision_cargos` ("Guardar 1 año");
+  - CHECK y RLS. Las Privadas ya terminadas quedan con `grabar = false`, porque se limpiaron como "Solo en vivo".
+- **Al terminar** (`limpiarEntrada`): con grabación, registra las partes desde que abrió la sala (las de la prueba ya se borraron) y borra **solo la entrada**. Cloudflare confirma que borrar la entrada conserva los videos. "Solo en vivo" o cancelada: borra todo.
+- **Ciclo de grabaciones** (`transmisiones.grabaciones.js`, en el mismo job):
+  - cada parte pasa de procesando a lista; las de menos de 10 s se descartan, porque son parpadeos de la señal;
+  - se pide el MP4 descargable y se espera a que esté listo;
+  - correo "tu grabación está lista" al anfitrión y al negocio, con el enlace del anfitrión;
+  - avisos 7 días antes del borrado en línea y del vencimiento de la descarga de 1 año (R8.1.2);
+  - borrado al vencer.
+- **Página del anfitrión** `/:slug/grabacion/:token` (storefront): ver cada parte y descargarla. El token no vence: los plazos salen de la BD.
+- **Invitados:** al terminar ven la grabación con su mismo enlace, todas las partes. Descargarla es solo del anfitrión (R8.1.1).
+- **Admin:**
+  - casilla "Grabar" al activar, y cambiar a "Solo en vivo" mientras está en curso;
+  - sección Grabación: estado de cada parte, enlace del anfitrión (copiar o WhatsApp), "Guardar 1 año (S/ 50)" y "Borrar grabación ahora" (R9.3, solo admin+);
+  - se actualiza sola mientras se procesa.
+- **Cobro manual:** `scripts/transmision-excedentes.js` lista y cobra también los cargos.
+- **Dependencias nuevas:** `@aws-sdk/lib-storage` (subida por partes) y `@aws-sdk/s3-request-presigner` (URL firmada).
+- **Variable nueva:** `R2_BUCKET_GRABACIONES`, un bucket **privado** de R2 sin dominio público, con las mismas credenciales `R2_*`.
+
+**Desviaciones del plan:**
+1. **El MP4 se copia a R2 solo con "Guardar 1 año".** Mientras la grabación está en línea, la descarga sale directo de Cloudflare con un MP4 firmado (cada descarga cuesta lo mismo que verla, ≈ $0.18 por 3 h). Copiar siempre duplicaría ~7 GB por evento sin necesidad.
+2. **La copia a R2 corre en segundo plano**, una a la vez y fuera del ciclo, para que mover ~7 GB no retrase el corte de otras transmisiones. Con "Guardar 1 año", una parte no se borra de Cloudflare hasta que su copia a R2 termina.
+3. **El webhook de "video listo" no hace falta:** el ciclo consulta el estado de las partes cada minuto.
 
 ### Fase 5: Premium
 
@@ -244,8 +302,8 @@ Además, Stream se compra en **bloques prepagados** de minutos guardados y entre
 |---|---|
 | 1. Invitaciones nominativas o también un enlace comodín | ✅ Decidida: solo nominativas |
 | 3. Horas incluidas en cada plan mensual | ✅ Decidida: 0 / 0 / 3 / 6 h (Free / Starter / Pro / Business) |
-| 2. Precios finales en soles | Inicio de la Fase 3 (con la simulación actualizada en la Fase 0) |
-| 4. Tope de excedente y cuándo se cobra | Inicio de la Fase 3 |
+| 2. Precios finales en soles | ✅ Decidida: 10 h S/ 250 · 25 h S/ 550 |
+| 4. Tope de excedente y cuándo se cobra | ✅ Decidida: S/ 20 por 30 min, tope 2 h/mes, cobro manual |
 
 ## Por qué este orden
 

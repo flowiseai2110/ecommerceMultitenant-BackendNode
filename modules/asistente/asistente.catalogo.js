@@ -16,8 +16,8 @@ export const PANTALLAS = {
   "/pedidos": "Pedidos recibidos, con filtros por estado y pago",
   "/cupones": "Cupones de descuento",
   "/resenas": "Reseñas de clientes: aprobar, ocultar y responder",
-  "/tiendas": "Datos de la tienda: nombre, WhatsApp, facturación, logo y banner",
-  "/diseno": "Diseño del storefront: barra de anuncios y portada de inicio",
+  "/tiendas": "Datos de la tienda: nombre, WhatsApp, facturación e integraciones",
+  "/diseno": "Diseño del storefront: logo, banner, barra de anuncios y portada de inicio",
   "/live": "Aviso de live: avisar en la tienda que estás transmitiendo",
   "/mensajes-whatsapp": "Plantillas de mensajes de WhatsApp para cada estado del pedido",
   "/metodos-pago": "Métodos de pago (Yape/Plin, transferencia, QR)",
@@ -31,13 +31,13 @@ export const PANTALLAS = {
 /** Id de tour → qué enseña. Los pasos viven en el frontend. */
 export const TOURS = {
   "bienvenida": "Recorrido general del menú: qué hay en cada sección del panel",
-  "configurar-tienda": "Cómo completar los datos de la tienda: contacto/WhatsApp, logo y banner",
+  "configurar-tienda": "Cómo completar los datos de la tienda: contacto/WhatsApp",
   "crear-categoria": "Cómo crear una categoría",
   "crear-producto": "Cómo crear un producto: datos, precio, imágenes y guardar",
   "metodos-pago": "Cómo agregar un método de pago",
   "metodos-envio": "Cómo agregar un método de envío",
   "gestionar-pedidos": "Cómo revisar pedidos, filtrarlos y cambiar su estado",
-  "diseno-tienda": "Cómo personalizar la barra de anuncios y la portada"
+  "diseno-tienda": "Cómo subir logo y banner y personalizar la barra de anuncios y la portada"
 };
 
 export const RUTAS_VALIDAS = Object.keys(PANTALLAS);

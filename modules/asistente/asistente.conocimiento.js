@@ -17,23 +17,26 @@ y el envío se acuerda con el cliente. La tienda complementa a Marketplace,
 Facebook o WhatsApp; no los reemplaza.
 
 ## Orden recomendado para empezar a vender
-1. Mi Tienda: WhatsApp de contacto, logo y banner.
+1. Mi Tienda: WhatsApp de contacto. Diseño: logo y banner.
 2. Categorías.
 3. Productos (con imágenes y precio).
 4. Métodos de pago.
 5. Métodos de envío.
-6. Diseño (opcional): barra de anuncios y portada.
+6. Diseño (opcional): barra de anuncios, textos de la portada y secciones.
 
 ## Módulos
 - Mi Tienda (/tiendas): se edita la tienda con "Editar". Secciones: Información
   básica (nombre 2-200 caracteres, slug solo minúsculas/números/guiones),
   Contacto (WhatsApp con código de país, solo dígitos y sin "+", ej. 51999999999),
   Datos de facturación (RUC de 11 dígitos), Integraciones (Meta Pixel, Google
-  Analytics, envío gratis desde un monto) e Imágenes (logo y banner/hero). Las
-  imágenes se suben con el botón de carga; el ojo las previsualiza y la X las quita.
-  Al final se pulsa "Guardar".
+  Analytics, envío gratis desde un monto). Al final se pulsa "Guardar". El logo y
+  el banner ya no están aquí: se suben en Diseño.
+- Diseño (/diseno): el logo se sube en Encabezado y el banner en Portada. Se
+  guardan al instante (sin pulsar "Guardar cambios"); se aceptan fotos del
+  celular porque el panel las convierte a WebP y las achica antes de subirlas.
+  El ojo previsualiza y la X quita la imagen.
 - Categorías (/categorias): botón "Nueva Categoría". Nombre máx. 25 caracteres,
-  descripción máx. 300, imagen opcional (JPEG/PNG/GIF/WebP hasta 5MB).
+  descripción máx. 300, imagen opcional (JPG/PNG/WebP; se convierte a WebP sola).
 - Productos (/productos): botón "Nuevo Producto". Nombre 3-60 caracteres, precio
   base obligatorio y mayor a 0; el precio de oferta debe ser menor al base.
   Descripción corta máx. 200 (se ve en listados), completa máx. 3000. Variantes
