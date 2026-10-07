@@ -1,0 +1,129 @@
+{
+  "habitaciones": [
+    {
+      "nombre": "Habitación Matrimonial",
+      "sku": "MT",
+      "pexels": [14580368, 271643, 7027719],
+      "corta": "Habitación con servicios básicos y cama de dos plazas.",
+      "descripcion": "Habitación cómoda y sencilla con servicios básicos y cama de dos plazas. Ideal para parejas que buscan descansar por unas horas o pasar la noche.",
+      "capacidadAdultos": 2, "capacidadMax": 2,
+      "camas": "1 cama de 2 plazas",
+      "amenities": [],
+      "modalidades": [
+        { "tipo": "noche", "precio": 160, "orden": 0 },
+        { "tipo": "horas", "horas": 6, "precio": 100, "orden": 1 }
+      ]
+    },
+    {
+      "nombre": "Habitación Prince",
+      "sku": "PR",
+      "pexels": [17417642, 18651505, 2725675],
+      "corta": "Cama Queen Size, mesa y sillones.",
+      "descripcion": "Habitación con cama Queen Size, mesa y sillones para estar más cómodos durante la estadía.",
+      "capacidadAdultos": 2, "capacidadMax": 2,
+      "camas": "1 cama Queen Size",
+      "amenities": ["Mesa y sillones"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 180, "orden": 0 },
+        { "tipo": "horas", "horas": 6, "precio": 120, "orden": 1 }
+      ]
+    },
+    {
+      "nombre": "Habitación Deluxe",
+      "sku": "SL/PP",
+      "pexels": [271624, 271618, 271619],
+      "corta": "Cama Queen Size, frigobar, sala de estar y aire acondicionado.",
+      "descripcion": "Habitación con cama Queen Size, frigobar, sala de estar y aire acondicionado.",
+      "capacidadAdultos": 2, "capacidadMax": 2,
+      "camas": "1 cama Queen Size",
+      "amenities": ["Sala de estar", "Frigobar", "Aire acondicionado"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 200, "orden": 0 },
+        { "tipo": "horas", "horas": 6, "precio": 160, "orden": 1 }
+      ]
+    },
+    {
+      "nombre": "Habitación Doble",
+      "pexels": [28054887, 1743229, 11701114],
+      "corta": "Una cama de 2 plazas y una de ½ plaza, frigobar, sala de estar y aire acondicionado.",
+      "descripcion": "Habitación con una cama de 2 plazas y una cama de ½ plaza, frigobar, sala de estar y aire acondicionado. Pensada para tres personas.",
+      "capacidadAdultos": 3, "capacidadMax": 3,
+      "camas": "1 cama de 2 plazas + 1 cama de ½ plaza",
+      "amenities": ["Sala de estar", "Frigobar", "Aire acondicionado"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 260, "orden": 0 },
+        { "tipo": "horas", "horas": 6, "precio": 180, "orden": 1 }
+      ]
+    },
+    {
+      "nombre": "Suite Presidencial",
+      "sku": "SP",
+      "pexels": [3101547, 34672504, 18801080],
+      "corta": "Jacuzzi con hidromasaje climatizado, cama King Size y sala de estar.",
+      "descripcion": "Suite con jacuzzi e hidromasaje climatizado, cama King Size, sala de estar, frigobar y aire acondicionado.",
+      "capacidadAdultos": 2, "capacidadMax": 2,
+      "camas": "1 cama King Size",
+      "amenities": ["Jacuzzi con hidromasaje", "Sala de estar", "Frigobar", "Aire acondicionado"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 300, "orden": 0 },
+        { "tipo": "horas", "horas": 6, "precio": 200, "orden": 1 }
+      ]
+    },
+    {
+      "nombre": "Suite Sauna",
+      "sku": "SS",
+      "pexels": [33852650, 8082220, 4846450],
+      "corta": "Sauna a vapor privado, cama King Size y sillones reclinables.",
+      "descripcion": "Suite con sauna a vapor privado, cama King Size, sillones reclinables, frigobar y aire acondicionado.",
+      "capacidadAdultos": 2, "capacidadMax": 2,
+      "camas": "1 cama King Size",
+      "amenities": ["Sauna a vapor privado", "Sillones reclinables", "Frigobar", "Aire acondicionado"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 300, "orden": 0 },
+        { "tipo": "horas", "horas": 6, "precio": 200, "orden": 1 }
+      ]
+    },
+    {
+      "nombre": "Suite Presidencial Cámara Seca",
+      "sku": "SC 702",
+      "pexels": [8092430, 18703869, 36818223],
+      "corta": "Cámara seca privada, cama King Size y sala de estar.",
+      "descripcion": "Suite con cámara seca privada, cama King Size, sala de estar, frigobar y aire acondicionado.",
+      "capacidadAdultos": 2, "capacidadMax": 2,
+      "camas": "1 cama King Size",
+      "amenities": ["Cámara seca", "Sala de estar", "Frigobar", "Aire acondicionado"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 300, "orden": 0 },
+        { "tipo": "horas", "horas": 6, "precio": 200, "orden": 1 }
+      ]
+    },
+    {
+      "nombre": "Suite Presidencial Premium",
+      "sku": "SJ 701",
+      "pexels": [18246436, 33837741, 29887335, 19404519],
+      "corta": "Jacuzzi con hidromasaje climatizado y cámara seca, cama King Size.",
+      "descripcion": "Suite con jacuzzi con hidromasaje climatizado, cámara seca, cama King Size, sala de estar, frigobar y aire acondicionado.",
+      "capacidadAdultos": 2, "capacidadMax": 2,
+      "camas": "1 cama King Size",
+      "amenities": ["Jacuzzi con hidromasaje", "Cámara seca", "Sala de estar", "Frigobar", "Aire acondicionado"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 420, "orden": 0 },
+        { "tipo": "horas", "horas": 6, "precio": 290, "orden": 1 }
+      ]
+    },
+    {
+      "nombre": "Suite Diamond",
+      "sku": "801",
+      "pexels": [6933852, 262048, 6538934, 16113325, 12119234],
+      "corta": "Sauna, cámara seca, jacuzzi, cocina, workspace y habitación para invitados.",
+      "descripcion": "La suite más amplia del hotel: sauna y cámara seca, jacuzzi, cocina, workspace, sala de estar, habitación para invitados y 2 baños. Cama King Size, aire acondicionado y frigobar.",
+      "capacidadAdultos": 4, "capacidadMax": 4,
+      "camas": "1 cama King Size + habitación para invitados",
+      "amenities": ["Jacuzzi", "Sauna", "Cámara seca", "Cocina", "Workspace", "Sala de estar", "Habitación para invitados", "2 baños", "Frigobar", "Aire acondicionado"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 650, "orden": 0 },
+        { "tipo": "horas", "horas": 12, "precio": 650, "orden": 1 }
+      ]
+    }
+  ]
+}

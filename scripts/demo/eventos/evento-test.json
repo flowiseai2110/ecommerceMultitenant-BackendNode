@@ -1,0 +1,174 @@
+{
+  "tienda": {
+    "descripcion": "Conciertos, teatro, comedia y festivales en Lima. Compra tus entradas en línea en pocos minutos.",
+    "banner": "concert stage lights crowd",
+    "home": [
+      { "id": "hero", "tipo": "hero", "variante": "imagen-completa", "buscador": true, "titulo": "Lo que se viene en Lima", "subtitulo": "Conciertos, obras, comedia y festivales. Elige la fecha y compra tus entradas en línea.", "textoBoton": "Ver eventos" },
+      { "id": "eventos", "tipo": "eventos", "variante": "grilla", "fondo": "superficie", "titulo": "Próximos eventos", "subtitulo": "Elige la función, compra en línea y recibe la confirmación en tu correo.", "limite": 12 },
+      { "id": "servicios", "tipo": "servicios", "variante": "iconos", "fondo": "suave", "titulo": "Comprar es fácil", "items": [
+        { "icono": "calendario", "titulo": "Elige la fecha y la función" },
+        { "icono": "entrada", "titulo": "Compra en pocos minutos" },
+        { "icono": "seguro", "titulo": "Pago seguro" }
+      ] },
+      { "id": "celebraciones", "tipo": "imagen-texto", "fondo": "pagina", "imagen": "banner", "posicionImagen": "derecha", "kicker": "Celebraciones", "titulo": "¿Organizas una boda, un quinceaños o un cumpleaños?", "texto": "También armamos tu fiesta: paquetes para bodas de plata y de oro, quinceaños, cumpleaños infantiles y promociones. Coordinamos contigo la fecha, los invitados y los detalles.", "textoBoton": "Ver paquetes" },
+      { "id": "faq", "tipo": "faq", "fondo": "superficie", "titulo": "Preguntas frecuentes", "items": [
+        { "pregunta": "¿Cómo recibo mi entrada?", "respuesta": "Al confirmar tu pago te llega un correo con el código de tu compra. En la puerta te buscamos por ese código, tu nombre o tu documento: no necesitas imprimir nada." },
+        { "pregunta": "¿Puedo devolver o cambiar mi entrada?", "respuesta": "Si el evento se cancela te devolvemos el 100 %. Para cambiar de función, escríbenos por WhatsApp hasta 48 horas antes y lo vemos según la disponibilidad." },
+        { "pregunta": "¿Desde qué edad se puede entrar?", "respuesta": "Cada evento indica su edad mínima en la ficha. Si no dice nada, es para todo público; los menores de 12 años entran con un adulto." },
+        { "pregunta": "¿A qué hora abren las puertas?", "respuesta": "Una hora antes del inicio de cada función, salvo que la ficha del evento diga otra cosa." }
+      ] },
+      { "id": "contacto", "tipo": "contacto", "titulo": "¿Compras para un grupo?", "texto": "Escríbenos por WhatsApp y te ayudamos con entradas para grupos, empresas o colegios." }
+    ]
+  },
+
+  "categorias": [
+    { "nombre": "Conciertos", "descripcion": "Rock, salsa, música sinfónica y electrónica en vivo.", "foto": "live concert band stage" },
+    { "nombre": "Teatro y comedia", "descripcion": "Obras de teatro y shows de stand-up.", "foto": "theater stage spotlight" },
+    { "nombre": "Festivales y ferias", "descripcion": "Festivales gastronómicos, ferias y eventos al aire libre.", "foto": "outdoor festival people" },
+    { "nombre": "Talleres", "descripcion": "Aprende algo nuevo en grupos reducidos.", "foto": "creative workshop people learning" },
+    { "nombre": "Para niños", "descripcion": "Shows y musicales para toda la familia.", "foto": "children watching show" }
+  ],
+
+  "eventos": [
+    {
+      "nombre": "Noche de Rock Nacional",
+      "categoria": "Conciertos",
+      "foto": "rock concert crowd",
+      "corta": "Las bandas clásicas del rock peruano en un solo escenario.",
+      "descripcion": "Una noche para corear los himnos del rock nacional. Tres bandas en vivo, barra abierta de piqueos y zona de fotos. Puertas abren una hora antes.",
+      "lugar": "Centro de Convenciones Barranco", "direccion": "Av. Grau 1050, Barranco, Lima",
+      "organizador": "Ruido Producciones", "edadMinima": 18,
+      "dias": 12, "horas": ["21:00"],
+      "tipos": [
+        { "nombre": "General", "precio": 80, "cupo": 400 },
+        { "nombre": "VIP", "precio": 180, "cupo": 80, "descripcion": "Zona preferencial frente al escenario y una bebida" }
+      ]
+    },
+    {
+      "nombre": "Stand-up: Riendo en Lima",
+      "categoria": "Teatro y comedia",
+      "foto": "stand up comedy microphone",
+      "corta": "Cuatro comediantes, una noche de risa sin filtro.",
+      "descripcion": "Show de comedia en vivo con cuatro de los comediantes más divertidos de la escena limeña. Contenido para adultos.",
+      "lugar": "Teatro Larco", "direccion": "Av. Larco 1036, Miraflores, Lima",
+      "organizador": "Comedy Club Perú", "edadMinima": 16,
+      "dias": 5, "horas": ["20:00", "22:30"],
+      "tipos": [
+        { "nombre": "General", "precio": 45, "cupo": 150 },
+        { "nombre": "Primera fila", "precio": 70, "cupo": 20 }
+      ]
+    },
+    {
+      "nombre": "Festival Gastronómico Sabores del Perú",
+      "categoria": "Festivales y ferias",
+      "foto": "food festival outdoor",
+      "corta": "Más de 30 puestos de comida peruana, música y actividades para la familia.",
+      "descripcion": "Un día entero para recorrer la gastronomía de costa, sierra y selva. Incluye talleres de cocina, música en vivo y zona para niños. Niños menores de 5 años no pagan.",
+      "lugar": "Parque de la Exposición", "direccion": "Av. 28 de Julio s/n, Cercado de Lima",
+      "organizador": "Asociación Sabores", "edadMinima": null,
+      "dias": 20, "horas": ["11:00"], "repetir": { "veces": 2, "cadaDias": 1 },
+      "tipos": [
+        { "nombre": "Adulto", "precio": 25, "cupo": 1000 },
+        { "nombre": "Niño (5 a 12 años)", "precio": 10, "cupo": 500 }
+      ]
+    },
+    {
+      "nombre": "Concierto Sinfónico: Bandas Sonoras de Cine",
+      "categoria": "Conciertos",
+      "foto": "symphony orchestra concert",
+      "corta": "La orquesta interpreta los temas más famosos del cine.",
+      "descripcion": "Un recorrido por las bandas sonoras más queridas: aventuras, fantasía y ciencia ficción, interpretadas por una orquesta de 60 músicos.",
+      "lugar": "Gran Teatro Nacional", "direccion": "Av. Javier Prado Este 2225, San Borja, Lima",
+      "organizador": "Orquesta Filarmónica de Lima", "edadMinima": null,
+      "dias": 25, "horas": ["19:30"],
+      "tipos": [
+        { "nombre": "Platea", "precio": 150, "cupo": 300 },
+        { "nombre": "Mezanine", "precio": 90, "cupo": 200 },
+        { "nombre": "Galería", "precio": 50, "cupo": 250 }
+      ]
+    },
+    {
+      "nombre": "Obra de teatro: La casa de Bernarda Alba",
+      "categoria": "Teatro y comedia",
+      "foto": "theater stage drama",
+      "corta": "El clásico de García Lorca en una puesta en escena íntima.",
+      "descripcion": "Temporada de la obra de Federico García Lorca. Funciones de jueves a sábado. Duración aproximada: 1 hora 40 minutos sin intermedio.",
+      "lugar": "Teatro Británico", "direccion": "Jr. Bellavista 527, Miraflores, Lima",
+      "organizador": "Compañía Escena Viva", "edadMinima": 14,
+      "dias": 3, "horas": ["20:00"], "repetir": { "veces": 3, "cadaDias": 7 },
+      "tipos": [
+        { "nombre": "General", "precio": 60, "cupo": 120 },
+        { "nombre": "Estudiante", "precio": 35, "cupo": 40, "descripcion": "Presentar carné universitario en la puerta" }
+      ]
+    },
+    {
+      "nombre": "Festival de Música Electrónica Sunset",
+      "categoria": "Conciertos",
+      "foto": "electronic music festival lights",
+      "corta": "DJs nacionales e internacionales frente al mar.",
+      "descripcion": "Diez horas de música electrónica al aire libre, del atardecer a la madrugada. Zona de comidas y área chill out.",
+      "lugar": "Playa Punta Hermosa", "direccion": "Km 42 Panamericana Sur, Punta Hermosa, Lima",
+      "organizador": "Sunset Events", "edadMinima": 18,
+      "dias": 35, "horas": ["16:00"], "duracionHoras": 10,
+      "tipos": [
+        { "nombre": "Preventa", "precio": 120, "cupo": 300 },
+        { "nombre": "General", "precio": 160, "cupo": 1200 },
+        { "nombre": "VIP", "precio": 280, "cupo": 150, "descripcion": "Zona elevada, baños exclusivos y barra propia" }
+      ]
+    },
+    {
+      "nombre": "Taller de Fotografía con Celular",
+      "categoria": "Talleres",
+      "foto": "smartphone photography workshop",
+      "corta": "Aprende a tomar mejores fotos con tu celular en 3 horas.",
+      "descripcion": "Taller práctico: composición, luz natural y edición en el celular. Grupos reducidos. Trae tu celular con batería cargada.",
+      "lugar": "Casa Cultural Miraflores", "direccion": "Calle Schell 343, Miraflores, Lima",
+      "organizador": "Foto Lima", "edadMinima": 12,
+      "dias": 8, "horas": ["10:00", "15:00"],
+      "tipos": [
+        { "nombre": "Participante", "precio": 90, "cupo": 15 }
+      ]
+    },
+    {
+      "nombre": "Concierto de Salsa: Noche de Clásicos",
+      "categoria": "Conciertos",
+      "foto": "salsa dancing night",
+      "corta": "Orquesta en vivo y pista de baile toda la noche.",
+      "descripcion": "Los clásicos de la salsa interpretados por una orquesta de 12 músicos. Incluye clase de baile para principiantes a las 21:00.",
+      "lugar": "Salón Latino Lince", "direccion": "Av. Arequipa 2450, Lince, Lima",
+      "organizador": "Sabor Producciones", "edadMinima": 18,
+      "dias": 15, "horas": ["21:00"],
+      "tipos": [
+        { "nombre": "General", "precio": 50, "cupo": 350 },
+        { "nombre": "Mesa para 4", "precio": 260, "cupo": 30, "descripcion": "Mesa reservada para 4 personas con una botella" }
+      ]
+    },
+    {
+      "nombre": "Feria de Emprendedores y Artesanía",
+      "categoria": "Festivales y ferias",
+      "foto": "artisan craft market",
+      "corta": "Más de 50 emprendedores locales, artesanía y diseño.",
+      "descripcion": "Feria con productos hechos a mano, moda de diseño peruano, decoración y regalos. Entrada libre con registro previo.",
+      "lugar": "Parque Kennedy", "direccion": "Av. Diagonal s/n, Miraflores, Lima",
+      "organizador": "Red de Emprendedores Lima", "edadMinima": null,
+      "dias": 10, "horas": ["10:00"], "repetir": { "veces": 2, "cadaDias": 1 }, "duracionHoras": 9,
+      "tipos": [
+        { "nombre": "Entrada libre", "precio": 0, "cupo": 800 }
+      ]
+    },
+    {
+      "nombre": "Show Infantil: Aventura en el Bosque Mágico",
+      "categoria": "Para niños",
+      "foto": "children theater show puppets",
+      "corta": "Musical para toda la familia con títeres y canciones.",
+      "descripcion": "Un musical con títeres gigantes, canciones y mucha participación del público. Ideal para niños de 3 a 10 años. Duración: 1 hora.",
+      "lugar": "Auditorio Municipal de San Isidro", "direccion": "Av. Los Conquistadores 450, San Isidro, Lima",
+      "organizador": "Teatro para Chicos", "edadMinima": null,
+      "dias": 6, "horas": ["11:00", "16:00"], "repetir": { "veces": 2, "cadaDias": 7 },
+      "tipos": [
+        { "nombre": "Niño", "precio": 30, "cupo": 150 },
+        { "nombre": "Adulto", "precio": 40, "cupo": 150 }
+      ]
+    }
+  ]
+}

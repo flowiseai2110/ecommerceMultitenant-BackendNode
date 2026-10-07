@@ -1,0 +1,451 @@
+{
+  "tienda": {
+    "descripcion": "Agencia de tours en Cusco: aventura, cultura, naturaleza y gastronomía con guías locales y grupos pequeños.",
+    "banner": "machu picchu mountains",
+    "home": [
+      { "id": "hero", "tipo": "hero", "variante": "imagen-completa", "buscador": true, "titulo": "Vive Cusco con guías locales", "subtitulo": "Machu Picchu, montañas de colores, lagunas y la mejor comida andina. Elige la fecha y reserva en línea.", "textoBoton": "Buscar tours" },
+      { "id": "tours", "tipo": "tours", "variante": "grilla", "fondo": "superficie", "titulo": "Los más reservados", "subtitulo": "Elige tu tour y la fecha: confirmamos la salida por WhatsApp.", "limite": 12 },
+      { "id": "servicios", "tipo": "servicios", "variante": "iconos", "fondo": "suave", "titulo": "Por qué viajar con nosotros", "items": [
+        { "icono": "guia", "titulo": "Guías locales certificados" },
+        { "icono": "grupo", "titulo": "Grupos de máximo 15 personas" },
+        { "icono": "traslado", "titulo": "Recojo en tu hotel" },
+        { "icono": "idiomas", "titulo": "Tours en español e inglés" }
+      ] },
+      { "id": "agencia", "tipo": "imagen-texto", "fondo": "pagina", "imagen": "categoria", "posicionImagen": "izquierda", "kicker": "Nuestra agencia", "titulo": "Más de 10 años mostrando el Cusco de verdad", "texto": "Somos cusqueños. Armamos cada tour con comunidades locales, respetamos los tiempos de aclimatación y cuidamos que cada grupo sea pequeño para que disfrutes sin apuros.", "textoBoton": "Ver todos los tours" },
+      { "id": "faq", "tipo": "faq", "fondo": "superficie", "titulo": "Preguntas frecuentes", "items": [
+        { "pregunta": "¿Cómo reservo?", "respuesta": "Elige el tour, la fecha y cuántas personas van, y envía la solicitud. Te confirmamos la salida por WhatsApp y te indicamos cómo pagar." },
+        { "pregunta": "¿Qué pasa si llueve?", "respuesta": "Los tours salen con lluvia ligera. Si el clima pone en riesgo la seguridad, reprogramamos sin costo o te devolvemos el pago." },
+        { "pregunta": "¿Necesito aclimatarme?", "respuesta": "Para los tours de altura (Montaña de Colores, Humantay, Salkantay) recomendamos llegar al Cusco al menos dos días antes." },
+        { "pregunta": "¿Puedo cambiar la fecha?", "respuesta": "Sí, sin costo si nos avisas hasta 48 horas antes de la salida, según la disponibilidad." }
+      ] },
+      { "id": "contacto", "tipo": "contacto", "titulo": "¿Armamos tu viaje a medida?", "texto": "Cuéntanos cuántos días tienes y qué te gusta, y te proponemos un plan por WhatsApp." }
+    ]
+  },
+
+  "categorias": [
+    { "nombre": "Aventura", "descripcion": "Trekking, rafting, cuatrimotos y tirolesa en los Andes.", "foto": "hiking andes mountains peru" },
+    { "nombre": "Cultura e historia", "descripcion": "Machu Picchu, el Valle Sagrado y el Cusco inca y colonial.", "foto": "cusco plaza de armas" },
+    { "nombre": "Naturaleza", "descripcion": "Lagunas, montañas de colores, aves y aguas termales.", "foto": "turquoise lake mountains peru" },
+    { "nombre": "Gastronomía", "descripcion": "Clases de cocina, chocolate, pachamanca y pisco.", "foto": "peruvian food" }
+  ],
+
+  "tours": [
+    {
+      "nombre": "Montaña de Colores (Vinicunca) full day",
+      "categoria": "Aventura",
+      "foto": "rainbow mountain peru",
+      "corta": "Camina hasta los 5 036 m y mira la famosa montaña de siete colores.",
+      "descripcion": "Salida de madrugada hacia Pitumarca, desayuno en el camino y caminata de 2 horas hasta el mirador de Vinicunca. Bajada, almuerzo buffet y retorno a Cusco por la tarde. Es un tour exigente por la altura.",
+      "duracion": "Full day (14 h)", "duracionHoras": 14,
+      "diasSalida": [1, 2, 3, 4, 5, 6, 7], "horasSalida": ["04:00"], "idiomas": ["es", "en"],
+      "itinerario": [
+        { "hora": "04:00", "titulo": "Recojo del hotel" },
+        { "hora": "07:30", "titulo": "Desayuno en Cusipata" },
+        { "hora": "09:00", "titulo": "Caminata a Vinicunca", "descripcion": "2 horas de subida a ritmo suave. Hay caballos de alquiler." },
+        { "hora": "14:00", "titulo": "Almuerzo buffet" },
+        { "hora": "18:00", "titulo": "Retorno a Cusco" }
+      ],
+      "incluye": ["Transporte turístico", "Guía bilingüe", "Desayuno y almuerzo buffet", "Botiquín y oxígeno"],
+      "noIncluye": ["Ingreso a Vinicunca (S/ 25)", "Caballo de alquiler"],
+      "queLlevar": ["Ropa abrigadora", "Bloqueador y lentes de sol", "Bastones de trekking", "Agua y snacks"],
+      "puntoEncuentro": "Plaza de Armas de Cusco", "recojo": "Recojo gratuito en hoteles del centro histórico",
+      "edadMinima": 10, "maxPasajeros": 15,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 120 }, { "nombre": "Estudiante", "precio": 100 }]
+    },
+    {
+      "nombre": "Rafting en el río Urubamba",
+      "categoria": "Aventura",
+      "foto": "white water rafting river",
+      "corta": "Rápidos de clase II y III en el corazón del Valle Sagrado.",
+      "descripcion": "Recorrido de 2 horas en bote por los rápidos del río Urubamba con instructores certificados. Incluye charla de seguridad, equipo completo y almuerzo campestre al terminar.",
+      "duracion": "Medio día (6 h)", "duracionHoras": 6,
+      "diasSalida": [1, 2, 3, 4, 5, 6, 7], "horasSalida": ["08:00"], "idiomas": ["es", "en"],
+      "itinerario": [
+        { "hora": "08:00", "titulo": "Recojo y traslado a Cusipata" },
+        { "hora": "10:00", "titulo": "Charla de seguridad y rafting" },
+        { "hora": "12:30", "titulo": "Almuerzo campestre" }
+      ],
+      "incluye": ["Transporte", "Instructores certificados", "Traje de neopreno, casco y chaleco", "Almuerzo"],
+      "noIncluye": ["Fotos y video del recorrido"],
+      "queLlevar": ["Ropa de baño", "Muda de ropa seca", "Toalla", "Sandalias con sujeción"],
+      "puntoEncuentro": "Plaza de Armas de Cusco", "recojo": "Recojo en hoteles del centro histórico",
+      "edadMinima": 12, "maxPasajeros": 12,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 150 }]
+    },
+    {
+      "nombre": "Cuatrimotos a Moray y Maras",
+      "categoria": "Aventura",
+      "foto": "atv quad bike mountains",
+      "corta": "Maneja tu cuatrimoto entre campos andinos hasta Moray y las salineras.",
+      "descripcion": "Recorrido en cuatrimoto por la meseta de Chinchero con vistas a los nevados. Visita los andenes circulares de Moray y las salineras de Maras. Se maneja de a uno o en pareja.",
+      "duracion": "5 horas", "duracionHoras": 5,
+      "diasSalida": [1, 2, 3, 4, 5, 6, 7], "horasSalida": ["08:00", "13:00"], "idiomas": ["es", "en"],
+      "itinerario": [
+        { "titulo": "Traslado a Cruzpata e instrucción de manejo" },
+        { "titulo": "Ruta a Moray (andenes circulares)" },
+        { "titulo": "Salineras de Maras y retorno" }
+      ],
+      "incluye": ["Cuatrimoto y combustible", "Casco, guantes y lentes", "Guía", "Transporte desde Cusco"],
+      "noIncluye": ["Boleto turístico parcial para Moray", "Ingreso a Maras (S/ 20)"],
+      "queLlevar": ["Licencia de conducir o DNI", "Ropa cómoda", "Casaca cortaviento"],
+      "puntoEncuentro": "Plaza de Armas de Cusco", "recojo": "Recojo en hoteles del centro histórico",
+      "edadMinima": 16, "maxPasajeros": 10,
+      "tiposPasajero": [{ "nombre": "Piloto", "precio": 140 }, { "nombre": "Copiloto", "precio": 90 }]
+    },
+    {
+      "nombre": "Canopy y tirolesa en el Valle Sagrado",
+      "categoria": "Aventura",
+      "foto": "zipline adventure mountains",
+      "corta": "Seis líneas de tirolesa sobre el Valle Sagrado de los Incas.",
+      "descripcion": "Un circuito de seis tirolesas, la más larga de 500 metros, con vista al río Urubamba. Incluye una vía ferrata corta para llegar a la primera plataforma. Apto para principiantes.",
+      "duracion": "4 horas", "duracionHoras": 4,
+      "diasSalida": [2, 4, 6, 7], "horasSalida": ["09:00", "13:00"], "idiomas": ["es"],
+      "itinerario": [
+        { "titulo": "Traslado a Pachar" },
+        { "titulo": "Vía ferrata y circuito de tirolesas" },
+        { "titulo": "Refrigerio y retorno" }
+      ],
+      "incluye": ["Equipo de seguridad", "Instructores", "Transporte", "Refrigerio"],
+      "noIncluye": ["Almuerzo"],
+      "queLlevar": ["Zapatillas con buena suela", "Ropa cómoda", "Bloqueador"],
+      "puntoEncuentro": "Plaza de Armas de Cusco", "recojo": null,
+      "edadMinima": 10, "maxPasajeros": 12,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 180 }, { "nombre": "Niño (10 a 14 años)", "precio": 150 }]
+    },
+    {
+      "nombre": "Caminata Salkantay a Machu Picchu",
+      "categoria": "Aventura",
+      "foto": "salkantay trek snow mountain",
+      "corta": "5 días por el nevado Salkantay y la selva alta hasta Machu Picchu.",
+      "descripcion": "Una de las mejores caminatas del mundo: cruzamos el paso de Salkantay (4 600 m), bajamos a la selva alta y llegamos a Aguas Calientes para visitar Machu Picchu el último día. Campamentos equipados y cocinero.",
+      "duracion": "5 días / 4 noches", "duracionHoras": 110,
+      "diasSalida": [1, 3, 5], "horasSalida": ["04:30"], "idiomas": ["es", "en"],
+      "itinerario": [
+        { "dia": 1, "titulo": "Cusco – Soraypampa – Laguna Humantay" },
+        { "dia": 2, "titulo": "Paso de Salkantay – Chaullay" },
+        { "dia": 3, "titulo": "Chaullay – La Playa – Lucmabamba" },
+        { "dia": 4, "titulo": "Llactapata – Hidroeléctrica – Aguas Calientes" },
+        { "dia": 5, "titulo": "Machu Picchu y retorno en tren a Cusco" }
+      ],
+      "incluye": ["Guía profesional", "Carpas y colchonetas", "Cocinero y todas las comidas", "Mulas para 7 kg", "Ingreso a Machu Picchu", "Tren de retorno"],
+      "noIncluye": ["Bolsa de dormir (alquiler S/ 60)", "Bus Aguas Calientes – Machu Picchu"],
+      "queLlevar": ["Mochila de 30 a 40 L", "Ropa térmica", "Poncho de lluvia", "Pasaporte o DNI"],
+      "requisitos": "Buena condición física y al menos dos días de aclimatación en Cusco.",
+      "puntoEncuentro": "Plaza de Armas de Cusco", "recojo": "Recojo en hoteles del centro histórico",
+      "edadMinima": 14, "maxPasajeros": 12,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 1800 }, { "nombre": "Estudiante", "precio": 1650 }]
+    },
+
+    {
+      "nombre": "City tour Cusco y 4 ruinas",
+      "categoria": "Cultura e historia",
+      "foto": "sacsayhuaman cusco",
+      "corta": "Qorikancha, Sacsayhuamán, Q'enqo, Puka Pukara y Tambomachay en una tarde.",
+      "descripcion": "Conoce el Cusco inca: el templo del Sol (Qorikancha) y los cuatro sitios arqueológicos de las afueras de la ciudad, con un guía que te cuenta su historia.",
+      "duracion": "5 horas", "duracionHoras": 5,
+      "diasSalida": [1, 2, 3, 4, 5, 6, 7], "horasSalida": ["13:30"], "idiomas": ["es", "en"],
+      "itinerario": [
+        { "hora": "13:30", "titulo": "Qorikancha" },
+        { "hora": "15:00", "titulo": "Sacsayhuamán" },
+        { "hora": "16:15", "titulo": "Q'enqo, Puka Pukara y Tambomachay" },
+        { "hora": "18:30", "titulo": "Retorno a la Plaza de Armas" }
+      ],
+      "incluye": ["Transporte turístico", "Guía"],
+      "noIncluye": ["Boleto turístico (S/ 70)", "Ingreso al Qorikancha (S/ 20)"],
+      "queLlevar": ["Casaca", "Bloqueador", "Agua"],
+      "puntoEncuentro": "Plaza de Armas de Cusco", "recojo": null,
+      "edadMinima": null, "maxPasajeros": 20,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 50 }, { "nombre": "Niño (3 a 11 años)", "precio": 30 }]
+    },
+    {
+      "nombre": "Valle Sagrado de los Incas full day",
+      "categoria": "Cultura e historia",
+      "foto": "sacred valley peru",
+      "corta": "Pisac, Ollantaytambo y Chinchero en un solo día con almuerzo buffet.",
+      "descripcion": "El tour clásico del Valle Sagrado: el mercado y los andenes de Pisac, almuerzo buffet en Urubamba, la fortaleza de Ollantaytambo y el pueblo textil de Chinchero al atardecer.",
+      "duracion": "Full day (11 h)", "duracionHoras": 11,
+      "diasSalida": [1, 2, 3, 4, 5, 6, 7], "horasSalida": ["07:30"], "idiomas": ["es", "en"],
+      "itinerario": [
+        { "hora": "07:30", "titulo": "Salida de Cusco" },
+        { "hora": "09:00", "titulo": "Pisac: mercado y parque arqueológico" },
+        { "hora": "13:00", "titulo": "Almuerzo buffet en Urubamba" },
+        { "hora": "14:30", "titulo": "Ollantaytambo" },
+        { "hora": "17:00", "titulo": "Chinchero y demostración textil" }
+      ],
+      "incluye": ["Transporte", "Guía bilingüe", "Almuerzo buffet"],
+      "noIncluye": ["Boleto turístico (S/ 70)"],
+      "queLlevar": ["Ropa en capas", "Bloqueador", "Efectivo para el mercado"],
+      "puntoEncuentro": "Plaza de Armas de Cusco", "recojo": "Recojo en hoteles del centro histórico",
+      "edadMinima": null, "maxPasajeros": 20,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 90 }, { "nombre": "Niño (3 a 11 años)", "precio": 60 }]
+    },
+    {
+      "nombre": "Machu Picchu full day en tren",
+      "categoria": "Cultura e historia",
+      "foto": "machu picchu",
+      "corta": "La ciudadela inca en un día, con tren panorámico ida y vuelta.",
+      "descripcion": "Tren desde Ollantaytambo a Aguas Calientes, bus a la ciudadela y visita guiada de 2 horas y media por Machu Picchu. Almuerzo en Aguas Calientes y retorno en tren por la tarde.",
+      "duracion": "Full day (17 h)", "duracionHoras": 17,
+      "diasSalida": [1, 2, 3, 4, 5, 6, 7], "horasSalida": ["04:00"], "idiomas": ["es", "en"],
+      "itinerario": [
+        { "hora": "04:00", "titulo": "Traslado a Ollantaytambo" },
+        { "hora": "06:10", "titulo": "Tren a Aguas Calientes" },
+        { "hora": "09:00", "titulo": "Visita guiada a Machu Picchu" },
+        { "hora": "13:00", "titulo": "Almuerzo en Aguas Calientes" },
+        { "hora": "15:20", "titulo": "Tren de retorno y traslado a Cusco" }
+      ],
+      "incluye": ["Tren ida y vuelta (Expedition)", "Bus de subida y bajada", "Ingreso a Machu Picchu", "Guía", "Almuerzo"],
+      "noIncluye": ["Ingreso a Huayna Picchu"],
+      "queLlevar": ["Pasaporte o DNI original", "Poncho de lluvia", "Repelente"],
+      "requisitos": "Envíanos el nombre completo y el documento de cada pasajero al reservar: las entradas son nominales.",
+      "puntoEncuentro": null, "recojo": "Recojo en hoteles del centro histórico",
+      "edadMinima": null, "maxPasajeros": 10,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 1250 }, { "nombre": "Estudiante", "precio": 1150 }, { "nombre": "Niño (3 a 11 años)", "precio": 950 }]
+    },
+    {
+      "nombre": "Ruta del Barroco Andino",
+      "categoria": "Cultura e historia",
+      "foto": "colonial church interior gold altar",
+      "corta": "Andahuaylillas, la Capilla Sixtina de América, y los templos del valle sur.",
+      "descripcion": "Recorrido por los templos coloniales del valle sur: San Pedro de Andahuaylillas, Huaro y Canincunca, con sus murales y retablos. Incluye una parada en Tipón para ver sus canales incas.",
+      "duracion": "Medio día (6 h)", "duracionHoras": 6,
+      "diasSalida": [2, 4, 6], "horasSalida": ["08:30"], "idiomas": ["es"],
+      "itinerario": [
+        { "titulo": "Tipón: canales y andenes incas" },
+        { "titulo": "Templo de Andahuaylillas" },
+        { "titulo": "Huaro y Canincunca" }
+      ],
+      "incluye": ["Transporte", "Guía", "Ingreso a los templos"],
+      "noIncluye": ["Ingreso a Tipón (boleto turístico)", "Almuerzo"],
+      "queLlevar": ["Casaca", "Agua"],
+      "puntoEncuentro": "Plaza de Armas de Cusco", "recojo": null,
+      "edadMinima": null, "maxPasajeros": 15,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 70 }, { "nombre": "Niño (3 a 11 años)", "precio": 45 }]
+    },
+    {
+      "nombre": "Tour nocturno de leyendas del Cusco",
+      "categoria": "Cultura e historia",
+      "foto": "cusco street night",
+      "corta": "Caminata nocturna por calles incas y coloniales con historias y leyendas.",
+      "descripcion": "Recorremos a pie San Blas, la calle Hatun Rumiyoc y los callejones del centro mientras te contamos las leyendas y misterios de la ciudad. Termina con un chocolate caliente.",
+      "duracion": "2 horas", "duracionHoras": 2,
+      "diasSalida": [3, 5, 6], "horasSalida": ["19:00"], "idiomas": ["es", "en"],
+      "itinerario": [
+        { "hora": "19:00", "titulo": "Encuentro en la Plaza de Armas" },
+        { "hora": "19:20", "titulo": "Hatun Rumiyoc y la piedra de los 12 ángulos" },
+        { "hora": "20:15", "titulo": "San Blas y chocolate caliente" }
+      ],
+      "incluye": ["Guía", "Chocolate caliente"],
+      "noIncluye": [],
+      "queLlevar": ["Ropa abrigadora", "Zapatillas cómodas"],
+      "puntoEncuentro": "Pileta de la Plaza de Armas de Cusco", "recojo": null,
+      "edadMinima": 8, "maxPasajeros": 15,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 40 }, { "nombre": "Niño (8 a 11 años)", "precio": 25 }]
+    },
+
+    {
+      "nombre": "Laguna Humantay full day",
+      "categoria": "Naturaleza",
+      "foto": "humantay lake peru",
+      "corta": "Una laguna turquesa al pie del nevado Humantay.",
+      "descripcion": "Desayuno en Mollepata, caminata de 1 hora y media hasta la laguna Humantay (4 200 m) y tiempo libre para fotos. Almuerzo y retorno a Cusco.",
+      "duracion": "Full day (13 h)", "duracionHoras": 13,
+      "diasSalida": [1, 2, 3, 4, 5, 6, 7], "horasSalida": ["04:30"], "idiomas": ["es", "en"],
+      "itinerario": [
+        { "hora": "04:30", "titulo": "Recojo del hotel" },
+        { "hora": "07:30", "titulo": "Desayuno en Mollepata" },
+        { "hora": "09:30", "titulo": "Caminata a la laguna" },
+        { "hora": "13:30", "titulo": "Almuerzo" },
+        { "hora": "17:30", "titulo": "Llegada a Cusco" }
+      ],
+      "incluye": ["Transporte", "Guía", "Desayuno y almuerzo", "Oxígeno"],
+      "noIncluye": ["Ingreso a Humantay (S/ 20)", "Caballo de alquiler"],
+      "queLlevar": ["Ropa abrigadora", "Bastones", "Bloqueador y lentes de sol"],
+      "puntoEncuentro": "Plaza de Armas de Cusco", "recojo": "Recojo en hoteles del centro histórico",
+      "edadMinima": 8, "maxPasajeros": 15,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 110 }, { "nombre": "Estudiante", "precio": 95 }]
+    },
+    {
+      "nombre": "Observación de aves en Huacarpay",
+      "categoria": "Naturaleza",
+      "foto": "bird watching lake binoculars",
+      "corta": "Más de 100 especies de aves a 30 minutos de Cusco.",
+      "descripcion": "Recorrido al amanecer por el humedal de Huacarpay con un guía especialista en aves. Picaflores, patos andinos, garzas y, con suerte, el picaflor cola de vela. Binoculares incluidos.",
+      "duracion": "Medio día (5 h)", "duracionHoras": 5,
+      "diasSalida": [6, 7], "horasSalida": ["05:30"], "idiomas": ["es", "en"],
+      "itinerario": [
+        { "hora": "05:30", "titulo": "Salida de Cusco" },
+        { "hora": "06:15", "titulo": "Recorrido por el humedal" },
+        { "hora": "09:00", "titulo": "Desayuno de campo" }
+      ],
+      "incluye": ["Transporte", "Guía especialista", "Binoculares", "Desayuno de campo"],
+      "noIncluye": [],
+      "queLlevar": ["Ropa de colores neutros", "Casaca", "Cámara"],
+      "puntoEncuentro": "Plaza de Armas de Cusco", "recojo": null,
+      "edadMinima": 8, "maxPasajeros": 8,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 95 }]
+    },
+    {
+      "nombre": "Montaña Palccoyo",
+      "categoria": "Naturaleza",
+      "foto": "colorful mountains peru andes",
+      "corta": "La alternativa tranquila a Vinicunca: tres montañas de colores y un bosque de piedras.",
+      "descripcion": "Palccoyo tiene tres montañas de colores y un bosque de piedras, con una caminata corta y suave de 40 minutos. Ideal si viajas con niños o quieres evitar las multitudes.",
+      "duracion": "Full day (11 h)", "duracionHoras": 11,
+      "diasSalida": [1, 3, 5, 7], "horasSalida": ["05:00"], "idiomas": ["es"],
+      "itinerario": [
+        { "hora": "05:00", "titulo": "Recojo del hotel" },
+        { "hora": "08:00", "titulo": "Desayuno en Checacupe" },
+        { "hora": "10:00", "titulo": "Caminata a los miradores y bosque de piedras" },
+        { "hora": "14:00", "titulo": "Almuerzo y retorno" }
+      ],
+      "incluye": ["Transporte", "Guía", "Desayuno y almuerzo"],
+      "noIncluye": ["Ingreso a Palccoyo (S/ 15)"],
+      "queLlevar": ["Ropa abrigadora", "Bloqueador", "Agua"],
+      "puntoEncuentro": "Plaza de Armas de Cusco", "recojo": "Recojo en hoteles del centro histórico",
+      "edadMinima": 5, "maxPasajeros": 15,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 110 }, { "nombre": "Niño (5 a 11 años)", "precio": 80 }]
+    },
+    {
+      "nombre": "Waqrapukara, la fortaleza en forma de cuernos",
+      "categoria": "Naturaleza",
+      "foto": "andes canyon rock formation",
+      "corta": "Un santuario inca escondido en un cañón, lejos de los grupos grandes.",
+      "descripcion": "Caminata de 2 horas y media por un cañón andino hasta Waqrapukara, un santuario inca construido sobre una roca con forma de cuernos. Paisajes del río Apurímac y casi nada de turistas.",
+      "duracion": "Full day (12 h)", "duracionHoras": 12,
+      "diasSalida": [2, 6], "horasSalida": ["04:30"], "idiomas": ["es"],
+      "itinerario": [
+        { "titulo": "Traslado a Acos y desayuno" },
+        { "titulo": "Caminata a Waqrapukara" },
+        { "titulo": "Visita guiada, almuerzo de campo y retorno" }
+      ],
+      "incluye": ["Transporte", "Guía", "Desayuno y almuerzo de campo"],
+      "noIncluye": ["Ingreso (S/ 10)"],
+      "queLlevar": ["Zapatillas de trekking", "Bastones", "Bloqueador"],
+      "puntoEncuentro": "Plaza de Armas de Cusco", "recojo": "Recojo en hoteles del centro histórico",
+      "edadMinima": 12, "maxPasajeros": 12,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 130 }]
+    },
+    {
+      "nombre": "Aguas termales de Lares",
+      "categoria": "Naturaleza",
+      "foto": "hot springs mountains",
+      "corta": "Un día de relajo en las pozas termales de Lares, rodeadas de montañas.",
+      "descripcion": "Viaje por la cordillera de Urubamba hasta los baños termales de Lares, con pozas de agua entre 30 °C y 45 °C. Almuerzo con trucha y visita a una comunidad textil en el camino.",
+      "duracion": "Full day (10 h)", "duracionHoras": 10,
+      "diasSalida": [3, 6, 7], "horasSalida": ["06:00"], "idiomas": ["es"],
+      "itinerario": [
+        { "titulo": "Paso por el abra de Lares (4 400 m)" },
+        { "titulo": "Baños termales" },
+        { "titulo": "Almuerzo y comunidad textil de Choquecancha" }
+      ],
+      "incluye": ["Transporte", "Guía", "Ingreso a los baños", "Almuerzo"],
+      "noIncluye": ["Alquiler de toalla"],
+      "queLlevar": ["Ropa de baño", "Toalla", "Sandalias"],
+      "puntoEncuentro": "Plaza de Armas de Cusco", "recojo": null,
+      "edadMinima": null, "maxPasajeros": 15,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 140 }, { "nombre": "Niño (3 a 11 años)", "precio": 100 }]
+    },
+
+    {
+      "nombre": "Clase de cocina peruana y mercado San Pedro",
+      "categoria": "Gastronomía",
+      "foto": "cooking class chef",
+      "corta": "Compra en el mercado con un chef y cocina ceviche, lomo saltado y pisco sour.",
+      "descripcion": "Visitamos el mercado San Pedro para conocer frutas, papas y ajíes andinos, y luego cocinas tú mismo un ceviche, un lomo saltado y un pisco sour con la guía de un chef. Al final, almuerzas lo que preparaste.",
+      "duracion": "4 horas", "duracionHoras": 4,
+      "diasSalida": [1, 2, 3, 4, 5, 6], "horasSalida": ["09:00", "15:00"], "idiomas": ["es", "en"],
+      "itinerario": [
+        { "titulo": "Recorrido por el mercado San Pedro" },
+        { "titulo": "Clase de cocina con chef" },
+        { "titulo": "Almuerzo o cena con lo que preparaste" }
+      ],
+      "incluye": ["Chef instructor", "Ingredientes", "Recetario digital", "Bebidas"],
+      "noIncluye": ["Transporte"],
+      "queLlevar": ["Ganas de cocinar"],
+      "puntoEncuentro": "Puerta principal del mercado San Pedro", "recojo": null,
+      "edadMinima": 8, "maxPasajeros": 10,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 160 }, { "nombre": "Niño (8 a 12 años)", "precio": 110 }]
+    },
+    {
+      "nombre": "Taller de chocolate del cacao a la barra",
+      "categoria": "Gastronomía",
+      "foto": "chocolate making cacao",
+      "corta": "Tuesta, muele y prepara tu propio chocolate peruano.",
+      "descripcion": "Aprende cómo se hace el chocolate desde el grano de cacao: lo tostamos, pelamos y molemos, preparamos una bebida maya y moldeas tus propias barras para llevar.",
+      "duracion": "2 horas", "duracionHoras": 2,
+      "diasSalida": [1, 2, 3, 4, 5, 6, 7], "horasSalida": ["10:00", "15:00"], "idiomas": ["es", "en"],
+      "itinerario": [
+        { "titulo": "Del árbol al grano: historia del cacao" },
+        { "titulo": "Tostado, pelado y molienda" },
+        { "titulo": "Moldeado de tus barras" }
+      ],
+      "incluye": ["Materiales e ingredientes", "Tus chocolates para llevar", "Bebida de cacao"],
+      "noIncluye": [],
+      "queLlevar": [],
+      "puntoEncuentro": "Taller en la calle Plateros 115, Cusco", "recojo": null,
+      "edadMinima": null, "maxPasajeros": 12,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 90 }, { "nombre": "Niño (4 a 11 años)", "precio": 60 }]
+    },
+    {
+      "nombre": "Pachamanca en el Valle Sagrado",
+      "categoria": "Gastronomía",
+      "foto": "andean village farm peru",
+      "corta": "Prepara una pachamanca con una familia del valle y almuerza con ellos.",
+      "descripcion": "Visitamos una familia de Urubamba que nos enseña a preparar la pachamanca: carnes, papas, habas y humitas cocidas bajo tierra con piedras calientes. Incluye paseo por su chacra.",
+      "duracion": "Medio día (7 h)", "duracionHoras": 7,
+      "diasSalida": [6, 7], "horasSalida": ["09:00"], "idiomas": ["es"],
+      "itinerario": [
+        { "titulo": "Traslado a Urubamba" },
+        { "titulo": "Paseo por la chacra y preparación de la pachamanca" },
+        { "titulo": "Almuerzo con la familia y retorno" }
+      ],
+      "incluye": ["Transporte", "Guía", "Almuerzo de pachamanca", "Chicha de jora"],
+      "noIncluye": [],
+      "queLlevar": ["Ropa cómoda", "Bloqueador"],
+      "puntoEncuentro": "Plaza de Armas de Cusco", "recojo": null,
+      "edadMinima": null, "maxPasajeros": 15,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 150 }, { "nombre": "Niño (3 a 11 años)", "precio": 90 }]
+    },
+    {
+      "nombre": "Ruta de picanterías cusqueñas",
+      "categoria": "Gastronomía",
+      "foto": "traditional peruvian food plate",
+      "corta": "Come como un cusqueño: chiriuchu, adobo, lechón y chicha en tres picanterías.",
+      "descripcion": "Recorremos tres picanterías tradicionales de la ciudad para probar los platos que comen los cusqueños: adobo, chiriuchu, lechón con tamal y chicha de jora o frutillada.",
+      "duracion": "3 horas", "duracionHoras": 3,
+      "diasSalida": [2, 4, 6, 7], "horasSalida": ["12:00"], "idiomas": ["es", "en"],
+      "itinerario": [
+        { "titulo": "Picantería 1: chicha y entradas" },
+        { "titulo": "Picantería 2: plato de fondo" },
+        { "titulo": "Picantería 3: postre y frutillada" }
+      ],
+      "incluye": ["Guía gastronómico", "Todas las degustaciones", "Bebidas"],
+      "noIncluye": ["Transporte"],
+      "queLlevar": ["Mucho apetito"],
+      "puntoEncuentro": "Plaza San Francisco, Cusco", "recojo": null,
+      "edadMinima": null, "maxPasajeros": 10,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 120 }]
+    },
+    {
+      "nombre": "Clase de pisco sour y cócteles peruanos",
+      "categoria": "Gastronomía",
+      "foto": "pisco sour cocktail",
+      "corta": "Aprende a preparar pisco sour, chilcano y un cóctel de autor.",
+      "descripcion": "Un bartender te enseña la historia del pisco, una cata de tres variedades y la preparación de pisco sour, chilcano y un cóctel con frutas andinas. Incluye piqueos.",
+      "duracion": "2 horas", "duracionHoras": 2,
+      "diasSalida": [1, 2, 3, 4, 5, 6, 7], "horasSalida": ["18:00"], "idiomas": ["es", "en"],
+      "itinerario": [
+        { "titulo": "Historia del pisco y cata" },
+        { "titulo": "Preparación de tres cócteles" },
+        { "titulo": "Piqueos y brindis" }
+      ],
+      "incluye": ["Bartender instructor", "Cata de 3 piscos", "3 cócteles por persona", "Piqueos"],
+      "noIncluye": [],
+      "queLlevar": ["DNI o pasaporte"],
+      "puntoEncuentro": "Bar en la calle Procuradores 340, Cusco", "recojo": null,
+      "edadMinima": 18, "maxPasajeros": 12,
+      "tiposPasajero": [{ "nombre": "Adulto", "precio": 85 }]
+    }
+  ]
+}
