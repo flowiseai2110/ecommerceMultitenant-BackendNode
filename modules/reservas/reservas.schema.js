@@ -2,6 +2,7 @@ import { z } from "zod";
 import { documentoValido, TIPOS_DOCUMENTO } from "../libro-reclamaciones/libro.schema.js";
 import { esRucValido } from "../sunat/ruc.service.js";
 import { MAX_NOCHES } from "./hotel/cotizar.js";
+import { TIPOS_ALOJAMIENTO } from "./hotel/alojamiento.js";
 
 /**
  * Schemas Zod del mini booking (docs/specs/mini-booking). El schema ES el
@@ -11,6 +12,8 @@ import { MAX_NOCHES } from "./hotel/cotizar.js";
 export const PESTANAS = ["por_responder", "pago_por_verificar", "confirmadas", "historial"];
 export const METODOS_PAGO_MANUAL = ["yape", "plin", "transferencia"];
 export const MOTIVOS_RECHAZO = ["sin_disponibilidad", "fecha_cerrada", "otro"];
+/** Sitios de reseñas externas (C6). Booking y Tripadvisor puntúan sobre 10 y 5; Google sobre 5. */
+export const FUENTES_RESENA = ["google", "booking", "tripadvisor", "airbnb", "facebook"];
 
 const uuid = (campo) => z.string({ required_error: `${campo} es requerido` }).uuid(`${campo} inválido`);
 const fecha = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (YYYY-MM-DD)");
@@ -46,6 +49,19 @@ const estadiaBase = {
   noches: z.coerce.number().int().min(1).max(MAX_NOCHES).nullish().transform(v => v ?? null),
   adultos: z.coerce.number().int().min(1, "Debe haber al menos un adulto").max(50).nullish().transform(v => v ?? null),
   ninos: z.coerce.number().int().min(0).max(50).optional().default(0),
+  // Hotel (hospedaje-completo, fase B): edad de cada niño (cargo por niño),
+  // extras elegidos y nacionalidad para cotizar con o sin IGV.
+  edadesNinos: z.array(z.coerce.number().int().min(0, "Edad inválida").max(17, "Un niño tiene hasta 17 años")).max(50).optional().default([]),
+  extras: z.array(z.object({
+    extraId: uuid("extraId"),
+    cantidad: z.coerce.number().int().min(1).max(20).optional().default(1),
+    dato: z.string().trim().max(120).nullish().transform(v => v || null)
+  })).max(10).optional().default([]),
+  nacionalidad: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, "Nacionalidad inválida").nullish().transform(v => v || null),
+  // Fase C: varias habitaciones del mismo tipo, plan de tarifa e idioma del huésped.
+  habitaciones: z.coerce.number().int().min(1).max(10).optional().default(1),
+  planId: uuid("planId").nullish().transform(v => v || null),
+  lang: z.enum(["es", "en"]).optional(),
   // Tours
   pasajeros: z.array(z.object({
     tipoId: uuid("tipoId"),
@@ -92,6 +108,8 @@ export const crearSolicitudSchema = z.object({
   aceptaDatos: z.literal(true, {
     errorMap: () => ({ message: "Debes aceptar el tratamiento de tus datos para enviar la solicitud" })
   }),
+  // Habitación solo para mujeres (B6): el titular lo declara; no se guarda el sexo de nadie.
+  confirmaSoloMujeres: z.boolean().optional().default(false),
   // Un doble clic o un reintento con mala señal devuelve la misma reserva.
   idempotencyKey: uuid("idempotencyKey"),
   // Honeypot: una persona nunca llena este campo. Se valida en la ruta.
@@ -158,7 +176,9 @@ export const aceptarSchema = z.object({
   tiendaId: uuid("tiendaId"),
   // Ajuste antes de aceptar (descuento o recargo): nuevo total + motivo visible (R6.4).
   nuevoTotal: monto.nullish().transform(v => v ?? null),
-  ajusteMotivo: textoOpcional(200)
+  ajusteMotivo: textoOpcional(200),
+  // Aceptar aunque el inventario diga que no hay cupo (hospedaje-completo C1).
+  forzar: z.boolean().optional().default(false)
 }).superRefine((d, ctx) => {
   if (d.nuevoTotal !== null && !d.ajusteMotivo) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ajusteMotivo"], message: "Explica el ajuste al cliente" });
@@ -299,7 +319,20 @@ export const configSchema = z.object({
   apartadoManualMin: z.coerce.number().int().min(10).max(1440).optional(),
   maxEntradasPorCompra: z.coerce.number().int().min(1).max(50).optional(),
   umbralUltimasEntradas: z.coerce.number().int().min(1).max(1000).nullable().optional(),
-  cierrePagoManualHoras: z.coerce.number().int().min(1).max(168).nullable().optional()
+  cierrePagoManualHoras: z.coerce.number().int().min(1).max(168).nullable().optional(),
+  // Hotel (hospedaje-completo, fase B)
+  tipoAlojamiento: z.enum(TIPOS_ALOJAMIENTO).optional(),
+  ninosGratisHasta: z.coerce.number().int().min(0).max(17).nullable().optional(),
+  cargoNinoNoche: monto.nullable().optional(),
+  exoneraIgvExtranjeros: z.boolean().optional(),
+  // Fase C
+  tipoCambioUsd: z.coerce.number().min(0.5, "Tipo de cambio inválido").max(20, "Tipo de cambio inválido").nullable().optional(),
+  resenasExternas: z.array(z.object({
+    fuente: z.enum(FUENTES_RESENA, { message: "Elige el sitio" }),
+    puntaje: z.coerce.number().min(1).max(10),
+    cantidad: z.coerce.number().int().min(1).max(1000000),
+    url: z.string().trim().url("Enlace inválido").startsWith("https://", "El enlace debe empezar con https://").max(500)
+  })).max(3, "Hasta 3 sitios").optional()
 }).superRefine((d, ctx) => {
   if (d.cobro === "adelanto" && !d.adelantoPct) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adelantoPct"], message: "Indica el porcentaje de adelanto" });
@@ -334,6 +367,9 @@ export const habitacionSchema = z.object({
   capacidadNinos: z.coerce.number().int().min(0).max(50).optional().default(0),
   capacidadMax: z.coerce.number().int().min(1).max(50),
   porPersona: z.boolean().optional().default(false),
+  soloMujeres: z.boolean().optional().default(false),
+  // Inventario (C1): habitaciones de este tipo (o camas); vacío = el negocio confirma a mano.
+  unidades: z.coerce.number().int().min(1).max(500).nullish().transform(v => v ?? null),
   camas: textoOpcional(100),
   amenities: z.array(z.string().trim().min(1).max(40)).max(30).optional().default([]),
   modalidades: z.array(modalidadSchema).min(1, "Agrega al menos una modalidad (noche o por horas)").max(10)
@@ -345,4 +381,48 @@ export const habitacionSchema = z.object({
   if (new Set(claves).size !== claves.length) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["modalidades"], message: "Hay modalidades repetidas (misma cantidad de horas o dos de noche)" });
   }
+});
+
+// ---------- Tarifas del hotel (hospedaje-completo B2, B3) ----------
+
+export const COBROS_EXTRA = ["estadia", "noche", "persona", "persona_noche"];
+
+export const temporadaSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  nombre: texto("Nombre", 1, 60),
+  desde: fecha,
+  hasta: fecha,
+  ajustePct: z.coerce.number().int("El ajuste es un número entero").min(-50, "El descuento máximo es 50 %").max(300, "El recargo máximo es 300 %"),
+  minNoches: z.coerce.number().int().min(1).max(30).nullish().transform(v => v ?? null),
+  productoIds: z.array(uuid("productoId")).max(50).optional().default([]),
+  activo: z.boolean().optional().default(true)
+}).refine(d => d.desde <= d.hasta, { path: ["hasta"], message: "La fecha final no puede ser anterior a la inicial" })
+  .refine(d => d.ajustePct !== 0 || d.minNoches, { path: ["ajustePct"], message: "Indica un ajuste de precio o un mínimo de noches" });
+
+export const planSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  nombre: texto("Nombre", 1, 60),
+  descripcion: textoOpcional(200),
+  ajustePct: z.coerce.number().int("El ajuste es un número entero").min(-50, "El descuento máximo es 50 %").max(0, "Un plan solo puede bajar el precio"),
+  reembolsable: z.boolean().optional().default(false),
+  activo: z.boolean().optional().default(true),
+  orden: z.coerce.number().int().min(0).max(999).optional().default(0)
+});
+
+export const disponibilidadQuerySchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  desde: fecha,
+  hasta: fecha
+}).refine(d => d.desde <= d.hasta, { path: ["hasta"], message: "Rango inválido" })
+  .refine(d => (Date.parse(d.hasta) - Date.parse(d.desde)) / 86_400_000 <= 62, { path: ["hasta"], message: "Máximo 62 días" });
+
+export const extraSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  nombre: texto("Nombre", 1, 60),
+  descripcion: textoOpcional(200),
+  precio: monto,
+  cobro: z.enum(COBROS_EXTRA, { message: "Elige cómo se cobra" }),
+  datoPedido: textoOpcional(80),
+  activo: z.boolean().optional().default(true),
+  orden: z.coerce.number().int().min(0).max(999).optional().default(0)
 });

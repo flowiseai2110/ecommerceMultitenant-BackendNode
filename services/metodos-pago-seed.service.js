@@ -55,10 +55,12 @@ export const METODOS_PAGO_PLANTILLAS = [
  * @param {object} [opts]
  * @param {boolean} [opts.forzarInactivos] - true para tiendas ya operativas
  *   (backfill): todo se precarga desactivado para no alterar su checkout en vivo.
+ * @param {string[]} [opts.excluirTipos] - tipos que no se precargan (las
+ *   tiendas de reservas no cobran contra entrega).
  * @param {object} [db] - cliente Prisma o transacción (tx) donde ejecutar.
  * @returns {Promise<number>} cantidad de métodos creados
  */
-export async function seedMetodosPagoParaTienda(tiendaId, { forzarInactivos = false } = {}, db = prisma) {
+export async function seedMetodosPagoParaTienda(tiendaId, { forzarInactivos = false, excluirTipos = [] } = {}, db = prisma) {
   const existentes = await db.metodos_pago.findMany({
     where: { tiendaId },
     select: { nombre: true }
@@ -66,7 +68,7 @@ export async function seedMetodosPagoParaTienda(tiendaId, { forzarInactivos = fa
   const nombresExistentes = new Set(existentes.map((m) => m.nombre.trim().toLowerCase()));
 
   const faltantes = METODOS_PAGO_PLANTILLAS
-    .filter((p) => !nombresExistentes.has(p.nombre.toLowerCase()))
+    .filter((p) => !nombresExistentes.has(p.nombre.toLowerCase()) && !excluirTipos.includes(p.tipo))
     .map((p) => ({
       ...p,
       tiendaId,

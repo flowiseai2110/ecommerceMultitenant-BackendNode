@@ -5,6 +5,11 @@ import { apiResponse } from "../../utils/apiResponse.js";
 import { guardarConfig, obtenerConfig } from "./reservas.config.service.js";
 import { crearCierre, eliminarCierre, listarCierres } from "./cierres.service.js";
 import { guardarFicha, listarHabitacionesAdmin, obtenerFichaAdmin } from "./hotel/habitaciones.service.js";
+import {
+  actualizarExtra, actualizarTemporada, crearExtra, crearTemporada, eliminarExtra, eliminarTemporada, listarExtras, listarTemporadas,
+  actualizarPlan, crearPlan, eliminarPlan, listarPlanes
+} from "./hotel/tarifas.service.js";
+import { disponibilidadTienda } from "./hotel/disponibilidad.service.js";
 import { guardarFichaTour, listarToursAdmin, obtenerFichaTourAdmin } from "./tours/tours.service.js";
 import { asistentesFuncion, guardarFichaEvento, listarEventosAdmin, obtenerFichaEventoAdmin } from "./eventos/eventos.service.js";
 import {
@@ -14,7 +19,7 @@ import {
 import {
   aceptarSchema, agendaQuerySchema, configSchema, crearCierreSchema, habitacionSchema, idParamSchema,
   listarAdminQuerySchema, motivoSchema, productoParamSchema, rechazarPagoSchema, rechazarSchema, tiendaQuerySchema, tourSchema,
-  eventoSchema, funcionParamSchema
+  eventoSchema, funcionParamSchema, temporadaSchema, extraSchema, planSchema, disponibilidadQuerySchema
 } from "./reservas.schema.js";
 
 /**
@@ -59,6 +64,51 @@ router.delete("/cierres/:id", ...gestion, validate({ params: idParamSchema, quer
   try {
     await eliminarCierre(req.tiendaId, req.params.id);
     return ok(res, "RESERVAS_CIERRE_ELIMINADO", null);
+  } catch (error) { next(error); }
+});
+
+// ---------- Tarifas del hotel: temporadas y extras (hospedaje-completo B2, B3) ----------
+
+const crud = (ruta, codigo, { listar, crear, actualizar, eliminar }, schema) => {
+  router.get(`/${ruta}`, ...lectura, validate({ query: tiendaQuerySchema }), async (req, res, next) => {
+    try { return ok(res, `${codigo}S`, await listar(req.tiendaId)); } catch (error) { next(error); }
+  });
+  router.post(`/${ruta}`, ...gestion, validate({ body: schema }), async (req, res, next) => {
+    try {
+      const { tiendaId, ...data } = req.body;
+      return ok(res, `${codigo}_CREADA`, await crear(req.tiendaId, data, req.user));
+    } catch (error) { next(error); }
+  });
+  router.put(`/${ruta}/:id`, ...gestion, validate({ params: idParamSchema, body: schema }), async (req, res, next) => {
+    try {
+      const { tiendaId, ...data } = req.body;
+      return ok(res, `${codigo}_ACTUALIZADA`, await actualizar(req.tiendaId, req.params.id, data, req.user));
+    } catch (error) { next(error); }
+  });
+  router.delete(`/${ruta}/:id`, ...gestion, validate({ params: idParamSchema, query: tiendaQuerySchema }), async (req, res, next) => {
+    try {
+      await eliminar(req.tiendaId, req.params.id);
+      return ok(res, `${codigo}_ELIMINADA`, null);
+    } catch (error) { next(error); }
+  });
+};
+
+crud("temporadas", "TEMPORADA", {
+  listar: listarTemporadas, crear: crearTemporada, actualizar: actualizarTemporada, eliminar: eliminarTemporada
+}, temporadaSchema);
+crud("planes", "PLAN", {
+  listar: listarPlanes, crear: crearPlan, actualizar: actualizarPlan, eliminar: eliminarPlan
+}, planSchema);
+crud("extras", "EXTRA", {
+  listar: listarExtras, crear: crearExtra, actualizar: actualizarExtra, eliminar: eliminarExtra
+}, extraSchema);
+
+// ---------- Disponibilidad (C1): tipos × noches, ocupadas y libres ----------
+
+router.get("/disponibilidad", ...lectura, validate({ query: disponibilidadQuerySchema }), async (req, res, next) => {
+  try {
+    const { desde, hasta } = req.validatedQuery;
+    return ok(res, "DISPONIBILIDAD", await disponibilidadTienda(req.tiendaId, desde, hasta, { conNombre: true }));
   } catch (error) { next(error); }
 });
 

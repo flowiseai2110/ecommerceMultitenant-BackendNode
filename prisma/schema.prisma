@@ -106,6 +106,8 @@ model tiendas {
   id                String  @id @default(uuid()) @db.Uuid
   nombre            String  @db.VarChar(100)
   slug              String  @unique @db.VarChar(100)
+  // Idiomas de la vitrina (hospedaje-completo C3): {es} o {es,en}.
+  idiomas           String[] @default(["es"])
   descripcion       String? @db.Text
   planId            String? @map("plan_id") @db.Uuid
   logoUrl           String? @map("logo_url") @db.VarChar(500)
@@ -157,6 +159,9 @@ model tiendas {
   conversacionesAgente agente_conversaciones[]
   libroReclamaciones   libro_reclamaciones[]
   configReservas       config_reservas?
+  hotelTemporadas      hotel_temporadas[]
+  hotelExtras          hotel_extras[]
+  hotelPlanes          hotel_planes[]
 }
 
 // ============================================
@@ -323,6 +328,7 @@ model categorias {
   // Código corto que el admin reconoce rápido (en un hotel: MT = Matrimonial, PR = Prince)
   codigo           String? @db.VarChar(10)
   descripcion      String? @db.Text
+  traducciones     Json?   @db.JsonB // { en: { nombre, descripcion } } (hospedaje-completo C3)
   imagenUrl        String? @map("imagen_url") @db.VarChar(500)
   orden            Int     @default(0)
   activo           Boolean @default(true)
@@ -349,6 +355,7 @@ model productos {
   slug             String   @db.VarChar(200)
   descripcion      String?  @db.Text
   descripcionCorta String?  @map("descripcion_corta") @db.VarChar(500)
+  traducciones     Json?    @db.JsonB // { en: { nombre, descripcionCorta, descripcion } } (hospedaje-completo C3)
   sku              String?  @db.VarChar(50)
   precioBase       Decimal  @map("precio_base") @db.Decimal(10, 2)
   precioOferta     Decimal? @map("precio_oferta") @db.Decimal(10, 2)
@@ -983,6 +990,15 @@ model config_reservas {
   maxEntradasPorCompra   Int     @default(10) @map("max_entradas_por_compra")
   umbralUltimasEntradas  Int?    @default(20) @map("umbral_ultimas_entradas") // "Últimas entradas" si quedan menos; null = nunca
   cierrePagoManualHoras  Int?    @map("cierre_pago_manual_horas") // sin Yape/transferencia N h antes de la función
+  // Hospedaje (docs/specs/hospedaje-completo, fase B)
+  tipoAlojamiento        String   @default("hotel") @map("tipo_alojamiento") @db.VarChar(12) // hotel | hostal | casa | apart | lodge | posada
+  ninosGratisHasta       Int?     @map("ninos_gratis_hasta") // edad hasta la que un niño no paga; null = no aplica cargo
+  cargoNinoNoche         Decimal? @map("cargo_nino_noche") @db.Decimal(10, 2) // por niño mayor a esa edad, por noche
+  exoneraIgvExtranjeros  Boolean  @default(false) @map("exonera_igv_extranjeros") // turista extranjero: total sin IGV
+  // Fase C
+  tipoCambioUsd          Decimal? @map("tipo_cambio_usd") @db.Decimal(6, 3) // "≈ US$" en la vitrina; null = no se muestra
+  resenasExternas        Json?    @map("resenas_externas") @db.JsonB // [{ fuente, puntaje, cantidad, url }] (hasta 3)
+  traducciones           Json?    @db.JsonB // { en: { instrucciones, politicaCancelacion } } (C3)
 
   // Auditoría
   fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
@@ -1009,6 +1025,77 @@ model cierres_fecha {
   @@index([tiendaId, fechaDesde, fechaHasta], name: "idx_cierres_tienda_rango")
 }
 
+// Temporadas del hotel (hospedaje-completo B2): ajuste % sobre el precio de
+// cada noche que cae en el rango y mínimo de noches si la llegada cae en él.
+model hotel_temporadas {
+  id          String   @id @default(uuid()) @db.Uuid
+  tiendaId    String   @map("tienda_id") @db.Uuid
+  nombre      String   @db.VarChar(60)
+  desde       DateTime @db.Date
+  hasta       DateTime @db.Date // inclusiva
+  ajustePct   Int      @map("ajuste_pct") // -50 … 300
+  minNoches   Int?     @map("min_noches")
+  productoIds String[] @default([]) @map("producto_ids") @db.Uuid // vacío = todas las habitaciones
+  activo      Boolean  @default(true)
+  traducciones Json?   @db.JsonB // { en: { nombre } } (C3)
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  tienda tiendas @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+
+  @@index([tiendaId, desde, hasta], name: "idx_hotel_temporadas_rango")
+}
+
+// Extras reservables del hotel (hospedaje-completo B3): traslado, early check-in, cuna…
+model hotel_extras {
+  id          String   @id @default(uuid()) @db.Uuid
+  tiendaId    String   @map("tienda_id") @db.Uuid
+  nombre      String   @db.VarChar(60)
+  descripcion String?  @db.VarChar(200)
+  precio      Decimal  @db.Decimal(10, 2)
+  cobro       String   @default("estadia") @db.VarChar(14) // estadia | noche | persona | persona_noche
+  datoPedido  String?  @map("dato_pedido") @db.VarChar(80) // lo que se le pide al huésped ("Número de vuelo y hora")
+  activo      Boolean  @default(true)
+  orden       Int      @default(0)
+  traducciones Json?   @db.JsonB // { en: { nombre, descripcion, datoPedido } } (C3)
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  tienda tiendas @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+
+  @@index([tiendaId], name: "idx_hotel_extras_tienda")
+}
+
+// Planes de tarifa (hospedaje-completo C5): "No reembolsable −10 %". La
+// tarifa flexible (sin ajuste, con la política de cancelación de la tienda)
+// es implícita.
+model hotel_planes {
+  id           String   @id @default(uuid()) @db.Uuid
+  tiendaId     String   @map("tienda_id") @db.Uuid
+  nombre       String   @db.VarChar(60)
+  descripcion  String?  @db.VarChar(200)
+  ajustePct    Int      @map("ajuste_pct") // -50 … 0
+  reembolsable Boolean  @default(false)
+  activo       Boolean  @default(true)
+  orden        Int      @default(0)
+  traducciones Json?    @db.JsonB // { en: { nombre, descripcion } } (C3)
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  tienda tiendas @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+
+  @@index([tiendaId], name: "idx_hotel_planes_tienda")
+}
+
 // Ficha de hotel de un producto (tipo de habitación).
 model hotel_tipos_habitacion {
   productoId       String   @id @map("producto_id") @db.Uuid
@@ -1018,6 +1105,12 @@ model hotel_tipos_habitacion {
   capacidadMax     Int      @default(2) @map("capacidad_max")
   // Cama en dormitorio compartido: el precio se multiplica por personas.
   porPersona       Boolean  @default(false) @map("por_persona")
+  // Dormitorio o habitación solo para mujeres (la solicitud lo hace confirmar).
+  soloMujeres      Boolean  @default(false) @map("solo_mujeres")
+  // Inventario (hospedaje-completo C1): habitaciones de este tipo, o camas si
+  // porPersona. null = sin control: el negocio confirma a mano.
+  unidades         Int?
+  traducciones     Json?    @db.JsonB // { en: { camas, amenities } } (C3)
   camas            String?  @db.VarChar(100)
   amenities        String[] @default([])
 
@@ -1064,6 +1157,15 @@ model reservas {
   funcionId     String?   @map("funcion_id") @db.Uuid // eventos: función comprada
   // Eventos: hasta cuándo el cupo queda apartado esperando la captura del pago.
   apartadoHasta DateTime? @map("apartado_hasta") @db.Timestamptz
+  // Hotel (hospedaje-completo, fase B)
+  extras        Json?     @db.JsonB // [{ id, nombre, cobro, precio, cantidad, total, dato }] (snapshot)
+  edadesNinos   Int[]     @default([]) @map("edades_ninos")
+  exoneradoIgv  Boolean   @default(false) @map("exonerado_igv")
+  // Fase C
+  habitaciones  Int       @default(1) // cuántas habitaciones del mismo tipo
+  plan          Json?     @db.JsonB // { id, nombre, ajustePct, reembolsable } (snapshot)
+  idiomaHuesped String    @default("es") @map("idioma_huesped") @db.VarChar(2) // idioma en que reservó (correos)
+  resenaPedidaEn DateTime? @map("resena_pedida_en") @db.Timestamptz // correo "¿Cómo fue tu estadía?" enviado
 
   // Titular (registro de huésped)
   titularNombres      String    @map("titular_nombres") @db.VarChar(100)
@@ -1091,6 +1193,7 @@ model reservas {
 
   @@index([tiendaId, inicio], name: "idx_reservas_tienda_inicio")
   @@index([funcionId], name: "idx_reservas_funcion")
+  @@index([productoId, inicio], name: "idx_reservas_producto_inicio")
 }
 
 // Ficha de tour de un producto (agencia de tours, fase 2). Sin cupo por

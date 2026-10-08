@@ -285,6 +285,13 @@ export const config = {
 
   // Asistente "Guía" del panel admin. Ver modules/asistente/. Reusa la API key del
   // agente; las explicaciones paso a paso necesitan más tokens que el asesor.
+  // Traducción del contenido de la tienda al inglés (docs/specs/hospedaje-completo C3).
+  traducciones: {
+    apiKey: process.env.TRADUCCIONES_IA_API_KEY || process.env.AGENTE_IA_API_KEY,
+    modelo: process.env.TRADUCCIONES_IA_MODELO || "claude-opus-5-5",
+    // Espera tras el último guardado antes de traducir (agrupa varios cambios seguidos).
+    demoraMs: parseInt(process.env.TRADUCCIONES_DEMORA_MS) || 8000
+  },
   asistente: {
     apiKey: process.env.ASISTENTE_IA_API_KEY || process.env.AGENTE_IA_API_KEY,
     modelo: process.env.ASISTENTE_IA_MODELO || "claude-haiku-4-5",

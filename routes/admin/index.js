@@ -23,6 +23,8 @@ import disenoRoutes from "../../modules/diseno/diseno.admin.routes.js";
 import libroRoutes from "../../modules/libro-reclamaciones/libro.admin.routes.js";
 import reservasRoutes from "../../modules/reservas/reservas.admin.routes.js";
 import transmisionesRoutes from "../../modules/transmisiones/transmisiones.admin.routes.js";
+import traduccionesRoutes from "../../modules/traducciones/traducciones.admin.routes.js";
+import { traducirTrasGuardar } from "../../modules/traducciones/traducciones.service.js";
 
 const router = Router();
 
@@ -31,9 +33,11 @@ router.use(authMiddleware);
 
 // Las escrituras exitosas limpian la caché en memoria del storefront
 // (utils/store-cache.js). Tiendas → "envios": cotizar usa envioGratisMinimo.
-router.use("/tiendas", invalidarAlEscribir("envios"), tiendasRoutes);
-router.use("/categorias", invalidarAlEscribir("categorias"), categoriasRoutes);
-router.use("/productos", productosRoutes);
+// traducirTrasGuardar: tras guardar contenido, programa su traducción al inglés
+// si la tienda lo tiene activo (docs/specs/hospedaje-completo C3).
+router.use("/tiendas", invalidarAlEscribir("envios"), traducirTrasGuardar, tiendasRoutes);
+router.use("/categorias", invalidarAlEscribir("categorias"), traducirTrasGuardar, categoriasRoutes);
+router.use("/productos", traducirTrasGuardar, productosRoutes);
 router.use("/producto-variantes", productoVariantesRoutes);
 router.use("/producto-imagenes", productoImagenesRoutes);
 router.use("/producto-atributos", productoAtributosRoutes);
@@ -51,7 +55,8 @@ router.use("/asistente", asistenteRoutes);
 router.use("/consumo-ia", consumoIaRoutes);
 router.use("/diseno", disenoRoutes);
 router.use("/libro-reclamaciones", libroRoutes);
-router.use("/reservas", reservasRoutes);
+router.use("/reservas", traducirTrasGuardar, reservasRoutes);
+router.use("/traducciones", traduccionesRoutes);
 router.use("/transmisiones", transmisionesRoutes);
 
 export default router;

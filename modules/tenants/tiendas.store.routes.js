@@ -9,6 +9,7 @@ import { idParamSchema, paginationSchema } from "./tiendas.schema.js";
 import { getDiseno } from "../../services/tienda-diseno.service.js";
 import { disenoPublico } from "../campanas/resolver.js";
 import { getTiendasStore, setTiendasStore } from "./tiendas.cache.js";
+import { aplicarDisenoEn, textoEn } from "../traducciones/traducciones.service.js";
 
 const tiendasRepository = new GenericRepository(prisma.tiendas, "Tienda");
 const tiendasService = new GenericService(tiendasRepository, {
@@ -21,8 +22,10 @@ const router = Router();
 // GET / - Listar tiendas (público — para lookup por slug)
 router.get("/", validate({ query: paginationSchema }), async (req, res, next) => {
   try {
-    const query = req.validatedQuery || req.query;
-    const cacheKey = JSON.stringify(query);
+    const { lang: _lang, ...query } = req.validatedQuery || req.query;
+    // Inglés (docs/specs/hospedaje-completo C3): descripción y textos del diseño.
+    const lang = req.query.lang === "en" ? "en" : "es";
+    const cacheKey = JSON.stringify({ ...query, lang });
 
     const cached = getTiendasStore(cacheKey);
     if (cached) {
@@ -39,7 +42,13 @@ router.get("/", validate({ query: paginationSchema }), async (req, res, next) =>
       // Sin la lista de campañas (nunca se publican las futuras) y con la
       // vigente ya resuelta en hora de Lima. La caché de 60 s hace que un
       // cambio de campaña tarde como máximo un minuto en verse (R3.4).
-      data[0].diseno = disenoPublico(await getDiseno(data[0].id), new Date(), data[0].tipoNegocio);
+      const diseno = await getDiseno(data[0].id);
+      data[0].diseno = disenoPublico(diseno, new Date(), data[0].tipoNegocio);
+      if (lang === "en" && (data[0].idiomas ?? []).includes("en")) {
+        const tr = diseno.traducciones?.en;
+        data[0].diseno.tema.estructura = aplicarDisenoEn(data[0].diseno.tema.estructura, tr);
+        data[0].descripcion = textoEn(data[0].descripcion, tr?.["tienda.descripcion"]);
+      }
     }
 
     const responsePayload = { status: 200, type: "SUCCESS", code: "TIENDA_LIST", data, meta };

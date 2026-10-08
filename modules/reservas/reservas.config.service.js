@@ -1,5 +1,6 @@
 import { prisma } from "../../config/prisma.js";
 import { ConflictError, NotFoundError } from "../../utils/errors.js";
+import { vozAlojamiento } from "./hotel/alojamiento.js";
 
 /**
  * Configuración de reservas de la tienda (spec R1.3). Sin fila en
@@ -9,7 +10,8 @@ import { ConflictError, NotFoundError } from "../../utils/errors.js";
 
 /** Aviso de reserva próxima por defecto (R5.3.1, R9.6). */
 export const TEXTOS_AVISO = {
-  hotel: "Tu reserva es para dentro de poco. Si el hotel no la confirma antes de las {hora}, se anula. Te recomendamos llamar o escribir al hotel por WhatsApp.",
+  // {negocio} / {alNegocio}: el hotel, el hostal, la casa… (tipo de alojamiento, hospedaje-completo B1).
+  hotel: "Tu reserva es para dentro de poco. Si {negocio} no la confirma antes de las {hora}, se anula. Te recomendamos llamar o escribir {alNegocio} por WhatsApp.",
   tours: "Tu tour sale pronto ({hora}). La agencia necesita confirmar el cupo y organizar la salida; si no la confirma antes, la solicitud se anula. Te recomendamos escribir a la agencia por WhatsApp.",
   eventos: "El organizador verifica los pagos por Yape o transferencia a mano. Si tu pago no se verifica antes de la función ({hora}), lleva tu captura: la validarán en la puerta."
 };
@@ -25,6 +27,14 @@ const BASE = {
   horaCheckin: "14:00",
   horaCheckout: "12:00",
   avisoProximoTexto: null,
+  // Solo hotel (hospedaje-completo, fase B)
+  tipoAlojamiento: "hotel",
+  ninosGratisHasta: null,
+  cargoNinoNoche: null,
+  exoneraIgvExtranjeros: false,
+  // Fase C
+  tipoCambioUsd: null,
+  resenasExternas: [],
   // Solo eventos
   apartadoManualMin: 120,
   maxEntradasPorCompra: 10,
@@ -43,7 +53,9 @@ const POR_VERTICAL = {
 export const CAMPOS_CONFIG = [
   "modoConfirmacion", "cobro", "adelantoPct", "anticipacionMinHoras", "avisoProximoHoras", "avisoProximoTexto",
   "maxSolicitudesAbiertas", "instrucciones", "politicaCancelacion", "horaCheckin", "horaCheckout", "comprobanteEn",
-  "apartadoManualMin", "maxEntradasPorCompra", "umbralUltimasEntradas", "cierrePagoManualHoras"
+  "apartadoManualMin", "maxEntradasPorCompra", "umbralUltimasEntradas", "cierrePagoManualHoras",
+  "tipoAlojamiento", "ninosGratisHasta", "cargoNinoNoche", "exoneraIgvExtranjeros",
+  "tipoCambioUsd", "resenasExternas"
 ];
 
 /** Defaults de una vertical, sin consultar la BD (para tests y para el seed). */
@@ -57,13 +69,19 @@ export function configPorDefecto(tipoNegocio) {
  */
 export function resolverConfig(tipoNegocio, fila) {
   const config = { ...configPorDefecto(tipoNegocio) };
-  if (fila) for (const campo of CAMPOS_CONFIG) config[campo] = fila[campo];
+  if (fila) for (const campo of CAMPOS_CONFIG) if (fila[campo] !== undefined) config[campo] = fila[campo];
+  if (config.cargoNinoNoche != null) config.cargoNinoNoche = Number(config.cargoNinoNoche);
+  if (config.tipoCambioUsd != null) config.tipoCambioUsd = Number(config.tipoCambioUsd);
+  config.resenasExternas = Array.isArray(config.resenasExternas) ? config.resenasExternas : [];
+  const v = vozAlojamiento(config.tipoAlojamiento);
+  const avisoPorDefecto = (TEXTOS_AVISO[tipoNegocio] ?? TEXTOS_AVISO.hotel)
+    .replace("{negocio}", v.negocio).replace("{alNegocio}", v.alNegocio);
   return {
     ...config,
     tipoNegocio,
     personalizada: Boolean(fila),
-    avisoTextoPorDefecto: TEXTOS_AVISO[tipoNegocio] ?? TEXTOS_AVISO.hotel,
-    avisoProximoTexto: config.avisoProximoTexto || TEXTOS_AVISO[tipoNegocio] || TEXTOS_AVISO.hotel
+    avisoTextoPorDefecto: avisoPorDefecto,
+    avisoProximoTexto: config.avisoProximoTexto || avisoPorDefecto
   };
 }
 
@@ -96,7 +114,14 @@ export function configPublica(config) {
     comprobanteEn: config.comprobanteEn,
     apartadoManualMin: config.apartadoManualMin,
     maxEntradasPorCompra: config.maxEntradasPorCompra,
-    cierrePagoManualHoras: config.cierrePagoManualHoras
+    cierrePagoManualHoras: config.cierrePagoManualHoras,
+    tipoAlojamiento: config.tipoAlojamiento,
+    ninosGratisHasta: config.ninosGratisHasta,
+    cargoNinoNoche: config.cargoNinoNoche,
+    exoneraIgvExtranjeros: config.exoneraIgvExtranjeros,
+    // Fase C: "≈ US$" en la vitrina y puntaje en otros sitios.
+    tipoCambioUsd: config.tipoCambioUsd,
+    resenasExternas: config.resenasExternas
   };
 }
 

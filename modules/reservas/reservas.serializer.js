@@ -73,6 +73,15 @@ function base(pedido, ahora) {
     horas: r.horas,
     adultos: r.adultos,
     ninos: r.ninos,
+    // Hotel (hospedaje-completo, fase B): extras con el dato del huésped
+    // (vuelo, hora de llegada), edades de los niños e IGV exonerado.
+    extras: Array.isArray(r.extras) ? r.extras.map(x => ({ nombre: x.nombre, cantidad: x.cantidad, total: x.total, datoPedido: x.datoPedido ?? null, dato: x.dato ?? null })) : [],
+    edadesNinos: r.edadesNinos ?? [],
+    exoneradoIgv: r.exoneradoIgv ?? false,
+    // Fase C: habitaciones del mismo tipo, plan de tarifa e idioma del huésped.
+    habitaciones: r.habitaciones ?? 1,
+    plan: r.plan ?? null,
+    idiomaHuesped: r.idiomaHuesped ?? "es",
     pasajeros,
     idioma: r.idioma ?? null,
     // Lo que el pasajero necesita para llegar a la salida (confirmación, R8.1).
@@ -148,10 +157,15 @@ export function serializeReservaStore(pedido, { tienda, config, metodosPago = []
       slug: tienda.slug,
       whatsapp: tienda.whatsappNumero,
       direccion: tienda.direccion,
-      logoUrl: tienda.logoUrl
+      logoUrl: tienda.logoUrl,
+      // Cómo se nombra el negocio ("el hostal", "la casa"): hospedaje-completo B1.
+      alojamiento: config.tipoAlojamiento ?? "hotel"
     },
     instrucciones: config.instrucciones,
-    politicaCancelacion: config.politicaCancelacion,
+    // Con plan no reembolsable, la política que vale es la del plan (C5).
+    politicaCancelacion: r.plan && !r.plan.reembolsable
+      ? `Tarifa ${r.plan.nombre}: no se devuelve el pago si cancelas o no llegas.`
+      : config.politicaCancelacion,
     comprobanteEn: config.comprobanteEn,
     puedeCancelar: ["solicitada", "aceptada", "por_pagar"].includes(dto.estado)
   };

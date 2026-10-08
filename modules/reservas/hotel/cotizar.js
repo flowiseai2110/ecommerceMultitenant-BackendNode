@@ -1,6 +1,7 @@
 import {
   diaSemana, fechaCorta, fechaLima, horaLima, horasEntre, instanteLima, rangoFechas, sumarDias, sumarHoras
 } from "../tiempo.js";
+import { textosCotizar } from "./textos-cotizar.js";
 
 /**
  * Cotización de una solicitud de hotel / hostal: función pura (sin BD), como
@@ -12,7 +13,20 @@ import {
  *   - horas: bloque de N horas con precio fijo ("fracción 6 h"). Ventana fija:
  *     la salida es ingreso + N horas aunque el cliente llegue tarde (R2.3.1).
  * Si el tipo es "por persona" (cama en dormitorio) el precio se multiplica.
+ *
+ * Además (docs/specs/hospedaje-completo, fase B):
+ *   - temporadas: ajuste % sobre el precio de cada noche y mínimo de noches
+ *     si la llegada cae en una;
+ *   - cargo por niño mayor a la edad gratuita, por noche;
+ *   - extras (traslado, early check-in…) cobrados por estadía, noche, persona
+ *     o persona y noche;
+ *   - exoneración del IGV al turista extranjero (sobre el alojamiento).
+ *
+ * Y (fase C): varias habitaciones del mismo tipo, cupo según el inventario y
+ * plan de tarifa (no reembolsable con descuento).
  */
+
+export const MAX_HABITACIONES = 10;
 
 export const MAX_NOCHES = 30;
 export const MAX_DIAS_ADELANTE = 365;
@@ -21,8 +35,6 @@ const redondear = (n) => Math.round(n * 100) / 100;
 
 /** Viernes o sábado: las noches que suelen costar más. */
 const esVieSab = (fecha) => [5, 6].includes(diaSemana(fecha));
-
-const DIAS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 
 /**
  * Ventana de la estadía.
@@ -44,18 +56,35 @@ export function ventanaEstadia({ modalidad, fecha, hora, noches, horaCheckin, ho
   };
 }
 
+/** IGV peruano: los precios publicados lo incluyen. */
+export const IGV = 0.18;
+
 /**
- * Líneas de precio. Las noches se agrupan por precio para que el detalle sea
- * corto ("3 noches × S/ 160") sin perder qué noches son.
+ * Temporada que rige una noche: la de mayor ajuste entre las que la contienen
+ * (si un feriado cae dentro de una temporada alta, gana el más caro).
+ * @param {string} fecha - "YYYY-MM-DD"
+ * @param {Array<{ nombre: string, desde: string, hasta: string, ajustePct: number, minNoches?: number|null }>} temporadas
  */
-export function lineasPrecio({ modalidad, personas, fechas, porPersona }) {
-  const factor = porPersona ? personas : 1;
-  const sufijo = porPersona ? ` · ${personas} ${personas === 1 ? "persona" : "personas"}` : "";
+export function temporadaDe(fecha, temporadas) {
+  let elegida = null;
+  for (const t of temporadas) {
+    if (t.desde <= fecha && fecha <= t.hasta && (!elegida || t.ajustePct > elegida.ajustePct)) elegida = t;
+  }
+  return elegida;
+}
+
+/**
+ * Líneas de precio. Las noches se agrupan por precio (y temporada) para que
+ * el detalle sea corto ("3 noches × S/ 160") sin perder qué noches son.
+ */
+export function lineasPrecio({ modalidad, personas, fechas, porPersona, temporadas = [], habitaciones = 1, t = textosCotizar("es") }) {
+  const factor = porPersona ? personas : habitaciones;
+  const sufijo = porPersona ? t.personas(personas) : habitaciones > 1 ? t.habitaciones(habitaciones) : "";
 
   if (modalidad.tipo === "horas") {
     const precio = Number(modalidad.precio);
     return [{
-      descripcion: `Estadía de ${modalidad.horas} horas${sufijo}`,
+      descripcion: `${t.estadiaHoras(modalidad.horas)}${sufijo}`,
       cantidad: factor,
       precioUnitario: precio,
       total: redondear(precio * factor)
@@ -64,20 +93,85 @@ export function lineasPrecio({ modalidad, personas, fechas, porPersona }) {
 
   const grupos = new Map();
   for (const f of fechas) {
-    const precio = esVieSab(f) && modalidad.precioVieSab != null ? Number(modalidad.precioVieSab) : Number(modalidad.precio);
-    if (!grupos.has(precio)) grupos.set(precio, []);
-    grupos.get(precio).push(f);
+    const base = esVieSab(f) && modalidad.precioVieSab != null ? Number(modalidad.precioVieSab) : Number(modalidad.precio);
+    const temporada = temporadaDe(f, temporadas);
+    const precio = temporada ? redondear(base * (1 + temporada.ajustePct / 100)) : base;
+    const clave = `${precio}|${temporada?.nombre ?? ""}`;
+    if (!grupos.has(clave)) grupos.set(clave, { precio, temporada: temporada?.nombre ?? null, dias: [] });
+    grupos.get(clave).dias.push(f);
   }
-  return [...grupos.entries()].map(([precio, dias]) => {
+  return [...grupos.values()].map(({ precio, temporada, dias }) => {
     const cantidad = dias.length * factor;
-    const detalle = dias.map(d => `${DIAS[diaSemana(d)]} ${fechaCorta(d)}`).join(", ");
+    const detalle = dias.map(d => `${t.dias[diaSemana(d)]} ${fechaCorta(d)}`).join(", ");
     return {
-      descripcion: `${dias.length} ${dias.length === 1 ? "noche" : "noches"} (${detalle})${sufijo}`,
+      descripcion: `${t.noches(dias.length)}${temporada ? ` ${temporada}` : ""} (${detalle})${sufijo}`,
       cantidad,
       precioUnitario: precio,
       total: redondear(precio * cantidad)
     };
   });
+}
+
+/**
+ * Cargo por niño (B4): los mayores a `ninosGratisHasta` pagan `cargoNinoNoche`
+ * por noche (un bloque por horas cuenta como una). No aplica a camas por persona:
+ * ahí cada niño ya paga su cama.
+ */
+export function lineaNinos({ edadesNinos, noches, esHoras, porPersona, config, t = textosCotizar("es") }) {
+  if (porPersona || config.ninosGratisHasta == null || !config.cargoNinoNoche) return null;
+  const pagan = edadesNinos.filter(e => e > config.ninosGratisHasta).length;
+  if (!pagan) return null;
+  const veces = esHoras ? 1 : noches;
+  const precio = Number(config.cargoNinoNoche);
+  return {
+    descripcion: t.ninos(pagan, config.ninosGratisHasta, veces, esHoras),
+    cantidad: pagan * veces,
+    precioUnitario: precio,
+    total: redondear(precio * pagan * veces)
+  };
+}
+
+/** Unidades de un extra según cómo se cobra. */
+export function cantidadExtra(cobro, { noches, personas, esHoras, cantidad = 1 }) {
+  const n = esHoras ? 1 : noches;
+  if (cobro === "noche") return n;
+  if (cobro === "persona") return personas;
+  if (cobro === "persona_noche") return personas * n;
+  return cantidad; // por estadía: lo que pide el huésped (un traslado de ida, ida y vuelta…)
+}
+
+/**
+ * Extras elegidos (B3) → líneas y la copia que guarda la reserva.
+ * @param {Array} catalogo - hotel_extras activos de la tienda
+ * @param {Array<{ extraId: string, cantidad?: number, dato?: string|null }>} elegidos
+ */
+export function lineasExtras({ catalogo, elegidos, noches, personas, esHoras, t = textosCotizar("es") }) {
+  const lineas = [];
+  const snapshot = [];
+  const errores = [];
+  for (const el of elegidos) {
+    const extra = catalogo.find(x => x.id === el.extraId);
+    if (!extra || !extra.activo) {
+      errores.push(error("EXTRA_INVALIDO", t.err.extraInvalido, "extras"));
+      continue;
+    }
+    const precio = Number(extra.precio);
+    const cantidad = cantidadExtra(extra.cobro, { noches, personas, esHoras, cantidad: el.cantidad ?? 1 });
+    const total = redondear(precio * cantidad);
+    const unidad = t.unidadExtra[extra.cobro] ?? "";
+    lineas.push({ descripcion: `${extra.nombre}${cantidad > 1 ? ` × ${cantidad}` : ""}${unidad ? ` (${unidad})` : ""}`, cantidad, precioUnitario: precio, total });
+    snapshot.push({ id: extra.id, nombre: extra.nombre, cobro: extra.cobro, precio, cantidad, total, datoPedido: extra.datoPedido ?? null, dato: el.dato ?? null });
+  }
+  return { lineas, snapshot, errores };
+}
+
+/**
+ * Exoneración del IGV al turista extranjero (B5): los precios incluyen IGV y
+ * el extranjero paga el alojamiento sin él. Los extras no se exoneran.
+ * @returns {number} monto a descontar (positivo)
+ */
+export function descuentoIgv(montoAlojamiento) {
+  return redondear(montoAlojamiento - montoAlojamiento / (1 + IGV));
 }
 
 /** Cuánto se paga al reservar según el cobro configurado. */
@@ -100,42 +194,73 @@ const error = (codigo, mensaje, campo = null) => ({ codigo, mensaje, campo });
  * Reglas de la solicitud (spec R2, R5, R10). Cada error trae el campo del
  * formulario que lo causa, para mostrarlo al lado.
  */
-export function validarSolicitud({ tipo, modalidad, inicio, fechas, noches, adultos, ninos, cierres, config, ahora }) {
+export function validarSolicitud({
+  tipo, modalidad, fecha, inicio, fechas, noches, adultos, ninos, edadesNinos = [], temporadas = [], cierres, config, ahora,
+  habitaciones = 1, cupo = null, t = textosCotizar("es")
+}) {
   const errores = [];
+  const e = t.err;
 
-  if (!modalidad.activo) errores.push(error("MODALIDAD_INACTIVA", "Esta modalidad ya no está disponible", "modalidadId"));
+  if (!modalidad.activo) errores.push(error("MODALIDAD_INACTIVA", e.modalidadInactiva, "modalidadId"));
 
   if (modalidad.tipo === "noche" && (!Number.isInteger(noches) || noches < 1 || noches > MAX_NOCHES)) {
-    errores.push(error("NOCHES_INVALIDAS", `Elige entre 1 y ${MAX_NOCHES} noches`, "noches"));
+    errores.push(error("NOCHES_INVALIDAS", e.nochesInvalidas(MAX_NOCHES), "noches"));
   }
 
-  if (adultos < 1) errores.push(error("ADULTOS_INVALIDOS", "Debe haber al menos un adulto", "adultos"));
-  if (adultos > tipo.capacidadAdultos) {
-    errores.push(error("CAPACIDAD", `Esta habitación admite hasta ${tipo.capacidadAdultos} ${tipo.capacidadAdultos === 1 ? "adulto" : "adultos"}`, "adultos"));
+  // Con varias habitaciones (C2) la capacidad se multiplica; una cama de dormitorio va de a una.
+  const h = tipo.porPersona ? 1 : habitaciones;
+  const enHabitaciones = e.enHabitaciones(h);
+  if (!Number.isInteger(habitaciones) || habitaciones < 1 || habitaciones > MAX_HABITACIONES) {
+    errores.push(error("HABITACIONES_INVALIDAS", e.habitacionesInvalidas(MAX_HABITACIONES), "habitaciones"));
   }
-  if (ninos > tipo.capacidadNinos) {
-    errores.push(error("CAPACIDAD", tipo.capacidadNinos === 0
-      ? "Esta habitación no admite niños"
-      : `Esta habitación admite hasta ${tipo.capacidadNinos} ${tipo.capacidadNinos === 1 ? "niño" : "niños"}`, "ninos"));
+  if (adultos < 1) errores.push(error("ADULTOS_INVALIDOS", e.adultosInvalidos, "adultos"));
+  if (adultos > tipo.capacidadAdultos * h) {
+    errores.push(error("CAPACIDAD", e.capAdultos(tipo.capacidadAdultos * h, enHabitaciones), "adultos"));
   }
-  if (adultos + ninos > tipo.capacidadMax) {
-    errores.push(error("CAPACIDAD", `Esta habitación admite hasta ${tipo.capacidadMax} personas en total`, "adultos"));
+  if (ninos > tipo.capacidadNinos * h) {
+    errores.push(error("CAPACIDAD", tipo.capacidadNinos === 0 ? e.sinNinos : e.capNinos(tipo.capacidadNinos * h, enHabitaciones), "ninos"));
+  }
+  if (adultos + ninos > tipo.capacidadMax * h) {
+    errores.push(error("CAPACIDAD", e.capTotal(tipo.capacidadMax * h, enHabitaciones), "adultos"));
+  }
+
+  // Inventario (C1): las camas o habitaciones libres de la noche más llena.
+  if (cupo && cupo.libres !== null) {
+    const pide = tipo.porPersona ? adultos + ninos : habitaciones;
+    if (cupo.libres <= 0) {
+      errores.push(error("SIN_CUPO", tipo.porPersona ? e.sinCamas : e.sinHabitaciones, "fecha"));
+    } else if (pide > cupo.libres) {
+      errores.push(error("SIN_CUPO", tipo.porPersona ? e.quedanCamas(cupo.libres) : e.quedanHabitaciones(cupo.libres), tipo.porPersona ? "adultos" : "habitaciones"));
+    }
   }
 
   const horasFaltan = horasEntre(ahora, inicio);
   if (horasFaltan <= 0) {
-    errores.push(error("FECHA_PASADA", "Elige una fecha y hora futuras", "hora"));
+    errores.push(error("FECHA_PASADA", e.fechaPasada, "hora"));
   } else if (horasFaltan < config.anticipacionMinHoras) {
-    errores.push(error("ANTICIPACION_INSUFICIENTE",
-      `Las reservas se piden con al menos ${config.anticipacionMinHoras} ${config.anticipacionMinHoras === 1 ? "hora" : "horas"} de anticipación`, "hora"));
+    errores.push(error("ANTICIPACION_INSUFICIENTE", e.anticipacion(config.anticipacionMinHoras), "hora"));
   }
   if (horasFaltan > MAX_DIAS_ADELANTE * 24) {
-    errores.push(error("FECHA_LEJANA", "Solo se puede reservar con hasta un año de anticipación", "fecha"));
+    errores.push(error("FECHA_LEJANA", e.fechaLejana, "fecha"));
+  }
+
+  // Mínimo de noches de la temporada en la que cae la llegada (B2).
+  if (modalidad.tipo === "noche" && Number.isInteger(noches) && fecha) {
+    const conMinimo = temporadas.filter(t => t.minNoches && t.desde <= fecha && fecha <= t.hasta)
+      .sort((a, b) => b.minNoches - a.minNoches)[0];
+    if (conMinimo && noches < conMinimo.minNoches) {
+      errores.push(error("MIN_NOCHES", e.minNoches(conMinimo.nombre, conMinimo.minNoches), "noches"));
+    }
+  }
+
+  // Con cargo por niño hay que saber la edad de cada uno (B4).
+  if (ninos > 0 && !tipo.porPersona && config.ninosGratisHasta != null && config.cargoNinoNoche && edadesNinos.length !== ninos) {
+    errores.push(error("EDADES_NINOS", e.edades, "edadesNinos"));
   }
 
   const cerrada = fechas.find(f => cierres.some(c => c.fechaDesde <= f && f <= c.fechaHasta));
   if (cerrada) {
-    errores.push(error("FECHA_CERRADA", `No se reciben reservas para el ${fechaCorta(cerrada)}. Elige otra fecha`, "fecha"));
+    errores.push(error("FECHA_CERRADA", e.cerrada(fechaCorta(cerrada)), "fecha"));
   }
 
   return errores;
@@ -155,14 +280,47 @@ export function validarSolicitud({ tipo, modalidad, inicio, fechas, noches, adul
  * @param {object} p.config - configuración de reservas resuelta (con aviso y texto)
  * @param {Date} [p.ahora]
  */
-export function cotizarHotel({ tipo, modalidad, fecha, hora, noches = null, adultos, ninos = 0, cierres = [], config, ahora = new Date() }) {
+export function cotizarHotel({
+  tipo, modalidad, fecha, hora, noches = null, adultos, ninos = 0, cierres = [], config, ahora = new Date(),
+  temporadas = [], edadesNinos = [], extrasCatalogo = [], extrasElegidos = [], nacionalidad = null,
+  habitaciones = 1, cupo = null, plan = null, idioma = "es"
+}) {
+  const t = textosCotizar(idioma);
+  // Una cama de dormitorio se reserva de a una persona: no hay "2 habitaciones".
+  const nHab = tipo.porPersona ? 1 : habitaciones;
   const { inicio, fin, fechas } = ventanaEstadia({
     modalidad, fecha, hora, noches, horaCheckin: config.horaCheckin, horaCheckout: config.horaCheckout
   });
-  const errores = validarSolicitud({ tipo, modalidad, inicio, fechas, noches, adultos, ninos, cierres, config, ahora });
+  // Las temporadas solo ajustan noches: un bloque por horas tiene su precio fijo.
+  const temporadasNoche = modalidad.tipo === "noche" ? temporadas : [];
+  const errores = validarSolicitud({
+    tipo, modalidad, fecha, inicio, fechas, noches, adultos, ninos, edadesNinos, temporadas: temporadasNoche, cierres, config, ahora,
+    habitaciones, cupo: modalidad.tipo === "noche" ? cupo : null, t
+  });
 
   const personas = adultos + ninos;
-  const lineas = lineasPrecio({ modalidad, personas, fechas, porPersona: tipo.porPersona });
+  const esHoras = modalidad.tipo === "horas";
+  const alojamiento = lineasPrecio({ modalidad, personas, fechas, porPersona: tipo.porPersona, temporadas: temporadasNoche, habitaciones: nHab, t });
+  const ninosLinea = lineaNinos({ edadesNinos, noches, esHoras, porPersona: tipo.porPersona, config, t });
+  if (ninosLinea) alojamiento.push(ninosLinea);
+  // Plan de tarifa (C5): "No reembolsable −10 %" sobre el alojamiento.
+  if (plan?.ajustePct) {
+    const base = redondear(alojamiento.reduce((s, l) => s + l.total, 0));
+    const ajuste = redondear(base * plan.ajustePct / 100);
+    alojamiento.push({ descripcion: `${plan.nombre} (${plan.ajustePct} %)`, cantidad: 1, precioUnitario: ajuste, total: ajuste });
+  }
+  const extras = lineasExtras({ catalogo: extrasCatalogo, elegidos: extrasElegidos, noches, personas, esHoras, t });
+  errores.push(...extras.errores);
+
+  // IGV (B5): con la nacionalidad, se aplica; sin ella (la ficha), se informa
+  // cuánto pagaría un extranjero.
+  const montoAlojamiento = redondear(alojamiento.reduce((s, l) => s + l.total, 0));
+  const descuento = config.exoneraIgvExtranjeros ? descuentoIgv(montoAlojamiento) : 0;
+  const exoneradoIgv = descuento > 0 && !!nacionalidad && nacionalidad !== "PE";
+  const lineas = [...alojamiento, ...extras.lineas];
+  if (exoneradoIgv) {
+    lineas.push({ descripcion: t.igv, cantidad: 1, precioUnitario: -descuento, total: -descuento });
+  }
   const total = redondear(lineas.reduce((s, l) => s + l.total, 0));
   const aPagar = montoACuenta(total, config);
 
@@ -181,6 +339,15 @@ export function cotizarHotel({ tipo, modalidad, fecha, hora, noches = null, adul
     montoAPagar: aPagar,
     saldoDestino: redondear(total - aPagar),
     aviso,
-    errores
+    errores,
+    extras: extras.snapshot,
+    habitaciones: nHab,
+    plan: plan ? { id: plan.id, nombre: plan.nombre, ajustePct: plan.ajustePct, reembolsable: plan.reembolsable } : null,
+    // Camas o habitaciones libres en la noche más llena (C1); null = sin inventario.
+    quedan: modalidad.tipo === "noche" && cupo ? cupo.libres : null,
+    edadesNinos: ninos > 0 ? edadesNinos.slice(0, ninos) : [],
+    exoneradoIgv,
+    // Solo cuando no se sabe la nacionalidad: "Extranjeros: S/ X sin IGV".
+    totalExtranjero: descuento > 0 && !nacionalidad ? redondear(total - descuento) : null
   };
 }

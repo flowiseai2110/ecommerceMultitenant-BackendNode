@@ -4,7 +4,7 @@ import { z } from "zod";
 const BUCKET_NAME = "tiendas";
 
 // Folders permitidos dentro de cada tienda
-const ALLOWED_FOLDERS = ["productos", "categorias", "logos", "banners", "otros", "widgets"];
+const ALLOWED_FOLDERS = ["productos", "categorias", "logos", "banners", "otros", "widgets", "diseno"];
 
 // Widgets de campaña (docs/specs/campanas-widgets, R5): solo PNG/WebP de
 // hasta 1 MB. Es un primer filtro por el mimetype que manda el navegador; el

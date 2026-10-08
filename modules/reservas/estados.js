@@ -5,6 +5,8 @@ import { ConflictError } from "../../utils/errors.js";
  *
  * Hotel y tours (el negocio confirma):
  *   solicitada ─aceptar─▶ aceptada ─subir_captura─▶ pago_en_revision ─verificar─▶ confirmada
+ *   Si no hay nada que pagar por adelantado (cobro en destino), aceptar
+ *   confirma: solicitada ─confirmar_sin_pago─▶ confirmada (hospedaje-completo A6).
  *
  * Eventos (cupo real, sin solicitud):
  *   por_pagar (cupo apartado) ─subir_captura─▶ pago_en_revision ─verificar─▶ confirmada
@@ -27,7 +29,7 @@ export const ESTADOS_ABIERTOS = ["solicitada", "aceptada"];
 export const ESTADOS_EN_CURSO = ["solicitada", "aceptada", "pago_en_revision"];
 
 export const TRANSICIONES = {
-  solicitada:       { aceptar: "aceptada", rechazar: "rechazada", cancelar_cliente: "cancelada" },
+  solicitada:       { aceptar: "aceptada", confirmar_sin_pago: "confirmada", rechazar: "rechazada", cancelar_cliente: "cancelada" },
   aceptada:         { subir_captura: "pago_en_revision", pago_pasarela: "confirmada", cancelar_cliente: "cancelada" },
   // No vence: el cliente ya pagó y el negocio debe confirmar o devolver.
   pago_en_revision: { verificar: "confirmada", rechazar_pago: "aceptada", subir_captura: "pago_en_revision" },
@@ -68,6 +70,8 @@ export function transicionar(actual, accion, tipo = "hotel") {
  */
 export function estadoEfectivo({ estado, inicio, fin, apartadoHasta = null }, ahora = new Date()) {
   if (ESTADOS_ABIERTOS.includes(estado) && inicio <= ahora) return "vencida";
+  // Habitación apartada con pago directo (hospedaje-completo C1): si no se pagó a tiempo, se anula.
+  if (estado === "aceptada" && apartadoHasta && apartadoHasta <= ahora) return "vencida";
   // Compra de entradas sin captura: vence al terminar el apartado (o al empezar la función).
   if (estado === "por_pagar" && (inicio <= ahora || (apartadoHasta && apartadoHasta <= ahora))) return "vencida";
   if (estado === "confirmada" && (fin ?? inicio) <= ahora) return "completada";

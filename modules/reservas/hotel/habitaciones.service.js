@@ -28,6 +28,7 @@ function serializarFicha(t) {
     capacidadNinos: t.capacidadNinos,
     capacidadMax: t.capacidadMax,
     porPersona: t.porPersona,
+    soloMujeres: t.soloMujeres ?? false,
     camas: t.camas,
     amenities: t.amenities
   };
@@ -148,7 +149,8 @@ export async function obtenerFichaAdmin(tiendaId, productoId) {
     where: { productoId, tiendaId },
     include: { modalidades: { orderBy: [{ orden: "asc" }, { precio: "asc" }] } }
   });
-  return t ? { productoId, ...serializarFicha(t), modalidades: t.modalidades.map(serializarModalidad) } : null;
+  // Las unidades (inventario, C1) solo las ve el negocio.
+  return t ? { productoId, ...serializarFicha(t), unidades: t.unidades ?? null, modalidades: t.modalidades.map(serializarModalidad) } : null;
 }
 
 /**
@@ -165,6 +167,8 @@ export async function guardarFicha(tiendaId, productoId, data, user) {
     capacidadNinos: data.capacidadNinos,
     capacidadMax: data.capacidadMax,
     porPersona: data.porPersona,
+    soloMujeres: data.soloMujeres,
+    unidades: data.unidades ?? null,
     camas: data.camas,
     amenities: data.amenities
   };

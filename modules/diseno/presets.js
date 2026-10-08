@@ -47,6 +47,8 @@ export const PRESETS_SECCION = congelar({
   },
   ubicacion: { tipo: "ubicacion", fondo: "superficie", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true },
   politicas: { tipo: "politicas", fondo: "pagina", titulo: "Antes de reservar" },
+  // Fotos del lugar (hospedaje-completo B7): nace oculta hasta tener 3 fotos.
+  galeria: { tipo: "galeria", variante: "mosaico", fondo: "superficie", titulo: "Conoce el lugar", subtitulo: null, fotos: [], oculto: true },
   // Tours (fase 2).
   tours: { tipo: "tours", variante: "grilla", fondo: "superficie", titulo: "Nuestros tours" },
   // Eventos con entradas (fase 3).

@@ -14,7 +14,9 @@ export const DISENO_CATEGORIA = "diseno";
 // "tema", "estructura" y "estructura_anterior": docs/specs/estructura-tienda.
 // El storefront las recibe resueltas en `tema`; "estructura_anterior" (para
 // "Deshacer") solo la escribe el servicio de diseño, nunca un PUT.
-export const DISENO_CLAVES = ["anuncio", "hero", "campanas", "widgets", "tema", "estructura", "estructura_anterior"];
+// "traducciones": textos del diseño en inglés (docs/specs/hospedaje-completo C3); la
+// escribe el servicio de traducciones, nunca un PUT de diseño.
+export const DISENO_CLAVES = ["anuncio", "hero", "campanas", "widgets", "tema", "estructura", "estructura_anterior", "traducciones"];
 
 export async function getDiseno(tiendaId) {
   const rows = await prisma.tienda_configuraciones.findMany({

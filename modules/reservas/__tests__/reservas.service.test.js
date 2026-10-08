@@ -35,6 +35,9 @@ const config = {
 jest.unstable_mockModule("../reservas.config.service.js", () => ({ obtenerConfig: jest.fn(async () => config) }));
 jest.unstable_mockModule("../cierres.service.js", () => ({ cierresDeProducto: jest.fn(async () => []) }));
 jest.unstable_mockModule("../hotel/habitaciones.service.js", () => ({ cargarHabitacionParaReserva: jest.fn() }));
+jest.unstable_mockModule("../hotel/tarifas.service.js", () => ({ temporadasParaEstadia: jest.fn(async () => []), extrasDeTienda: jest.fn(async () => []), planDeTienda: jest.fn(async () => null) }));
+const disponibilidad = { cupoEstadia: jest.fn(async () => null), bloquearTipo: jest.fn(async () => {}) };
+jest.unstable_mockModule("../hotel/disponibilidad.service.js", () => disponibilidad);
 const tourDb = {
   diasSalida: [2, 3, 4, 5, 6, 7], horasSalida: ["08:00"], idiomas: ["es"], duracionHoras: 2, maxPasajeros: null
 };
@@ -119,6 +122,50 @@ describe("aceptarReserva", () => {
     await svc.aceptarReserva(TIENDA, PEDIDO, { nuevoTotal: 90, ajusteMotivo: "Cliente frecuente" }, null, ahora);
     expect(prisma.pedidos.updateMany.mock.calls[0][0].data).toEqual(expect.objectContaining({ total: 90, descuentoMonto: 10 }));
     expect(prisma.reservas.update.mock.calls[0][0].data).toEqual(expect.objectContaining({ ajusteMonto: -10, montoAPagar: 90 }));
+  });
+});
+
+describe("cobro en destino (hospedaje-completo A6)", () => {
+  afterEach(() => { config.cobro = "total"; config.modoConfirmacion = undefined; });
+
+  it("aceptar sin nada que pagar por adelantado confirma la reserva", async () => {
+    config.cobro = "en_destino";
+    prisma.pedidos.findFirst.mockResolvedValue(pedido());
+    await svc.aceptarReserva(TIENDA, PEDIDO, {}, null, ahora);
+    expect(prisma.pedidos.updateMany.mock.calls[0][0].data).toEqual(expect.objectContaining({ estado: "confirmada", fechaConfirmado: ahora }));
+    expect(prisma.reservas.update.mock.calls[0][0].data).toEqual(expect.objectContaining({ montoAPagar: 0, saldoDestino: 100 }));
+  });
+
+  it("con confirmación inmediata la reserva nace confirmada y pendiente de pago", async () => {
+    Object.assign(config, { cobro: "en_destino", modoConfirmacion: "pago_directo" });
+    prisma.tiendas.findUnique.mockResolvedValue({ ...tienda, tipoNegocio: "tours" });
+    prisma.pedidos.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(pedido({ tipo: "tour", estado: "confirmada" }, { tipo: "tour", modalidad: null, pasajeros: [] }));
+    prisma.pedidos.count.mockResolvedValue(0);
+    prisma.pedidos.create.mockResolvedValue({ id: PEDIDO });
+    await svc.crearSolicitud({
+      tiendaId: TIENDA, productoId: "tour-1", fecha: "2026-09-26", hora: "08:00", idioma: null,
+      pasajeros: [{ tipoId: "adulto", cantidad: 1 }], idempotencyKey: "k-dest",
+      titular: { nombres: "Ana", apellidos: "Ríos", docTipo: "DNI", docNumero: "12345678", nacionalidad: "PE", nacimiento: null },
+      whatsapp: "957625308", email: "ana@test.com", comentarios: null, acompanantes: [], factura: null
+    }, { ahora });
+    const data = prisma.pedidos.create.mock.calls[0][0].data;
+    expect(data).toEqual(expect.objectContaining({ estado: "confirmada", estadoPago: "pendiente", fechaConfirmado: ahora }));
+  });
+});
+
+describe("aceptar con inventario (C1)", () => {
+  beforeEach(() => { prisma.hotel_tipos_habitacion = { findUnique: jest.fn(async () => ({ productoId: "p", porPersona: false, unidades: 3 })) }; });
+
+  it("sin cupo responde 409 SIN_CUPO; con forzar, acepta", async () => {
+    prisma.pedidos.findFirst.mockResolvedValue(pedido({ tipo: "hotel" }, { noches: 2, horas: null, habitaciones: 1 }));
+    disponibilidad.cupoEstadia.mockResolvedValueOnce({ unidades: 3, libres: 0 });
+    await expect(svc.aceptarReserva(TIENDA, PEDIDO, {}, null, ahora))
+      .rejects.toMatchObject({ statusCode: 409, details: expect.objectContaining({ motivo: "SIN_CUPO", libres: 0 }) });
+    expect(prisma.pedidos.updateMany).not.toHaveBeenCalled();
+    await svc.aceptarReserva(TIENDA, PEDIDO, { forzar: true }, null, ahora);
+    expect(prisma.pedidos.updateMany).toHaveBeenCalled();
   });
 });
 

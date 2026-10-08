@@ -9,6 +9,8 @@ import { NotFoundError } from "../../utils/errors.js";
 import { configPublica, obtenerConfig } from "./reservas.config.service.js";
 import { cierresPublicos } from "./cierres.service.js";
 import { listarHabitacionesStore, obtenerHabitacionStore } from "./hotel/habitaciones.service.js";
+import { extrasPublicos, planesPublicos, temporadasPublicas } from "./hotel/tarifas.service.js";
+import { disponibilidadTienda } from "./hotel/disponibilidad.service.js";
 import { listarToursStore, obtenerTourStore } from "./tours/tours.service.js";
 import { listarEventosStore, obtenerEventoStore } from "./eventos/eventos.service.js";
 import { verificarTokenReserva } from "./reservas.token.js";
@@ -17,7 +19,8 @@ import {
   cancelarPorCliente, cotizar, crearSolicitud, notificarSolicitud, obtenerSeguimiento, subirCapturaCliente, urlSeguimiento
 } from "./reservas.service.js";
 import {
-  capturaBodySchema, cierresQuerySchema, cotizarSchema, crearSolicitudSchema, slugParamSchema, tiendaQuerySchema, tokenParamSchema
+  capturaBodySchema, cierresQuerySchema, cotizarSchema, crearSolicitudSchema, slugParamSchema, tiendaQuerySchema, tokenParamSchema,
+  disponibilidadQuerySchema
 } from "./reservas.schema.js";
 
 /**
@@ -58,6 +61,32 @@ router.get("/habitaciones", validate({ query: tiendaQuerySchema }), scopeQueryTo
   try {
     res.set("Cache-Control", "public, max-age=60");
     return ok(res, "HABITACIONES_LIST", await listarHabitacionesStore(req.validatedQuery.tiendaId));
+  } catch (error) { next(error); }
+});
+
+// GET /tarifas?tiendaId= — extras reservables y temporadas vigentes del hotel
+// (hospedaje-completo B2, B3): la ficha ofrece los extras y avisa el mínimo de noches.
+router.get("/tarifas", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
+  try {
+    const { tiendaId } = req.validatedQuery;
+    res.set("Cache-Control", "public, max-age=60");
+    const lang = req.query.lang === "en" ? "en" : "es";
+    const [extras, temporadas, planes] = await Promise.all([extrasPublicos(tiendaId, lang), temporadasPublicas(tiendaId, new Date(), lang), planesPublicos(tiendaId, lang)]);
+    return ok(res, "TARIFAS_HOTEL", { extras, temporadas, planes });
+  } catch (error) { next(error); }
+});
+
+// GET /habitaciones-disponibilidad?tiendaId=&desde=&hasta= — libres por tipo y noche
+// (C1): la grilla oculta los tipos llenos para la búsqueda. Solo tipos con inventario.
+router.get("/habitaciones-disponibilidad", validate({ query: disponibilidadQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
+  try {
+    const { tiendaId, desde, hasta } = req.validatedQuery;
+    res.set("Cache-Control", "public, max-age=30");
+    const lista = await disponibilidadTienda(tiendaId, desde, hasta);
+    return ok(res, "DISPONIBILIDAD", lista.map(t => ({
+      productoId: t.productoId,
+      libres: Object.fromEntries(Object.entries(t.fechas).map(([f, v]) => [f, v.libres]))
+    })));
   } catch (error) { next(error); }
 });
 

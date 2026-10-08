@@ -1,5 +1,6 @@
 import config from "../../config/index.js";
 import { escapeHtml } from "../../services/email.service.js";
+import { vozAlojamiento } from "./hotel/alojamiento.js";
 
 /**
  * Correos del mini booking (spec "Avisos" en plan.md). Reciben la reserva ya
@@ -65,7 +66,7 @@ const voz = (r) => (esEvento(r)
   ? { Negocio: "El organizador", alNegocio: "al organizador", enNegocio: "en el lugar", inicio: "el inicio de la función", conf: "tu compra" }
   : esTour(r)
   ? { Negocio: "La agencia", alNegocio: "a la agencia", enNegocio: "en destino", inicio: "la hora de salida", conf: "la disponibilidad de la salida" }
-  : { Negocio: "El hotel", alNegocio: "al hotel", enNegocio: "en el hotel", inicio: "la hora de ingreso", conf: "la disponibilidad" });
+  : { ...vozAlojamiento(r.negocio?.alojamiento), inicio: "la hora de ingreso", conf: "la disponibilidad" });
 
 function textoPersonas(r) {
   if (esTour(r)) return (r.pasajeros ?? []).map(p => `${p.cantidad} ${p.nombre.toLowerCase()}`).join(", ") || "—";
@@ -146,6 +147,47 @@ export function nuevaSolicitudEmail(r) {
   };
 }
 
+/**
+ * Al negocio: reserva hecha con confirmación inmediata (pago directo). No hay
+ * nada que aceptar: queda esperando el pago o, si se paga al llegar, confirmada.
+ */
+export function nuevaReservaEmail(r) {
+  const confirmada = r.estado === "confirmada";
+  return {
+    subject: `${confirmada ? "✅ Nueva reserva confirmada" : "🛎️ Nueva reserva por pagar"} ${r.codigo}: ingreso ${fechaHora(r.inicio)}`,
+    html: layout({
+      titulo: confirmada ? "Tienes una nueva reserva confirmada" : "Tienes una nueva reserva esperando el pago",
+      intro:
+        texto(`<strong>${e(`${r.titular.nombres} ${r.titular.apellidos}`)}</strong> reservó desde tu vitrina. WhatsApp: <strong>${e(r.contacto.whatsapp)}</strong>.`) +
+        texto(confirmada
+          ? "La reserva quedó confirmada y se paga al llegar."
+          : "Cuando suba la captura del pago, verifícala para confirmar la reserva."),
+      cuerpo: resumen(r) + boton(`${ADMIN_URL}/reservas/${r.id}`, "Ver la reserva"),
+      pie: "Recibiste este correo porque tu negocio recibe reservas desde su vitrina web."
+    })
+  };
+}
+
+/**
+ * Al huésped, unas horas después de su estadía o tour (hospedaje-completo C6).
+ * En el idioma en que reservó.
+ */
+export function pedirResenaEmail({ idioma, nombre, negocio, producto }, url) {
+  const en = idioma === "en";
+  return {
+    subject: en ? `How was your stay at ${negocio}?` : `¿Cómo te fue en ${negocio}?`,
+    html: layout({
+      titulo: en ? "How was it?" : "¿Cómo te fue?",
+      intro: texto(en
+        ? `Hi ${e(nombre)}, thank you for choosing <strong>${e(negocio)}</strong>. Your review takes a minute and helps other travelers decide.`
+        : `Hola ${e(nombre)}, gracias por elegir <strong>${e(negocio)}</strong>. Tu reseña toma un minuto y ayuda a otros viajeros a decidir.`)
+        + (producto ? texto(`${en ? "You stayed in" : "Tu reserva"}: <strong>${e(producto)}</strong>`) : ""),
+      cuerpo: boton(url, en ? "Write my review" : "Dejar mi reseña"),
+      pie: en ? "One review per booking. The link is personal." : "Una reseña por reserva. El link es personal."
+    })
+  };
+}
+
 /** Al cliente: aceptada, toca pagar. */
 export function aceptadaEmail(r, url) {
   const v = voz(r);
@@ -207,8 +249,11 @@ export function confirmadaEmail(r, url) {
       titulo: evento ? "¡Tus entradas están confirmadas!" : "¡Tu reserva está confirmada!",
       intro:
         texto(`Hola ${e(r.titular.nombres)}, te esperamos en <strong>${e(lugar)}</strong>${direccion ? ` (${e(direccion)})` : ""}.`) +
-        texto(`${enHotel ? "Pagado a cuenta" : "Pagado"}: <strong>${soles(r.montoPagado)}</strong>.${r.saldoDestino > 0 ? ` Saldo a pagar ${voz(r).enNegocio}: <strong>${soles(r.saldoDestino)}</strong>.` : ""}`) +
-        (enHotel && !esTour(r) && !evento ? texto("Los consumos durante tu estadía se pagan en el hotel. Tu boleta o factura se entrega al finalizar tu estadía.") : "") +
+        // Cobro en destino: nada pagado todavía, todo se paga al llegar.
+        (r.montoPagado > 0
+          ? texto(`${enHotel ? "Pagado a cuenta" : "Pagado"}: <strong>${soles(r.montoPagado)}</strong>.${r.saldoDestino > 0 ? ` Saldo a pagar ${voz(r).enNegocio}: <strong>${soles(r.saldoDestino)}</strong>.` : ""}`)
+          : texto(`Pagas <strong>${soles(r.saldoDestino || r.total)}</strong> ${voz(r).enNegocio}.`)) +
+        (enHotel && !esTour(r) && !evento ? texto(`Los consumos durante tu estadía se pagan ${voz(r).enNegocio}. Tu boleta o factura se entrega al finalizar tu estadía.`) : "") +
         (r.modalidad?.tipo === "horas" ? texto(`Tu estadía es de ${e(fechaHora(r.inicio))} a ${e(fechaHora(r.fin))}. Si llegas más tarde, la hora de salida no cambia.`) : "") +
         (r.tour?.recojo ? texto(`<strong>Recojo:</strong> ${e(r.tour.recojo)}`) : "") +
         (r.instrucciones ? texto(`<strong>Importante:</strong> ${e(r.instrucciones)}`) : ""),

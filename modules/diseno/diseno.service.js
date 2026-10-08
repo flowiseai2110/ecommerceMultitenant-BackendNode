@@ -7,7 +7,8 @@ import { TIPOGRAFIAS } from "./tipografias.js";
 import { PRESETS_SECCION } from "./presets.js";
 import { copiarPlantilla } from "./copia.js";
 import { FORMATO_ACTUAL } from "./migrar.js";
-import { seccionesAjenas, TIPOS_POR_NEGOCIO } from "./secciones.schema.js";
+import { fotosAjenas, prefijoFotosDiseno, seccionesAjenas, TIPOS_POR_NEGOCIO } from "./secciones.schema.js";
+import { publicBaseUrl } from "../../services/storage.service.js";
 import { urlTienda } from "../resenas/resenas.service.js";
 
 /** Tipo de negocio de la tienda tal como lo entienden las plantillas. */
@@ -23,7 +24,10 @@ async function negocioDeTienda(tiendaId) {
  */
 export async function validarEstructuraDeTienda(tiendaId, estructura) {
   if (!estructura) return;
-  const body = seccionesAjenas(estructura.home.secciones, await negocioDeTienda(tiendaId));
+  const body = {
+    ...seccionesAjenas(estructura.home.secciones, await negocioDeTienda(tiendaId)),
+    ...fotosAjenas(estructura.home.secciones, prefijoFotosDiseno(publicBaseUrl(), tiendaId))
+  };
   if (Object.keys(body).length > 0) {
     throw new ValidationError("Errores de validación", { message: Object.values(body)[0][0], body });
   }

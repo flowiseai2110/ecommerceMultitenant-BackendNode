@@ -1,0 +1,69 @@
+{
+  "habitaciones": [
+    {
+      "nombre": "Estándar Queen",
+      "sku": "STD-Q",
+      "pexels": [27901676, 271618],
+      "corta": "Cama Queen, escritorio y baño privado. Desayuno buffet incluido.",
+      "descripcion": "Habitación de 22 m² con cama Queen, escritorio de trabajo, TV con cable, caja fuerte y baño privado con ducha. Incluye desayuno buffet.",
+      "capacidadAdultos": 2, "capacidadNinos": 1, "capacidadMax": 3,
+      "camas": "1 cama Queen",
+      "amenities": ["Desayuno incluido", "TV con cable", "Caja fuerte", "Escritorio", "Secadora de pelo"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 290, "precioVieSab": 330, "orden": 0 }
+      ]
+    },
+    {
+      "nombre": "Superior Twin",
+      "sku": "SUP-T",
+      "pexels": [271624, 28054887],
+      "corta": "Dos camas de 1½ plaza, frigobar y aire acondicionado.",
+      "descripcion": "Habitación de 26 m² con dos camas de 1½ plaza, frigobar, aire acondicionado, TV con cable y caja fuerte. Pensada para amigos o colegas que viajan juntos. Incluye desayuno buffet.",
+      "capacidadAdultos": 2, "capacidadNinos": 1, "capacidadMax": 3,
+      "camas": "2 camas de 1½ plaza",
+      "amenities": ["Desayuno incluido", "Aire acondicionado", "Frigobar", "TV con cable", "Caja fuerte"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 320, "precioVieSab": 360, "orden": 0 }
+      ]
+    },
+    {
+      "nombre": "Superior Vista al Mar",
+      "sku": "SUP-M",
+      "pexels": [19025564, 33837741],
+      "corta": "Cama King y balcón con vista al océano Pacífico.",
+      "descripcion": "Habitación de 28 m² en pisos altos, con cama King y balcón con vista al océano Pacífico. Frigobar, aire acondicionado, cafetera y caja fuerte. Incluye desayuno buffet.",
+      "capacidadAdultos": 2, "capacidadNinos": 1, "capacidadMax": 3,
+      "camas": "1 cama King",
+      "amenities": ["Vista al mar", "Balcón", "Desayuno incluido", "Aire acondicionado", "Frigobar", "Cafetera"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 420, "precioVieSab": 470, "orden": 0 }
+      ]
+    },
+    {
+      "nombre": "Junior Suite",
+      "sku": "JR-S",
+      "pexels": [34672504, 31737843],
+      "corta": "Dormitorio con cama King y sala de estar integrada.",
+      "descripcion": "Suite de 38 m² con cama King, sala de estar con sofá cama, bañera, frigobar, cafetera y aire acondicionado. Incluye desayuno buffet.",
+      "capacidadAdultos": 2, "capacidadNinos": 2, "capacidadMax": 4,
+      "camas": "1 cama King + 1 sofá cama",
+      "amenities": ["Sala de estar", "Bañera", "Desayuno incluido", "Aire acondicionado", "Frigobar", "Cafetera"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 560, "precioVieSab": 620, "orden": 0 }
+      ]
+    },
+    {
+      "nombre": "Suite Familiar",
+      "sku": "FAM-S",
+      "pexels": [18285946, 5883728],
+      "corta": "Dos ambientes: cama King y dos camas de 1½ plaza. Para 4 personas.",
+      "descripcion": "Suite de 48 m² con dos ambientes: un dormitorio con cama King y otro con dos camas de 1½ plaza, dos TV, frigobar y aire acondicionado. Ideal para familias. Incluye desayuno buffet.",
+      "capacidadAdultos": 4, "capacidadNinos": 2, "capacidadMax": 4,
+      "camas": "1 cama King + 2 camas de 1½ plaza",
+      "amenities": ["Dos ambientes", "Desayuno incluido", "Aire acondicionado", "Frigobar", "Dos TV"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 690, "precioVieSab": 760, "orden": 0 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "habitaciones": [
+    {
+      "nombre": "Cama en dormitorio mixto de 8",
+      "categoria": "Dormitorios",
+      "sku": "DM8",
+      "pexels": [5158945, 5137981, 4907181],
+      "corta": "Una cama en camarote, con locker, cortina y luz de lectura. Baño compartido.",
+      "descripcion": "Dormitorio mixto de 8 camas en 4 camarotes. Cada cama tiene cortina de privacidad, enchufe, luz de lectura y un locker (trae tu candado o cómpralo en recepción). Baños compartidos con agua caliente, limpios dos veces al día. Sábanas incluidas; la toalla se alquila en recepción.",
+      "capacidadAdultos": 8, "capacidadMax": 8, "porPersona": true,
+      "camas": "4 camarotes (8 camas de 1 plaza)",
+      "amenities": ["Locker", "Cortina de privacidad", "Luz de lectura", "Baño compartido", "Sábanas incluidas"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 45, "precioVieSab": 55, "orden": 0 }
+      ]
+    },
+    {
+      "nombre": "Cama en dormitorio femenino de 6",
+      "categoria": "Dormitorios",
+      "sku": "DF6",
+      "pexels": [4907181, 5137981, 5158945],
+      "corta": "Solo mujeres. Camarote con locker y baño exclusivo del dormitorio.",
+      "descripcion": "Dormitorio solo para mujeres, con 6 camas en 3 camarotes y baño propio dentro del dormitorio. Cada cama tiene cortina, enchufe, luz de lectura y locker. Sábanas incluidas.",
+      "capacidadAdultos": 6, "capacidadMax": 6, "porPersona": true,
+      "camas": "3 camarotes (6 camas de 1 plaza)",
+      "soloMujeres": true,
+      "amenities": ["Baño en el dormitorio", "Locker", "Cortina de privacidad", "Sábanas incluidas"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 55, "precioVieSab": 65, "orden": 0 }
+      ]
+    },
+    {
+      "nombre": "Privada doble con baño compartido",
+      "categoria": "Habitaciones privadas",
+      "sku": "PD-BC",
+      "pexels": [2029722, 28054887],
+      "corta": "Dos camas de 1 plaza, escritorio y baño compartido en el pasillo.",
+      "descripcion": "Habitación privada con dos camas de 1 plaza, escritorio y ventilador. El baño es compartido y está en el mismo pasillo. Sábanas y toallas incluidas.",
+      "capacidadAdultos": 2, "capacidadMax": 2,
+      "camas": "2 camas de 1 plaza",
+      "amenities": ["Escritorio", "Ventilador", "Baño compartido", "Toallas incluidas"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 120, "precioVieSab": 140, "orden": 0 }
+      ]
+    },
+    {
+      "nombre": "Privada matrimonial con baño privado",
+      "categoria": "Habitaciones privadas",
+      "sku": "PM-BP",
+      "pexels": [14580368, 271643],
+      "corta": "Cama de 2 plazas, baño privado con agua caliente y TV.",
+      "descripcion": "Habitación privada con cama de 2 plazas, baño propio con agua caliente, TV y armario. Ideal para parejas que quieren el ambiente del hostal con más privacidad.",
+      "capacidadAdultos": 2, "capacidadMax": 2,
+      "camas": "1 cama de 2 plazas",
+      "amenities": ["Baño privado", "TV", "Armario", "Toallas incluidas"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 150, "precioVieSab": 170, "orden": 0 }
+      ]
+    },
+    {
+      "nombre": "Privada triple con baño privado",
+      "categoria": "Habitaciones privadas",
+      "sku": "PT-BP",
+      "pexels": [14465274, 2029722],
+      "corta": "Una cama de 2 plazas y una de 1 plaza, con baño privado.",
+      "descripcion": "Habitación privada para tres, con una cama de 2 plazas y una de 1 plaza, baño propio con agua caliente y armario.",
+      "capacidadAdultos": 3, "capacidadMax": 3,
+      "camas": "1 cama de 2 plazas + 1 cama de 1 plaza",
+      "amenities": ["Baño privado", "Armario", "Toallas incluidas"],
+      "modalidades": [
+        { "tipo": "noche", "precio": 190, "precioVieSab": 220, "orden": 0 }
+      ]
+    }
+  ]
+}

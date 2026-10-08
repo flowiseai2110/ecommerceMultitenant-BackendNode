@@ -118,8 +118,11 @@ export async function onboardCliente(input) {
       }
     });
 
-    const metodosPrecargados = await seedMetodosPagoParaTienda(tienda.id, {}, tx);
-    const enviosPrecargados = await seedMetodosEnvioParaTienda(tienda.id, {}, tx);
+    // Hotel, tours y eventos no envían nada ni cobran contra entrega
+    // (docs/specs/hospedaje-completo A2).
+    const esReservas = datosTienda.tipoNegocio !== "productos";
+    const metodosPrecargados = await seedMetodosPagoParaTienda(tienda.id, { excluirTipos: esReservas ? ["contra_entrega"] : [] }, tx);
+    const enviosPrecargados = esReservas ? 0 : await seedMetodosEnvioParaTienda(tienda.id, {}, tx);
 
     return { tienda, metodosPrecargados, enviosPrecargados };
   });

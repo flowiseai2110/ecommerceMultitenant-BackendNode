@@ -6,10 +6,13 @@ import { urlTienda } from "../resenas/resenas.service.js";
 import { generarNumeroPedido, upsertCliente } from "../ordenes/pedidos.service.js";
 import { datosFactura } from "../sunat/ruc.service.js";
 import { cotizarHotel, montoACuenta } from "./hotel/cotizar.js";
+import { vozAlojamiento } from "./hotel/alojamiento.js";
 import { ESTADOS_EN_CURSO, transicionar, estadoEfectivo } from "./estados.js";
 import { obtenerConfig } from "./reservas.config.service.js";
 import { cierresDeProducto } from "./cierres.service.js";
 import { cargarHabitacionParaReserva } from "./hotel/habitaciones.service.js";
+import { extrasDeTienda, planDeTienda, temporadasParaEstadia } from "./hotel/tarifas.service.js";
+import { bloquearTipo, cupoEstadia } from "./hotel/disponibilidad.service.js";
 import { cotizarTour } from "./tours/cotizar.js";
 import { cargarTourParaReserva } from "./tours/tours.service.js";
 import { cotizarEvento } from "./eventos/cotizar.js";
@@ -18,7 +21,7 @@ import { firmarTokenReserva } from "./reservas.token.js";
 import { subirCaptura, urlCaptura } from "./reservas.capturas.js";
 import { serializeReservaAdmin, serializeReservaLista, serializeReservaStore } from "./reservas.serializer.js";
 import {
-  aceptadaEmail, compraPendienteEmail, confirmadaEmail, nuevaSolicitudEmail, pagoSubidoEmail, rechazadaEmail, solicitudRecibidaEmail
+  aceptadaEmail, compraPendienteEmail, confirmadaEmail, nuevaReservaEmail, nuevaSolicitudEmail, pagoSubidoEmail, rechazadaEmail, solicitudRecibidaEmail
 } from "./reservas.emails.js";
 import { instanteLima, fechaLima, sumarDias } from "./tiempo.js";
 
@@ -69,7 +72,7 @@ export const TIPOS_RESERVA = ["hotel", "tour", "evento"];
 const MOTIVOS_RECHAZO = {
   hotel: {
     sin_disponibilidad: "No hay disponibilidad para esa fecha",
-    fecha_cerrada: "El hotel no recibe reservas esa fecha"
+    fecha_cerrada: "{Negocio} no recibe reservas esa fecha"
   },
   tour: {
     sin_disponibilidad: "No hay cupo en esa salida",
@@ -107,11 +110,41 @@ const VERTICALES = {
       }
       const { producto, tipo, modalidad } = await cargarHabitacionParaReserva(tiendaId, datos.productoId, datos.modalidadId);
       const c = await cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora });
+      // Al crear (trae titular): lo que solo se pide en la solicitud (hospedaje-completo B3, B6).
+      if (datos.titular) {
+        if (tipo.soloMujeres && !datos.confirmaSoloMujeres) {
+          c.errores.push({ codigo: "SOLO_MUJERES", mensaje: "Esta habitación es solo para mujeres: confírmalo para enviar la solicitud", campo: "confirmaSoloMujeres" });
+        }
+        for (const x of c.extras) {
+          if (x.datoPedido && !x.dato) c.errores.push({ codigo: "DATO_EXTRA", mensaje: `${x.nombre}: ${x.datoPedido}`, campo: "extras" });
+        }
+      }
       return {
         producto, c,
-        detalle: { modalidadId: modalidad.id, noches: c.noches, horas: c.horas, adultos: datos.adultos, ninos: datos.ninos },
+        detalle: {
+          modalidadId: modalidad.id, noches: c.noches, horas: c.horas, adultos: datos.adultos, ninos: datos.ninos,
+          edadesNinos: c.edadesNinos, exoneradoIgv: c.exoneradoIgv, habitaciones: c.habitaciones,
+          ...(c.extras.length ? { extras: c.extras } : {}), ...(c.plan ? { plan: c.plan } : {})
+        },
+        // Para revalidar el cupo dentro de la transacción (C1).
+        inventario: tipo.unidades != null && c.noches ? { productoId: producto.id, porPersona: tipo.porPersona, unidades: tipo.unidades, fecha: datos.fecha, noches: c.noches } : null,
         log: `${modalidad.tipo}, ingreso ${c.inicio.toISOString()}`
       };
+    },
+    /**
+     * Con inventario, una reserva que nace aceptada (pago directo) o
+     * confirmada aparta el cupo: se revalida con el tipo bloqueado para que
+     * dos huéspedes no se lleven la última habitación (C1).
+     */
+    async enTransaccion(tx, { tiendaId, c, estadoInicial, ahora, inventario }) {
+      if (!inventario || !["aceptada", "confirmada"].includes(estadoInicial)) return;
+      await bloquearTipo(tx, inventario.productoId);
+      const cupo = await cupoEstadia(tx, tiendaId, inventario, inventario.fecha, inventario.noches, { ahora });
+      const pide = inventario.porPersona ? c.personasHotel : c.habitaciones;
+      if (cupo && pide > cupo.libres) {
+        const message = "Se acaba de ocupar el último cupo para esas fechas. Elige otras fechas.";
+        throw new ConflictError(message, { message, motivo: "SIN_CUPO" });
+      }
     }
   },
   tours: {
@@ -188,6 +221,12 @@ export async function persistirVencimientos(tiendaId) {
     FROM reservas r
     WHERE r.pedido_id = p.id AND p.tienda_id = ${tiendaId}::uuid
       AND p.estado IN ('solicitada', 'aceptada') AND r.inicio <= now()`;
+  // Habitación apartada con pago directo que no se pagó a tiempo (C1).
+  await prisma.$executeRaw`
+    UPDATE pedidos p SET estado = 'vencida', fecha_actualizacion = now()
+    FROM reservas r
+    WHERE r.pedido_id = p.id AND p.tienda_id = ${tiendaId}::uuid
+      AND p.estado = 'aceptada' AND r.apartado_hasta IS NOT NULL AND r.apartado_hasta <= now()`;
   // Compras de entradas sin captura: el apartado terminó y el cupo vuelve a la venta.
   await prisma.$executeRaw`
     UPDATE pedidos p SET estado = 'vencida', fecha_actualizacion = now()
@@ -254,11 +293,26 @@ export async function cotizar(datos, ahora = new Date()) {
 async function cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora }) {
   const desde = datos.fecha;
   const hasta = sumarDias(datos.fecha, Math.max(datos.noches ?? 1, 1));
-  const cierres = await cierresDeProducto(datos.tiendaId, datos.productoId, desde, hasta);
+  const [cierres, temporadas, extrasCatalogo, cupo, plan] = await Promise.all([
+    cierresDeProducto(datos.tiendaId, datos.productoId, desde, hasta),
+    modalidad.tipo === "noche" ? temporadasParaEstadia(datos.tiendaId, datos.productoId, desde, hasta, datos.lang) : [],
+    datos.extras?.length ? extrasDeTienda(datos.tiendaId, datos.lang) : [],
+    modalidad.tipo === "noche" && datos.noches
+      ? cupoEstadia(prisma, datos.tiendaId, { productoId: datos.productoId, porPersona: tipo.porPersona, unidades: tipo.unidades }, datos.fecha, datos.noches, { ahora })
+      : null,
+    datos.planId ? planDeTienda(datos.tiendaId, datos.planId, datos.lang) : null
+  ]);
   const cotizacion = cotizarHotel({
     tipo, modalidad, fecha: datos.fecha, hora: datos.hora, noches: datos.noches,
-    adultos: datos.adultos, ninos: datos.ninos, cierres, config, ahora
+    adultos: datos.adultos, ninos: datos.ninos, cierres, config, ahora,
+    temporadas, extrasCatalogo, extrasElegidos: datos.extras ?? [], edadesNinos: datos.edadesNinos ?? [],
+    nacionalidad: datos.titular?.nacionalidad ?? datos.nacionalidad ?? null,
+    habitaciones: datos.habitaciones ?? 1, cupo, plan,
+    // El huésped que reserva en inglés ve las líneas y los errores en inglés (C3).
+    idioma: datos.lang
   });
+  if (datos.planId && !plan) cotizacion.errores.push({ codigo: "PLAN_INVALIDO", mensaje: "Esa tarifa ya no está disponible", campo: "planId" });
+  cotizacion.personasHotel = (datos.adultos ?? 0) + (datos.ninos ?? 0);
   if (modalidad.tipo === "horas" && !datos.hora) {
     cotizacion.errores.unshift({ codigo: "HORA_REQUERIDA", mensaje: "Indica la hora de ingreso", campo: "hora" });
   }
@@ -270,7 +324,13 @@ async function cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora })
 
 const serializarCotizacion = (c) => ({
   inicio: c.inicio, fin: c.fin, noches: c.noches, horas: c.horas, personas: c.personas ?? null, lineas: c.lineas,
-  total: c.total, montoAPagar: c.montoAPagar, saldoDestino: c.saldoDestino, aviso: c.aviso, errores: c.errores
+  total: c.total, montoAPagar: c.montoAPagar, saldoDestino: c.saldoDestino, aviso: c.aviso, errores: c.errores,
+  // Hotel (hospedaje-completo B5): IGV exonerado o cuánto pagaría un extranjero.
+  exoneradoIgv: c.exoneradoIgv ?? false, totalExtranjero: c.totalExtranjero ?? null,
+  // Fase C: habitaciones, plan y cupo ("Quedan 2").
+  habitaciones: c.habitaciones ?? 1, plan: c.plan ?? null, quedan: c.quedan ?? null,
+  // Extras elegidos con el dato que hay que pedirle al huésped (B3).
+  extras: (c.extras ?? []).map(x => ({ id: x.id, nombre: x.nombre, cantidad: x.cantidad, total: x.total, datoPedido: x.datoPedido }))
 });
 
 /** Máximo de solicitudes en curso por cliente (por WhatsApp o documento), spec R5.7. */
@@ -313,7 +373,7 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
   if (existente) return resultadoSolicitud(tienda, existente.id, false);
 
   const config = await obtenerConfig(tienda.id);
-  const { producto, c, detalle, log } = await vertical.cotizar({ tiendaId: tienda.id, datos, config, ahora });
+  const { producto, c, detalle, log, inventario = null } = await vertical.cotizar({ tiendaId: tienda.id, datos, config, ahora });
   if (c.errores.length) {
     throw new ValidationError(c.errores[0].mensaje, { motivo: "RESERVA_NO_VALIDA", errores: c.errores });
   }
@@ -322,7 +382,15 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
   const docNumero = datos.titular.docNumero.toUpperCase();
   await validarSolicitudesAbiertas(tienda.id, vertical, { whatsapp, docNumero }, config.maxSolicitudesAbiertas, ahora);
 
-  const estadoInicial = vertical.estadoInicial?.(c) ?? (config.modoConfirmacion === "pago_directo" ? "aceptada" : "solicitada");
+  // Pago directo sin nada que pagar por adelantado (cobro en destino): la
+  // reserva nace confirmada; se paga al llegar (hospedaje-completo A6).
+  const estadoInicial = vertical.estadoInicial?.(c)
+    ?? (config.modoConfirmacion === "pago_directo" ? (c.montoAPagar > 0 ? "aceptada" : "confirmada") : "solicitada");
+  // Hotel con inventario y pago directo: la habitación queda apartada mientras
+  // paga; si no sube la captura a tiempo, la reserva se anula y el cupo vuelve (C1).
+  if (inventario && estadoInicial === "aceptada") detalle.apartadoHasta = nuevoApartado(c.inicio, config, ahora);
+  // Idioma en que reservó el huésped: los correos le llegan en ese idioma (C3).
+  detalle.idiomaHuesped = datos.lang === "en" ? "en" : "es";
   // Fuera de la transacción: es una consulta de red (ver pedidos.service).
   const factura = datos.factura ? await datosFactura(datos.factura.ruc) : null;
   const nombreCompleto = `${datos.titular.nombres} ${datos.titular.apellidos}`;
@@ -347,7 +415,8 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
           tipo: vertical.tipoPedido,
           estado: estadoInicial,
           // Solo una entrada libre nace confirmada (y pagada: no hay nada que cobrar).
-          estadoPago: estadoInicial === "confirmada" ? "pagado" : "pendiente",
+          // Una reserva confirmada sin cobrar (se paga al llegar) sigue pendiente de pago.
+          estadoPago: estadoInicial === "confirmada" && c.total === 0 ? "pagado" : "pendiente",
           fechaConfirmado: estadoInicial === "confirmada" ? ahora : null,
           fechaServicio: c.inicio,
           subtotal: c.total,
@@ -368,7 +437,7 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
               data: c.lineas.map(l => ({
                 productoId: producto.id,
                 productoNombre: producto.nombre,
-                varianteNombre: l.descripcion,
+                varianteNombre: l.descripcion.slice(0, 100),
                 cantidad: l.cantidad,
                 precioUnitario: l.precioUnitario,
                 total: l.total
@@ -381,6 +450,8 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
               notas: {
                 solicitada: "Solicitud enviada desde la vitrina",
                 aceptada: "Reserva con pago directo desde la vitrina",
+                // Hotel o tour con cobro en destino y confirmación inmediata; o entradas libres.
+                ...(vertical.tipoPedido !== "evento" ? { confirmada: "Reserva confirmada desde la vitrina: se paga al llegar" } : {}),
                 por_pagar: "Compra de entradas: cupo apartado hasta recibir el pago",
                 confirmada: "Entradas libres confirmadas desde la vitrina"
               }[estadoInicial]
@@ -412,7 +483,7 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
         },
         select: { id: true }
       });
-      await vertical.enTransaccion?.(tx, { tiendaId: tienda.id, pedidoId: creado.id, c, estadoInicial, ahora });
+      await vertical.enTransaccion?.(tx, { tiendaId: tienda.id, pedidoId: creado.id, c, estadoInicial, ahora, inventario });
       return creado;
     }, { maxWait: 5000, timeout: 15000 });
 
@@ -445,9 +516,12 @@ export function notificarSolicitud({ pedido, tienda, config, token }) {
     enviar(pedido.clienteEmail, correo(dtoCliente, urlSeguimiento(tienda.slug, token)), tienda.email);
     return;
   }
+  // Con confirmación inmediata (pago directo) no hay solicitud que responder:
+  // la reserva nace aceptada (por pagar) o confirmada (se paga al llegar).
   const dtoNegocio = serializeReservaAdmin(pedido);
-  enviar(pedido.clienteEmail, solicitudRecibidaEmail(dtoCliente, urlSeguimiento(tienda.slug, token)), tienda.email);
-  enviar(tienda.email, nuevaSolicitudEmail(dtoNegocio), pedido.clienteEmail);
+  const alCliente = { solicitada: solicitudRecibidaEmail, aceptada: aceptadaEmail, confirmada: confirmadaEmail }[pedido.estado] ?? solicitudRecibidaEmail;
+  enviar(pedido.clienteEmail, alCliente(dtoCliente, urlSeguimiento(tienda.slug, token)), tienda.email);
+  enviar(tienda.email, (pedido.estado === "solicitada" ? nuevaSolicitudEmail : nuevaReservaEmail)(dtoNegocio), pedido.clienteEmail);
 }
 
 /** Página de seguimiento (estado, pago, confirmación). */
@@ -598,22 +672,26 @@ async function correoCliente(tiendaId, pedidoId, plantilla) {
 }
 
 /** Aceptar (R6.1, R6.2), con ajuste opcional del total (R6.4). */
-export async function aceptarReserva(tiendaId, pedidoId, { nuevoTotal = null, ajusteMotivo = null }, user, ahora = new Date()) {
+export async function aceptarReserva(tiendaId, pedidoId, { nuevoTotal = null, ajusteMotivo = null, forzar = false }, user, ahora = new Date()) {
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
   const config = await obtenerConfig(tiendaId);
+  if (pedido.tipo === "hotel" && !forzar) await validarCupoAlAceptar(tiendaId, pedido, ahora);
   const subtotal = Number(pedido.subtotal);
   const total = nuevoTotal ?? Number(pedido.total);
   const aPagar = montoACuenta(total, config);
+  // Sin adelanto (cobro en destino) no hay pago que esperar: aceptar confirma.
+  const sinPago = aPagar === 0;
 
   await prisma.$transaction(async (tx) => {
-    await aplicarAccion(tx, pedido, "aceptar", {
+    await aplicarAccion(tx, pedido, sinPago ? "confirmar_sin_pago" : "aceptar", {
       ahora,
       datosPedido: {
         total,
         descuentoMonto: Math.max(redondear(subtotal - total), 0),
-        usuarioActualizacion: usuarioDe(user)
+        usuarioActualizacion: usuarioDe(user),
+        ...(sinPago ? { fechaConfirmado: ahora } : {})
       },
-      nota: nuevoTotal !== null ? `Aceptada con ajuste: ${ajusteMotivo}` : "Aceptada por el negocio"
+      nota: (nuevoTotal !== null ? `Aceptada con ajuste: ${ajusteMotivo}` : "Aceptada por el negocio") + (sinPago ? " (se paga al llegar)" : "")
     });
     await tx.reservas.update({
       where: { pedidoId },
@@ -627,14 +705,37 @@ export async function aceptarReserva(tiendaId, pedidoId, { nuevoTotal = null, aj
     });
   });
 
-  await correoCliente(tiendaId, pedidoId, aceptadaEmail);
+  await correoCliente(tiendaId, pedidoId, sinPago ? confirmadaEmail : aceptadaEmail);
   return detalleReservaAdmin(tiendaId, pedidoId, ahora);
+}
+
+/**
+ * Con inventario (C1): aceptar sin cupo responde 409 SIN_CUPO con el detalle
+ * de la noche llena; el admin puede confirmar y reenviar con `forzar` (sabe
+ * algo que el sistema no: una cancelación por teléfono, una habitación extra).
+ */
+async function validarCupoAlAceptar(tiendaId, pedido, ahora) {
+  const r = pedido.reserva;
+  if (!r.noches) return;
+  const tipo = await prisma.hotel_tipos_habitacion.findUnique({
+    where: { productoId: r.productoId }, select: { productoId: true, porPersona: true, unidades: true }
+  });
+  if (tipo?.unidades == null) return;
+  const cupo = await cupoEstadia(prisma, tiendaId, tipo, fechaLima(r.inicio), r.noches, { ahora, excluirPedidoId: pedido.id });
+  const pide = tipo.porPersona ? (r.adultos ?? 0) + (r.ninos ?? 0) : (r.habitaciones ?? 1);
+  if (cupo && pide > cupo.libres) {
+    const unidad = tipo.porPersona ? "camas" : "habitaciones";
+    const message = `No hay cupo: para esas noches te quedan ${cupo.libres} de ${cupo.unidades} ${unidad} y esta reserva pide ${pide}.`;
+    throw new ConflictError(message, { message, motivo: "SIN_CUPO", libres: cupo.libres, unidades: cupo.unidades, pide });
+  }
 }
 
 /** Rechazar con motivo visible para el cliente (R6.1). */
 export async function rechazarReserva(tiendaId, pedidoId, { motivoTipo, motivo }, user, ahora = new Date()) {
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
-  const texto = motivo || (MOTIVOS_RECHAZO[pedido.tipo] ?? MOTIVOS_RECHAZO.hotel)[motivoTipo] || null;
+  const predefinido = (MOTIVOS_RECHAZO[pedido.tipo] ?? MOTIVOS_RECHAZO.hotel)[motivoTipo];
+  const negocio = predefinido?.includes("{Negocio}") ? vozAlojamiento((await obtenerConfig(tiendaId)).tipoAlojamiento).Negocio : null;
+  const texto = motivo || (negocio ? predefinido.replace("{Negocio}", negocio) : predefinido) || null;
   await prisma.$transaction(async (tx) => {
     await aplicarAccion(tx, pedido, "rechazar", {
       ahora, datosPedido: { usuarioActualizacion: usuarioDe(user) }, nota: texto ? `Rechazada: ${texto}` : "Rechazada"
@@ -703,8 +804,9 @@ export async function rechazarPago(tiendaId, pedidoId, { motivo }, user, ahora =
     await aplicarAccion(tx, pedido, "rechazar_pago", {
       ahora, datosPedido: { usuarioActualizacion: usuarioDe(user) }, nota: `Pago no corresponde: ${motivo}`
     });
-    // Entradas: vuelve a "por pagar" con un apartado nuevo para que suba otra captura.
-    if (pedido.tipo === "evento") {
+    // Entradas, o una habitación apartada (C1): vuelve a esperar el pago con
+    // un apartado nuevo para que suba otra captura.
+    if (pedido.tipo === "evento" || pedido.reserva.apartadoHasta) {
       const config = await obtenerConfig(tiendaId);
       await tx.reservas.update({ where: { pedidoId }, data: { apartadoHasta: nuevoApartado(pedido.reserva.inicio, config, ahora) } });
     }

@@ -98,7 +98,8 @@ export function resolverCampana(campanasTienda = [], widgetsTienda = [], ahora) 
 export function disenoPublico(diseno = {}, ahora, tipoNegocio) {
   // tema/estructura viajan resueltos en `tema` (docs/specs/estructura-tienda);
   // la estructura anterior (para "Deshacer") es solo del admin.
-  const { campanas, tema, estructura, estructura_anterior, ...publico } = diseno;
+  // Las traducciones se aplican en la ruta pública según ?lang (hospedaje-completo C3).
+  const { campanas, tema, estructura, estructura_anterior, traducciones, ...publico } = diseno;
   return {
     ...publico,
     campana: resolverCampana(campanas, publico.widgets, ahora),

@@ -16,6 +16,7 @@ import { swaggerSpec } from "./config/swagger.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 import { performanceMiddleware, getRouteMetrics, resetRouteMetrics } from "./middlewares/performance.middleware.js";
 import { iniciarJobTransmisiones } from "./jobs/transmisiones.job.js";
+import { iniciarJobResenasReservas } from "./jobs/resenas-reservas.job.js";
 
 // Soporte para serializar BigInt a JSON
 BigInt.prototype.toJSON = function() {
@@ -232,6 +233,7 @@ async function startServer() {
 
     // Corte, señal y limpieza de las transmisiones en vivo (plan Privado).
     iniciarJobTransmisiones();
+    iniciarJobResenasReservas();
   } catch (error) {
     logger.error("Error al iniciar el servidor:", error);
     process.exit(1);

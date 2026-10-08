@@ -22,7 +22,9 @@ export const TIPOS_SECCION = [
   // Tours (fase 2).
   "tours",
   // Eventos con entradas (fase 3).
-  "eventos"
+  "eventos",
+  // Fotos del lugar (docs/specs/hospedaje-completo B7).
+  "galeria"
 ];
 
 // Secciones que puede usar cada tipo de negocio (docs/specs/diseno-por-rubro).
@@ -30,7 +32,7 @@ export const TIPOS_SECCION = [
 // tienda de productos. Un tipo sin lista propia usa la de productos.
 const TIPOS_COMUNES = ["hero", "beneficios", "testimonios", "imagen-texto", "faq", "cinta", "contacto"];
 // Servicios, ubicación y políticas sirven a todo negocio de reservas.
-const TIPOS_RESERVAS = ["servicios", "ubicacion", "politicas"];
+const TIPOS_RESERVAS = ["servicios", "ubicacion", "politicas", "galeria"];
 export const TIPOS_POR_NEGOCIO = Object.freeze({
   productos: Object.freeze([...TIPOS_COMUNES, "categorias", "productos", "oferta"]),
   hotel: Object.freeze([...TIPOS_COMUNES, ...TIPOS_RESERVAS, "habitaciones"]),
@@ -49,7 +51,7 @@ export const MAX_SECCIONES = 15;
 export const MAX_POR_TIPO = Object.freeze({
   hero: 1, categorias: 1, testimonios: 1, faq: 1, oferta: 1, cinta: 1, contacto: 1,
   "imagen-texto": 3, productos: 4,
-  habitaciones: 1, servicios: 1, ubicacion: 1, politicas: 1, tours: 1, eventos: 1
+  habitaciones: 1, servicios: 1, ubicacion: 1, politicas: 1, tours: 1, eventos: 1, galeria: 2
 });
 export const ICONOS_BENEFICIO = ["envio", "pago", "cambios", "soporte", "garantia", "rapido", "calidad"];
 // Servicios de un hospedaje o de una agencia ("por qué viajar con nosotros").
@@ -66,6 +68,7 @@ export const ICONOS_SERVICIO = [
 const texto = (max) => z.string().trim().min(1, "No puede estar vacío").max(max, `Máximo ${max} caracteres`);
 const textoOpcional = (max) => z.string().trim().max(max, `Máximo ${max} caracteres`).nullable().optional();
 const fondo = z.enum(["superficie", "pagina", "suave"]);
+const urlImagen = z.string().url("Imagen inválida").startsWith("https://", "Imagen inválida").max(500);
 
 const base = {
   id: z.string().regex(/^[a-z0-9-]{1,40}$/, "Id de sección inválido"),
@@ -134,7 +137,9 @@ const seccionSchema = z.discriminatedUnion("tipo", [
     ...base,
     tipo: z.literal("imagen-texto"),
     fondo,
-    imagen: z.enum(["banner", "categoria", "producto"]),
+    // "propia": una foto subida desde el admin (hospedaje-completo B7), en imagenUrl.
+    imagen: z.enum(["banner", "categoria", "producto", "propia"]),
+    imagenUrl: urlImagen.nullable().optional(),
     posicionImagen: z.enum(["izquierda", "derecha"]),
     kicker: textoOpcional(40),
     titulo: texto(80),
@@ -194,6 +199,20 @@ const seccionSchema = z.discriminatedUnion("tipo", [
       .min(2, "Agrega al menos 2 servicios")
       .max(12, "Máximo 12 servicios")
   }),
+  // Fotos del lugar (B7): terraza, desayuno, recepción. Las URLs son del
+// bucket de la tienda (validarEstructuraDeTienda lo comprueba).
+  z.object({
+    ...base,
+    tipo: z.literal("galeria"),
+    variante: z.enum(["mosaico", "carrusel"]),
+    fondo,
+    titulo: texto(80),
+    subtitulo: textoOpcional(160),
+    fotos: z
+      .array(z.object({ url: urlImagen, pie: textoOpcional(80) }))
+      // El mínimo de 3 se exige solo si se ve (superRefine de la lista): recién agregada no tiene fotos.
+      .max(12, "Máximo 12 fotos")
+  }),
   // La dirección es la de la tienda; "cercanos" son frases del dueño.
   z.object({
     ...base,
@@ -252,6 +271,30 @@ export function seccionesAjenas(secciones, tipoNegocio) {
   return body;
 }
 
+/** Carpeta de las fotos del diseño de una tienda en el bucket público (B7). */
+export function prefijoFotosDiseno(baseUrl, tiendaId) {
+  return `${baseUrl.replace(/\/+$/, "")}/${tiendaId}/diseno/`;
+}
+
+/**
+ * Fotos de "imagen y texto" y de la galería que no son del bucket de la
+ * tienda (hospedaje-completo B7). Se valida aparte del schema porque necesita
+ * el tiendaId; mismo criterio que los widgets de imagen.
+ */
+export function fotosAjenas(secciones, prefijo) {
+  const ajena = (url) => !url.startsWith(prefijo) || url.includes("..");
+  const body = {};
+  secciones.forEach((s, i) => {
+    if (s.tipo === "imagen-texto" && s.imagen === "propia" && s.imagenUrl && ajena(s.imagenUrl)) {
+      body[`estructura.home.secciones.${i}.imagenUrl`] = ["La foto debe subirse desde el editor"];
+    }
+    if (s.tipo === "galeria" && s.fotos.some(f => ajena(f.url))) {
+      body[`estructura.home.secciones.${i}.fotos`] = ["Las fotos deben subirse desde el editor"];
+    }
+  });
+  return body;
+}
+
 // Lista de secciones de la home (R4.3). Los errores apuntan a la sección
 // culpable para que el admin los muestre en su tarjeta.
 export const seccionesSchema = z
@@ -275,6 +318,14 @@ export const seccionesSchema = z
 
       // El hero lleva el h1 de la página: siempre arriba.
       if (s.tipo === "hero" && i !== 0) issue([i, "tipo"], "La portada (hero) debe ser la primera sección");
+
+      if (s.tipo === "galeria" && !s.oculto && s.fotos.length < 3) {
+        issue([i, "fotos"], "Sube al menos 3 fotos u oculta la sección");
+      }
+
+      if (s.tipo === "imagen-texto" && s.imagen === "propia" && !s.imagenUrl) {
+        issue([i, "imagenUrl"], "Sube la foto o elige otra imagen");
+      }
 
       if (s.tipo === "oferta" && !s.oculto && !s.terminaEn) {
         issue([i, "terminaEn"], "Indica hasta cuándo dura la oferta o oculta la sección");

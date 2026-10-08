@@ -112,12 +112,23 @@ export async function setModoModeracion(tiendaId, modo, user) {
  * @param {object} db - Cliente Prisma o transacción.
  * @param {{ tiendaId: string, pedidoId: string, productoId: string, authUserId: string|null, porToken: boolean }} p
  */
+/**
+ * ¿Se puede reseñar? Un pedido entregado, o una estadía o un tour confirmados
+ * que ya terminaron (docs/specs/hospedaje-completo C6).
+ */
+export function pedidoResenable(pedido, ahora = new Date()) {
+  if (pedido.estado === "entregado") return true;
+  const r = pedido.reserva;
+  return !!r && ["confirmada", "completada"].includes(pedido.estado) && (r.fin ?? r.inicio) <= ahora;
+}
+
 export async function verificarCompra(db, { tiendaId, pedidoId, productoId, authUserId, porToken }) {
   const pedido = await db.pedidos.findFirst({
     where: { id: pedidoId, tiendaId },
     select: {
       id: true,
       estado: true,
+      reserva: { select: { inicio: true, fin: true } },
       authUserId: true,
       clienteNombre: true,
       detalles: { where: { productoId }, select: { id: true } }
@@ -132,7 +143,7 @@ export async function verificarCompra(db, { tiendaId, pedidoId, productoId, auth
     throw new ForbiddenError("Este pedido no pertenece a tu cuenta");
   }
 
-  if (pedido.estado !== "entregado") {
+  if (!pedidoResenable(pedido)) {
     throw new UnprocessableError("Solo puedes calificar productos de pedidos entregados",
       { motivo: "PEDIDO_NO_ENTREGADO" });
   }
@@ -300,7 +311,14 @@ export async function listarResenasDestacadas(tiendaId, limit = 6) {
  * @param {{ authUserId?: string, pedidoId?: string }} filtro - Cuenta o pedido del token.
  */
 export async function listarResenables(tiendaId, filtro) {
-  const where = { tiendaId, estado: "entregado" };
+  // Pedidos entregados, o estadías y tours confirmados que ya terminaron (C6).
+  const where = {
+    tiendaId,
+    OR: [
+      { estado: "entregado" },
+      { estado: { in: ["confirmada", "completada"] }, reserva: { is: { inicio: { lte: new Date() }, OR: [{ fin: null }, { fin: { lte: new Date() } }] } } }
+    ]
+  };
   if (filtro.pedidoId) where.id = filtro.pedidoId;
   else if (filtro.authUserId) where.authUserId = filtro.authUserId;
   else return [];
@@ -375,10 +393,10 @@ export function urlTienda(slug, ruta) {
 export async function generarEnlaceResena(tiendaId, pedidoId) {
   const pedido = await prisma.pedidos.findFirst({
     where: { id: pedidoId, tiendaId },
-    select: { id: true, estado: true }
+    select: { id: true, estado: true, reserva: { select: { inicio: true, fin: true } } }
   });
   if (!pedido) throw new NotFoundError("Pedido");
-  if (pedido.estado !== "entregado") {
+  if (!pedidoResenable(pedido)) {
     throw new UnprocessableError("El pedido aún no está entregado", { motivo: "PEDIDO_NO_ENTREGADO" });
   }
 

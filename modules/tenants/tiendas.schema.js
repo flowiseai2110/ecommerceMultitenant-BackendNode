@@ -81,7 +81,12 @@ export const updateTiendaSchema = z.object({
   activo: tiendasBaseSchema.activo,
   envioGratisMinimo: tiendasBaseSchema.envioGratisMinimo,
   metaPixelId: tiendasBaseSchema.metaPixelId,
-  googleAnalyticsId: tiendasBaseSchema.googleAnalyticsId
+  googleAnalyticsId: tiendasBaseSchema.googleAnalyticsId,
+  // Idiomas de la vitrina (docs/specs/hospedaje-completo C3): el español siempre está.
+  idiomas: z.array(z.enum(["es", "en"])).min(1).max(2)
+    .refine((l) => l.includes("es"), "El español siempre está activo")
+    .transform((l) => [...new Set(l)])
+    .optional()
 }).refine(
   (data) => Object.keys(data).length > 0,
   { message: "Debe proporcionar al menos un campo para actualizar" }

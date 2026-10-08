@@ -146,3 +146,147 @@ describe("estados", () => {
     expect(estadoEfectivo({ estado: "confirmada", inicio, fin }, instanteLima("2026-09-25", "01:00"))).toBe("completada");
   });
 });
+
+// ── hospedaje-completo, fase B ──
+describe("cotizarHotel — temporadas (B2)", () => {
+  const fiestas = { nombre: "Fiestas Patrias", desde: "2026-09-25", hasta: "2026-09-26", ajustePct: 50, minNoches: 2 };
+
+  it("ajusta las noches de la temporada y la nombra en la línea", () => {
+    // jue 24 normal (160); vie 25 y sáb 26 en temporada: 180 × 1.5 = 270
+    const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 3, adultos: 2, config, ahora, temporadas: [fiestas] });
+    expect(c.errores).toEqual([]);
+    expect(c.lineas).toEqual([
+      { descripcion: "1 noche (jue 24/09)", cantidad: 1, precioUnitario: 160, total: 160 },
+      { descripcion: "2 noches Fiestas Patrias (vie 25/09, sáb 26/09)", cantidad: 2, precioUnitario: 270, total: 540 }
+    ]);
+    expect(c.total).toBe(700);
+  });
+
+  it("si dos temporadas se superponen, rige la de mayor ajuste", () => {
+    const alta = { nombre: "Temporada alta", desde: "2026-09-01", hasta: "2026-09-30", ajustePct: 20, minNoches: null };
+    const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-25", noches: 2, adultos: 2, config, ahora, temporadas: [alta, fiestas] });
+    expect(c.lineas[0].descripcion).toContain("Fiestas Patrias");
+    expect(c.lineas[0].precioUnitario).toBe(270);
+  });
+
+  it("exige el mínimo de noches si la llegada cae en la temporada", () => {
+    const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-25", noches: 1, adultos: 2, config, ahora, temporadas: [fiestas] });
+    expect(c.errores).toEqual([expect.objectContaining({ codigo: "MIN_NOCHES", campo: "noches" })]);
+  });
+
+  it("no toca la fracción por horas", () => {
+    const c = cotizarHotel({ tipo, modalidad: seisHoras, fecha: "2026-09-25", hora: "18:00", adultos: 2, config, ahora, temporadas: [fiestas] });
+    expect(c.errores).toEqual([]);
+    expect(c.total).toBe(100);
+  });
+});
+
+describe("cotizarHotel — niños (B4)", () => {
+  const familiar = { capacidadAdultos: 2, capacidadNinos: 2, capacidadMax: 4, porPersona: false };
+  const conCargo = { ...config, ninosGratisHasta: 5, cargoNinoNoche: 40 };
+
+  it("cobra por noche solo a los niños mayores a la edad gratuita", () => {
+    const c = cotizarHotel({ tipo: familiar, modalidad: noche, fecha: "2026-09-21", noches: 2, adultos: 2, ninos: 2, edadesNinos: [3, 9], config: conCargo, ahora: instanteLima("2026-09-20", "09:00") });
+    expect(c.errores).toEqual([]);
+    expect(c.lineas.at(-1)).toEqual({ descripcion: "1 niño mayor de 5 años × 2 noches", cantidad: 2, precioUnitario: 40, total: 80 });
+    expect(c.total).toBe(400);
+    expect(c.edadesNinos).toEqual([3, 9]);
+  });
+
+  it("sin la edad de cada niño no se puede cotizar el cargo", () => {
+    const c = cotizarHotel({ tipo: familiar, modalidad: noche, fecha: "2026-09-21", noches: 1, adultos: 2, ninos: 1, config: conCargo, ahora: instanteLima("2026-09-20", "09:00") });
+    expect(c.errores.map(e => e.codigo)).toContain("EDADES_NINOS");
+  });
+});
+
+describe("cotizarHotel — extras (B3) e IGV (B5)", () => {
+  const traslado = { id: "x1", nombre: "Traslado al aeropuerto", precio: 60, cobro: "estadia", datoPedido: "Número de vuelo", activo: true };
+  const desayuno = { id: "x2", nombre: "Desayuno", precio: 25, cobro: "persona_noche", datoPedido: null, activo: true };
+  const lunes = instanteLima("2026-09-20", "09:00");
+
+  it("cobra cada extra según su unidad y guarda la copia con el dato del huésped", () => {
+    const c = cotizarHotel({
+      tipo, modalidad: noche, fecha: "2026-09-21", noches: 2, adultos: 2, config, ahora: lunes,
+      extrasCatalogo: [traslado, desayuno], extrasElegidos: [{ extraId: "x1", cantidad: 2, dato: "LA2470 22:15" }, { extraId: "x2" }]
+    });
+    expect(c.errores).toEqual([]);
+    expect(c.lineas.slice(-2)).toEqual([
+      { descripcion: "Traslado al aeropuerto × 2", cantidad: 2, precioUnitario: 60, total: 120 },
+      { descripcion: "Desayuno × 4 (por persona y noche)", cantidad: 4, precioUnitario: 25, total: 100 }
+    ]);
+    expect(c.total).toBe(540);
+    expect(c.extras[0]).toEqual(expect.objectContaining({ nombre: "Traslado al aeropuerto", dato: "LA2470 22:15", total: 120 }));
+  });
+
+  it("un extra desactivado da error", () => {
+    const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-21", noches: 1, adultos: 1, config, ahora: lunes,
+      extrasCatalogo: [{ ...traslado, activo: false }], extrasElegidos: [{ extraId: "x1" }] });
+    expect(c.errores.map(e => e.codigo)).toEqual(["EXTRA_INVALIDO"]);
+  });
+
+  it("al extranjero le descuenta el IGV del alojamiento, no de los extras", () => {
+    const igv = { ...config, exoneraIgvExtranjeros: true };
+    const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-21", noches: 1, adultos: 1, config: igv, ahora: lunes,
+      extrasCatalogo: [traslado], extrasElegidos: [{ extraId: "x1" }], nacionalidad: "US" });
+    // 160 / 1.18 = 135.59 → descuento 24.41; el traslado (60) no se exonera.
+    expect(c.exoneradoIgv).toBe(true);
+    expect(c.lineas.at(-1)).toEqual({ descripcion: "Exoneración de IGV (turista extranjero)", cantidad: 1, precioUnitario: -24.41, total: -24.41 });
+    expect(c.total).toBe(195.59);
+  });
+
+  it("sin nacionalidad informa el total para extranjeros; un peruano paga con IGV", () => {
+    const igv = { ...config, exoneraIgvExtranjeros: true };
+    const ficha = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-21", noches: 1, adultos: 1, config: igv, ahora: lunes });
+    expect(ficha.totalExtranjero).toBe(135.59);
+    const peruano = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-21", noches: 1, adultos: 1, config: igv, ahora: lunes, nacionalidad: "PE" });
+    expect(peruano.exoneradoIgv).toBe(false);
+    expect(peruano.total).toBe(160);
+    expect(peruano.totalExtranjero).toBeNull();
+  });
+});
+
+// ── hospedaje-completo, fase C ──
+describe("cotizarHotel — varias habitaciones, cupo y plan (C1, C2, C5)", () => {
+  const lunes = instanteLima("2026-09-20", "09:00");
+
+  it("dos habitaciones duplican capacidad y precio", () => {
+    const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-21", noches: 2, adultos: 4, habitaciones: 2, config, ahora: lunes });
+    expect(c.errores).toEqual([]);
+    expect(c.lineas).toEqual([{ descripcion: "2 noches (lun 21/09, mar 22/09) · 2 habitaciones", cantidad: 4, precioUnitario: 160, total: 640 }]);
+    expect(c.habitaciones).toBe(2);
+  });
+
+  it("con una sola habitación, 4 adultos no entran", () => {
+    const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-21", noches: 1, adultos: 4, config, ahora: lunes });
+    expect(c.errores.map(e => e.codigo)).toContain("CAPACIDAD");
+  });
+
+  it("sin cupo suficiente da SIN_CUPO y dice cuántas quedan", () => {
+    const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-21", noches: 1, adultos: 4, habitaciones: 2, config, ahora: lunes, cupo: { unidades: 5, libres: 1 } });
+    expect(c.errores).toEqual([expect.objectContaining({ codigo: "SIN_CUPO", mensaje: "Solo queda 1 habitación de este tipo para esas fechas" })]);
+    expect(c.quedan).toBe(1);
+  });
+
+  it("en un dormitorio el cupo son camas", () => {
+    const dorm = { capacidadAdultos: 8, capacidadNinos: 0, capacidadMax: 8, porPersona: true };
+    const c = cotizarHotel({ tipo: dorm, modalidad: noche, fecha: "2026-09-21", noches: 1, adultos: 3, config, ahora: lunes, cupo: { unidades: 8, libres: 2 } });
+    expect(c.errores[0]).toEqual(expect.objectContaining({ codigo: "SIN_CUPO", mensaje: "Solo quedan 2 camas para esas fechas" }));
+  });
+
+  it("el plan no reembolsable descuenta sobre el alojamiento y queda en la copia", () => {
+    const plan = { id: "p1", nombre: "No reembolsable", ajustePct: -10, reembolsable: false };
+    const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-21", noches: 2, adultos: 2, config, ahora: lunes, plan });
+    expect(c.lineas.at(-1)).toEqual({ descripcion: "No reembolsable (-10 %)", cantidad: 1, precioUnitario: -32, total: -32 });
+    expect(c.total).toBe(288);
+    expect(c.plan).toEqual({ id: "p1", nombre: "No reembolsable", ajustePct: -10, reembolsable: false });
+  });
+});
+
+describe("estadoEfectivo — habitación apartada (C1)", () => {
+  it("una aceptada con apartado vencido se anula; sin apartado, no", () => {
+    const inicio = instanteLima("2026-09-30", "15:00");
+    const ahora2 = instanteLima("2026-09-24", "12:00");
+    expect(estadoEfectivo({ estado: "aceptada", inicio, apartadoHasta: instanteLima("2026-09-24", "11:00") }, ahora2)).toBe("vencida");
+    expect(estadoEfectivo({ estado: "aceptada", inicio, apartadoHasta: null }, ahora2)).toBe("aceptada");
+  });
+});
