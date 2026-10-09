@@ -50,7 +50,7 @@ const INCLUDE_RESERVA = {
     include: {
       producto: {
         select: {
-          id: true, nombre: true, slug: true,
+          id: true, nombre: true, slug: true, traducciones: true,
           imagenes: { select: { url: true, esPrincipal: true }, orderBy: { orden: "asc" }, take: 3 },
           tour: { select: { duracion: true, puntoEncuentro: true, recojo: true } },
           evento: { select: { lugar: true, direccion: true, mapaUrl: true, organizador: true } }
@@ -151,11 +151,11 @@ const VERTICALES = {
     tipoPedido: "tour",
     este: "esta agencia",
     async cotizar({ tiendaId, datos, config, ahora }) {
-      const { producto, tour, tiposPasajero } = await cargarTourParaReserva(tiendaId, datos.productoId);
+      const { producto, tour, tiposPasajero } = await cargarTourParaReserva(tiendaId, datos.productoId, datos.lang);
       const cierres = await cierresDeProducto(tiendaId, datos.productoId, datos.fecha, datos.fecha);
       const c = cotizarTour({
         tour, tiposPasajero, pasajeros: datos.pasajeros, fecha: datos.fecha, hora: datos.hora,
-        idioma: datos.idioma, cierres, config, ahora
+        idioma: datos.idioma, cierres, config, ahora, lang: datos.lang
       });
       return {
         producto, c,

@@ -3,12 +3,12 @@ import { validate } from "../../middlewares/validation.middleware.js";
 import { authMiddleware, requireTiendaAccess } from "../../kernel/tenant/index.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import {
-  activar, agregarInvitados, anularInvitacion, borrarGrabacionAhora, cancelar, crearVinculacion, datosConexion, editar, extender,
-  guardarAnio, horasTienda, iniciarPrueba, listarTransmisiones, obtenerPorFuncion, regenerarClave, regenerarInvitacion, terminar,
+  activar, agregarDestino, agregarInvitados, anularInvitacion, borrarGrabacionAhora, cancelar, crearVinculacion, datosConexion, editar, extender,
+  guardarAnio, horasTienda, iniciarPrueba, listarTransmisiones, obtenerPorFuncion, quitarDestino, regenerarClave, regenerarInvitacion, terminar,
   terminarALaHora
 } from "./transmisiones.service.js";
 import {
-  activarSchema, editarSchema, extenderSchema, funcionParamSchema, idParamSchema, invitacionParamSchema, invitadosSchema,
+  activarSchema, destinoParamSchema, destinoSchema, editarSchema, extenderSchema, funcionParamSchema, idParamSchema, invitacionParamSchema, invitadosSchema,
   tiendaQuerySchema
 } from "./transmisiones.schema.js";
 
@@ -123,6 +123,19 @@ router.post("/:id/borrar-grabacion", authMiddleware, requireTiendaAccess("admin"
   async (req, res, next) => {
     try { return ok(res, "TRANSMISION_GRABACION_BORRADA", await borrarGrabacionAhora(req.tiendaId, req.params.id, req.user)); } catch (error) { next(error); }
   });
+
+// ---------- Retransmisión a Facebook y YouTube (Premium, Fase 5) ----------
+
+router.post("/:id/destinos", ...gestion, validate({ params: idParamSchema, body: destinoSchema }), async (req, res, next) => {
+  try {
+    const { tiendaId, ...destino } = req.body;
+    return ok(res, "TRANSMISION_DESTINO_AGREGADO", await agregarDestino(req.tiendaId, req.params.id, destino, req.user));
+  } catch (error) { next(error); }
+});
+
+router.delete("/:id/destinos/:destinoId", ...gestion, validate({ params: destinoParamSchema, query: tiendaQuerySchema }), async (req, res, next) => {
+  try { return ok(res, "TRANSMISION_DESTINO_QUITADO", await quitarDestino(req.tiendaId, req.params.id, req.params.destinoId, req.user)); } catch (error) { next(error); }
+});
 
 // QR "Transmitir con este celular" (App Transmitir, R11.1).
 router.post("/:id/vinculaciones", ...gestion, validate({ params: idParamSchema, body: tiendaQuerySchema }), async (req, res, next) => {

@@ -25,15 +25,17 @@ Spec: [spec.md](spec.md).
 - [x] B6 Solo mujeres: backend, admin (ficha de habitación), tienda (insignia y confirmación).
 - [x] B7 Fotos propias en `imagen-texto` y sección `galeria`: backend (schema, subida), admin, tienda.
 - [x] B8 Tests: backend 866 + 14 nuevos (cotización fase B, galería, URLs de fotos); admin 50. Navegador (tienda): Año Nuevo +40 % con mínimo de 3 noches, niño de 9 años S/ 40 × noche, traslado × 2 con número de vuelo, IGV −S/ 475.32 a un estadounidense, voz "el hostal", galería con visor y teclado, foto propia, solo mujeres.
-- [ ] B9 Verificación del admin en el navegador (Tarifas, configuración, galería): junto con la fase C.
+- [ ] B9 Verificación del admin en el navegador (Tarifas, configuración, galería): junto con la fase C; requiere que el dueño inicie sesión.
 - [x] B10 (hallado al probar) El botón de "imagen y texto" llevaba a /productos también en hotel, tours y eventos.
 
 ## Fase C — Lo que el huésped espera
-- [ ] C0 Schema + `docs/sql/hospedaje_fase_c.sql`.
-- [ ] C1 Inventario y disponibilidad: backend (cupo, bloqueo, endpoint), admin (unidades, pestaña Disponibilidad, aviso al aceptar), tienda (grilla y ficha).
-- [ ] C2 Varias habitaciones del mismo tipo.
-- [ ] C3 Inglés: idiomas de la tienda, diccionario de la tienda, traducciones con IA, pestaña Inglés en el admin, correos.
-- [ ] C4 Referencia en dólares.
-- [ ] C5 Planes de tarifa.
-- [ ] C6 Reseñas externas y correo de reseña tras la estadía.
-- [ ] C7 Tests backend y verificación en el navegador.
+- [x] C0 Schema + `docs/sql/hospedaje_fase_c.sql` (aplicado).
+- [x] C1 Inventario y disponibilidad: backend (cupo, bloqueo, endpoint), admin (unidades, pestaña Disponibilidad, aviso al aceptar), tienda (grilla y ficha).
+- [x] C2 Varias habitaciones del mismo tipo.
+- [x] C3 Inglés: idiomas de la tienda (Mi Tienda), diccionario de la tienda, traducciones con IA al guardar, pantalla Traducciones en el admin, correos al huésped. Tours y eventos quedan en español.
+- [x] C4 Referencia en dólares (tipo de cambio en configuración de reservas).
+- [x] C5 Planes de tarifa (sección en Tarifas y extras).
+- [x] C6 Reseñas externas (hasta 3, en configuración de reservas) y correo de reseña tras la estadía (job cada 30 min).
+- [x] C7 Tests: backend 903, admin 50. Navegador (tienda, mirador-miraflores en inglés): textos y contenido traducidos, ≈ US$, "Only 3 rooms left", plan no reembolsable −12 % (S/ 1180 → S/ 1038.40), extras, IGV de extranjeros, solicitud en inglés. Fechas del detalle en inglés como "Thu Nov 12". Datos demo: `scripts/demo/hotel/fase-c.mjs`.
+- [x] C9 Inglés en tours: backend (fuente "tours" en traducciones, `traducirTour`, `textos-tour.js`, cotización y serializer en inglés, correo de reseña por tipo con la reseña externa), tienda (grilla, buscador, ficha, solicitud, seguimiento; claves con contexto `'Salida|tour'`), admin (dólar para tours, GetYourGuide/Viator, campos del tour en Traducciones). Tests backend 921, admin 50. Navegador: tour-test en inglés (291 textos traducidos con `scripts/demo/tours/ingles.mjs`).
+- [ ] C8 Verificación del admin en el navegador (Traducciones, Tarifas/planes, configuración: dólar y reseñas, Mi Tienda: inglés, Disponibilidad).

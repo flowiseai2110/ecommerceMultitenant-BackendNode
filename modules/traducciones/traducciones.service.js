@@ -14,6 +14,9 @@ import { iaDisponible, traducirTextos } from "./traducir-ia.js";
  * El diseño (textos de las secciones y la descripción de la tienda) va en la
  * clave "traducciones" de la configuración de diseño, con claves de ruta
  * ("s.hero.titulo", "s.faq.items.2.respuesta").
+ * La ficha de un tour (itinerario, incluye, tipos de pasajero…) se guarda en
+ * la columna del producto, con claves propias ("incluye",
+ * "itinerario.0.titulo", "pasajero.<id>"): es 1:1 con el producto.
  *
  * Estados: falta (sin inglés), al_dia (`o` = español actual), desactualizada
  * (cambió el español). La IA traduce lo que falta y vuelve a traducir lo
@@ -29,8 +32,24 @@ const usuarioDe = (user) => user?.email ?? user?.id ?? null;
 
 const FUENTES = {
   productos: {
-    tabla: "productos", pk: "id", campos: ["nombre", "descripcionCorta", "descripcion"], etiqueta: "Habitación / producto",
+    tabla: "productos", pk: "id", campos: ["nombre", "descripcionCorta", "descripcion"], etiqueta: "Nombre y descripción",
     where: (tiendaId) => ({ tiendaId, activo: true }), nombre: (f) => f.nombre
+  },
+  // Ficha del tour: se guarda en `productos.traducciones` (ver textosTour).
+  tours: {
+    tabla: "productos", pk: "id", etiqueta: "Ficha del tour",
+    where: (tiendaId) => ({ tiendaId, activo: true, tour: { isNot: null } }),
+    select: {
+      nombre: true,
+      tour: {
+        select: {
+          duracion: true, incluye: true, noIncluye: true, queLlevar: true, requisitos: true, puntoEncuentro: true, recojo: true, itinerario: true,
+          tiposPasajero: { where: { activo: true }, select: { id: true, nombre: true }, orderBy: { orden: "asc" } }
+        }
+      }
+    },
+    textos: (f) => textosTour(f.tour),
+    nombre: (f) => f.nombre
   },
   categorias: {
     tabla: "categorias", pk: "id", campos: ["nombre", "descripcion"], etiqueta: "Categoría",
@@ -58,6 +77,12 @@ const FUENTES = {
   }
 };
 
+/** Textos de una fila: los de `textos(fila)` o, por defecto, sus columnas `campos`. */
+const textosDe = (f, fila) => (f.textos ? f.textos(fila) : Object.fromEntries(f.campos.map(c => [c, fila[c]])));
+const selectDe = (f) => ({
+  [f.pk]: true, traducciones: true, ...(f.select ?? Object.fromEntries(f.campos.map(c => [c, true]))), ...(f.incluir ?? {})
+});
+
 const vacio = (v) => v === null || v === undefined || (typeof v === "string" && !v.trim()) || (Array.isArray(v) && !v.length);
 const igual = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
@@ -84,6 +109,40 @@ export function traducirFila(fila, campos, lang) {
   const tr = fila.traducciones?.[IDIOMA] ?? {};
   const copia = { ...fila };
   for (const c of campos) copia[c] = textoEn(fila[c], tr[c]);
+  return copia;
+}
+
+// ── Tours: la ficha, guardada en la columna del producto ───────────────
+
+const CAMPOS_TOUR = ["duracion", "incluye", "noIncluye", "queLlevar", "requisitos", "puntoEncuentro", "recojo"];
+
+/** Textos traducibles de la ficha de un tour: { incluye: [...], "itinerario.0.titulo": "…", "pasajero.<id>": "Adulto" }. */
+export function textosTour(t) {
+  if (!t) return {};
+  const textos = Object.fromEntries(CAMPOS_TOUR.map(c => [c, t[c] ?? null]));
+  (Array.isArray(t.itinerario) ? t.itinerario : []).forEach((p, i) => {
+    textos[`itinerario.${i}.titulo`] = p?.titulo ?? null;
+    textos[`itinerario.${i}.descripcion`] = p?.descripcion ?? null;
+  });
+  for (const tp of t.tiposPasajero ?? []) textos[`pasajero.${tp.id}`] = tp.nombre;
+  return textos;
+}
+
+/** Copia del tour con su ficha en inglés; `traducciones` es la columna del producto. */
+export function traducirTour(tour, traducciones, lang) {
+  if (lang !== IDIOMA || !tour) return tour;
+  const tr = traducciones?.[IDIOMA] ?? {};
+  const en = (clave, es) => textoEn(es, tr[clave]);
+  const copia = { ...tour };
+  for (const c of CAMPOS_TOUR) if (c in tour) copia[c] = en(c, tour[c]);
+  if (Array.isArray(tour.itinerario)) {
+    copia.itinerario = tour.itinerario.map((p, i) => ({
+      ...p, titulo: en(`itinerario.${i}.titulo`, p?.titulo), descripcion: en(`itinerario.${i}.descripcion`, p?.descripcion)
+    }));
+  }
+  if (Array.isArray(tour.tiposPasajero)) {
+    copia.tiposPasajero = tour.tiposPasajero.map(tp => ({ ...tp, nombre: en(`pasajero.${tp.id}`, tp.nombre) }));
+  }
   return copia;
 }
 
@@ -155,14 +214,11 @@ export async function listarTextos(tiendaId) {
   const tienda = await tiendaConIdiomas(tiendaId);
   const grupos = [];
   for (const [fuente, f] of Object.entries(FUENTES)) {
-    const filas = await prisma[f.tabla].findMany({
-      where: f.where(tiendaId),
-      select: { [f.pk]: true, traducciones: true, ...Object.fromEntries(f.campos.map(c => [c, true])), ...(f.incluir ?? {}) }
-    });
+    const filas = await prisma[f.tabla].findMany({ where: f.where(tiendaId), select: selectDe(f) });
     for (const fila of filas) {
       const tr = fila.traducciones?.[IDIOMA] ?? {};
-      const campos = f.campos
-        .map(c => ({ campo: c, es: fila[c], en: tr[c]?.t ?? null, manual: !!tr[c]?.m, estado: estadoCampo(fila[c], tr[c]) }))
+      const campos = Object.entries(textosDe(f, fila))
+        .map(([c, es]) => ({ campo: c, es, en: tr[c]?.t ?? null, manual: !!tr[c]?.m, estado: estadoCampo(es, tr[c]) }))
         .filter(c => c.estado);
       if (campos.length) grupos.push({ fuente, id: fila[f.pk], etiqueta: f.etiqueta, nombre: f.nombre(fila) ?? "", campos });
     }
@@ -204,15 +260,15 @@ export async function guardarManual(tiendaId, { fuente, id, campo, texto }, user
     return;
   }
   const f = FUENTES[fuente];
-  if (!f || !f.campos.includes(campo)) {
-    const message = "Campo no traducible";
-    throw new ValidationError(message, { message });
-  }
-  const fila = await prisma[f.tabla].findFirst({ where: { ...f.where(tiendaId), [f.pk]: id }, select: { [campo]: true, traducciones: true } });
+  const noTraducible = () => { const message = "Campo no traducible"; return new ValidationError(message, { message }); };
+  if (!f) throw noTraducible();
+  const fila = await prisma[f.tabla].findFirst({ where: { ...f.where(tiendaId), [f.pk]: id }, select: selectDe(f) });
   if (!fila) throw new NotFoundError("Texto");
+  const textos = textosDe(f, fila);
+  if (!Object.hasOwn(textos, campo)) throw noTraducible();
   const tr = { ...(fila.traducciones?.[IDIOMA] ?? {}) };
   if (vacio(limpio)) delete tr[campo];
-  else tr[campo] = { t: limpio, o: fila[campo], m: true };
+  else tr[campo] = { t: limpio, o: textos[campo], m: true };
   await prisma[f.tabla].update({ where: { [f.pk]: id }, data: { traducciones: { ...(fila.traducciones ?? {}), [IDIOMA]: tr } } });
 }
 
@@ -230,16 +286,12 @@ export async function traducirPendientes(tiendaId) {
   const pendientes = {};          // clave plana → español
   const destinos = [];            // { fuente, id, campo, es, lista }
   for (const [fuente, f] of Object.entries(FUENTES)) {
-    const filas = await prisma[f.tabla].findMany({
-      where: f.where(tiendaId),
-      select: { [f.pk]: true, traducciones: true, ...Object.fromEntries(f.campos.map(c => [c, true])) }
-    });
+    const filas = await prisma[f.tabla].findMany({ where: f.where(tiendaId), select: selectDe(f) });
     for (const fila of filas) {
       const tr = fila.traducciones?.[IDIOMA] ?? {};
-      for (const c of f.campos) {
-        const estado = estadoCampo(fila[c], tr[c]);
+      for (const [c, es] of Object.entries(textosDe(f, fila))) {
+        const estado = estadoCampo(es, tr[c]);
         if (!estado || estado === "al_dia" || tr[c]?.m) continue;
-        const es = fila[c];
         if (Array.isArray(es)) es.forEach((v, i) => { pendientes[claveDe(fuente, fila[f.pk], c, i)] = v; });
         else pendientes[claveDe(fuente, fila[f.pk], c)] = es;
         destinos.push({ fuente, id: fila[f.pk], campo: c, es, lista: Array.isArray(es) });

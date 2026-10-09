@@ -48,9 +48,13 @@ export function finEnVivo(transmision, funcion) {
   return transmision.terminadaEn ?? corteEn(transmision, funcion);
 }
 
-/** Hasta cuándo vale el enlace del invitado. */
+/** Premium (Fase 5): la grabación se ve 90 días en línea (Básico y Privado: 30). */
+export const DIAS_EN_LINEA_PREMIUM = 90;
+
+/** Hasta cuándo vale el enlace del invitado (y se ve la grabación). */
 export function grabacionHasta(transmision, funcion) {
-  return new Date(finTransmision(transmision, funcion).getTime() + DIAS_GRABACION_BASICO * MS_DIA);
+  const dias = transmision.plan === "premium" ? DIAS_EN_LINEA_PREMIUM : DIAS_GRABACION_BASICO;
+  return new Date(finTransmision(transmision, funcion).getTime() + dias * MS_DIA);
 }
 
 /**
@@ -238,7 +242,8 @@ export const PARTE_MIN_SEG = 10;
 
 /** Hasta cuándo se puede descargar el MP4: el plazo en línea o, con "Guardar 1 año", un año desde el fin. */
 export function descargaHasta(transmision, funcion) {
-  if (!transmision.guardarAnio) return grabacionHasta(transmision, funcion);
+  // Premium incluye la descarga de 1 año (al crearla se activa guardarAnio).
+  if (!transmision.guardarAnio && transmision.plan !== "premium") return grabacionHasta(transmision, funcion);
   return new Date(finTransmision(transmision, funcion).getTime() + DIAS_GUARDAR_ANIO * MS_DIA);
 }
 
@@ -264,4 +269,25 @@ export function nombreArchivo(evento, orden, total) {
   const base = String(evento).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
     .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) || "grabacion";
   return total > 1 ? `${base}-parte-${orden}.mp4` : `${base}.mp4`;
+}
+
+// ============================================
+// Fase 5: Premium (retransmisión y resumen con IA)
+// ============================================
+
+/** Premium: S/ 40 por evento, cargo manual (decisión 2026-10-09). La retransmisión va incluida. */
+export const PRECIO_PREMIUM = 40;
+/** Hasta 2 destinos de retransmisión (Facebook, YouTube) por transmisión (R8.2). */
+export const MAX_DESTINOS = 2;
+/** Intentos para generar el resumen con IA antes de rendirse. */
+export const MAX_INTENTOS_RESUMEN = 3;
+
+/**
+ * La retransmisión emite desde que abre la sala hasta el corte, nunca en la
+ * prueba antes de la sala: así un ensayo no sale en el Facebook del anfitrión.
+ */
+export function debeRetransmitir(transmision, funcion, ahora = new Date()) {
+  if (transmision.plan !== "premium" || transmision.estado === "cancelada" || transmision.terminadaEn) return false;
+  const t = ahora.getTime();
+  return t >= salaAbreEn(funcion).getTime() && t < corteEn(transmision, funcion).getTime();
 }

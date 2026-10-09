@@ -118,3 +118,30 @@ describe("cotizarTour", () => {
     expect(estadoEfectivo({ estado: "confirmada", inicio: c.inicio, fin: c.fin }, enCurso)).toBe("confirmada");
   });
 });
+
+// Tours en inglés (docs/specs/hospedaje-completo C3, extendido a tours)
+describe("cotizarTour en inglés", () => {
+  it("describe los días de salida en inglés", () => {
+    expect(textoDiasSalida([1, 2, 3, 4, 5, 6, 7], "en")).toBe("every day");
+    expect(textoDiasSalida([5, 1, 3], "en")).toBe("Mondays, Wednesdays and Fridays");
+  });
+
+  it("explica las reglas en inglés y deja el español igual", () => {
+    const lunes = { ...base, fecha: "2026-09-28", hora: "09:00", pasajeros: [{ tipoId: "adulto", cantidad: 11 }] };
+    const en = cotizarTour({ ...lunes, lang: "en" }).errores.map(e => e.mensaje);
+    expect(en).toEqual([
+      "This tour departs at 08:00, 10:00",
+      "This tour departs on Tuesdays, Wednesdays, Thursdays, Fridays, Saturdays and Sundays. Please choose another date",
+      "You can request up to 10 people per booking. For larger groups, please contact the agency"
+    ]);
+    expect(cotizarTour(lunes).errores[1].mensaje).toBe("Este tour sale los martes, miércoles, jueves, viernes, sábados y domingos. Elige otra fecha");
+  });
+
+  it("fecha cerrada con el mes en inglés", () => {
+    const c = cotizarTour({
+      ...base, fecha: "2026-09-26", hora: "08:00", pasajeros: [{ tipoId: "adulto", cantidad: 1 }],
+      cierres: [{ fechaDesde: "2026-09-26", fechaHasta: "2026-09-26" }], lang: "en"
+    });
+    expect(c.errores.map(e => e.mensaje)).toEqual(["There is no departure on Sep 26. Please choose another date"]);
+  });
+});

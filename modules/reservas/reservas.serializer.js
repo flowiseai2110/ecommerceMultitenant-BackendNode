@@ -1,4 +1,5 @@
 import { estadoEfectivo, etiquetaEstado } from "./estados.js";
+import { textoEn, traducirTour } from "../traducciones/traducciones.service.js";
 
 /**
  * Contrato de salida del mini booking. La reserva se construye campo por campo
@@ -42,6 +43,11 @@ const entradasDe = (pedido) => (pedido.itemsEvento ?? []).map(i => ({
   tipoId: i.tipoEntradaId, nombre: i.nombre, cantidad: i.cantidad, precio: num(i.precio)
 }));
 
+function fichaTour(r) {
+  const t = traducirTour(r.producto?.tour ?? {}, r.producto?.traducciones, r.idiomaHuesped === "en" ? "en" : "es");
+  return { duracion: t.duracion ?? null, puntoEncuentro: t.puntoEncuentro ?? null, recojo: t.recojo ?? null };
+}
+
 function base(pedido, ahora) {
   const r = pedido.reserva;
   const esTour = r.tipo === "tour";
@@ -84,12 +90,9 @@ function base(pedido, ahora) {
     idiomaHuesped: r.idiomaHuesped ?? "es",
     pasajeros,
     idioma: r.idioma ?? null,
-    // Lo que el pasajero necesita para llegar a la salida (confirmación, R8.1).
-    tour: esTour ? {
-      duracion: r.producto?.tour?.duracion ?? null,
-      puntoEncuentro: r.producto?.tour?.puntoEncuentro ?? null,
-      recojo: r.producto?.tour?.recojo ?? null
-    } : null,
+    // Lo que el pasajero necesita para llegar a la salida (confirmación, R8.1);
+    // en inglés si reservó en inglés (C3).
+    tour: esTour ? fichaTour(r) : null,
     // Función y lugar del evento; hasta cuándo se guarda el cupo si falta pagar.
     evento: esEvento ? {
       funcionId: r.funcionId,
@@ -161,11 +164,12 @@ export function serializeReservaStore(pedido, { tienda, config, metodosPago = []
       // Cómo se nombra el negocio ("el hostal", "la casa"): hospedaje-completo B1.
       alojamiento: config.tipoAlojamiento ?? "hotel"
     },
-    instrucciones: config.instrucciones,
+    // El huésped que reservó en inglés ve las instrucciones en inglés (C3).
+    instrucciones: r.idiomaHuesped === "en" ? textoEn(config.instrucciones, config.traducciones?.en?.instrucciones) : config.instrucciones,
     // Con plan no reembolsable, la política que vale es la del plan (C5).
     politicaCancelacion: r.plan && !r.plan.reembolsable
       ? `Tarifa ${r.plan.nombre}: no se devuelve el pago si cancelas o no llegas.`
-      : config.politicaCancelacion,
+      : r.idiomaHuesped === "en" ? textoEn(config.politicaCancelacion, config.traducciones?.en?.politicaCancelacion) : config.politicaCancelacion,
     comprobanteEn: config.comprobanteEn,
     puedeCancelar: ["solicitada", "aceptada", "por_pagar"].includes(dto.estado)
   };

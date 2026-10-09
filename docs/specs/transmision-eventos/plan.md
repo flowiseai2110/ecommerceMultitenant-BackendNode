@@ -289,6 +289,39 @@ Además, Stream se compra en **bloques prepagados** de minutos guardados y entre
 - **Resumen con IA:** subtítulos automáticos de Stream → texto → resumen, capítulos y momentos clave con el LLM de la plataforma → correo al anfitrión (R8.3).
   - El costo de IA se registra igual que en `consumo-ia`.
 
+> ✅ **Decidido (2026-10-09):** Premium cuesta **S/ 40 por evento**, como cargo manual a la tienda, además de las horas (que descuenta igual que el Privado). La **retransmisión va incluida**.
+
+**Implementado (2026-10-09):**
+- **BD:** [docs/sql/transmisiones_fase5.sql](../../sql/transmisiones_fase5.sql):
+  - en `evento_transmisiones`: estado del resumen, el resumen (JSON), intentos, tokens y aviso;
+  - en `transmision_grabaciones`: estado de los subtítulos;
+  - tabla nueva `transmision_destinos`, con la clave cifrada;
+  - el CHECK de `transmision_cargos` ahora admite `premium`.
+- **Al activar Premium:**
+  - mismo camino que el Privado (evento privado, horas y factor);
+  - se anota el cargo de S/ 40;
+  - `guardarAnio = true`: descarga de 1 año incluida, que reutiliza la copia a R2 de la Fase 4;
+  - la grabación se ve **90 días** en línea.
+- **Retransmisión** (R8.2):
+  - hasta 2 destinos (Facebook, YouTube u otro RTMP), con la clave cifrada;
+  - cada destino es una "live output" de Cloudflare que el job **habilita solo desde que abre la sala hasta el corte**: una prueba previa no sale en el Facebook del anfitrión;
+  - al regenerar la clave se recrean las salidas; al terminar desaparecen con la entrada.
+- **Resumen con IA** (R8.3):
+  - el job pide los subtítulos automáticos **en español** de cada parte (Cloudflare los soporta);
+  - con todas las partes listas, encadena los WebVTT (cada parte desfasada por la duración de las anteriores);
+  - llama a Claude una sola vez con **salida estructurada** (Zod: resumen, capítulos y momentos con su segundo) y `fallbacks: "default"`;
+  - guarda el resultado y los tokens, y envía el correo "El resumen está listo" con los momentos clave;
+  - corre en segundo plano y se reintenta hasta 3 veces. Si casi no hay texto (solo música), queda `sin_audio` sin gastar una llamada.
+- **Modelo:** `TRANSMISIONES_IA_MODELO`, por defecto `claude-opus-5-5`, con effort `medium`. La clave es `TRANSMISIONES_IA_API_KEY` o, si falta, la del asesor (`AGENTE_IA_API_KEY`). Costo estimado: un evento de 3 h son ≈ 40-50 mil tokens de entrada, unos $0.20 por resumen.
+- **Admin:**
+  - plan Premium elegible solo con evento privado;
+  - sección "Retransmitir a Facebook o YouTube": destinos con su estado y ayuda para obtener la clave en cada plataforma;
+  - resumen con IA dentro de la sección Grabación;
+  - cargo del Premium.
+- **Anfitrión** (`/:slug/grabacion/:token`): resumen, momentos clave y capítulos.
+
+**Desviación:** el costo de IA del resumen queda en las columnas de la transmisión (`resumen_tokens_*`), no en `consumo-ia`. Es un costo de la plataforma incluido en el precio del Premium, no una cuota de la tienda.
+
 ### Fase 6: pulido y métricas
 
 - App Transmitir para iOS (HaishinKit), cuando haya tiendas usando la de Android.

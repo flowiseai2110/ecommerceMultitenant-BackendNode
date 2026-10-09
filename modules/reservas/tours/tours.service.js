@@ -2,6 +2,8 @@ import { prisma } from "../../../config/prisma.js";
 import { NotFoundError, ValidationError } from "../../../utils/errors.js";
 import { invalidateProductoDetailCache } from "../../catalogo/productos.cache.js";
 import { textoDiasSalida } from "./cotizar.js";
+import { textosTour } from "./textos-tour.js";
+import { traducirFila, traducirTour } from "../../traducciones/traducciones.service.js";
 
 /**
  * Tours de la agencia: un `productos` (nombre, fotos, descripción, SEO,
@@ -19,12 +21,12 @@ const serializarTipo = (t) => ({
   orden: t.orden
 });
 
-function serializarFicha(t) {
+function serializarFicha(t, lang = "es") {
   return {
     duracion: t.duracion,
     duracionHoras: t.duracionHoras,
     diasSalida: [...t.diasSalida].sort((a, b) => a - b),
-    diasSalidaTexto: textoDiasSalida(t.diasSalida),
+    diasSalidaTexto: textoDiasSalida(t.diasSalida, lang),
     horasSalida: [...t.horasSalida].sort(),
     idiomas: t.idiomas,
     itinerario: Array.isArray(t.itinerario) ? t.itinerario : [],
@@ -43,28 +45,30 @@ function serializarFicha(t) {
  * Precio "desde" de la tarjeta: el tipo activo más barato con precio mayor a
  * cero. Un "Niño menor de 3 gratis" no debería anunciar el tour como "desde S/ 0".
  */
-function precioDesde(tipos) {
+function precioDesde(tipos, lang = "es") {
   const activos = tipos.filter(t => t.activo);
   if (!activos.length) return null;
   const pagados = activos.filter(t => Number(t.precio) > 0);
   const candidatos = pagados.length ? pagados : activos;
   const min = candidatos.reduce((a, b) => (Number(b.precio) < Number(a.precio) ? b : a));
-  return { precio: num(min.precio), etiqueta: `por ${min.nombre.toLowerCase()}` };
+  return { precio: num(min.precio), etiqueta: textosTour(lang).desde(min.nombre) };
 }
 
 const ORDEN_TIPOS = [{ orden: "asc" }, { precio: "desc" }];
 
 const SELECT_PRODUCTO_STORE = {
-  id: true, nombre: true, slug: true, descripcion: true, descripcionCorta: true,
+  id: true, nombre: true, slug: true, descripcion: true, descripcionCorta: true, traducciones: true,
   ratingPromedio: true, ratingCantidad: true, destacado: true,
   imagenes: { select: { url: true, textoAlternativo: true, esPrincipal: true, orden: true }, orderBy: { orden: "asc" } },
   tour: { include: { tiposPasajero: { where: { activo: true }, orderBy: ORDEN_TIPOS } } }
 };
 
-function serializarTourStore(p, { detalle = false } = {}) {
-  const t = p.tour;
+function serializarTourStore(original, { detalle = false, lang = "es" } = {}) {
+  // Inglés: nombre y descripciones del producto, y la ficha (itinerario, incluye, tipos de pasajero…).
+  const p = traducirFila(original, ["nombre", "descripcionCorta", "descripcion"], lang);
+  const t = traducirTour(original.tour, original.traducciones, lang);
   const imagenes = detalle ? p.imagenes : p.imagenes.filter(i => i.esPrincipal).concat(p.imagenes.filter(i => !i.esPrincipal)).slice(0, 1);
-  const ficha = serializarFicha(t);
+  const ficha = serializarFicha(t, lang);
   return {
     id: p.id,
     nombre: p.nombre,
@@ -83,7 +87,7 @@ function serializarTourStore(p, { detalle = false } = {}) {
       edadMinima: ficha.edadMinima
     }),
     tiposPasajero: t.tiposPasajero.map(serializarTipo),
-    desde: precioDesde(t.tiposPasajero)
+    desde: precioDesde(t.tiposPasajero, lang)
   };
 }
 
@@ -93,32 +97,38 @@ const publicable = (p) => p.tour.tiposPasajero.length > 0 && p.tour.horasSalida.
 // Store
 // ============================================
 
-export async function listarToursStore(tiendaId) {
+export async function listarToursStore(tiendaId, lang = "es") {
   const productos = await prisma.productos.findMany({
     where: { tiendaId, activo: true, tour: { isNot: null } },
     orderBy: [{ destacado: "desc" }, { precioBase: "asc" }],
     select: SELECT_PRODUCTO_STORE
   });
-  return productos.filter(publicable).map(p => serializarTourStore(p));
+  return productos.filter(publicable).map(p => serializarTourStore(p, { lang }));
 }
 
-export async function obtenerTourStore(tiendaId, slug) {
+export async function obtenerTourStore(tiendaId, slug, lang = "es") {
   const p = await prisma.productos.findFirst({
     where: { tiendaId, slug, activo: true, tour: { isNot: null } },
     select: SELECT_PRODUCTO_STORE
   });
   if (!p || !publicable(p)) throw new NotFoundError("Tour", "Tour no encontrado");
-  return serializarTourStore(p, { detalle: true });
+  return serializarTourStore(p, { detalle: true, lang });
 }
 
-/** Para cotizar / crear una solicitud: producto activo, su ficha y TODOS sus tipos (la cotización descarta los inactivos). */
-export async function cargarTourParaReserva(tiendaId, productoId) {
+/**
+ * Para cotizar / crear una solicitud: producto activo, su ficha y TODOS sus
+ * tipos (la cotización descarta los inactivos). En inglés, los tipos de
+ * pasajero llegan traducidos: las líneas y la reserva los guardan así.
+ */
+export async function cargarTourParaReserva(tiendaId, productoId, lang = "es") {
   const producto = await prisma.productos.findFirst({
     where: { id: productoId, tiendaId, activo: true },
-    select: { id: true, nombre: true, tour: { include: { tiposPasajero: { orderBy: ORDEN_TIPOS } } } }
+    select: { id: true, nombre: true, traducciones: true, tour: { include: { tiposPasajero: { orderBy: ORDEN_TIPOS } } } }
   });
   if (!producto?.tour) throw new NotFoundError("Tour", "Tour no encontrado");
-  return { producto, tour: producto.tour, tiposPasajero: producto.tour.tiposPasajero };
+  const { traducciones, ...resto } = producto;
+  const tour = traducirTour(producto.tour, traducciones, lang);
+  return { producto: resto, tour, tiposPasajero: tour.tiposPasajero };
 }
 
 // ============================================

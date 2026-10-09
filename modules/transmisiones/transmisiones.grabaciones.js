@@ -5,8 +5,10 @@ import { borrarPrivado, subirPrivado, urlPrivada } from "../../services/storage-
 import { sendTransmisionGrabacionEmail } from "../../services/email.service.js";
 import { urlTienda } from "../resenas/resenas.service.js";
 import { firmarTokenAnfitrion } from "./transmisiones.token.js";
+import { generarResumen } from "./transmisiones.resumen.js";
 import {
-  PARTE_MIN_SEG, conGrabacion, descargaHasta, grabacionHasta, nombreArchivo, salaAbreEn, tocaAvisoBorrado, tocaAvisoDescarga
+  MAX_INTENTOS_RESUMEN, PARTE_MIN_SEG, conGrabacion, descargaHasta, grabacionHasta, nombreArchivo, salaAbreEn, tocaAvisoBorrado,
+  tocaAvisoDescarga
 } from "./transmisiones.reglas.js";
 
 /**
@@ -109,7 +111,7 @@ export async function borrarGrabacion(t, ahora = new Date()) {
 
 // ---------- Avisos ----------
 
-async function avisar(t, tipo, hasta, campo, ahora) {
+async function avisar(t, tipo, hasta, campo, ahora, resumen = null) {
   // Marca primero (idempotente entre réplicas) y luego envía.
   const marcado = await prisma.evento_transmisiones.updateMany({ where: { id: t.id, [campo]: null }, data: { [campo]: ahora } });
   if (marcado.count !== 1) return;
@@ -117,8 +119,53 @@ async function avisar(t, tipo, hasta, campo, ahora) {
   const to = [...new Set([t.anfitrionEmail, tienda?.email].filter(Boolean))];
   if (!to.length) return;
   await sendTransmisionGrabacionEmail({
-    to, tipo, tiendaNombre: tienda.nombre, evento: t.funcion.evento.producto.nombre, enlace: await enlaceAnfitrion(t), hasta
+    to, tipo, tiendaNombre: tienda.nombre, evento: t.funcion.evento.producto.nombre, enlace: await enlaceAnfitrion(t), hasta, resumen
   }).catch(e => logger.error(`No se envió el correo de grabación (${tipo}) de ${t.id}: ${e.message}`));
+}
+
+// ---------- Resumen con IA (Premium, R8.3), uno a la vez y fuera del ciclo ----------
+
+let resumiendo = false;
+
+/**
+ * Encadena los subtítulos de las partes (cada una desfasada por la duración de
+ * las anteriores), pide el resumen a Claude, lo guarda y avisa al anfitrión.
+ * Si falla, se reintenta en otro ciclo (hasta MAX_INTENTOS_RESUMEN).
+ */
+function resumirEnSegundoPlano(t, ahora) {
+  if (resumiendo) return;
+  resumiendo = true;
+  (async () => {
+    const tomada = await prisma.evento_transmisiones.updateMany({
+      where: { id: t.id, OR: [{ resumenEstado: null }, { resumenEstado: { in: ["pendiente", "error"] } }] },
+      data: { resumenEstado: "generando", resumenIntentos: { increment: 1 } }
+    });
+    if (tomada.count !== 1) return; // otra réplica ya lo está generando
+    try {
+      let desfase = 0;
+      const partes = [];
+      for (const g of t.grabaciones.filter(p => p.estado === "lista")) {
+        if (g.subtitulosEstado === "listo") partes.push({ vtt: await provider().leerSubtitulos(g.videoId, "es"), desfaseSeg: desfase });
+        desfase += g.duracionSeg ?? 0;
+      }
+      const r = await generarResumen({ evento: t.funcion.evento.producto.nombre, partes });
+      await prisma.evento_transmisiones.update({
+        where: { id: t.id },
+        data: {
+          resumenEstado: r.sinAudio ? "sin_audio" : "listo",
+          resumen: r.resultado,
+          resumenGeneradoEn: new Date(),
+          resumenTokensEntrada: r.tokensEntrada,
+          resumenTokensSalida: r.tokensSalida
+        }
+      });
+      logger.info(`Resumen de la transmisión ${t.id}: ${r.sinAudio ? "sin audio" : "listo"} (${r.tokensEntrada} + ${r.tokensSalida} tokens)`);
+      if (r.resultado) await avisar(t, "resumen", grabacionHasta(t, t.funcion), "avisoResumenEn", ahora, r.resultado);
+    } catch (e) {
+      logger.error(`No se generó el resumen de ${t.id} (se reintenta): ${e.message}`);
+      await prisma.evento_transmisiones.update({ where: { id: t.id }, data: { resumenEstado: "error" } }).catch(() => {});
+    }
+  })().finally(() => { resumiendo = false; });
 }
 
 // ---------- Ciclo del job ----------
@@ -129,7 +176,8 @@ async function avisar(t, tipo, hasta, campo, ahora) {
  *  2. MP4 descargable: pedirlo y esperar que esté listo;
  *  3. aviso "tu grabación está lista" cuando todo está listo;
  *  4. "Guardar 1 año": copiar a R2 (en segundo plano, una a la vez);
- *  5. avisos 7 días antes de cada borrado y borrado al vencer.
+ *  5. avisos 7 días antes de cada borrado y borrado al vencer;
+ *  6. Premium: subtítulos en español de cada parte y resumen con IA (en segundo plano).
  */
 export async function cicloGrabaciones(ahora = new Date()) {
   // 1 y 2: partes pendientes de Cloudflare
@@ -162,6 +210,23 @@ export async function cicloGrabaciones(ahora = new Date()) {
     }
   }
 
+  // Premium: subtítulos automáticos en español de cada parte lista (base del resumen).
+  const sinSubtitulos = await prisma.transmision_grabaciones.findMany({
+    where: { estado: "lista", subtitulosEstado: { in: ["sin_pedir", "pendiente"] }, transmision: { plan: "premium" } },
+    take: 30
+  });
+  for (const g of sinSubtitulos) {
+    try {
+      if (g.subtitulosEstado === "sin_pedir") await provider().pedirSubtitulos(g.videoId, "es");
+      const estado = g.subtitulosEstado === "sin_pedir" ? "pendiente" : await provider().estadoSubtitulos(g.videoId, "es");
+      if (estado !== g.subtitulosEstado) {
+        await prisma.transmision_grabaciones.update({ where: { id: g.id }, data: { subtitulosEstado: estado, fechaActualizacion: ahora } });
+      }
+    } catch (e) {
+      logger.warn(`Subtítulos de ${g.videoId}: ${e.message}`);
+    }
+  }
+
   // 3 a 5: transmisiones terminadas con grabación vigente
   const conVideo = await prisma.evento_transmisiones.findMany({
     where: { plan: { not: "basico" }, grabar: true, grabacionBorradaEn: null, terminadaEn: { not: null }, estado: "programada", limpiadaEn: { not: null } },
@@ -184,6 +249,16 @@ export async function cicloGrabaciones(ahora = new Date()) {
       if (t.guardarAnio) {
         const porCopiar = vivas.find(g => g.estado === "lista" && g.mp4Estado === "lista" && !g.r2Key);
         if (porCopiar) copiarEnSegundoPlano(porCopiar, t);
+      }
+
+      // Premium: resumen con IA cuando todas las partes tienen sus subtítulos (o fallaron).
+      const listas = vivas.filter(g => g.estado === "lista");
+      const pendienteResumen = t.resumenEstado == null || t.resumenEstado === "pendiente"
+        || (t.resumenEstado === "error" && t.resumenIntentos < MAX_INTENTOS_RESUMEN);
+      if (t.plan === "premium" && pendienteResumen && listas.length && ahora < enLinea
+        && !vivas.some(g => g.estado === "procesando")
+        && listas.every(g => g.subtitulosEstado === "listo" || g.subtitulosEstado === "error")) {
+        resumirEnSegundoPlano(t, ahora);
       }
 
       // Vence el plazo en línea: se borra en Cloudflare. Con "Guardar 1 año", solo lo ya copiado a R2.

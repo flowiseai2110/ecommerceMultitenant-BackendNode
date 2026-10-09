@@ -16,7 +16,7 @@ const ok = (res, code, data) => apiResponse(res, { status: 200, type: "SUCCESS",
 const tiendaQuery = z.object({ tiendaId: z.string().uuid("tiendaId inválido") });
 const manualSchema = z.object({
   tiendaId: z.string().uuid("tiendaId inválido"),
-  fuente: z.enum(["productos", "categorias", "habitaciones", "extras", "temporadas", "planes", "config", "diseno"]),
+  fuente: z.enum(["productos", "tours", "categorias", "habitaciones", "extras", "temporadas", "planes", "config", "diseno"]),
   id: z.string().min(1).max(100),
   campo: z.string().min(1).max(120),
   texto: z.union([z.string().max(5000), z.array(z.string().max(100)).max(30)])

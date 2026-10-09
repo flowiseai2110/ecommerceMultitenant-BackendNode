@@ -7,6 +7,7 @@ import { validate } from "../../middlewares/validation.middleware.js";
 import { scopeQueryToTienda } from "../../kernel/tenant/index.js";
 import { idParamSchema, paginationSchema } from "./categorias.schema.js";
 import { serializeCategoriaStore } from "./categorias.serializer.js";
+import { traducirFila } from "../traducciones/traducciones.service.js";
 
 const categoriasRepository = new GenericRepository(prisma.categorias, "Categoria");
 const categoriasService = new GenericService(categoriasRepository, {
@@ -22,14 +23,20 @@ const categoriasService = new GenericService(categoriasRepository, {
 const categoriasController = new GenericController(categoriasService, "Categoria", {
   serialize: serializeCategoriaStore
 });
+// Inglés (docs/specs/hospedaje-completo C3): mismo listado con nombre y descripción traducidos.
+const categoriasControllerEn = new GenericController(categoriasService, "Categoria", {
+  serialize: (c) => serializeCategoriaStore(traducirFila(c, ["nombre", "descripcion"], "en"))
+});
+const porIdioma = (accion) => (req, res, next) =>
+  (req.query.lang === "en" ? categoriasControllerEn : categoriasController)[accion](req, res, next);
 
 const router = Router();
 
 // GET / - Listar categorías (público — filtra por la tienda del subdominio,
 // o por ?tiendaId=&activo=true como fallback en dev/dominio genérico)
-router.get("/", validate({ query: paginationSchema }), scopeQueryToTienda, categoriasController.findAll);
+router.get("/", validate({ query: paginationSchema }), scopeQueryToTienda, porIdioma("findAll"));
 
 // GET /:id - Obtener categoría por ID (público)
-router.get("/:id", validate({ params: idParamSchema }), categoriasController.findById);
+router.get("/:id", validate({ params: idParamSchema }), porIdioma("findById"));
 
 export default router;

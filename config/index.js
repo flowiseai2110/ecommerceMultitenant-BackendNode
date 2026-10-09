@@ -223,7 +223,13 @@ export const config = {
     jobs: process.env.TRANSMISIONES_JOBS !== "false",
     // Bucket PRIVADO de R2 (mismas credenciales R2_*) donde se copia el MP4 de
     // las grabaciones con "Guardar 1 año". Nunca se sirve público: solo con URL firmada.
-    bucketGrabaciones: process.env.R2_BUCKET_GRABACIONES
+    bucketGrabaciones: process.env.R2_BUCKET_GRABACIONES,
+    // Resumen con IA de la grabación (Premium, R8.3). Sin clave propia usa la del asesor.
+    ia: {
+      apiKey: process.env.TRANSMISIONES_IA_API_KEY || process.env.AGENTE_IA_API_KEY,
+      modelo: process.env.TRANSMISIONES_IA_MODELO || "claude-opus-5-5",
+      effort: process.env.TRANSMISIONES_IA_EFFORT || "medium"
+    }
   },
 
   // Video en vivo de los planes Privado y Premium (services/streaming/).

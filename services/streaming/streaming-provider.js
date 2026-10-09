@@ -65,6 +65,23 @@ export class StreamingProvider {
   /** URL firmada del MP4. @param {{ expiraEn: Date, nombreArchivo?: string }} opts */
   async urlDescarga(videoId, opts) { throw new Error("urlDescarga no implementado"); }
 
+  // ---------- Retransmisión y subtítulos (Fase 5, Premium) ----------
+
+  /** @returns {Promise<string>} id de la salida */
+  async crearSalida(entradaId, { url, streamKey, habilitada }) { throw new Error("crearSalida no implementado"); }
+
+  async habilitarSalida(entradaId, salidaId, habilitada) { throw new Error("habilitarSalida no implementado"); }
+
+  async borrarSalida(entradaId, salidaId) { throw new Error("borrarSalida no implementado"); }
+
+  async pedirSubtitulos(videoId, idioma) { throw new Error("pedirSubtitulos no implementado"); }
+
+  /** @returns {Promise<"pendiente"|"listo"|"error">} */
+  async estadoSubtitulos(videoId, idioma) { throw new Error("estadoSubtitulos no implementado"); }
+
+  /** @returns {Promise<string>} WebVTT */
+  async leerSubtitulos(videoId, idioma) { throw new Error("leerSubtitulos no implementado"); }
+
   /**
    * Verifica un webhook y lo traduce a un evento normalizado, o null si no es válido.
    * @param {{ tipo: "videos" | "notificaciones", headers: object, rawBody: Buffer }} req

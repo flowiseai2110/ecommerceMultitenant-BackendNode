@@ -103,21 +103,21 @@ model invitaciones {
 // ============================================
 
 model tiendas {
-  id                String  @id @default(uuid()) @db.Uuid
-  nombre            String  @db.VarChar(100)
-  slug              String  @unique @db.VarChar(100)
+  id                String   @id @default(uuid()) @db.Uuid
+  nombre            String   @db.VarChar(100)
+  slug              String   @unique @db.VarChar(100)
   // Idiomas de la vitrina (hospedaje-completo C3): {es} o {es,en}.
   idiomas           String[] @default(["es"])
-  descripcion       String? @db.Text
-  planId            String? @map("plan_id") @db.Uuid
-  logoUrl           String? @map("logo_url") @db.VarChar(500)
-  logoStoragePath   String? @map("logo_storage_path") @db.VarChar(500)
-  logoBackground    String? @map("logo_background") @db.VarChar(7)
-  bannerUrl         String? @map("banner_url") @db.VarChar(500)
-  bannerStoragePath String? @map("banner_storage_path") @db.VarChar(500)
-  whatsappNumero    String? @map("whatsapp_numero") @db.VarChar(20)
-  email             String? @db.VarChar(100)
-  direccion         String? @db.Text
+  descripcion       String?  @db.Text
+  planId            String?  @map("plan_id") @db.Uuid
+  logoUrl           String?  @map("logo_url") @db.VarChar(500)
+  logoStoragePath   String?  @map("logo_storage_path") @db.VarChar(500)
+  logoBackground    String?  @map("logo_background") @db.VarChar(7)
+  bannerUrl         String?  @map("banner_url") @db.VarChar(500)
+  bannerStoragePath String?  @map("banner_storage_path") @db.VarChar(500)
+  whatsappNumero    String?  @map("whatsapp_numero") @db.VarChar(20)
+  email             String?  @db.VarChar(100)
+  direccion         String?  @db.Text
 
   // Datos para facturación electrónica
   ruc             String? @db.VarChar(20)
@@ -970,26 +970,26 @@ model libro_reclamaciones_eventos {
 
 // Configuración de reservas de la tienda (una fila por tienda).
 model config_reservas {
-  tiendaId               String  @id @map("tienda_id") @db.Uuid
-  modoConfirmacion       String  @default("solicitud") @map("modo_confirmacion") @db.VarChar(12) // solicitud | pago_directo
-  cobro                  String  @default("total") @db.VarChar(10) // total | adelanto | en_destino
-  adelantoPct            Int?    @map("adelanto_pct")
+  tiendaId               String   @id @map("tienda_id") @db.Uuid
+  modoConfirmacion       String   @default("solicitud") @map("modo_confirmacion") @db.VarChar(12) // solicitud | pago_directo
+  cobro                  String   @default("total") @db.VarChar(10) // total | adelanto | en_destino
+  adelantoPct            Int?     @map("adelanto_pct")
   // Límite duro: no se puede enviar si falta menos que esto para el inicio.
-  anticipacionMinHoras   Int     @default(0) @map("anticipacion_min_horas")
+  anticipacionMinHoras   Int      @default(0) @map("anticipacion_min_horas")
   // Límite blando: advertencia de reserva próxima (null = sin aviso).
-  avisoProximoHoras      Int?    @map("aviso_proximo_horas")
-  avisoProximoTexto      String? @map("aviso_proximo_texto") @db.VarChar(300)
-  maxSolicitudesAbiertas Int     @default(3) @map("max_solicitudes_abiertas")
-  instrucciones          String? @db.Text
-  politicaCancelacion    String? @map("politica_cancelacion") @db.Text
-  horaCheckin            String  @default("14:00") @map("hora_checkin") @db.VarChar(5)
-  horaCheckout           String  @default("12:00") @map("hora_checkout") @db.VarChar(5)
-  comprobanteEn          String  @default("al_pagar") @map("comprobante_en") @db.VarChar(14) // al_pagar | en_el_servicio
+  avisoProximoHoras      Int?     @map("aviso_proximo_horas")
+  avisoProximoTexto      String?  @map("aviso_proximo_texto") @db.VarChar(300)
+  maxSolicitudesAbiertas Int      @default(3) @map("max_solicitudes_abiertas")
+  instrucciones          String?  @db.Text
+  politicaCancelacion    String?  @map("politica_cancelacion") @db.Text
+  horaCheckin            String   @default("14:00") @map("hora_checkin") @db.VarChar(5)
+  horaCheckout           String   @default("12:00") @map("hora_checkout") @db.VarChar(5)
+  comprobanteEn          String   @default("al_pagar") @map("comprobante_en") @db.VarChar(14) // al_pagar | en_el_servicio
   // Solo eventos (fase 3)
-  apartadoManualMin      Int     @default(120) @map("apartado_manual_min") // minutos que el cupo queda apartado mientras se paga
-  maxEntradasPorCompra   Int     @default(10) @map("max_entradas_por_compra")
-  umbralUltimasEntradas  Int?    @default(20) @map("umbral_ultimas_entradas") // "Últimas entradas" si quedan menos; null = nunca
-  cierrePagoManualHoras  Int?    @map("cierre_pago_manual_horas") // sin Yape/transferencia N h antes de la función
+  apartadoManualMin      Int      @default(120) @map("apartado_manual_min") // minutos que el cupo queda apartado mientras se paga
+  maxEntradasPorCompra   Int      @default(10) @map("max_entradas_por_compra")
+  umbralUltimasEntradas  Int?     @default(20) @map("umbral_ultimas_entradas") // "Últimas entradas" si quedan menos; null = nunca
+  cierrePagoManualHoras  Int?     @map("cierre_pago_manual_horas") // sin Yape/transferencia N h antes de la función
   // Hospedaje (docs/specs/hospedaje-completo, fase B)
   tipoAlojamiento        String   @default("hotel") @map("tipo_alojamiento") @db.VarChar(12) // hotel | hostal | casa | apart | lodge | posada
   ninosGratisHasta       Int?     @map("ninos_gratis_hasta") // edad hasta la que un niño no paga; null = no aplica cargo
@@ -1028,16 +1028,16 @@ model cierres_fecha {
 // Temporadas del hotel (hospedaje-completo B2): ajuste % sobre el precio de
 // cada noche que cae en el rango y mínimo de noches si la llegada cae en él.
 model hotel_temporadas {
-  id          String   @id @default(uuid()) @db.Uuid
-  tiendaId    String   @map("tienda_id") @db.Uuid
-  nombre      String   @db.VarChar(60)
-  desde       DateTime @db.Date
-  hasta       DateTime @db.Date // inclusiva
-  ajustePct   Int      @map("ajuste_pct") // -50 … 300
-  minNoches   Int?     @map("min_noches")
-  productoIds String[] @default([]) @map("producto_ids") @db.Uuid // vacío = todas las habitaciones
-  activo      Boolean  @default(true)
-  traducciones Json?   @db.JsonB // { en: { nombre } } (C3)
+  id           String   @id @default(uuid()) @db.Uuid
+  tiendaId     String   @map("tienda_id") @db.Uuid
+  nombre       String   @db.VarChar(60)
+  desde        DateTime @db.Date
+  hasta        DateTime @db.Date // inclusiva
+  ajustePct    Int      @map("ajuste_pct") // -50 … 300
+  minNoches    Int?     @map("min_noches")
+  productoIds  String[] @default([]) @map("producto_ids") @db.Uuid // vacío = todas las habitaciones
+  activo       Boolean  @default(true)
+  traducciones Json?    @db.JsonB // { en: { nombre } } (C3)
 
   fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
   usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
@@ -1051,15 +1051,15 @@ model hotel_temporadas {
 
 // Extras reservables del hotel (hospedaje-completo B3): traslado, early check-in, cuna…
 model hotel_extras {
-  id          String   @id @default(uuid()) @db.Uuid
-  tiendaId    String   @map("tienda_id") @db.Uuid
-  nombre      String   @db.VarChar(60)
-  descripcion String?  @db.VarChar(200)
-  precio      Decimal  @db.Decimal(10, 2)
-  cobro       String   @default("estadia") @db.VarChar(14) // estadia | noche | persona | persona_noche
-  datoPedido  String?  @map("dato_pedido") @db.VarChar(80) // lo que se le pide al huésped ("Número de vuelo y hora")
-  activo      Boolean  @default(true)
-  orden       Int      @default(0)
+  id           String  @id @default(uuid()) @db.Uuid
+  tiendaId     String  @map("tienda_id") @db.Uuid
+  nombre       String  @db.VarChar(60)
+  descripcion  String? @db.VarChar(200)
+  precio       Decimal @db.Decimal(10, 2)
+  cobro        String  @default("estadia") @db.VarChar(14) // estadia | noche | persona | persona_noche
+  datoPedido   String? @map("dato_pedido") @db.VarChar(80) // lo que se le pide al huésped ("Número de vuelo y hora")
+  activo       Boolean @default(true)
+  orden        Int     @default(0)
   traducciones Json?   @db.JsonB // { en: { nombre, descripcion, datoPedido } } (C3)
 
   fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
@@ -1076,15 +1076,15 @@ model hotel_extras {
 // tarifa flexible (sin ajuste, con la política de cancelación de la tienda)
 // es implícita.
 model hotel_planes {
-  id           String   @id @default(uuid()) @db.Uuid
-  tiendaId     String   @map("tienda_id") @db.Uuid
-  nombre       String   @db.VarChar(60)
-  descripcion  String?  @db.VarChar(200)
-  ajustePct    Int      @map("ajuste_pct") // -50 … 0
-  reembolsable Boolean  @default(false)
-  activo       Boolean  @default(true)
-  orden        Int      @default(0)
-  traducciones Json?    @db.JsonB // { en: { nombre, descripcion } } (C3)
+  id           String  @id @default(uuid()) @db.Uuid
+  tiendaId     String  @map("tienda_id") @db.Uuid
+  nombre       String  @db.VarChar(60)
+  descripcion  String? @db.VarChar(200)
+  ajustePct    Int     @map("ajuste_pct") // -50 … 0
+  reembolsable Boolean @default(false)
+  activo       Boolean @default(true)
+  orden        Int     @default(0)
+  traducciones Json?   @db.JsonB // { en: { nombre, descripcion } } (C3)
 
   fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
   usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
@@ -1141,30 +1141,30 @@ model hotel_modalidades {
 // Detalle de una reserva de hotel, tour o compra de entradas. El dinero, el
 // cliente y el comprobante viven en `pedidos`; aquí, el servicio y el titular.
 model reservas {
-  pedidoId      String    @id @map("pedido_id") @db.Uuid
-  tiendaId      String    @map("tienda_id") @db.Uuid
-  tipo          String    @db.VarChar(10) // hotel | tour | evento
-  productoId    String    @map("producto_id") @db.Uuid
-  modalidadId   String?   @map("modalidad_id") @db.Uuid
-  inicio        DateTime  @db.Timestamptz // ingreso / salida del tour
-  fin           DateTime? @db.Timestamptz // salida del hotel (calculada)
-  noches        Int?
-  horas         Int?
-  adultos       Int?
-  ninos         Int?
-  pasajeros     Json?     @db.JsonB // tours: [{ tipoId, nombre, cantidad, precio }] (snapshot)
-  idioma        String?   @db.VarChar(5) // tours: idioma elegido (es, en, ...)
-  funcionId     String?   @map("funcion_id") @db.Uuid // eventos: función comprada
+  pedidoId       String    @id @map("pedido_id") @db.Uuid
+  tiendaId       String    @map("tienda_id") @db.Uuid
+  tipo           String    @db.VarChar(10) // hotel | tour | evento
+  productoId     String    @map("producto_id") @db.Uuid
+  modalidadId    String?   @map("modalidad_id") @db.Uuid
+  inicio         DateTime  @db.Timestamptz // ingreso / salida del tour
+  fin            DateTime? @db.Timestamptz // salida del hotel (calculada)
+  noches         Int?
+  horas          Int?
+  adultos        Int?
+  ninos          Int?
+  pasajeros      Json?     @db.JsonB // tours: [{ tipoId, nombre, cantidad, precio }] (snapshot)
+  idioma         String?   @db.VarChar(5) // tours: idioma elegido (es, en, ...)
+  funcionId      String?   @map("funcion_id") @db.Uuid // eventos: función comprada
   // Eventos: hasta cuándo el cupo queda apartado esperando la captura del pago.
-  apartadoHasta DateTime? @map("apartado_hasta") @db.Timestamptz
+  apartadoHasta  DateTime? @map("apartado_hasta") @db.Timestamptz
   // Hotel (hospedaje-completo, fase B)
-  extras        Json?     @db.JsonB // [{ id, nombre, cobro, precio, cantidad, total, dato }] (snapshot)
-  edadesNinos   Int[]     @default([]) @map("edades_ninos")
-  exoneradoIgv  Boolean   @default(false) @map("exonerado_igv")
+  extras         Json?     @db.JsonB // [{ id, nombre, cobro, precio, cantidad, total, dato }] (snapshot)
+  edadesNinos    Int[]     @default([]) @map("edades_ninos")
+  exoneradoIgv   Boolean   @default(false) @map("exonerado_igv")
   // Fase C
-  habitaciones  Int       @default(1) // cuántas habitaciones del mismo tipo
-  plan          Json?     @db.JsonB // { id, nombre, ajustePct, reembolsable } (snapshot)
-  idiomaHuesped String    @default("es") @map("idioma_huesped") @db.VarChar(2) // idioma en que reservó (correos)
+  habitaciones   Int       @default(1) // cuántas habitaciones del mismo tipo
+  plan           Json?     @db.JsonB // { id, nombre, ajustePct, reembolsable } (snapshot)
+  idiomaHuesped  String    @default("es") @map("idioma_huesped") @db.VarChar(2) // idioma en que reservó (correos)
   resenaPedidaEn DateTime? @map("resena_pedida_en") @db.Timestamptz // correo "¿Cómo fue tu estadía?" enviado
 
   // Titular (registro de huésped)
@@ -1338,50 +1338,60 @@ model evento_transmisiones {
   youtubeVideoId String? @map("youtube_video_id") @db.VarChar(20)
 
   // Plan Privado (Fase 2): video propio en Cloudflare Stream.
-  proveedor           String?   @db.VarChar(20) // cloudflare
-  entradaId           String?   @map("entrada_id") @db.VarChar(64) // live input del proveedor
+  proveedor            String?   @db.VarChar(20) // cloudflare
+  entradaId            String?   @map("entrada_id") @db.VarChar(64) // live input del proveedor
   // Datos de conexión (URL RTMPS, clave, SRT) cifrados con utils/crypto.js (R9.4).
-  claveCifrada        String?   @map("clave_cifrada") @db.Text
+  claveCifrada         String?   @map("clave_cifrada") @db.Text
   // Sube al regenerar la clave: invalida las sesiones de la App Transmitir.
-  claveVersion        Int       @default(1) @map("clave_version")
+  claveVersion         Int       @default(1) @map("clave_version")
   // Tope de invitados (25 | 50 | 100 | 200) y su factor de descuento (0.5 | 1 | 2 | 4).
-  maxInvitados        Int?      @map("max_invitados")
-  factor              Decimal?  @db.Decimal(3, 1)
+  maxInvitados         Int?      @map("max_invitados")
+  factor               Decimal?  @db.Decimal(3, 1)
   // La entrada solo acepta señal en la prueba y en la ventana del evento (la maneja el job).
-  habilitada          Boolean   @default(false)
-  pruebaHasta         DateTime? @map("prueba_hasta") @db.Timestamptz
+  habilitada           Boolean   @default(false)
+  pruebaHasta          DateTime? @map("prueba_hasta") @db.Timestamptz
   // Señal que llega del celular: sin_senal | conectada | desconectada
-  senal               String    @default("sin_senal") @db.VarChar(20)
-  senalEn             DateTime? @map("senal_en") @db.Timestamptz
-  inicioRealEn        DateTime? @map("inicio_real_en") @db.Timestamptz
+  senal                String    @default("sin_senal") @db.VarChar(20)
+  senalEn              DateTime? @map("senal_en") @db.Timestamptz
+  inicioRealEn         DateTime? @map("inicio_real_en") @db.Timestamptz
   // Corte (job, a los 5 min del fin) o "Terminar" del admin (R6.3, R7.8).
-  terminadaEn         DateTime? @map("terminada_en") @db.Timestamptz
-  minutosUsados       Int?      @map("minutos_usados")
-  minutosDescontados  Int?      @map("minutos_descontados")
+  terminadaEn          DateTime? @map("terminada_en") @db.Timestamptz
+  minutosUsados        Int?      @map("minutos_usados")
+  minutosDescontados   Int?      @map("minutos_descontados")
   // Fase 3: minutos extra confirmados (R7.5-R7.7) y extensión automática autorizada al activar (0, 30 o 60).
-  extensionMin        Int       @default(0) @map("extension_min")
-  extensionAutoMaxMin Int       @default(0) @map("extension_auto_max_min")
+  extensionMin         Int       @default(0) @map("extension_min")
+  extensionAutoMaxMin  Int       @default(0) @map("extension_auto_max_min")
   // "Terminar a la hora": no se aplica la extensión automática.
-  noExtender          Boolean   @default(false) @map("no_extender")
+  noExtender           Boolean   @default(false) @map("no_extender")
   // Aviso de los 15 minutos (se vuelve a enviar tras cada extensión).
-  avisoFinEn          DateTime? @map("aviso_fin_en") @db.Timestamptz
+  avisoFinEn           DateTime? @map("aviso_fin_en") @db.Timestamptz
   // Contacto de la transmisión: otro celular que recibe el aviso (el que transmite está en No molestar).
-  contactoNombre      String?   @map("contacto_nombre") @db.VarChar(100)
-  contactoEmail       String?   @map("contacto_email") @db.VarChar(150)
-  contactoTelefono    String?   @map("contacto_telefono") @db.VarChar(20)
+  contactoNombre       String?   @map("contacto_nombre") @db.VarChar(100)
+  contactoEmail        String?   @map("contacto_email") @db.VarChar(150)
+  contactoTelefono     String?   @map("contacto_telefono") @db.VarChar(20)
   // Minutos vistos estimados con el latido de los invitados (costo real, R10.3).
-  minutosVistos       Decimal   @default(0) @map("minutos_vistos") @db.Decimal(10, 1)
+  minutosVistos        Decimal   @default(0) @map("minutos_vistos") @db.Decimal(10, 1)
   // Fase 4: grabación (R8.1). Privado: 30 días en línea + descarga, incluida y
   // activada por defecto; false = "Solo en vivo". "Guardar 1 año" alarga solo la
   // descarga (MP4 copiado a R2 privado).
-  grabar              Boolean   @default(true)
-  guardarAnio         Boolean   @default(false) @map("guardar_anio")
-  avisoGrabacionEn    DateTime? @map("aviso_grabacion_en") @db.Timestamptz
-  avisoBorradoEn      DateTime? @map("aviso_borrado_en") @db.Timestamptz
-  avisoDescargaEn     DateTime? @map("aviso_descarga_en") @db.Timestamptz
-  grabacionBorradaEn  DateTime? @map("grabacion_borrada_en") @db.Timestamptz
+  grabar               Boolean   @default(true)
+  guardarAnio          Boolean   @default(false) @map("guardar_anio")
+  avisoGrabacionEn     DateTime? @map("aviso_grabacion_en") @db.Timestamptz
+  avisoBorradoEn       DateTime? @map("aviso_borrado_en") @db.Timestamptz
+  avisoDescargaEn      DateTime? @map("aviso_descarga_en") @db.Timestamptz
+  grabacionBorradaEn   DateTime? @map("grabacion_borrada_en") @db.Timestamptz
+  // Fase 5 (Premium): resumen con IA de la grabación (R8.3).
+  // pendiente | generando | listo | error | sin_audio
+  resumenEstado        String?   @map("resumen_estado") @db.VarChar(20)
+  // { resumen, capitulos: [{ inicioSeg, titulo }], momentos: [{ inicioSeg, descripcion }] }
+  resumen              Json?     @db.JsonB
+  resumenGeneradoEn    DateTime? @map("resumen_generado_en") @db.Timestamptz
+  resumenIntentos      Int       @default(0) @map("resumen_intentos")
+  resumenTokensEntrada Int?      @map("resumen_tokens_entrada")
+  resumenTokensSalida  Int?      @map("resumen_tokens_salida")
+  avisoResumenEn       DateTime? @map("aviso_resumen_en") @db.Timestamptz
   // Entrada borrada en el proveedor (las grabaciones se conservan aparte).
-  limpiadaEn          DateTime? @map("limpiada_en") @db.Timestamptz
+  limpiadaEn           DateTime? @map("limpiada_en") @db.Timestamptz
 
   // Consentimiento del anfitrión (R9.1, Ley 29733): sin él no se activa.
   anfitrionNombre   String   @map("anfitrion_nombre") @db.VarChar(150)
@@ -1402,6 +1412,7 @@ model evento_transmisiones {
   excedente     transmision_excedentes?
   grabaciones   transmision_grabaciones[]
   cargos        transmision_cargos[]
+  destinos      transmision_destinos[]
 
   @@index([tiendaId], name: "idx_evento_transmisiones_tienda")
 }
@@ -1553,21 +1564,24 @@ model transmision_excedentes {
 // que la señal se reconecta después de 60 s (Fase 0), así que una transmisión
 // puede tener varias partes. Borrar la entrada no borra estos videos.
 model transmision_grabaciones {
-  id            String    @id @default(uuid()) @db.Uuid
-  tiendaId      String    @map("tienda_id") @db.Uuid
-  transmisionId String    @map("transmision_id") @db.Uuid
-  videoId       String    @unique @map("video_id") @db.VarChar(64)
-  orden         Int       @default(1)
-  grabadaEn     DateTime  @map("grabada_en") @db.Timestamptz
-  estado        String    @default("procesando") @db.VarChar(20) // procesando | lista | error | borrada
-  duracionSeg   Int?      @map("duracion_seg")
+  id               String    @id @default(uuid()) @db.Uuid
+  tiendaId         String    @map("tienda_id") @db.Uuid
+  transmisionId    String    @map("transmision_id") @db.Uuid
+  videoId          String    @unique @map("video_id") @db.VarChar(64)
+  orden            Int       @default(1)
+  grabadaEn        DateTime  @map("grabada_en") @db.Timestamptz
+  estado           String    @default("procesando") @db.VarChar(20) // procesando | lista | error | borrada
+  duracionSeg      Int?      @map("duracion_seg")
   // MP4 descargable en el proveedor: sin_pedir | pendiente | lista | error
-  mp4Estado     String    @default("sin_pedir") @map("mp4_estado") @db.VarChar(20)
+  mp4Estado        String    @default("sin_pedir") @map("mp4_estado") @db.VarChar(20)
+  // Subtítulos automáticos en español (Premium: base del resumen con IA).
+  // sin_pedir | pendiente | listo | error
+  subtitulosEstado String    @default("sin_pedir") @map("subtitulos_estado") @db.VarChar(20)
   // Copia en R2 privado ("Guardar 1 año")
-  r2Key         String?   @map("r2_key") @db.VarChar(300)
-  r2Bytes       BigInt?   @map("r2_bytes")
-  r2CopiadaEn   DateTime? @map("r2_copiada_en") @db.Timestamptz
-  borradaEn     DateTime? @map("borrada_en") @db.Timestamptz
+  r2Key            String?   @map("r2_key") @db.VarChar(300)
+  r2Bytes          BigInt?   @map("r2_bytes")
+  r2CopiadaEn      DateTime? @map("r2_copiada_en") @db.Timestamptz
+  borradaEn        DateTime? @map("borrada_en") @db.Timestamptz
 
   fechaRegistro      DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
   fechaActualizacion DateTime? @map("fecha_actualizacion") @db.Timestamptz
@@ -1600,4 +1614,28 @@ model transmision_cargos {
 
   @@unique([transmisionId, tipo], name: "uq_transmision_cargo_tipo")
   @@index([tiendaId, estado], name: "idx_transmision_cargos_tienda")
+}
+
+// Retransmisión a Facebook o YouTube (Premium, R8.2): hasta 2 destinos. La clave
+// se guarda cifrada (R9.4). La salida del proveedor solo emite en la ventana del
+// evento (no durante la prueba): la maneja el job.
+model transmision_destinos {
+  id            String  @id @default(uuid()) @db.Uuid
+  tiendaId      String  @map("tienda_id") @db.Uuid
+  transmisionId String  @map("transmision_id") @db.Uuid
+  plataforma    String  @db.VarChar(20) // facebook | youtube | otro
+  url           String  @db.VarChar(500) // rtmp(s)://… del destino
+  claveCifrada  String  @map("clave_cifrada") @db.Text
+  salidaId      String? @map("salida_id") @db.VarChar(64)
+  habilitada    Boolean @default(false)
+
+  // Auditoría
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  transmision evento_transmisiones @relation(fields: [transmisionId], references: [id], onDelete: Cascade)
+
+  @@index([transmisionId], name: "idx_transmision_destinos_transmision")
 }

@@ -2,6 +2,7 @@ import { prisma } from "../../../config/prisma.js";
 import { NotFoundError, ValidationError } from "../../../utils/errors.js";
 import { invalidateProductoDetailCache } from "../../catalogo/productos.cache.js";
 import { etiquetaModalidad } from "../reservas.serializer.js";
+import { traducirFila } from "../../traducciones/traducciones.service.js";
 
 /**
  * Habitaciones del hotel / hostal: un `productos` (nombre, fotos, descripción,
@@ -43,14 +44,16 @@ function precioDesde(modalidades) {
 }
 
 const SELECT_PRODUCTO_STORE = {
-  id: true, nombre: true, slug: true, descripcion: true, descripcionCorta: true,
+  id: true, nombre: true, slug: true, descripcion: true, descripcionCorta: true, traducciones: true,
   ratingPromedio: true, ratingCantidad: true, destacado: true,
   imagenes: { select: { url: true, textoAlternativo: true, esPrincipal: true, orden: true }, orderBy: { orden: "asc" } },
   hotelTipo: { include: { modalidades: { where: { activo: true }, orderBy: [{ orden: "asc" }, { precio: "asc" }] } } }
 };
 
-function serializarHabitacionStore(p, { detalle = false } = {}) {
-  const t = p.hotelTipo;
+function serializarHabitacionStore(original, { detalle = false, lang = "es" } = {}) {
+  // Inglés (hospedaje-completo C3): nombre y descripciones del producto, camas y servicios de la ficha.
+  const p = traducirFila(original, ["nombre", "descripcionCorta", "descripcion"], lang);
+  const t = traducirFila(original.hotelTipo, ["camas", "amenities"], lang);
   const imagenes = detalle ? p.imagenes : p.imagenes.filter(i => i.esPrincipal).concat(p.imagenes.filter(i => !i.esPrincipal)).slice(0, 1);
   return {
     id: p.id,
@@ -71,22 +74,22 @@ function serializarHabitacionStore(p, { detalle = false } = {}) {
 // Store
 // ============================================
 
-export async function listarHabitacionesStore(tiendaId) {
+export async function listarHabitacionesStore(tiendaId, lang = "es") {
   const productos = await prisma.productos.findMany({
     where: { tiendaId, activo: true, hotelTipo: { isNot: null } },
     orderBy: [{ destacado: "desc" }, { precioBase: "asc" }],
     select: SELECT_PRODUCTO_STORE
   });
-  return productos.filter(p => p.hotelTipo.modalidades.length).map(p => serializarHabitacionStore(p));
+  return productos.filter(p => p.hotelTipo.modalidades.length).map(p => serializarHabitacionStore(p, { lang }));
 }
 
-export async function obtenerHabitacionStore(tiendaId, slug) {
+export async function obtenerHabitacionStore(tiendaId, slug, lang = "es") {
   const p = await prisma.productos.findFirst({
     where: { tiendaId, slug, activo: true, hotelTipo: { isNot: null } },
     select: SELECT_PRODUCTO_STORE
   });
   if (!p || !p.hotelTipo.modalidades.length) throw new NotFoundError("Habitación", "Habitación no encontrada");
-  return serializarHabitacionStore(p, { detalle: true });
+  return serializarHabitacionStore(p, { detalle: true, lang });
 }
 
 /**

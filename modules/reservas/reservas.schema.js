@@ -13,7 +13,7 @@ export const PESTANAS = ["por_responder", "pago_por_verificar", "confirmadas", "
 export const METODOS_PAGO_MANUAL = ["yape", "plin", "transferencia"];
 export const MOTIVOS_RECHAZO = ["sin_disponibilidad", "fecha_cerrada", "otro"];
 /** Sitios de reseñas externas (C6). Booking y Tripadvisor puntúan sobre 10 y 5; Google sobre 5. */
-export const FUENTES_RESENA = ["google", "booking", "tripadvisor", "airbnb", "facebook"];
+export const FUENTES_RESENA = ["google", "booking", "tripadvisor", "airbnb", "facebook", "getyourguide", "viator"];
 
 const uuid = (campo) => z.string({ required_error: `${campo} es requerido` }).uuid(`${campo} inválido`);
 const fecha = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (YYYY-MM-DD)");

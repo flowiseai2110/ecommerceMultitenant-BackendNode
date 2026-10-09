@@ -174,6 +174,46 @@ export default class CloudflareStreamProvider extends StreamingProvider {
     return `${baseCliente()}/${token}/downloads/default.mp4${nombre}`;
   }
 
+  // ---------- Retransmisión y subtítulos (Fase 5, Premium) ----------
+
+  /** Salida a Facebook/YouTube ("live output", hasta 50 por entrada). */
+  async crearSalida(entradaId, { url, streamKey, habilitada }) {
+    const r = await api("POST", `/live_inputs/${entradaId}/outputs`, { url, streamKey, enabled: habilitada });
+    return r.uid;
+  }
+
+  /** Pausa o reanuda una salida sin cortar la transmisión. */
+  async habilitarSalida(entradaId, salidaId, habilitada) {
+    await api("PUT", `/live_inputs/${entradaId}/outputs/${salidaId}`, { enabled: habilitada });
+  }
+
+  async borrarSalida(entradaId, salidaId) {
+    await api("DELETE", `/live_inputs/${entradaId}/outputs/${salidaId}`);
+  }
+
+  /** Pide los subtítulos automáticos (IA de Cloudflare). El video debe estar listo. */
+  async pedirSubtitulos(videoId, idioma = "es") {
+    await api("POST", `/${videoId}/captions/${idioma}/generate`);
+  }
+
+  /** @returns {Promise<"pendiente"|"listo"|"error">} */
+  async estadoSubtitulos(videoId, idioma = "es") {
+    const lista = (await api("GET", `/${videoId}/captions`)) ?? [];
+    const s = lista.find(c => c.language === idioma)?.status;
+    return s === "ready" ? "listo" : s === "error" ? "error" : "pendiente";
+  }
+
+  /** Texto WebVTT de los subtítulos. */
+  async leerSubtitulos(videoId, idioma = "es") {
+    requerir("accountId", "apiToken");
+    const res = await fetch(`${API}/${cf().accountId}/stream/${videoId}/captions/${idioma}/vtt`, {
+      headers: { Authorization: `Bearer ${cf().apiToken}` },
+      signal: AbortSignal.timeout(30_000)
+    });
+    if (!res.ok) throw new Error(`Cloudflare Stream subtítulos ${videoId}: HTTP ${res.status}`);
+    return res.text();
+  }
+
   async urlReproduccion(id, { expiraEn }) {
     const exp = new Date(Math.min(expiraEn.getTime(), Date.now() + MAX_TOKEN_MS));
     const token = await firmar(id, exp);

@@ -10,6 +10,7 @@ import { getDiseno } from "../../services/tienda-diseno.service.js";
 import { disenoPublico } from "../campanas/resolver.js";
 import { getTiendasStore, setTiendasStore } from "./tiendas.cache.js";
 import { aplicarDisenoEn, textoEn } from "../traducciones/traducciones.service.js";
+import { getComunicadosPublicos } from "../comunicados/comunicados.service.js";
 
 const tiendasRepository = new GenericRepository(prisma.tiendas, "Tienda");
 const tiendasService = new GenericService(tiendasRepository, {
@@ -44,6 +45,8 @@ router.get("/", validate({ query: paginationSchema }), async (req, res, next) =>
       // cambio de campaña tarde como máximo un minuto en verse (R3.4).
       const diseno = await getDiseno(data[0].id);
       data[0].diseno = disenoPublico(diseno, new Date(), data[0].tipoNegocio);
+      // Comunicados vigentes, ya resueltos en hora de Lima (docs/specs/comunicados R2.1).
+      data[0].comunicados = await getComunicadosPublicos(data[0].id);
       if (lang === "en" && (data[0].idiomas ?? []).includes("en")) {
         const tr = diseno.traducciones?.en;
         data[0].diseno.tema.estructura = aplicarDisenoEn(data[0].diseno.tema.estructura, tr);

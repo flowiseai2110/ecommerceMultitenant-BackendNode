@@ -498,6 +498,7 @@ Estos datos salen de búsquedas en la web; las páginas oficiales de Mux y Cloud
 10. **Horas incluidas y factores** (pregunta abierta 3, decidida el 2026-10-06 al empezar la Fase 2): Free 0 h, Starter 0 h, Pro 3 h y Business 6 h al mes. Factores 0.5 / 1 / 2 / 4 para 25 / 50 / 100 / 200 invitados (proporcionales al costo de Cloudflare).
 11. **Paquetes y excedente** (preguntas abiertas 2 y 4, decididas el 2026-10-06 al empezar la Fase 3): paquetes prepagados de 10 h por S/ 250 y de 25 h por S/ 550, que vencen a los 12 meses. Excedente a S/ 20 por cada 30 min de paquete (minutos × factor), con tope de 2 h por tienda al mes; se cobra a mano con el siguiente pago.
 12. **Grabación** (decidida el 2026-10-07 al empezar la Fase 4): en Privado está incluida y activada por defecto (30 días para ver y descargar). "Guardar 1 año" cuesta S/ 50, como cargo manual a la tienda. El MP4 se copia a R2 privado solo en ese caso.
+13. **Premium** (decidido el 2026-10-09 al empezar la Fase 5): S/ 40 por evento, cargo manual a la tienda, además de las horas. La retransmisión a Facebook y YouTube va incluida (hasta 2 destinos). La grabación se ve 90 días y se descarga durante 1 año. El resumen con IA usa los subtítulos automáticos en español de Cloudflare y Claude.
 
 ## Preguntas abiertas
 

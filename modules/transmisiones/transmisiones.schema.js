@@ -7,8 +7,8 @@ import { EXTENSIONES_MIN, EXTENSION_AUTO_OPCIONES, TOPES_PRIVADO } from "./trans
  */
 
 export const PLANES = ["basico", "privado", "premium"];
-// Fase 2: Básico (YouTube) y Privado (Cloudflare). Premium llega en la Fase 5.
-export const PLANES_DISPONIBLES = ["basico", "privado"];
+// Básico (YouTube), Privado (Cloudflare) y Premium (Privado + retransmisión + resumen con IA).
+export const PLANES_DISPONIBLES = ["basico", "privado", "premium"];
 
 const uuid = (campo) => z.string({ required_error: `${campo} es requerido` }).uuid(`${campo} inválido`);
 
@@ -41,6 +41,15 @@ export const funcionParamSchema = z.object({ funcionId: uuid("funcionId") });
 export const idParamSchema = z.object({ id: uuid("id") });
 export const invitacionParamSchema = z.object({ id: uuid("id"), invitacionId: uuid("invitacionId") });
 export const tokenParamSchema = z.object({ token: z.string().min(10).max(2000) });
+export const destinoParamSchema = z.object({ id: uuid("id"), destinoId: uuid("destinoId") });
+
+// Retransmisión (Premium, R8.2): servidor RTMP(S) y clave de transmisión del destino.
+export const destinoSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  plataforma: z.enum(["facebook", "youtube", "otro"], { message: "Elige Facebook, YouTube u otro" }),
+  url: z.string().trim().max(500).regex(/^rtmps?:\/\/\S+$/i, "La URL del servidor debe empezar con rtmp:// o rtmps://"),
+  clave: z.string().trim().min(4, "Pega la clave de transmisión del destino").max(300)
+});
 
 export const activarSchema = z.object({
   tiendaId: uuid("tiendaId"),

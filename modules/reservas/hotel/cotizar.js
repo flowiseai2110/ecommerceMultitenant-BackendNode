@@ -102,7 +102,7 @@ export function lineasPrecio({ modalidad, personas, fechas, porPersona, temporad
   }
   return [...grupos.values()].map(({ precio, temporada, dias }) => {
     const cantidad = dias.length * factor;
-    const detalle = dias.map(d => `${t.dias[diaSemana(d)]} ${fechaCorta(d)}`).join(", ");
+    const detalle = dias.map(d => `${t.dias[diaSemana(d)]} ${(t.fecha ?? fechaCorta)(d)}`).join(", ");
     return {
       descripcion: `${t.noches(dias.length)}${temporada ? ` ${temporada}` : ""} (${detalle})${sufijo}`,
       cantidad,
@@ -260,7 +260,7 @@ export function validarSolicitud({
 
   const cerrada = fechas.find(f => cierres.some(c => c.fechaDesde <= f && f <= c.fechaHasta));
   if (cerrada) {
-    errores.push(error("FECHA_CERRADA", e.cerrada(fechaCorta(cerrada)), "fecha"));
+    errores.push(error("FECHA_CERRADA", e.cerrada((t.fecha ?? fechaCorta)(cerrada)), "fecha"));
   }
 
   return errores;

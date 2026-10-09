@@ -290,3 +290,12 @@ describe("estadoEfectivo — habitación apartada (C1)", () => {
     expect(estadoEfectivo({ estado: "aceptada", inicio, apartadoHasta: null }, ahora2)).toBe("aceptada");
   });
 });
+
+describe("cotizarHotel — en inglés (C3)", () => {
+  it("las líneas y los errores salen en inglés", () => {
+    const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 3, adultos: 2, config, ahora, idioma: "en" });
+    expect(c.lineas.map(l => l.descripcion)).toEqual(["1 night (Thu Sep 24)", "2 nights (Fri Sep 25, Sat Sep 26)"]);
+    const err = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 1, adultos: 3, config, ahora, idioma: "en" });
+    expect(err.errores[0].mensaje).toBe("This room fits up to 2 adults");
+  });
+});

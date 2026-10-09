@@ -15,7 +15,8 @@ import {
   extenderTransmision, limpiarEntrada, noExtender, opcionesExtension, sincronizarHabilitacion, terminarTransmision
 } from "./transmisiones.envivo.js";
 import {
-  DIAS_GUARDAR_ANIO, FACTORES, PRECIO_GUARDAR_ANIO, PRUEBA_MIN, TOPES_PRIVADO, conGrabacion, corteEn, descargaHasta,
+  DIAS_GUARDAR_ANIO, FACTORES, MAX_DESTINOS, PRECIO_GUARDAR_ANIO, PRECIO_PREMIUM, PRUEBA_MIN, TOPES_PRIVADO, conGrabacion,
+  corteEn, debeRetransmitir, descargaHasta,
   duracionEfectiva, enlaceWhatsapp, esVideoPropio, etapaTransmision, finEnVivo, finTransmision, grabacionHasta, hayVideo,
   minutosADescontar, periodoTransmision, salaAbreEn, sesionViva, topeInvitaciones
 } from "./transmisiones.reglas.js";
@@ -68,7 +69,7 @@ async function tiendaDeEventos(tiendaId) {
 async function funcionDeTienda(tiendaId, funcionId) {
   const funcion = await prisma.evento_funciones.findFirst({
     where: { id: funcionId, tiendaId },
-    include: { ...INCLUDE_FUNCION, transmision: { include: { invitaciones: { orderBy: { fechaRegistro: "asc" } }, excedente: true, grabaciones: { orderBy: { orden: "asc" } }, cargos: true } } }
+    include: { ...INCLUDE_FUNCION, transmision: { include: { invitaciones: { orderBy: { fechaRegistro: "asc" } }, excedente: true, grabaciones: { orderBy: { orden: "asc" } }, cargos: true, destinos: true } } }
   });
   if (!funcion) throw new NotFoundError("Función", "Esa función del evento no existe");
   return funcion;
@@ -77,7 +78,7 @@ async function funcionDeTienda(tiendaId, funcionId) {
 async function transmisionDeTienda(tiendaId, id) {
   const transmision = await prisma.evento_transmisiones.findFirst({
     where: { id, tiendaId },
-    include: { funcion: { include: INCLUDE_FUNCION }, invitaciones: { orderBy: { fechaRegistro: "asc" } }, excedente: true, grabaciones: { orderBy: { orden: "asc" } }, cargos: true }
+    include: { funcion: { include: INCLUDE_FUNCION }, invitaciones: { orderBy: { fechaRegistro: "asc" } }, excedente: true, grabaciones: { orderBy: { orden: "asc" } }, cargos: true, destinos: true }
   });
   if (!transmision) throw new NotFoundError("Transmisión", "Esa transmisión no existe");
   return transmision;
@@ -207,6 +208,14 @@ async function serializarTransmision(t, funcion, tienda, ahora) {
       opcionesExtension: enCurso(t) && ["espera", "en_vivo"].includes(etapa) ? await opcionesExtension(t, ahora) : [],
       // Fase 4: grabación (R8.1)
       grabacion: await serializarGrabacion(t, funcion, ahora),
+      // Fase 5 (Premium): retransmisión y resumen con IA.
+      destinos: (t.destinos ?? []).map(d => ({ id: d.id, plataforma: d.plataforma, url: d.url, habilitada: d.habilitada, conectada: !!d.salidaId })),
+      maxDestinos: t.plan === "premium" ? MAX_DESTINOS : 0,
+      resumen: t.plan === "premium" ? { estado: t.resumenEstado, datos: t.resumen, generadoEn: t.resumenGeneradoEn } : null,
+      cargoPremium: (() => {
+        const c = (t.cargos ?? []).find(x => x.tipo === "premium");
+        return c ? { monto: Number(c.monto), estado: c.estado } : null;
+      })(),
       // Para que el negocio vea la señal (prueba o en vivo) sin ser invitado.
       vistaPreviaUrl: enCurso(t) && t.entradaId
         ? (await provider().urlReproduccion(t.entradaId, { expiraEn: new Date(ahora.getTime() + 3 * 60 * MS_MIN) })).iframeUrl
@@ -320,7 +329,7 @@ export async function activar(tiendaId, funcionId, data, user, ahora = new Date(
 
   // Privado: evento privado (R1.4) y horas suficientes en el mes (R1.3).
   if (!funcion.evento.privado) {
-    throw noProcesable("El plan Privado es para eventos privados. Marca el evento como privado en sus funciones", "EVENTO_PUBLICO");
+    throw noProcesable("Los planes Privado y Premium son para eventos privados. Marca el evento como privado en sus funciones", "EVENTO_PUBLICO");
   }
   const factor = FACTORES[data.maxInvitados];
   const necesarios = minutosADescontar(duracionMin, factor);
@@ -343,21 +352,32 @@ export async function activar(tiendaId, funcionId, data, user, ahora = new Date(
     meta: { tiendaId, transmisionId: id, funcionId },
     habilitada
   });
+  const premium = data.plan === "premium";
   try {
-    await prisma.evento_transmisiones.create({
-      data: {
-        ...base,
-        id,
-        proveedor: provider().nombre,
-        entradaId,
-        claveCifrada: encryptSecret(JSON.stringify(conexion)),
-        maxInvitados: data.maxInvitados,
-        factor,
-        habilitada,
-        // R7.6: autorización previa para extender sola hasta 30 min o 1 h.
-        extensionAutoMaxMin: data.extensionAutoMaxMin ?? 0,
-        // R8.1.3: grabación incluida y activada por defecto; false = "Solo en vivo".
-        grabar: data.grabar ?? true
+    await prisma.$transaction(async (tx) => {
+      await tx.evento_transmisiones.create({
+        data: {
+          ...base,
+          id,
+          proveedor: provider().nombre,
+          entradaId,
+          claveCifrada: encryptSecret(JSON.stringify(conexion)),
+          maxInvitados: data.maxInvitados,
+          factor,
+          habilitada,
+          // R7.6: autorización previa para extender sola hasta 30 min o 1 h.
+          extensionAutoMaxMin: data.extensionAutoMaxMin ?? 0,
+          // R8.1.3: grabación incluida y activada por defecto; false = "Solo en vivo".
+          grabar: data.grabar ?? true,
+          // Premium: la descarga de 1 año va incluida (copia a R2, Fase 4).
+          guardarAnio: premium
+        }
+      });
+      // Premium: S/ 40 por evento, cargo manual (decisión 2026-10-09).
+      if (premium) {
+        await tx.transmision_cargos.create({
+          data: { tiendaId, transmisionId: id, tipo: "premium", monto: PRECIO_PREMIUM, autorizadoPor: usuario, autorizadoEn: ahora }
+        });
       }
     });
   } catch (error) {
@@ -569,6 +589,7 @@ export async function regenerarClave(tiendaId, id, user, ahora = new Date()) {
     }
   });
   await provider().borrarEntrada(t.entradaId).catch(e => logger.warn(`No se borró la entrada anterior ${t.entradaId}: ${e.message}`));
+  if (t.plan === "premium") await recrearSalidas({ ...t, entradaId }, ahora);
   return obtenerPorFuncion(tiendaId, t.funcionId, ahora);
 }
 
@@ -910,6 +931,58 @@ export async function paginaAnfitrion(token, tiendaIdResuelta, ahora = new Date(
     enLineaHasta: grabacionHasta(t, t.funcion),
     descargaHasta: vence,
     guardarAnio: t.guardarAnio,
-    partes: disponible ? await partesConEnlaces(t, ahora) : []
+    partes: disponible ? await partesConEnlaces(t, ahora) : [],
+    // Premium (R8.3): resumen, capítulos y momentos clave.
+    resumen: disponible && t.resumenEstado === "listo" ? t.resumen : null
   };
+}
+
+// ============================================
+// Retransmisión a Facebook y YouTube (Premium, R8.2)
+// ============================================
+
+/** Crea en el proveedor la salida de un destino (habilitada solo en la ventana del evento). */
+async function crearSalidaDe(t, d, ahora) {
+  const salidaId = await provider().crearSalida(t.entradaId, {
+    url: d.url, streamKey: decryptSecret(d.claveCifrada), habilitada: debeRetransmitir(t, t.funcion, ahora)
+  });
+  await prisma.transmision_destinos.update({
+    where: { id: d.id }, data: { salidaId, habilitada: debeRetransmitir(t, t.funcion, ahora), fechaActualizacion: ahora }
+  });
+}
+
+/** Tras regenerar la clave (entrada nueva), vuelve a crear las salidas. */
+async function recrearSalidas(t, ahora) {
+  const destinos = await prisma.transmision_destinos.findMany({ where: { transmisionId: t.id } });
+  for (const d of destinos) {
+    await crearSalidaDe(t, d, ahora).catch(e => logger.error(`No se recreó la retransmisión ${d.id}: ${e.message}`));
+  }
+}
+
+/** R8.2: agrega un destino (hasta 2). La clave del destino se guarda cifrada (R9.4). */
+export async function agregarDestino(tiendaId, id, { plataforma, url, clave }, user, ahora = new Date()) {
+  await tiendaDeEventos(tiendaId);
+  const t = await transmisionDeTienda(tiendaId, id);
+  if (t.plan !== "premium") throw noProcesable("La retransmisión a Facebook y YouTube es del plan Premium", "SOLO_PREMIUM");
+  exigirEnCurso(t);
+  if (t.destinos.length >= MAX_DESTINOS) throw noProcesable(`Puedes retransmitir a ${MAX_DESTINOS} destinos como máximo`, "TOPE_DESTINOS");
+
+  const d = await prisma.transmision_destinos.create({
+    data: { tiendaId, transmisionId: id, plataforma, url, claveCifrada: encryptSecret(clave), usuarioRegistro: usuarioDe(user) }
+  });
+  if (t.entradaId) await crearSalidaDe(t, d, ahora);
+  return obtenerPorFuncion(tiendaId, t.funcionId, ahora);
+}
+
+export async function quitarDestino(tiendaId, id, destinoId, user, ahora = new Date()) {
+  await tiendaDeEventos(tiendaId);
+  const t = await transmisionDeTienda(tiendaId, id);
+  const d = t.destinos.find(x => x.id === destinoId);
+  if (!d) throw new NotFoundError("Destino", "Ese destino no existe");
+  if (d.salidaId && t.entradaId) {
+    await provider().borrarSalida(t.entradaId, d.salidaId).catch(e => logger.warn(`No se borró la salida ${d.salidaId}: ${e.message}`));
+  }
+  await prisma.transmision_destinos.delete({ where: { id: destinoId } });
+  logger.info(`Destino ${destinoId} quitado de la transmisión ${id} por ${usuarioDe(user)}`);
+  return obtenerPorFuncion(tiendaId, t.funcionId, ahora);
 }

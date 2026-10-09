@@ -32,11 +32,18 @@ export async function cicloResenasReservas(ahora = new Date()) {
     },
     take: LOTE,
     select: {
-      pedidoId: true, tiendaId: true, idiomaHuesped: true, titularNombres: true,
+      pedidoId: true, tiendaId: true, tipo: true, idiomaHuesped: true, titularNombres: true,
       producto: { select: { nombre: true } },
       pedido: { select: { clienteEmail: true, numeroPedido: true, tienda: { select: { slug: true, nombre: true, email: true } } } }
     }
   });
+
+  // Primera reseña en otro sitio de cada negocio (Google, Tripadvisor…): el correo invita también ahí.
+  const tiendas = [...new Set(pendientes.map(r => r.tiendaId))];
+  const configs = tiendas.length
+    ? await prisma.config_reservas.findMany({ where: { tiendaId: { in: tiendas } }, select: { tiendaId: true, resenasExternas: true } })
+    : [];
+  const externaDe = new Map(configs.map(c => [c.tiendaId, Array.isArray(c.resenasExternas) ? c.resenasExternas[0] ?? null : null]));
 
   let enviados = 0;
   for (const r of pendientes) {
@@ -46,7 +53,8 @@ export async function cicloResenasReservas(ahora = new Date()) {
       const token = await firmarTokenResena({ pedidoId: r.pedidoId, tiendaId: r.tiendaId });
       const url = urlTienda(r.pedido.tienda.slug, `resenar/${token}`);
       const correo = pedirResenaEmail({
-        idioma: r.idiomaHuesped, nombre: r.titularNombres, negocio: r.pedido.tienda.nombre, producto: r.producto?.nombre ?? null
+        idioma: r.idiomaHuesped, nombre: r.titularNombres, negocio: r.pedido.tienda.nombre, producto: r.producto?.nombre ?? null,
+        tipo: r.tipo, externa: externaDe.get(r.tiendaId) ?? null
       }, url);
       await sendTransactionalEmail({ to: r.pedido.clienteEmail, ...correo, replyTo: r.pedido.tienda.email || undefined });
       enviados++;

@@ -26,7 +26,8 @@ const prisma = {
   transmision_paquetes: { findMany: jest.fn(), update: jest.fn() },
   transmision_excedentes: { findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn(), upsert: jest.fn() },
   transmision_grabaciones: { createMany: jest.fn(), findMany: jest.fn(), update: jest.fn() },
-  transmision_cargos: { upsert: jest.fn(), updateMany: jest.fn() }
+  transmision_cargos: { upsert: jest.fn(), updateMany: jest.fn(), create: jest.fn() },
+  transmision_destinos: { create: jest.fn(), findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn(), delete: jest.fn() }
 };
 prisma.$queryRaw = jest.fn(async () => []);
 prisma.$transaction = jest.fn(async (fn) => fn(prisma));
@@ -47,6 +48,12 @@ const proveedor = {
   pedirDescarga: jest.fn(async () => "pendiente"),
   estadoDescarga: jest.fn(async () => "lista"),
   urlDescarga: jest.fn(async (id, { nombreArchivo }) => `https://cf.test/${id}/downloads/default.mp4?filename=${nombreArchivo}`),
+  crearSalida: jest.fn(async () => "salida-1"),
+  habilitarSalida: jest.fn(async () => {}),
+  borrarSalida: jest.fn(async () => {}),
+  pedirSubtitulos: jest.fn(async () => {}),
+  estadoSubtitulos: jest.fn(async () => "listo"),
+  leerSubtitulos: jest.fn(async () => "WEBVTT"),
   verificarWebhook: jest.fn()
 };
 jest.unstable_mockModule("../../../services/streaming/index.js", () => ({ getStreamingProvider: () => proveedor }));
@@ -66,6 +73,9 @@ const r2 = {
   borrarPrivado: jest.fn(async () => {})
 };
 jest.unstable_mockModule("../../../services/storage-privado.service.js", () => r2);
+// Sin llamadas reales a Claude: el resumen se verifica con el mock.
+const ia = { generarResumen: jest.fn(async () => ({ resultado: { resumen: "Fue lindo", capitulos: [], momentos: [] }, sinAudio: false, tokensEntrada: 10, tokensSalida: 5 })) };
+jest.unstable_mockModule("../transmisiones.resumen.js", () => ia);
 jest.unstable_mockModule("../../../generated/prisma/client.ts", () => ({ Prisma: PrismaStub, PrismaClient: class {} }));
 jest.unstable_mockModule("../../../config/prisma.js", () => ({ prisma, Prisma: PrismaStub, default: prisma }));
 
@@ -615,5 +625,72 @@ describe("Guardar 1 año y página del anfitrión", () => {
     const { firmarTokenAnfitrion } = await import("../transmisiones.token.js");
     const token = await firmarTokenAnfitrion({ transmisionId: TRANSMISION, tiendaId: TIENDA });
     await expect(svc.paginaAnfitrion(token, OTRA, ahora)).rejects.toMatchObject({ statusCode: 404 });
+  });
+});
+
+// ============================================
+// Fase 5: Premium (retransmisión y resumen con IA)
+// ============================================
+
+describe("Premium (R8.2, R8.3)", () => {
+  const datosPremium = { ...datosPrivado, plan: "premium" };
+  const tPremium = (extra = {}) => privadoBase({ plan: "premium", funcion: funcion3h(), destinos: [], cargos: [], grabaciones: [], ...extra });
+
+  it("al activar anota el cargo de S/ 40 y deja incluida la descarga de un año", async () => {
+    proveedor.crearEntrada.mockResolvedValue({ entradaId: "in-nueva", conexion });
+    prisma.evento_funciones.findFirst.mockResolvedValue(funcion3h());
+    prisma.tiendas.findUnique.mockResolvedValue({ ...tienda, plan: { horasTransmisionMes: 6 } });
+    await svc.activar(TIENDA, FUNCION, datosPremium, user, ahora).catch(() => {});
+    expect(prisma.evento_transmisiones.create.mock.calls[0][0].data).toMatchObject({ plan: "premium", guardarAnio: true });
+    expect(prisma.transmision_cargos.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ tipo: "premium", monto: 40, autorizadoPor: "dueno@test.com" })
+    });
+  });
+
+  it("un destino nuevo crea su salida pausada antes de la sala y guarda la clave cifrada", async () => {
+    prisma.evento_transmisiones.findFirst.mockResolvedValue(tPremium());
+    prisma.transmision_destinos.create.mockImplementation(async ({ data }) => ({ id: "d1", ...data }));
+    await svc.agregarDestino(TIENDA, TRANSMISION, { plataforma: "youtube", url: "rtmp://a.rtmp.youtube.com/live2", clave: "yt-clave" }, user, ahora).catch(() => {});
+    const data = prisma.transmision_destinos.create.mock.calls[0][0].data;
+    expect(data.claveCifrada).not.toContain("yt-clave");
+    expect(proveedor.crearSalida).toHaveBeenCalledWith("in-1", { url: "rtmp://a.rtmp.youtube.com/live2", streamKey: "yt-clave", habilitada: false });
+  });
+
+  it("hasta 2 destinos, y solo en Premium", async () => {
+    prisma.evento_transmisiones.findFirst.mockResolvedValue(tPremium({ destinos: [{ id: "a" }, { id: "b" }] }));
+    await expect(svc.agregarDestino(TIENDA, TRANSMISION, { plataforma: "facebook", url: "rtmps://x", clave: "abcd" }, user, ahora))
+      .rejects.toMatchObject({ details: { motivo: "TOPE_DESTINOS" } });
+    prisma.evento_transmisiones.findFirst.mockResolvedValue(tPremium({ plan: "privado" }));
+    await expect(svc.agregarDestino(TIENDA, TRANSMISION, { plataforma: "facebook", url: "rtmps://x", clave: "abcd" }, user, ahora))
+      .rejects.toMatchObject({ details: { motivo: "SOLO_PREMIUM" } });
+  });
+
+  it("el job habilita la retransmisión al abrir la sala", async () => {
+    prisma.transmision_destinos.findMany.mockResolvedValue([{ id: "d1", salidaId: "salida-1", habilitada: false }]);
+    await envivo.sincronizarRetransmision(tPremium(), new Date("2026-10-17T15:10:00-05:00"));
+    expect(prisma.transmision_destinos.findMany).toHaveBeenCalledWith({ where: { transmisionId: TRANSMISION, salidaId: { not: null }, habilitada: false } });
+    expect(proveedor.habilitarSalida).toHaveBeenCalledWith("in-1", "salida-1", true);
+  });
+
+  it("con los subtítulos listos, genera el resumen y avisa al anfitrión", async () => {
+    const parte = { id: "g1", videoId: "v-1", orden: 1, estado: "lista", mp4Estado: "lista", subtitulosEstado: "listo", duracionSeg: 600, r2Key: "k" };
+    prisma.transmision_grabaciones.findMany.mockResolvedValue([]);
+    prisma.evento_transmisiones.findMany.mockResolvedValueOnce([tPremium({
+      funcion: { ...funcion3h(), evento: { producto: { nombre: "Quinceañero de Valeria" } } }, grabar: true, guardarAnio: true,
+      terminadaEn: new Date("2026-10-17T19:05:00-05:00"), limpiadaEn: new Date("2026-10-17T19:05:00-05:00"),
+      avisoGrabacionEn: ahora, resumenEstado: null, resumenIntentos: 0, anfitrionEmail: "carla@test.com", grabaciones: [parte]
+    })]).mockResolvedValue([]);
+    prisma.evento_transmisiones.updateMany.mockResolvedValue({ count: 1 });
+    prisma.tiendas.findUnique.mockResolvedValue({ nombre: "Fiestas", email: "negocio@test.com", slug: "fiestas" });
+
+    await grab.cicloGrabaciones(new Date("2026-10-18T10:00:00-05:00"));
+    await new Promise(r => setTimeout(r, 20)); // el resumen corre en segundo plano
+
+    expect(proveedor.leerSubtitulos).toHaveBeenCalledWith("v-1", "es");
+    expect(ia.generarResumen).toHaveBeenCalledWith({ evento: "Quinceañero de Valeria", partes: [{ vtt: "WEBVTT", desfaseSeg: 0 }] });
+    expect(prisma.evento_transmisiones.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ resumenEstado: "listo", resumenTokensEntrada: 10 })
+    }));
+    expect(correo.sendTransmisionGrabacionEmail).toHaveBeenCalledWith(expect.objectContaining({ tipo: "resumen", resumen: { resumen: "Fue lindo", capitulos: [], momentos: [] } }));
   });
 });

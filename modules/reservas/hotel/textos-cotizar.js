@@ -5,9 +5,11 @@
  */
 
 const plural = (n, uno, varios) => (n === 1 ? uno : varios);
+const MESES_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const es = {
   dias: ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"],
+  fecha: null, // fechaCorta: 24/09
   personas: (n) => ` · ${n} ${plural(n, "persona", "personas")}`,
   habitaciones: (n) => ` · ${n} habitaciones`,
   estadiaHoras: (h) => `Estadía de ${h} horas`,
@@ -42,6 +44,8 @@ const es = {
 
 const en = {
   dias: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  // "Sep 24": 24/09 se lee al revés en inglés de EE. UU.
+  fecha: (f) => `${MESES_EN[Number(f.slice(5, 7)) - 1]} ${Number(f.slice(8, 10))}`,
   personas: (n) => ` · ${n} ${plural(n, "guest", "guests")}`,
   habitaciones: (n) => ` · ${n} rooms`,
   estadiaHoras: (h) => `${h}-hour stay`,

@@ -1,6 +1,7 @@
 import { prisma } from "../../config/prisma.js";
 import { ConflictError, NotFoundError } from "../../utils/errors.js";
 import { vozAlojamiento } from "./hotel/alojamiento.js";
+import { textoEn } from "../traducciones/traducciones.service.js";
 
 /**
  * Configuración de reservas de la tienda (spec R1.3). Sin fila en
@@ -80,6 +81,7 @@ export function resolverConfig(tipoNegocio, fila) {
     ...config,
     tipoNegocio,
     personalizada: Boolean(fila),
+    traducciones: fila?.traducciones ?? null,
     avisoTextoPorDefecto: avisoPorDefecto,
     avisoProximoTexto: config.avisoProximoTexto || avisoPorDefecto
   };
@@ -99,7 +101,9 @@ export async function obtenerConfig(tiendaId) {
 }
 
 /** Lo que ve el cliente en la vitrina (sin datos internos). */
-export function configPublica(config) {
+export function configPublica(config, lang = "es") {
+  // Inglés (C3): instrucciones y política de cancelación.
+  const tr = lang === "en" ? config.traducciones?.en ?? {} : {};
   return {
     tipoNegocio: config.tipoNegocio,
     modoConfirmacion: config.modoConfirmacion,
@@ -107,8 +111,8 @@ export function configPublica(config) {
     adelantoPct: config.adelantoPct,
     anticipacionMinHoras: config.anticipacionMinHoras,
     avisoProximoHoras: config.avisoProximoHoras,
-    instrucciones: config.instrucciones,
-    politicaCancelacion: config.politicaCancelacion,
+    instrucciones: textoEn(config.instrucciones, tr.instrucciones),
+    politicaCancelacion: textoEn(config.politicaCancelacion, tr.politicaCancelacion),
     horaCheckin: config.horaCheckin,
     horaCheckout: config.horaCheckout,
     comprobanteEn: config.comprobanteEn,

@@ -23,6 +23,7 @@ import disenoRoutes from "../../modules/diseno/diseno.admin.routes.js";
 import libroRoutes from "../../modules/libro-reclamaciones/libro.admin.routes.js";
 import reservasRoutes from "../../modules/reservas/reservas.admin.routes.js";
 import transmisionesRoutes from "../../modules/transmisiones/transmisiones.admin.routes.js";
+import comunicadosRoutes from "../../modules/comunicados/comunicados.admin.routes.js";
 import traduccionesRoutes from "../../modules/traducciones/traducciones.admin.routes.js";
 import { traducirTrasGuardar } from "../../modules/traducciones/traducciones.service.js";
 
@@ -58,5 +59,6 @@ router.use("/libro-reclamaciones", libroRoutes);
 router.use("/reservas", traducirTrasGuardar, reservasRoutes);
 router.use("/traducciones", traduccionesRoutes);
 router.use("/transmisiones", transmisionesRoutes);
+router.use("/comunicados", comunicadosRoutes);
 
 export default router;

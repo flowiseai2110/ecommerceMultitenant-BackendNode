@@ -91,8 +91,9 @@ describe("schemas", () => {
     expect(sin.error.issues[0].message).toMatch(/autorizó/);
   });
 
-  it("Premium todavía no está disponible, Privado pide el tope y el Básico pide YouTube", () => {
-    expect(activarSchema.safeParse({ ...base, plan: "premium", maxInvitados: 50 }).error.issues[0].message).toMatch(/disponible pronto/);
+  it("Privado y Premium piden el tope de invitados; el Básico pide YouTube", () => {
+    expect(activarSchema.safeParse({ ...base, plan: "premium", youtubeUrl: null, maxInvitados: 50 }).success).toBe(true);
+    expect(activarSchema.safeParse({ ...base, plan: "premium", maxInvitados: null }).error.issues[0].path).toEqual(["maxInvitados"]);
     expect(activarSchema.safeParse({ ...base, plan: "privado", youtubeUrl: null, maxInvitados: 50 }).success).toBe(true);
     expect(activarSchema.safeParse({ ...base, plan: "privado", maxInvitados: 60 }).error.issues[0].path).toEqual(["maxInvitados"]);
     expect(activarSchema.safeParse({ ...base, youtubeUrl: "" }).error.issues[0].path).toEqual(["youtubeUrl"]);

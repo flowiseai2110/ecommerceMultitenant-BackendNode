@@ -8,7 +8,7 @@ import { registrarConsumo, saldoHoras, textoMinutos } from "./transmisiones.hora
 import { firmarTokenAccion } from "./transmisiones.token.js";
 import { conGrabacion, registrarGrabaciones } from "./transmisiones.grabaciones.js";
 import {
-  EXTENSIONES_MIN, EXTENSION_MAX_MIN, corteEn, debeEstarHabilitada, esVideoPropio, finTransmision, minutosADescontar,
+  EXTENSIONES_MIN, EXTENSION_MAX_MIN, corteEn, debeEstarHabilitada, debeRetransmitir, esVideoPropio, finTransmision, minutosADescontar,
   minutosConsumidos, montoExcedente, periodoTransmision, salaAbreEn, tocaAvisoFin, tocaExtensionAuto
 } from "./transmisiones.reglas.js";
 
@@ -58,6 +58,20 @@ export async function sincronizarHabilitacion(t, ahora = new Date()) {
 }
 
 /**
+ * Retransmisión a Facebook/YouTube (Premium, R8.2): cada salida emite solo
+ * desde que abre la sala hasta el corte; nunca en la prueba previa.
+ */
+export async function sincronizarRetransmision(t, ahora = new Date()) {
+  if (t.plan !== "premium" || !t.entradaId) return;
+  const debe = debeRetransmitir(t, t.funcion, ahora);
+  const destinos = await prisma.transmision_destinos.findMany({ where: { transmisionId: t.id, salidaId: { not: null }, habilitada: !debe } });
+  for (const d of destinos) {
+    await provider().habilitarSalida(t.entradaId, d.salidaId, debe);
+    await prisma.transmision_destinos.update({ where: { id: d.id }, data: { habilitada: debe, fechaActualizacion: ahora } });
+  }
+}
+
+/**
  * Borra la entrada en el proveedor. Con grabación (Fase 4), antes registra las
  * partes grabadas y borra SOLO la entrada: los videos se conservan hasta que
  * vence su plazo. "Solo en vivo" o cancelada: borra videos y entrada. Se
@@ -72,6 +86,10 @@ export async function limpiarEntrada(t, ahora = new Date()) {
     await provider().borrarEntrada(t.entradaId);
   }
   await prisma.evento_transmisiones.update({ where: { id: t.id }, data: { limpiadaEn: ahora, habilitada: false } });
+  // Sin entrada, sus salidas de retransmisión ya no existen en el proveedor.
+  if (t.plan === "premium") {
+    await prisma.transmision_destinos.updateMany({ where: { transmisionId: t.id }, data: { salidaId: null, habilitada: false, fechaActualizacion: ahora } });
+  }
 }
 
 /**
@@ -234,6 +252,7 @@ export async function cicloTransmisiones(ahora = new Date()) {
       }
       if (tocaAvisoFin(t, t.funcion, ahora)) await enviarAvisoFin(t, ahora);
       t = await sincronizarHabilitacion(t, ahora);
+      await sincronizarRetransmision(t, ahora);
       if (t.habilitada) {
         const { senal } = await provider().estadoEntrada(t.entradaId);
         if (senal !== t.senal) await aplicarSenal(t, senal, ahora);

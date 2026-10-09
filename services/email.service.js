@@ -574,16 +574,39 @@ const TEXTOS_GRABACION = {
     titulo: (e) => `La descarga de ${e} vence pronto`,
     cuerpo: (hasta) => `El archivo de la grabación se borrará el <strong>${hasta}</strong>. Si aún no lo descargaste, hazlo antes de esa fecha.`,
     boton: "Descargar la grabación"
+  },
+  // Premium (R8.3): el resumen con IA va en el cuerpo del correo.
+  resumen: {
+    titulo: (e) => `El resumen de ${e} está listo`,
+    cuerpo: (hasta) => `Preparamos un resumen con los momentos clave. La grabación completa se puede ver hasta el <strong>${hasta}</strong>.`,
+    boton: "Ver la grabación y el resumen"
   }
 };
+
+const reloj = (seg) => {
+  const s = Math.max(0, Math.floor(seg));
+  const h = Math.floor(s / 3600);
+  const mm = String(Math.floor(s / 60) % 60).padStart(2, "0");
+  return h ? `${h}:${mm}:${String(s % 60).padStart(2, "0")}` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+};
+
+/** Bloque HTML del resumen: párrafos y momentos clave con su hora. */
+function htmlResumen(resumen) {
+  if (!resumen) return "";
+  const parrafos = resumen.resumen.split(/\n+/).filter(Boolean)
+    .map(p => `<p style="margin: 12px 0 0; font-size: 15px; line-height: 1.6; color: #1f2937;">${escapeHtml(p)}</p>`).join("");
+  const momentos = (resumen.momentos ?? []).map(m =>
+    `<li style="margin: 4px 0;"><strong>${reloj(m.inicioSeg)}</strong> · ${escapeHtml(m.descripcion)}</li>`).join("");
+  return `${parrafos}${momentos ? `<p style="margin: 16px 0 4px; font-size: 14px; font-weight: 600; color: #1f2937;">Momentos clave</p><ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #4a4a4a;">${momentos}</ul>` : ""}`;
+}
 
 /**
  * Grabación de una transmisión (docs/specs/transmision-eventos, R8.1, R8.1.2):
  * lista, se borra en 7 días o vence la descarga de 1 año. Va al anfitrión y al negocio.
- * @param {{ to: string[], tipo: "lista"|"por_borrar"|"descarga_por_borrar", tiendaNombre: string, evento: string,
- *           enlace: string, hasta: Date }} datos
+ * @param {{ to: string[], tipo: "lista"|"por_borrar"|"descarga_por_borrar"|"resumen", tiendaNombre: string, evento: string,
+ *           enlace: string, hasta: Date, resumen?: object }} datos
  */
-export async function sendTransmisionGrabacionEmail({ to, tipo, tiendaNombre, evento, enlace, hasta }) {
+export async function sendTransmisionGrabacionEmail({ to, tipo, tiendaNombre, evento, enlace, hasta, resumen = null }) {
   const t = TEXTOS_GRABACION[tipo];
   const fecha = hasta.toLocaleDateString("es-PE", { timeZone: "America/Lima", day: "numeric", month: "long", year: "numeric" });
   if (!hasResendApiKey()) {
@@ -605,6 +628,7 @@ export async function sendTransmisionGrabacionEmail({ to, tipo, tiendaNombre, ev
               <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280;">${escapeHtml(tiendaNombre)}</p>
               <h1 style="margin: 0; font-size: 20px; color: #1a1a1a;">${escapeHtml(t.titulo(evento))}</h1>
               <p style="margin: 12px 0 0; font-size: 15px; line-height: 1.6; color: #4a4a4a;">${t.cuerpo(fecha)}</p>
+              ${htmlResumen(resumen)}
             </td>
           </tr>
           <tr>

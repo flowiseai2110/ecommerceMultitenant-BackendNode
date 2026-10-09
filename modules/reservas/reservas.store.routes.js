@@ -39,6 +39,8 @@ const solicitudesLimiter = crearLimitador({
 });
 
 const ok = (res, code, data, status = 200) => apiResponse(res, { status, type: "SUCCESS", code, data });
+/** Idioma de la vitrina (hospedaje-completo C3): ?lang=en en la URL o en el body. */
+const langDe = (req) => (req.query.lang === "en" || req.body?.lang === "en" ? "en" : "es");
 
 /** Resuelve el token y verifica que sea de la tienda del subdominio (si hay). */
 async function reservaDelToken(req) {
@@ -52,7 +54,7 @@ router.get("/config", validate({ query: tiendaQuerySchema }), scopeQueryToTienda
   try {
     const { tiendaId } = req.validatedQuery;
     res.set("Cache-Control", "public, max-age=60");
-    return ok(res, "RESERVAS_CONFIG", configPublica(await obtenerConfig(tiendaId)));
+    return ok(res, "RESERVAS_CONFIG", configPublica(await obtenerConfig(tiendaId), langDe(req)));
   } catch (error) { next(error); }
 });
 
@@ -60,7 +62,7 @@ router.get("/config", validate({ query: tiendaQuerySchema }), scopeQueryToTienda
 router.get("/habitaciones", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
   try {
     res.set("Cache-Control", "public, max-age=60");
-    return ok(res, "HABITACIONES_LIST", await listarHabitacionesStore(req.validatedQuery.tiendaId));
+    return ok(res, "HABITACIONES_LIST", await listarHabitacionesStore(req.validatedQuery.tiendaId, langDe(req)));
   } catch (error) { next(error); }
 });
 
@@ -95,7 +97,7 @@ router.get("/habitaciones/:slug", validate({ params: slugParamSchema, query: tie
   async (req, res, next) => {
     try {
       res.set("Cache-Control", "public, max-age=60");
-      return ok(res, "HABITACION", await obtenerHabitacionStore(req.validatedQuery.tiendaId, req.params.slug));
+      return ok(res, "HABITACION", await obtenerHabitacionStore(req.validatedQuery.tiendaId, req.params.slug, langDe(req)));
     } catch (error) { next(error); }
   });
 
@@ -103,7 +105,7 @@ router.get("/habitaciones/:slug", validate({ params: slugParamSchema, query: tie
 router.get("/tours", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
   try {
     res.set("Cache-Control", "public, max-age=60");
-    return ok(res, "TOURS_LIST", await listarToursStore(req.validatedQuery.tiendaId));
+    return ok(res, "TOURS_LIST", await listarToursStore(req.validatedQuery.tiendaId, langDe(req)));
   } catch (error) { next(error); }
 });
 
@@ -112,7 +114,7 @@ router.get("/tours/:slug", validate({ params: slugParamSchema, query: tiendaQuer
   async (req, res, next) => {
     try {
       res.set("Cache-Control", "public, max-age=60");
-      return ok(res, "TOUR", await obtenerTourStore(req.validatedQuery.tiendaId, req.params.slug));
+      return ok(res, "TOUR", await obtenerTourStore(req.validatedQuery.tiendaId, req.params.slug, langDe(req)));
     } catch (error) { next(error); }
   });
 
