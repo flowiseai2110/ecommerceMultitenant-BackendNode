@@ -72,7 +72,8 @@ const svc = {
   rechazarPago: jest.fn(async () => ({ id: PEDIDO, estado: "aceptada" })),
   cancelarPorNegocio: jest.fn(async () => ({ id: PEDIDO, estado: "cancelada" })),
   marcarNoShow: jest.fn(async () => ({ id: PEDIDO, estado: "no_show" })),
-  agendaReservas: jest.fn(async () => ({ reservas: [] }))
+  agendaReservas: jest.fn(async () => ({ reservas: [] })),
+  reenviarCorreo: jest.fn(async () => ({ enviadoA: "c@test.com" }))
 };
 jest.unstable_mockModule("../reservas.service.js", () => svc);
 
@@ -94,6 +95,32 @@ const habSvc = {
   guardarFicha: jest.fn(async () => ({ productoId: PRODUCTO }))
 };
 jest.unstable_mockModule("../hotel/habitaciones.service.js", () => habSvc);
+
+// Alquiler de locales (alquiler-locales L1.15): servicios simulados.
+const localesSvc = {
+  calendarioStore: jest.fn(async () => ({ fechas: [] })),
+  calendarioAdmin: jest.fn(async () => ({ fechas: [], ocupaciones: [] })),
+  crearBloqueo: jest.fn(async () => ({ id: "b1" })),
+  eliminarBloqueo: jest.fn(async () => {}),
+  crearCotizacion: jest.fn(async () => ({ token: "tkn", url: "u", cotizacion: {} })),
+  obtenerCotizacionStore: jest.fn(async () => ({ id: "c1" })),
+  listarCotizacionesAdmin: jest.fn(async () => ({ data: [], meta: {} }))
+};
+jest.unstable_mockModule("../locales/locales.service.js", () => localesSvc);
+const cuotasSvc = {
+  aceptarContrato: jest.fn(async () => ({ id: PEDIDO })),
+  subirCapturaCuota: jest.fn(async () => ({ id: PEDIDO })),
+  verificarCuota: jest.fn(async () => ({ id: PEDIDO })),
+  rechazarCuota: jest.fn(async () => ({ id: PEDIDO })),
+  editarPlan: jest.fn(async () => ({ id: PEDIDO }))
+};
+jest.unstable_mockModule("../locales/cuotas.service.js", () => cuotasSvc);
+const salonesSvc = {
+  listarSalonesStore: jest.fn(async () => []), obtenerSalonStore: jest.fn(async () => ({})),
+  listarSalonesAdmin: jest.fn(async () => []), obtenerFichaSalonAdmin: jest.fn(async () => null), guardarFichaSalon: jest.fn(async () => ({}))
+};
+jest.unstable_mockModule("../locales/salones.service.js", () => salonesSvc);
+const CUOTA = "88888888-8888-4888-8888-888888888888";
 
 const { default: storeRoutes } = await import("../reservas.store.routes.js");
 const { default: adminRoutes } = await import("../reservas.admin.routes.js");
@@ -117,7 +144,7 @@ beforeAll(async () => {
 afterAll(async () => { await new Promise(resolve => server.close(resolve)); });
 
 beforeEach(() => {
-  for (const fn of [...Object.values(svc), ...Object.values(configSvc), ...Object.values(habSvc)]) fn.mockClear();
+  for (const fn of [...Object.values(svc), ...Object.values(configSvc), ...Object.values(habSvc), ...Object.values(localesSvc), ...Object.values(cuotasSvc)]) fn.mockClear();
 });
 
 async function request(method, path, { user, body, tienda } = {}) {
@@ -258,5 +285,57 @@ describe("admin: roles", () => {
     });
     expect(r.status).toBe(400);
     expect(habSvc.guardarFicha).not.toHaveBeenCalled();
+  });
+});
+
+describe("locales (alquiler-locales)", () => {
+  const cotizacion = (extra = {}) => ({
+    tiendaId: TIENDA, productoId: PRODUCTO, paqueteId: MODALIDAD, fecha: "2026-12-05", invitados: 150, tipoEvento: "quinceanos", ...extra
+  });
+
+  it("cotización: valida invitados y tipo de evento antes del servicio", async () => {
+    const r = await request("POST", "/store/reservas/locales/cotizaciones", { body: cotizacion({ invitados: 0, tipoEvento: "baile" }) });
+    expect(r.status).toBe(400);
+    expect(Object.keys(r.json.data.body)).toEqual(expect.arrayContaining(["invitados", "tipoEvento"]));
+    expect(localesSvc.crearCotizacion).not.toHaveBeenCalled();
+    const ok = await request("POST", "/store/reservas/locales/cotizaciones", { body: cotizacion({ canalOrigen: "tiktok" }) });
+    expect(ok.status).toBe(201);
+    expect(localesSvc.crearCotizacion).toHaveBeenCalledWith(TIENDA, expect.objectContaining({ canalOrigen: "tiktok" }), { creadaPor: "cliente" });
+  });
+
+  it("calendario: máximo 62 días", async () => {
+    const r = await request("GET", `/store/reservas/locales/salones/imperial/calendario?tiendaId=${TIENDA}&desde=2026-12-01&hasta=2027-03-01`);
+    expect(r.status).toBe(400);
+  });
+
+  it("contrato: exige la casilla y el hash del texto leído", async () => {
+    const token = await firmarTokenReserva({ pedidoId: PEDIDO, tiendaId: TIENDA });
+    const sin = await request("POST", `/store/reservas/seguimiento/${token}/contrato`, { body: { version: 1, hash: "a".repeat(64) } });
+    expect(sin.status).toBe(400);
+    const ok = await request("POST", `/store/reservas/seguimiento/${token}/contrato`, { body: { version: 1, hash: "a".repeat(64), acepta: true } });
+    expect(ok.status).toBe(200);
+    expect(cuotasSvc.aceptarContrato).toHaveBeenCalledWith(TIENDA, PEDIDO, expect.objectContaining({ version: 1 }), expect.anything());
+  });
+
+  it("cuotas: verificar es de editor+, editar el plan valida montos", async () => {
+    expect((await request("POST", `/admin/reservas/${PEDIDO}/cuotas/${CUOTA}/verificar`, { user: "visor", body: { tiendaId: TIENDA } })).status).toBe(403);
+    expect((await request("POST", `/admin/reservas/${PEDIDO}/cuotas/${CUOTA}/verificar`, { user: "recepcion", body: { tiendaId: TIENDA } })).status).toBe(200);
+    expect(cuotasSvc.verificarCuota).toHaveBeenCalledWith(TIENDA, PEDIDO, CUOTA, expect.anything());
+    const malo = await request("PUT", `/admin/reservas/${PEDIDO}/plan`, { user: "recepcion", body: { tiendaId: TIENDA, cuotas: [{ concepto: "cuota", monto: 0, venceEn: "2026-11-01" }] } });
+    expect(malo.status).toBe(400);
+    expect(cuotasSvc.editarPlan).not.toHaveBeenCalled();
+  });
+
+  it("cotización del negocio: un ajuste exige motivo", async () => {
+    const r = await request("POST", "/admin/reservas/locales/cotizaciones", { user: "recepcion", body: cotizacion({ nuevoTotal: 7000 }) });
+    expect(r.status).toBe(400);
+    expect(Object.keys(r.json.data.body)).toContain("ajusteMotivo");
+  });
+
+  it("bloqueo manual: horas incompletas responden 400; editor+ puede bloquear", async () => {
+    const body = { tiendaId: TIENDA, productoId: PRODUCTO, fecha: "2026-12-05" };
+    expect((await request("POST", "/admin/reservas/locales/bloqueos", { user: "recepcion", body: { ...body, horaInicio: "19:00" } })).status).toBe(400);
+    expect((await request("POST", "/admin/reservas/locales/bloqueos", { user: "visor", body })).status).toBe(403);
+    expect((await request("POST", "/admin/reservas/locales/bloqueos", { user: "recepcion", body: { ...body, motivo: "Vendida por WhatsApp" } })).status).toBe(200);
   });
 });

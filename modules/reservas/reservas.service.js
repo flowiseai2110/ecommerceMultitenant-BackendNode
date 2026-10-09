@@ -24,10 +24,13 @@ import {
   aceptadaEmail, compraPendienteEmail, confirmadaEmail, nuevaReservaEmail, nuevaSolicitudEmail, pagoSubidoEmail, rechazadaEmail, solicitudRecibidaEmail
 } from "./reservas.emails.js";
 import { instanteLima, fechaLima, sumarDias } from "./tiempo.js";
+import { errorNoDisponible, extraCotizacionLocal, filasCuotas, prepararAceptacion, verticalLocal } from "./locales/locales.service.js";
+import { actualizarOcupacion, FechaNoDisponibleError, liberar, liberarHuerfanas, ocupar } from "./locales/ocupaciones.js";
+import { conPreparacion } from "./locales/franja.js";
 
 /**
- * Mini booking — reservas de hotel / hostal, de tours y compras de entradas
- * (docs/specs/mini-booking).
+ * Mini booking — reservas de hotel / hostal, de tours, compras de entradas
+ * (docs/specs/mini-booking) y alquiler de locales (docs/specs/alquiler-locales).
  *
  * Una reserva es un `pedidos` (tipo = hotel | tour | evento: dinero, cliente,
  * comprobante, número) + una fila en `reservas` (estadía, salida o función, y
@@ -61,13 +64,16 @@ const INCLUDE_RESERVA = {
     }
   },
   itemsEvento: true,
+  // Locales: plan de pagos (alquiler-locales R7).
+  cuotas: { orderBy: { numero: "asc" } },
+  cambios: { orderBy: { fechaRegistro: "asc" } },
   detalles: true,
   pagos: { orderBy: { fechaRegistro: "asc" } },
   historialEstados: { orderBy: { fechaRegistro: "asc" } }
 };
 
 /** Tipos de pedido que son reservas (comparten bandeja, pago y seguimiento). */
-export const TIPOS_RESERVA = ["hotel", "tour", "evento"];
+export const TIPOS_RESERVA = ["hotel", "tour", "evento", "local"];
 
 const MOTIVOS_RECHAZO = {
   hotel: {
@@ -82,8 +88,15 @@ const MOTIVOS_RECHAZO = {
 
 const usuarioDe = (user) => user?.email ?? user?.id ?? null;
 
+/** Locales: el pago va por cuotas (cuotas.service), no por el flujo de un solo pago. */
+function exigirNoLocal(pedido) {
+  if (pedido.tipo !== "local") return;
+  const message = "Esta reserva se paga por cuotas: usa el plan de pagos";
+  throw new ConflictError(message, { message, motivo: "USAR_CUOTAS" });
+}
+
 /** Estado efectivo de un pedido-reserva (con el apartado de eventos). */
-const efectivoDe = (pedido, ahora) => {
+export const efectivoDe = (pedido, ahora) => {
   const r = pedido.reserva;
   return estadoEfectivo({ estado: pedido.estado, inicio: r.inicio, fin: r.fin, apartadoHasta: r.apartadoHasta }, ahora);
 };
@@ -185,7 +198,9 @@ const VERTICALES = {
     /** Dentro de la transacción: bloquea los tipos, revalida el cupo y registra las entradas. */
     enTransaccion: (tx, { tiendaId, pedidoId, c, estadoInicial, ahora }) =>
       apartarEntradas(tx, { tiendaId, pedidoId, items: c.items, confirmar: estadoInicial === "confirmada", ahora })
-  }
+  },
+  // Locales: la franja del salón se ocupa en la transacción (restricción de exclusión).
+  locales: verticalLocal
 };
 
 async function tiendaDeReservas(tiendaId) {
@@ -221,12 +236,13 @@ export async function persistirVencimientos(tiendaId) {
     FROM reservas r
     WHERE r.pedido_id = p.id AND p.tienda_id = ${tiendaId}::uuid
       AND p.estado IN ('solicitada', 'aceptada') AND r.inicio <= now()`;
-  // Habitación apartada con pago directo que no se pagó a tiempo (C1).
+  // Habitación apartada con pago directo que no se pagó a tiempo (C1), o local
+  // sin respuesta o sin pago al terminar su apartado (alquiler-locales R6.4).
   await prisma.$executeRaw`
     UPDATE pedidos p SET estado = 'vencida', fecha_actualizacion = now()
     FROM reservas r
     WHERE r.pedido_id = p.id AND p.tienda_id = ${tiendaId}::uuid
-      AND p.estado = 'aceptada' AND r.apartado_hasta IS NOT NULL AND r.apartado_hasta <= now()`;
+      AND p.estado IN ('solicitada', 'aceptada') AND r.apartado_hasta IS NOT NULL AND r.apartado_hasta <= now()`;
   // Compras de entradas sin captura: el apartado terminó y el cupo vuelve a la venta.
   await prisma.$executeRaw`
     UPDATE pedidos p SET estado = 'vencida', fecha_actualizacion = now()
@@ -238,9 +254,10 @@ export async function persistirVencimientos(tiendaId) {
     FROM reservas r
     WHERE r.pedido_id = p.id AND p.tienda_id = ${tiendaId}::uuid
       AND p.estado = 'confirmada' AND COALESCE(r.fin, r.inicio) <= now()`;
+  await liberarHuerfanas(tiendaId);
 }
 
-async function pedidoDeReserva(tiendaId, pedidoId, client = prisma) {
+export async function pedidoDeReserva(tiendaId, pedidoId, client = prisma) {
   const pedido = await client.pedidos.findFirst({
     where: { id: pedidoId, tiendaId, reserva: { isNot: null } },
     include: INCLUDE_RESERVA
@@ -255,7 +272,7 @@ async function pedidoDeReserva(tiendaId, pedidoId, client = prisma) {
  * leído evita que dos personas del equipo actúen a la vez sobre la misma
  * reserva: la segunda recibe 409.
  */
-async function aplicarAccion(tx, pedido, accion, { ahora = new Date(), datosPedido = {}, nota = null } = {}) {
+export async function aplicarAccion(tx, pedido, accion, { ahora = new Date(), datosPedido = {}, nota = null } = {}) {
   const nuevo = transicionar(efectivoDe(pedido, ahora), accion, pedido.tipo);
   const { count } = await tx.pedidos.updateMany({
     where: { id: pedido.id, tiendaId: pedido.tiendaId, estado: pedido.estado },
@@ -269,7 +286,7 @@ async function aplicarAccion(tx, pedido, accion, { ahora = new Date(), datosPedi
 }
 
 /** Envía un correo sin bloquear ni lanzar: el link de seguimiento es la fuente de verdad. */
-function enviar(destino, correo, replyTo) {
+export function enviar(destino, correo, replyTo) {
   if (!destino) return;
   sendTransactionalEmail({ to: destino, ...correo, replyTo: replyTo || undefined })
     .catch(error => logger.warn(`📭 Reservas: no se envió "${correo.subject}" a ${destino}: ${error.message}`));
@@ -287,6 +304,8 @@ export async function cotizar(datos, ahora = new Date()) {
   const { vertical } = await tiendaDeReservas(datos.tiendaId);
   const config = await obtenerConfig(datos.tiendaId);
   const { c } = await vertical.cotizar({ tiendaId: datos.tiendaId, datos, config, ahora });
+  // Locales: separación, garantía y si la franja está libre (R3.5, R4.1).
+  if (vertical === verticalLocal) return { ...serializarCotizacion(c), ...await extraCotizacionLocal(datos.tiendaId, datos, c, ahora) };
   return serializarCotizacion(c);
 }
 
@@ -373,7 +392,8 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
   if (existente) return resultadoSolicitud(tienda, existente.id, false);
 
   const config = await obtenerConfig(tienda.id);
-  const { producto, c, detalle, log, inventario = null } = await vertical.cotizar({ tiendaId: tienda.id, datos, config, ahora });
+  const cotizado = await vertical.cotizar({ tiendaId: tienda.id, datos, config, ahora });
+  const { producto, c, detalle, log, inventario = null } = cotizado;
   if (c.errores.length) {
     throw new ValidationError(c.errores[0].mensaje, { motivo: "RESERVA_NO_VALIDA", errores: c.errores });
   }
@@ -389,6 +409,8 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
   // Hotel con inventario y pago directo: la habitación queda apartada mientras
   // paga; si no sube la captura a tiempo, la reserva se anula y el cupo vuelve (C1).
   if (inventario && estadoInicial === "aceptada") detalle.apartadoHasta = nuevoApartado(c.inicio, config, ahora);
+  // Locales: la solicitud aparta la fecha durante el plazo de respuesta (R6.4).
+  if (vertical.apartadoInicial) detalle.apartadoHasta = vertical.apartadoInicial(estadoInicial, c, config, ahora);
   // Idioma en que reservó el huésped: los correos le llegan en ese idioma (C3).
   detalle.idiomaHuesped = datos.lang === "en" ? "en" : "es";
   // Fuera de la transacción: es una consulta de red (ver pedidos.service).
@@ -483,7 +505,9 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
         },
         select: { id: true }
       });
-      await vertical.enTransaccion?.(tx, { tiendaId: tienda.id, pedidoId: creado.id, c, estadoInicial, ahora, inventario });
+      await vertical.enTransaccion?.(tx, {
+        tiendaId: tienda.id, pedidoId: creado.id, c, estadoInicial, ahora, inventario, cotizado, config, apartadoHasta: detalle.apartadoHasta ?? null
+      });
       return creado;
     }, { maxWait: 5000, timeout: 15000 });
 
@@ -497,6 +521,8 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
       });
       if (previa) return resultadoSolicitud(tienda, previa.id, false);
     }
+    // Locales: la franja se ocupó entre la cotización y el envío → 409 con alternativas (R3.4).
+    if (vertical.traducirError) throw await vertical.traducirError(error, { tiendaId: tienda.id, datos, cotizado, ahora });
     throw error;
   }
 }
@@ -537,8 +563,10 @@ export async function obtenerSeguimiento(tiendaId, pedidoId, ahora = new Date())
 /** El cliente cancela una solicitud o una aceptada sin pagar (R12.1). */
 export async function cancelarPorCliente(tiendaId, pedidoId, ahora = new Date()) {
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
-  await prisma.$transaction(tx =>
-    aplicarAccion(tx, pedido, "cancelar_cliente", { ahora, nota: "Cancelada por el cliente" }));
+  await prisma.$transaction(async (tx) => {
+    await aplicarAccion(tx, pedido, "cancelar_cliente", { ahora, nota: "Cancelada por el cliente" });
+    if (pedido.tipo === "local") await liberar(tx, pedidoId);
+  });
   return obtenerSeguimiento(tiendaId, pedidoId, ahora);
 }
 
@@ -548,6 +576,7 @@ export async function cancelarPorCliente(tiendaId, pedidoId, ahora = new Date())
  */
 export async function subirCapturaCliente(tiendaId, pedidoId, { file, metodo, numeroOperacion }, ahora = new Date()) {
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
+  exigirNoLocal(pedido);
   const r = pedido.reserva;
   // Valida antes de subir el archivo: una reserva vencida no acepta pagos.
   transicionar(efectivoDe(pedido, ahora), "subir_captura", pedido.tipo);
@@ -584,14 +613,29 @@ export async function subirCapturaCliente(tiendaId, pedidoId, { file, metodo, nu
 // Admin
 // ============================================
 
+/** Sin plazo, o con el plazo (apartado de locales o habitación) todavía vigente. */
+const apartadoVigente = (ahora) => ({ OR: [{ apartadoHasta: null }, { apartadoHasta: { gt: ahora } }] });
+const cuotaEnRevision = { tipo: "local", cuotas: { some: { estado: "en_revision" } } };
+
 function wherePestana(pestana, ahora) {
   switch (pestana) {
-    case "por_responder": return { estado: "solicitada", reserva: { inicio: { gt: ahora } } };
-    case "pago_por_verificar": return { estado: "pago_en_revision" };
+    case "por_responder": return { estado: "solicitada", reserva: { inicio: { gt: ahora }, ...apartadoVigente(ahora) } };
+    // Locales: también las cuotas siguientes en revisión de una reserva ya confirmada.
+    case "pago_por_verificar": return { OR: [{ estado: "pago_en_revision" }, cuotaEnRevision] };
+    // Locales (alquiler-locales R12.1): mora y garantías por devolver.
+    case "cuotas_vencidas": return {
+      tipo: "local", estado: { in: ["confirmada", "pago_en_revision"] }, reserva: { fin: { gt: ahora } },
+      cuotas: { some: { estado: "pendiente", venceEn: { lt: new Date(`${fechaLima(ahora)}T00:00:00Z`) } } }
+    };
+    // Hasta la liquidación (fase 2): eventos pasados con garantía cobrada.
+    case "garantias": return {
+      tipo: "local", estado: { in: ["confirmada", "completada"] }, reserva: { fin: { lte: ahora } },
+      cuotas: { some: { concepto: "garantia", estado: "pagada" } }
+    };
     // Próximas: aceptadas o compras esperando pago, y confirmadas que aún no terminan.
     case "confirmadas": return {
       OR: [
-        { estado: "aceptada", reserva: { inicio: { gt: ahora } } },
+        { estado: "aceptada", reserva: { inicio: { gt: ahora }, ...apartadoVigente(ahora) } },
         { estado: "por_pagar", reserva: { inicio: { gt: ahora }, apartadoHasta: { gt: ahora } } },
         { estado: "confirmada", reserva: { fin: { gt: ahora } } }
       ]
@@ -635,7 +679,7 @@ export async function listarReservasAdmin(tiendaId, filtros, ahora = new Date())
     prisma.pedidos.count({ where }),
     prisma.pedidos.findMany({
       where, orderBy, skip: (page - 1) * limit, take: limit,
-      include: { reserva: { include: INCLUDE_RESERVA.reserva.include }, pagos: true, detalles: true }
+      include: { reserva: { include: INCLUDE_RESERVA.reserva.include }, pagos: true, detalles: true, cuotas: INCLUDE_RESERVA.cuotas }
     })
   ]);
   const totalPages = Math.ceil(total / limit);
@@ -647,11 +691,13 @@ export async function listarReservasAdmin(tiendaId, filtros, ahora = new Date())
 
 /** Badge del menú (R11.2): lo que espera una acción del negocio. */
 export async function resumenReservas(tiendaId, ahora = new Date()) {
-  const [porResponder, pagoPorVerificar] = await Promise.all([
-    prisma.pedidos.count({ where: { tiendaId, tipo: { in: TIPOS_RESERVA }, estado: "solicitada", reserva: { inicio: { gt: ahora } } } }),
-    prisma.pedidos.count({ where: { tiendaId, tipo: { in: TIPOS_RESERVA }, estado: "pago_en_revision" } })
+  const [porResponder, pagoPorVerificar, cuotasVencidas] = await Promise.all([
+    prisma.pedidos.count({ where: { tiendaId, tipo: { in: TIPOS_RESERVA }, ...wherePestana("por_responder", ahora) } }),
+    prisma.pedidos.count({ where: { tiendaId, tipo: { in: TIPOS_RESERVA }, ...wherePestana("pago_por_verificar", ahora) } }),
+    prisma.pedidos.count({ where: { tiendaId, ...wherePestana("cuotas_vencidas", ahora) } })
   ]);
-  return { porResponder, pagoPorVerificar, total: porResponder + pagoPorVerificar };
+  // La mora no suma al badge: es un indicador, no una acción pendiente (R7.7).
+  return { porResponder, pagoPorVerificar, cuotasVencidas, total: porResponder + pagoPorVerificar };
 }
 
 /** Detalle para el negocio, con la URL firmada de cada captura. */
@@ -663,7 +709,7 @@ export async function detalleReservaAdmin(tiendaId, pedidoId, ahora = new Date()
   return serializeReservaAdmin(pedido, { urlsCaptura, ahora });
 }
 
-async function correoCliente(tiendaId, pedidoId, plantilla) {
+export async function correoCliente(tiendaId, pedidoId, plantilla) {
   const tienda = await prisma.tiendas.findUnique({ where: { id: tiendaId }, select: SELECT_TIENDA });
   const [pedido, config] = await Promise.all([pedidoDeReserva(tiendaId, pedidoId), obtenerConfig(tiendaId)]);
   const token = await firmarTokenReserva({ pedidoId, tiendaId });
@@ -671,9 +717,32 @@ async function correoCliente(tiendaId, pedidoId, plantilla) {
   enviar(pedido.clienteEmail, plantilla(dto, urlSeguimiento(tienda.slug, token)), tienda.email);
 }
 
+/** Correo al cliente según el estado actual de la reserva. */
+const CORREO_POR_ESTADO = {
+  solicitada: solicitudRecibidaEmail, aceptada: aceptadaEmail, por_pagar: compraPendienteEmail,
+  pago_en_revision: solicitudRecibidaEmail, confirmada: confirmadaEmail, completada: confirmadaEmail, rechazada: rechazadaEmail
+};
+
+/**
+ * Reenvía al cliente el correo de su estado actual (alquiler-locales CE-13,
+ * vale para todas las verticales): el seguimiento es la fuente de verdad y el
+ * correo, una copia que se puede volver a mandar.
+ */
+export async function reenviarCorreo(tiendaId, pedidoId, ahora = new Date()) {
+  const pedido = await pedidoDeReserva(tiendaId, pedidoId);
+  const plantilla = CORREO_POR_ESTADO[efectivoDe(pedido, ahora)];
+  if (!plantilla || !pedido.clienteEmail) {
+    const message = !pedido.clienteEmail ? "La reserva no tiene correo del cliente" : "No hay un correo que reenviar en este estado";
+    throw new ConflictError(message, { message, motivo: "SIN_CORREO" });
+  }
+  await correoCliente(tiendaId, pedidoId, plantilla);
+  return { enviadoA: pedido.clienteEmail };
+}
+
 /** Aceptar (R6.1, R6.2), con ajuste opcional del total (R6.4). */
 export async function aceptarReserva(tiendaId, pedidoId, { nuevoTotal = null, ajusteMotivo = null, forzar = false }, user, ahora = new Date()) {
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
+  if (pedido.tipo === "local") return aceptarLocal(tiendaId, pedido, { nuevoTotal, ajusteMotivo }, user, ahora);
   const config = await obtenerConfig(tiendaId);
   if (pedido.tipo === "hotel" && !forzar) await validarCupoAlAceptar(tiendaId, pedido, ahora);
   const subtotal = Number(pedido.subtotal);
@@ -710,6 +779,59 @@ export async function aceptarReserva(tiendaId, pedidoId, { nuevoTotal = null, aj
 }
 
 /**
+ * Locales (alquiler-locales R6.3, R6.5): aceptar genera el plan de pagos y el
+ * contrato, y la solicitud pasa a apartado con su propio plazo. Si la fila de
+ * ocupación ya no está (limpiada al vencer), se vuelve a ocupar: la BD decide.
+ */
+async function aceptarLocal(tiendaId, pedido, { nuevoTotal, ajusteMotivo }, user, ahora) {
+  const config = await obtenerConfig(tiendaId);
+  const subtotal = Number(pedido.subtotal);
+  const anterior = Number(pedido.total);
+  const total = nuevoTotal ?? anterior;
+  const { separacion, cuotas, contrato, apartadoHasta } = await prepararAceptacion(prisma, { pedido, config, total, ahora });
+  const r = pedido.reserva;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await aplicarAccion(tx, pedido, "aceptar", {
+        ahora,
+        datosPedido: { total, descuentoMonto: Math.max(redondear(subtotal - total), 0), usuarioActualizacion: usuarioDe(user) },
+        nota: nuevoTotal !== null ? `Aceptada con ajuste: ${ajusteMotivo}` : "Aceptada por el negocio"
+      });
+      await tx.reservas.update({
+        where: { pedidoId: pedido.id },
+        data: {
+          respondidaEn: ahora,
+          ...(nuevoTotal !== null ? { ajusteMonto: redondear(total - subtotal), ajusteMotivo } : {}),
+          montoAPagar: separacion, saldoDestino: 0, apartadoHasta, contrato
+        }
+      });
+      await tx.reserva_cuotas.deleteMany({ where: { pedidoId: pedido.id, tiendaId } });
+      await tx.reserva_cuotas.createMany({ data: filasCuotas(cuotas, { tiendaId, pedidoId: pedido.id, usuario: usuarioDe(user) }) });
+      const { count } = await actualizarOcupacion(tx, pedido.id, { tipo: "apartado", expiraEn: apartadoHasta });
+      if (count === 0) {
+        const f = conPreparacion(r.inicio, r.fin, r.local?.salon?.preparacionMin ?? 0);
+        await ocupar(tx, { tiendaId, pedidoId: pedido.id, productoId: r.productoId, tipo: "apartado", inicio: f.ocupaInicio, fin: f.ocupaFin, expiraEn: apartadoHasta, usuario: usuarioDe(user) });
+      }
+      if (nuevoTotal !== null && total !== anterior) {
+        await tx.reserva_cambios.create({
+          data: {
+            tiendaId, pedidoId: pedido.id, tipo: "ajuste_monto", actor: "negocio", antes: { total: anterior }, despues: { total },
+            nota: ajusteMotivo, diferencia: redondear(total - anterior), usuarioRegistro: usuarioDe(user)
+          }
+        });
+      }
+    });
+  } catch (error) {
+    if (error instanceof FechaNoDisponibleError) throw errorNoDisponible([]);
+    throw error;
+  }
+
+  await correoCliente(tiendaId, pedido.id, aceptadaEmail);
+  return detalleReservaAdmin(tiendaId, pedido.id, ahora);
+}
+
+/**
  * Con inventario (C1): aceptar sin cupo responde 409 SIN_CUPO con el detalle
  * de la noche llena; el admin puede confirmar y reenviar con `forzar` (sabe
  * algo que el sistema no: una cancelación por teléfono, una habitación extra).
@@ -741,6 +863,7 @@ export async function rechazarReserva(tiendaId, pedidoId, { motivoTipo, motivo }
       ahora, datosPedido: { usuarioActualizacion: usuarioDe(user) }, nota: texto ? `Rechazada: ${texto}` : "Rechazada"
     });
     await tx.reservas.update({ where: { pedidoId }, data: { respondidaEn: ahora, motivoRechazo: texto } });
+    if (pedido.tipo === "local") await liberar(tx, pedidoId);
   });
   await correoCliente(tiendaId, pedidoId, rechazadaEmail);
   return detalleReservaAdmin(tiendaId, pedidoId, ahora);
@@ -752,6 +875,7 @@ const pagoPendiente = (pedido) => [...pedido.pagos].reverse()
 /** "Pago verificado" (R7.3): confirma la reserva y registra lo pagado. */
 export async function verificarPago(tiendaId, pedidoId, user, ahora = new Date()) {
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
+  exigirNoLocal(pedido);
   const pago = pagoPendiente(pedido);
   if (!pago) throw new ConflictError("No hay un pago por verificar en esta reserva", { message: "No hay un pago por verificar en esta reserva", motivo: "SIN_PAGO_PENDIENTE" });
 
@@ -787,6 +911,7 @@ export async function verificarPago(tiendaId, pedidoId, user, ahora = new Date()
 /** "No corresponde" (R7.3): la reserva vuelve a esperar el pago. */
 export async function rechazarPago(tiendaId, pedidoId, { motivo }, user, ahora = new Date()) {
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
+  exigirNoLocal(pedido);
   const pago = pagoPendiente(pedido);
   if (!pago) throw new ConflictError("No hay un pago por verificar en esta reserva", { message: "No hay un pago por verificar en esta reserva", motivo: "SIN_PAGO_PENDIENTE" });
 
@@ -824,6 +949,8 @@ export async function cancelarPorNegocio(tiendaId, pedidoId, { motivo }, user, a
       ahora, datosPedido: { usuarioActualizacion: usuarioDe(user) }, nota: motivo ? `Cancelada por el negocio: ${motivo}` : "Cancelada por el negocio"
     });
     if (devolverCupo) await moverVendidos(tx, tiendaId, pedidoId, -1);
+    // Locales: la franja se libera en la misma transacción (R10.6). La devolución llega en la fase 2.
+    if (pedido.tipo === "local") await liberar(tx, pedidoId);
   });
   return detalleReservaAdmin(tiendaId, pedidoId, ahora);
 }
@@ -859,7 +986,7 @@ export async function agendaReservas(tiendaId, { desde, hasta } = {}, ahora = ne
       }
     },
     orderBy: { fechaServicio: "asc" },
-    include: { reserva: { include: INCLUDE_RESERVA.reserva.include }, pagos: true, detalles: true }
+    include: { reserva: { include: INCLUDE_RESERVA.reserva.include }, pagos: true, detalles: true, cuotas: INCLUDE_RESERVA.cuotas }
   });
   return { desde: dDesde, hasta: dHasta, reservas: filas.map(p => serializeReservaLista(p, ahora)) };
 }

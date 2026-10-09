@@ -26,7 +26,10 @@ const TENANT_SCOPED_MODELS = new Set([
   // Mini booking
   "config_reservas", "cierres_fecha", "hotel_tipos_habitacion", "hotel_modalidades", "reservas",
   "tours", "tour_tipos_pasajero",
-  "eventos", "evento_funciones", "evento_tipos_entrada", "evento_compra_items"
+  "eventos", "evento_funciones", "evento_tipos_entrada", "evento_compra_items",
+  // Alquiler de locales
+  "local_salones", "local_turnos", "local_paquetes", "local_ocupaciones", "local_cotizaciones",
+  "reserva_cuotas", "reserva_cambios"
 ]);
 
 // Solo lecturas y operaciones masivas. findUnique/update/delete/create se dejan

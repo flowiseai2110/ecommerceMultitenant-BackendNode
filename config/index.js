@@ -256,6 +256,8 @@ export const config = {
     linkTtlDias: parseInt(process.env.RESERVAS_LINK_TTL_DIAS) || 400,
     // Solicitudes por IP en la ventana del rate limit global (anti-abuso, R5.7).
     rateLimitMax: parseInt(process.env.RESERVAS_RATE_LIMIT_MAX) || 10,
+    // Cotizaciones de locales guardadas por IP en la ventana (alquiler-locales R14.8).
+    cotizacionesMax: parseInt(process.env.RESERVAS_COTIZACIONES_MAX) || 30,
     // Bucket PRIVADO de capturas de pago (docs/sql/mini_booking_setup.sql).
     bucketCapturas: process.env.RESERVAS_BUCKET_CAPTURAS || "pagos-capturas"
   },

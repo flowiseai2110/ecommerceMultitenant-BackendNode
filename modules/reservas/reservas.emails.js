@@ -59,11 +59,14 @@ const fila = (etiqueta, valor) => `
 
 const esTour = (r) => r.tipo === "tour";
 const esEvento = (r) => r.tipo === "evento";
+const esLocal = (r) => r.tipo === "local";
 const hora = new Intl.DateTimeFormat("es-PE", { timeZone: "America/Lima", hour: "2-digit", minute: "2-digit", hour12: false });
 
 /** Cómo se nombra al negocio y al inicio del servicio en cada vertical. */
 const voz = (r) => (esEvento(r)
   ? { Negocio: "El organizador", alNegocio: "al organizador", enNegocio: "en el lugar", inicio: "el inicio de la función", conf: "tu compra" }
+  : esLocal(r)
+  ? { Negocio: "El local", alNegocio: "al local", enNegocio: "en el local", inicio: "la fecha del evento", conf: "la fecha" }
   : esTour(r)
   ? { Negocio: "La agencia", alNegocio: "a la agencia", enNegocio: "en destino", inicio: "la hora de salida", conf: "la disponibilidad de la salida" }
   : { ...vozAlojamiento(r.negocio?.alojamiento), inicio: "la hora de ingreso", conf: "la disponibilidad" });
@@ -71,7 +74,7 @@ const voz = (r) => (esEvento(r)
 // ── Inglés (docs/specs/hospedaje-completo C3) ──
 // Hotel y tours: el huésped que reservó en inglés recibe sus correos en inglés.
 // Los correos al negocio y los de entradas siguen en español.
-const enIngles = (r) => r.idiomaHuesped === "en" && !esEvento(r);
+const enIngles = (r) => r.idiomaHuesped === "en" && !esEvento(r) && !esLocal(r);
 const formatoEn = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/Lima", weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false
 });
@@ -121,7 +124,16 @@ function resumenEn(r) {
 /** Resumen de la estadía o del tour, igual en todos los correos. */
 function resumen(r) {
   if (enIngles(r)) return resumenEn(r);
-  const detalle = esEvento(r)
+  const l = r.local;
+  const detalle = esLocal(r)
+    ? fila("Salón", e(l?.salon ?? r.producto.nombre ?? "—")) +
+      fila("Evento", e(`${l?.tipoEventoEtiqueta ?? "—"}${l?.agasajado ? ` · ${l.agasajado}` : ""}`)) +
+      fila("Fecha", e(`${fechaHora(r.inicio)}${l?.turno?.nombre ? ` · turno ${l.turno.nombre}` : ""} · hasta las ${l?.horaFin ?? hora.format(new Date(r.fin))}`)) +
+      fila("Invitados", e(String(l?.invitados ?? "—"))) +
+      (l?.paquete?.nombre ? fila("Paquete", e(l.paquete.nombre)) : "") +
+      (r.montoAPagar ? fila("Separación", soles(r.montoAPagar)) : "") +
+      (l?.garantia ? fila("Garantía", soles(l.garantia)) : "")
+    : esEvento(r)
     ? fila("Evento", e(r.producto.nombre ?? "—")) +
       fila("Función", e(`${fechaHora(r.inicio)}${r.evento?.funcion ? ` · ${r.evento.funcion}` : ""}`)) +
       (r.evento?.lugar ? fila("Lugar", e(r.evento.lugar)) : "") +
@@ -194,6 +206,8 @@ export function nuevaSolicitudEmail(r) {
   return {
     subject: esTour(r)
       ? `🧭 Nueva solicitud ${r.codigo}: ${r.producto.nombre} · ${r.personas} pax · salida ${fechaHora(r.inicio)}`
+      : esLocal(r)
+      ? `🎉 Nueva solicitud ${r.codigo}: ${r.local?.tipoEventoEtiqueta ?? "evento"} · ${r.local?.invitados ?? r.personas} invitados · ${fechaHora(r.inicio)}`
       : `🛎️ Nueva solicitud ${r.codigo}: ${r.modalidad.etiqueta} · ingreso ${fechaHora(r.inicio)}`,
     html: layout({
       titulo: "Tienes una nueva solicitud de reserva",
@@ -285,11 +299,14 @@ export function aceptadaEmail(r, url) {
     subject: `Tu reserva ${r.codigo} fue aceptada: completa el pago`,
     html: layout({
       titulo: "¡Tu solicitud fue aceptada!",
-      intro:
-        texto(`Hola ${e(r.titular.nombres)}, <strong>${e(r.negocio.nombre)}</strong> tiene disponibilidad. Para confirmar, paga <strong>${soles(r.montoAPagar)}</strong> antes de ${v.inicio} y sube la captura desde el link.`) +
-        ajuste + saldo,
-      cuerpo: resumen(r) + boton(url, "Pagar y subir mi captura"),
-      pie: `Si no pagas antes de ${v.inicio}, la reserva se anula.`
+      intro: esLocal(r)
+        // Locales (alquiler-locales R8.3, R7): contrato primero, luego la separación; el resto en cuotas.
+        ? texto(`Hola ${e(r.titular.nombres)}, <strong>${e(r.negocio.nombre)}</strong> aceptó tu solicitud. Para separar la fecha, lee y acepta el contrato, y paga la separación de <strong>${soles(r.montoAPagar)}</strong>${r.local?.apartadoHasta ? ` antes del ${e(fechaHora(r.local.apartadoHasta))}` : ""}.`) +
+          texto(`El resto se paga en cuotas según el plan de pagos que verás en el link.`) + ajuste
+        : texto(`Hola ${e(r.titular.nombres)}, <strong>${e(r.negocio.nombre)}</strong> tiene disponibilidad. Para confirmar, paga <strong>${soles(r.montoAPagar)}</strong> antes de ${v.inicio} y sube la captura desde el link.`) +
+          ajuste + saldo,
+      cuerpo: resumen(r) + boton(url, esLocal(r) ? "Ver contrato y pagar" : "Pagar y subir mi captura"),
+      pie: esLocal(r) ? "Si no pagas la separación a tiempo, la fecha se libera." : `Si no pagas antes de ${v.inicio}, la reserva se anula.`
     })
   };
 }
@@ -370,8 +387,11 @@ export function confirmadaEmail(r, url) {
       titulo: evento ? "¡Tus entradas están confirmadas!" : "¡Tu reserva está confirmada!",
       intro:
         texto(`Hola ${e(r.titular.nombres)}, te esperamos en <strong>${e(lugar)}</strong>${direccion ? ` (${e(direccion)})` : ""}.`) +
+        // Locales: lo pagado y lo que falta según el plan de pagos (R7.5).
+        (esLocal(r)
+          ? texto(`Pagado: <strong>${soles(r.local?.resumen?.pagado)}</strong>. Saldo: <strong>${soles(r.local?.resumen?.saldo)}</strong>.${r.local?.resumen?.proximaCuota ? ` Próxima cuota: ${soles(r.local.resumen.proximaCuota.monto)} hasta el ${e(r.local.resumen.proximaCuota.venceEn.split("-").reverse().join("/"))}.` : ""}`)
         // Cobro en destino: nada pagado todavía, todo se paga al llegar.
-        (r.montoPagado > 0
+        : r.montoPagado > 0
           ? texto(`${enHotel ? "Pagado a cuenta" : "Pagado"}: <strong>${soles(r.montoPagado)}</strong>.${r.saldoDestino > 0 ? ` Saldo a pagar ${voz(r).enNegocio}: <strong>${soles(r.saldoDestino)}</strong>.` : ""}`)
           : texto(`Pagas <strong>${soles(r.saldoDestino || r.total)}</strong> ${voz(r).enNegocio}.`)) +
         (enHotel && !esTour(r) && !evento ? texto(`Los consumos durante tu estadía se pagan ${voz(r).enNegocio}. Tu boleta o factura se entrega al finalizar tu estadía.`) : "") +

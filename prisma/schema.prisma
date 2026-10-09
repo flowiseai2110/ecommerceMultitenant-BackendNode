@@ -137,7 +137,7 @@ model tiendas {
 
   // Configuración general
   moneda      String? @default("PEN") @db.VarChar(3)
-  // productos | hotel | tours | eventos (CHECK en docs/sql/mini_booking_setup.sql)
+  // productos | hotel | tours | eventos | locales (CHECK en docs/sql/locales_fase_1.sql)
   tipoNegocio String  @default("productos") @map("tipo_negocio") @db.VarChar(50)
   // Qué vende (moda, alimentos...): sugiere campañas. Valores en modules/tenants/rubros.js
   rubro       String? @db.VarChar(30)
@@ -392,6 +392,7 @@ model productos {
   hotelTipo hotel_tipos_habitacion?
   tour      tours?
   evento    eventos?
+  salon     local_salones?
   cierres   cierres_fecha[]
   reservas  reservas[]
 
@@ -561,7 +562,7 @@ model pedidos {
   codigoCupon          String?   @map("codigo_cupon") @db.VarChar(50)
   fechaConfirmado      DateTime? @map("fecha_confirmado") @db.Timestamptz
   fechaEntregado       DateTime? @map("fecha_entregado") @db.Timestamptz
-  // Mini booking (docs/specs/mini-booking): compra | hotel | tour | evento.
+  // Mini booking (docs/specs/mini-booking): compra | hotel | tour | evento | local.
   // fecha_servicio = ingreso / salida del tour / inicio de la función.
   tipo                 String    @default("compra") @db.VarChar(10)
   fechaServicio        DateTime? @map("fecha_servicio") @db.Timestamptz
@@ -583,6 +584,11 @@ model pedidos {
   hojasReclamacion libro_reclamaciones[]
   reserva          reservas?
   itemsEvento      evento_compra_items[]
+  // Alquiler de locales (docs/specs/alquiler-locales)
+  cuotas           reserva_cuotas[]
+  cambios          reserva_cambios[]
+  ocupaciones      local_ocupaciones[]
+  cotizaciones     local_cotizaciones[]
 
   @@unique([tiendaId, numeroPedido], name: "uq_numero_pedido")
   @@unique([tiendaId, idempotencyKey], name: "uq_pedidos_idempotency")
@@ -776,6 +782,8 @@ model pagos {
   outcomeCode      String? @map("outcome_code") @db.VarChar(50) // código del proveedor (ej. AUT0000)
   outcomeMensaje   String? @map("outcome_mensaje") @db.Text
   metadata         Json?   @db.JsonB
+  // Alquiler de locales: cuota del plan de pagos que paga (un solo pago válido por cuota, CE-11).
+  cuotaId          String? @map("cuota_id") @db.Uuid
 
   // Auditoría
   fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
@@ -784,13 +792,15 @@ model pagos {
   usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
 
   // Relaciones
-  pedido  pedidos        @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  pedido  pedidos         @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  cuota   reserva_cuotas? @relation(fields: [cuotaId], references: [id], onDelete: SetNull)
   eventos pago_eventos[]
 
   @@unique([proveedor, proveedorCargoId], name: "uq_pago_proveedor_cargo")
   @@index([tiendaId], name: "idx_pagos_tienda")
   @@index([pedidoId], name: "idx_pagos_pedido")
   @@index([tiendaId, estado], name: "idx_pagos_tienda_estado")
+  @@index([cuotaId], name: "idx_pagos_cuota")
 }
 
 // Bitácora de webhooks recibidos del proveedor. El proveedorEventoId único
@@ -999,6 +1009,30 @@ model config_reservas {
   tipoCambioUsd          Decimal? @map("tipo_cambio_usd") @db.Decimal(6, 3) // "≈ US$" en la vitrina; null = no se muestra
   resenasExternas        Json?    @map("resenas_externas") @db.JsonB // [{ fuente, puntaje, cantidad, url }] (hasta 3)
   traducciones           Json?    @db.JsonB // { en: { instrucciones, politicaCancelacion } } (C3)
+  // Alquiler de locales (docs/specs/alquiler-locales R1.2). `adelantoPct` es el % cuando separacionTipo = porcentaje.
+  separacionTipo         String   @default("porcentaje") @map("separacion_tipo") @db.VarChar(10) // porcentaje | monto_fijo
+  separacionMonto        Decimal? @map("separacion_monto") @db.Decimal(10, 2)
+  respuestaHoras         Int      @default(24) @map("respuesta_horas") // plazo del negocio para responder (aparta la fecha)
+  apartadoHoras          Int      @default(48) @map("apartado_horas") // aceptada sin pagar
+  saldoDiasAntes         Int      @default(30) @map("saldo_dias_antes")
+  maxCuotas              Int      @default(3) @map("max_cuotas")
+  garantiaMonto          Decimal  @default(0) @map("garantia_monto") @db.Decimal(10, 2)
+  garantiaDevolucionDias Int      @default(3) @map("garantia_devolucion_dias")
+  invitadosConfirmarDias Int      @default(7) @map("invitados_confirmar_dias")
+  reprogramacionesMax    Int      @default(1) @map("reprogramaciones_max")
+  reprogramacionMinDias  Int      @default(30) @map("reprogramacion_min_dias")
+  cargoReprogramacion    Decimal  @default(0) @map("cargo_reprogramacion") @db.Decimal(10, 2)
+  politicaTramos         Json?    @map("politica_tramos") @db.JsonB // [{ desdeDias, separacionPct, restoPct }] (desc)
+  graciaMoraDias         Int      @default(3) @map("gracia_mora_dias")
+  saldoFavorMeses        Int      @default(6) @map("saldo_favor_meses")
+  cotizacionVigenciaDias Int      @default(7) @map("cotizacion_vigencia_dias")
+  contratoPlantilla      String?  @map("contrato_plantilla") @db.Text
+  contratoVersion        Int      @default(1) @map("contrato_version") // sube al guardar la plantilla
+  proveedoresExternos    Boolean  @default(true) @map("proveedores_externos")
+  tarifaCoordinacion     Decimal? @map("tarifa_coordinacion") @db.Decimal(10, 2)
+  descorcheBotella       Decimal? @map("descorche_botella") @db.Decimal(10, 2)
+  horaTope               String   @default("03:00") @map("hora_tope") @db.VarChar(5) // ordenanza municipal
+  visitasHorario         Json?    @map("visitas_horario") @db.JsonB // { "1": ["16:00-19:00"] } (día ISO → rangos)
 
   // Auditoría
   fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
@@ -1143,7 +1177,7 @@ model hotel_modalidades {
 model reservas {
   pedidoId       String    @id @map("pedido_id") @db.Uuid
   tiendaId       String    @map("tienda_id") @db.Uuid
-  tipo           String    @db.VarChar(10) // hotel | tour | evento
+  tipo           String    @db.VarChar(10) // hotel | tour | evento | local
   productoId     String    @map("producto_id") @db.Uuid
   modalidadId    String?   @map("modalidad_id") @db.Uuid
   inicio         DateTime  @db.Timestamptz // ingreso / salida del tour
@@ -1166,6 +1200,18 @@ model reservas {
   plan           Json?     @db.JsonB // { id, nombre, ajustePct, reembolsable } (snapshot)
   idiomaHuesped  String    @default("es") @map("idioma_huesped") @db.VarChar(2) // idioma en que reservó (correos)
   resenaPedidaEn DateTime? @map("resena_pedida_en") @db.Timestamptz // correo "¿Cómo fue tu estadía?" enviado
+  // Alquiler de locales: inicio/fin = horario del evento SIN preparación.
+  turnoId                String?   @map("turno_id") @db.Uuid
+  paqueteId              String?   @map("paquete_id") @db.Uuid
+  cotizacionId           String?   @map("cotizacion_id") @db.Uuid
+  invitados              Int?
+  tipoEvento             String?   @map("tipo_evento") @db.VarChar(20) // quinceanos | promocion | cumpleanos | boda | corporativo | conferencia | otro
+  agasajado              String?   @db.VarChar(120)
+  local                  Json?     @db.JsonB // snapshot: salón, turno, paquete, separación, garantía, tramos, tarifas
+  contrato               Json?     @db.JsonB // { version, hash, texto, aceptadoEn, ip, adendas }
+  reprogramaciones       Int       @default(0)
+  saldoFavorHasta        DateTime? @map("saldo_favor_hasta") @db.Timestamptz
+  invitadosConfirmadosEn DateTime? @map("invitados_confirmados_en") @db.Timestamptz
 
   // Titular (registro de huésped)
   titularNombres      String    @map("titular_nombres") @db.VarChar(100)
@@ -1190,6 +1236,8 @@ model reservas {
   producto  productos          @relation(fields: [productoId], references: [id])
   modalidad hotel_modalidades? @relation(fields: [modalidadId], references: [id], onDelete: SetNull)
   funcion   evento_funciones?  @relation(fields: [funcionId], references: [id], onDelete: Restrict)
+  turno     local_turnos?      @relation(fields: [turnoId], references: [id], onDelete: SetNull)
+  paquete   local_paquetes?    @relation(fields: [paqueteId], references: [id], onDelete: SetNull)
 
   @@index([tiendaId, inicio], name: "idx_reservas_tienda_inicio")
   @@index([funcionId], name: "idx_reservas_funcion")
@@ -1315,6 +1363,213 @@ model evento_compra_items {
 
   @@index([tipoEntradaId], name: "idx_evento_items_tipo")
   @@index([pedidoId], name: "idx_evento_items_pedido")
+}
+
+// ============================================
+// MÓDULO: ALQUILER DE LOCALES (docs/specs/alquiler-locales)
+// Un salón es un `productos` + su ficha 1:1 en `local_salones`, con turnos y
+// paquetes. La reserva es un `pedidos` tipo = 'local' + `reservas`. La
+// disponibilidad la garantiza `local_ocupaciones` con una restricción de
+// exclusión sobre la franja (solo en SQL). DDL: docs/sql/locales_fase_1.sql
+// ============================================
+
+model local_salones {
+  productoId     String   @id @map("producto_id") @db.Uuid
+  tiendaId       String   @map("tienda_id") @db.Uuid
+  metros         Int?
+  aforoMaximo    Int      @map("aforo_maximo") // el de la licencia / ITSE (R2.2)
+  preparacionMin Int      @default(60) @map("preparacion_min") // antes y después de cada reserva (R2.4)
+  porHoras       Boolean  @default(false) @map("por_horas")
+  precioHora     Decimal? @map("precio_hora") @db.Decimal(10, 2)
+  minHoras       Int?     @map("min_horas")
+  horasDesde     String?  @map("horas_desde") @db.VarChar(5) // franja en que se alquila por horas
+  horasHasta     String?  @map("horas_hasta") @db.VarChar(5)
+  servicios      String[] @default([]) // mesas, sillas, cocina, barra, sonido_dj, estacionamiento…
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  producto     productos            @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  turnos       local_turnos[]
+  paquetes     local_paquetes[]
+  ocupaciones  local_ocupaciones[]
+  cotizaciones local_cotizaciones[]
+
+  @@index([tiendaId], name: "idx_local_salones_tienda")
+}
+
+// Turno de un salón ("Noche 19:00–03:00"). Fin menor que inicio = termina al día siguiente.
+model local_turnos {
+  id         String  @id @default(uuid()) @db.Uuid
+  tiendaId   String  @map("tienda_id") @db.Uuid
+  productoId String  @map("producto_id") @db.Uuid
+  nombre     String  @db.VarChar(60)
+  horaInicio String  @map("hora_inicio") @db.VarChar(5)
+  horaFin    String  @map("hora_fin") @db.VarChar(5)
+  diasSemana Int[]   @default([1, 2, 3, 4, 5, 6, 7]) @map("dias_semana") // 1 = lunes … 7 = domingo
+  precios    Json    @db.JsonB // precio "solo local": { lj, v, s, d, f }
+  activo     Boolean @default(true)
+  orden      Int     @default(0)
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  salon    local_salones @relation(fields: [productoId], references: [productoId], onDelete: Cascade)
+  reservas reservas[]
+
+  @@index([productoId], name: "idx_local_turnos_salon")
+}
+
+// Paquete de un salón: solo_local (precio del turno), paquete (fijo o por persona) o por_horas.
+model local_paquetes {
+  id              String   @id @default(uuid()) @db.Uuid
+  tiendaId        String   @map("tienda_id") @db.Uuid
+  productoId      String   @map("producto_id") @db.Uuid
+  nombre          String   @db.VarChar(80)
+  descripcion     String?  @db.VarChar(300)
+  modalidad       String   @db.VarChar(12) // solo_local | paquete | por_horas
+  precioTipo      String   @default("fijo") @map("precio_tipo") @db.VarChar(12) // fijo | por_persona
+  precios         Json?    @db.JsonB // { lj, v, s, d, f }; null en solo_local y por_horas
+  minPersonas     Int?     @map("min_personas")
+  maxPersonas     Int?     @map("max_personas")
+  incluye         String[] @default([])
+  horasIncluidas  Int?     @map("horas_incluidas")
+  horaExtraPrecio Decimal? @map("hora_extra_precio") @db.Decimal(10, 2)
+  tiposEvento     String[] @default([]) @map("tipos_evento") // vacío = todos
+  esPromocion     Boolean  @default(false) @map("es_promocion") // R13
+  turnoIds        String[] @default([]) @map("turno_ids") @db.Uuid // vacío = todos
+  activo          Boolean  @default(true)
+  orden           Int      @default(0)
+  traducciones    Json?    @db.JsonB
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  salon    local_salones @relation(fields: [productoId], references: [productoId], onDelete: Cascade)
+  reservas reservas[]
+
+  @@index([productoId], name: "idx_local_paquetes_salon")
+}
+
+// Franja ocupada de un salón: solicitud, apartado, reserva o bloqueo manual.
+// `franja` es una columna generada (tstzrange) con la restricción de exclusión
+// ex_local_ocupacion: dos filas activas del mismo salón no se cruzan (CE-01).
+// Una fila con `expira_en` vencido no ocupa: se desactiva en la transacción
+// que vuelve a tocar el salón y las lecturas la ignoran.
+model local_ocupaciones {
+  id              String                    @id @default(uuid()) @db.Uuid
+  tiendaId        String                    @map("tienda_id") @db.Uuid
+  productoId      String                    @map("producto_id") @db.Uuid
+  pedidoId        String?                   @map("pedido_id") @db.Uuid // null = bloqueo manual
+  tipo            String                    @db.VarChar(10) // solicitud | apartado | reserva | bloqueo
+  inicio          DateTime                  @db.Timestamptz // ya incluye la preparación (R3.3)
+  fin             DateTime                  @db.Timestamptz
+  franja          Unsupported("tstzrange")?
+  expiraEn        DateTime?                 @map("expira_en") @db.Timestamptz
+  activo          Boolean                   @default(true)
+  motivo          String?                   @db.VarChar(100) // bloqueos manuales (solo admin)
+  fechaRegistro   DateTime?                 @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro String?                   @map("usuario_registro") @db.VarChar(100)
+
+  salon  local_salones @relation(fields: [productoId], references: [productoId], onDelete: Cascade)
+  pedido pedidos?      @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@index([productoId, inicio], name: "idx_local_ocupaciones_salon")
+  @@index([tiendaId, inicio], name: "idx_local_ocupaciones_tienda")
+  @@index([pedidoId], name: "idx_local_ocupaciones_pedido")
+}
+
+// Plan de pagos de una reserva de local (R7): separación, cuotas, saldo, garantía y cargos.
+model reserva_cuotas {
+  id             String    @id @default(uuid()) @db.Uuid
+  tiendaId       String    @map("tienda_id") @db.Uuid
+  pedidoId       String    @map("pedido_id") @db.Uuid
+  participanteId String?   @map("participante_id") @db.Uuid // promoción (fase 3)
+  numero         Int
+  concepto       String    @db.VarChar(20) // separacion | cuota | saldo | garantia | hora_extra | descorche | danos | penalidad | diferencia | cargo_reprogramacion
+  monto          Decimal   @db.Decimal(10, 2)
+  venceEn        DateTime  @map("vence_en") @db.Date
+  estado         String    @default("pendiente") @db.VarChar(12) // pendiente | en_revision | pagada | anulada
+  pagadaEn       DateTime? @map("pagada_en") @db.Timestamptz
+  recordatorios  Json      @default("{}") @db.JsonB // { d7, d3, d1 } (R14.7)
+  idempotencyKey String?   @map("idempotency_key") @db.Uuid
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  pedido pedidos @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  pagos  pagos[]
+
+  @@unique([pedidoId, numero], name: "uq_cuota_numero")
+  @@unique([tiendaId, idempotencyKey], name: "uq_cuota_idempotency")
+  @@index([tiendaId, estado, venceEn], name: "idx_cuotas_vencimiento")
+}
+
+// Historial de cambios de una reserva de local: reprogramación, suspensión, ajustes, adendas.
+model reserva_cambios {
+  id              String    @id @default(uuid()) @db.Uuid
+  tiendaId        String    @map("tienda_id") @db.Uuid
+  pedidoId        String    @map("pedido_id") @db.Uuid
+  tipo            String    @db.VarChar(20) // reprogramacion | suspension | ajuste_monto | ajuste_plan | adenda | cancelacion
+  antes           Json?     @db.JsonB
+  despues         Json?     @db.JsonB
+  actor           String    @db.VarChar(10) // cliente | negocio
+  motivo          String?   @db.VarChar(30)
+  nota            String?   @db.VarChar(300)
+  diferencia      Decimal?  @db.Decimal(10, 2)
+  estado          String    @default("aplicado") @db.VarChar(12) // pedido | aplicado | rechazado
+  fechaRegistro   DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro String?   @map("usuario_registro") @db.VarChar(100)
+
+  pedido pedidos @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@index([pedidoId], name: "idx_reserva_cambios_pedido")
+}
+
+// Cotización guardada con precio congelado hasta su vencimiento (R4). Se abre por token firmado.
+model local_cotizaciones {
+  id              String    @id @default(uuid()) @db.Uuid
+  tiendaId        String    @map("tienda_id") @db.Uuid
+  productoId      String    @map("producto_id") @db.Uuid
+  turnoId         String?   @map("turno_id") @db.Uuid
+  paqueteId       String?   @map("paquete_id") @db.Uuid
+  fecha           DateTime  @db.Date
+  horaInicio      String    @map("hora_inicio") @db.VarChar(5)
+  horaFin         String    @map("hora_fin") @db.VarChar(5)
+  invitados       Int
+  tipoEvento      String    @map("tipo_evento") @db.VarChar(20)
+  detalle         Json      @db.JsonB // líneas, total, separación, garantía (precio congelado)
+  total           Decimal   @db.Decimal(10, 2)
+  venceEn         DateTime  @map("vence_en") @db.Timestamptz
+  canalOrigen     String?   @map("canal_origen") @db.VarChar(20) // tiktok | instagram | facebook | google | portal | recomendacion | cartel | otro
+  creadaPor       String    @map("creada_por") @db.VarChar(10) // cliente | negocio
+  ajusteMonto     Decimal?  @map("ajuste_monto") @db.Decimal(10, 2)
+  ajusteMotivo    String?   @map("ajuste_motivo") @db.VarChar(200)
+  clienteNombre   String?   @map("cliente_nombre") @db.VarChar(100)
+  clienteWhatsapp String?   @map("cliente_whatsapp") @db.VarChar(20)
+  clienteEmail    String?   @map("cliente_email") @db.VarChar(100)
+  pedidoId        String?   @map("pedido_id") @db.Uuid // la solicitud que la usó
+  recordatorioEn  DateTime? @map("recordatorio_en") @db.Timestamptz
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  salon  local_salones @relation(fields: [productoId], references: [productoId], onDelete: Cascade)
+  pedido pedidos?      @relation(fields: [pedidoId], references: [id], onDelete: SetNull)
+
+  @@index([tiendaId, fechaRegistro(sort: Desc)], name: "idx_local_cotizaciones_tienda")
+  @@index([productoId], name: "idx_local_cotizaciones_salon")
+  @@index([pedidoId], name: "idx_local_cotizaciones_pedido")
 }
 
 // ============================================

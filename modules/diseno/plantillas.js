@@ -394,6 +394,39 @@ export const PLANTILLAS = congelar([
       ] },
       { id: "contacto", tipo: "contacto", titulo: "¿Tienes dudas?", texto: "Escríbenos por WhatsApp y te respondemos." }
     ]
+  }),
+
+  // ── Alquiler de locales (docs/specs/alquiler-locales L1.30) ────────────
+  // Quinceaños, promociones, cumpleaños y conferencias. El cliente llega de
+  // TikTok o de un portal y quiere ver tres cosas: el salón, si la fecha está
+  // libre y cuánto cuesta. Después, cómo se separa la fecha y las dudas.
+  plantilla({
+    id: "locales-salones",
+    tipoNegocio: "locales",
+    rubro: "general",
+    nombre: "Salones de eventos",
+    descripcion: "Para un local de eventos: los salones con aforo y precio desde, cómo separar la fecha, galería y preguntas.",
+    radio: "redondeado",
+    encabezados: "editorial",
+    layout: { header: { logo: "izquierda" }, productCard: { cta: "boton", imagen: "cuadrada" } },
+    secciones: [
+      { id: "hero", tipo: "hero", variante: "imagen-completa", titulo: "Tu fiesta, en el lugar perfecto", subtitulo: "Mira las fechas libres, cotiza al instante y separa tu fecha en línea.", textoBoton: "Ver salones" },
+      { id: "salones", tipo: "salones", variante: "grilla", fondo: "superficie", titulo: "Nuestros salones", subtitulo: "Elige el salón, mira las fechas libres y cotiza tu evento al instante." },
+      { id: "servicios", tipo: "servicios", variante: "iconos", fondo: "suave", titulo: "Separar tu fecha es fácil", items: [
+        { icono: "calendario", titulo: "Calendario con fechas libres" },
+        { icono: "seguro", titulo: "Contrato y pagos en cuotas" },
+        { icono: "musica", titulo: "Paquetes con DJ y hora loca" }
+      ] },
+      { id: "galeria", tipo: "galeria", variante: "mosaico", fondo: "pagina", titulo: "Eventos que hicimos", subtitulo: null, fotos: [], oculto: true },
+      { id: "faq", tipo: "faq", fondo: "superficie", titulo: "Preguntas frecuentes", items: [
+        { pregunta: "¿Cómo separo la fecha?", respuesta: "Escribe aquí cuánto es la separación y hasta cuándo se paga el saldo." },
+        { pregunta: "¿Puedo traer mi propio catering o DJ?", respuesta: "Escribe aquí si aceptas proveedores externos y si cobras descorche." },
+        { pregunta: "¿Puedo visitar el local antes?", respuesta: "Escribe aquí los días y horas en que recibes visitas." }
+      ] },
+      { id: "ubicacion", tipo: "ubicacion", fondo: "pagina", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true },
+      { id: "politicas", tipo: "politicas", fondo: "superficie", titulo: "Antes de reservar" },
+      { id: "contacto", tipo: "contacto", titulo: "¿Quieres visitar el local?", texto: "Escríbenos por WhatsApp y agenda tu visita." }
+    ]
   })
 ]);
 
@@ -401,7 +434,7 @@ export const PLANTILLA_IDS = PLANTILLAS.map((p) => p.id);
 export const PLANTILLA_DEFAULT = "clasica";
 // Con qué se ve una tienda sin estructura guardada, según su tipo de negocio
 // (diseno-por-rubro H4). Los tipos sin plantillas propias usan la clásica.
-const DEFAULT_POR_NEGOCIO = Object.freeze({ hotel: "hotel-boutique", tours: "tours-catalogo", eventos: "eventos-cartelera" });
+const DEFAULT_POR_NEGOCIO = Object.freeze({ hotel: "hotel-boutique", tours: "tours-catalogo", eventos: "eventos-cartelera", locales: "locales-salones" });
 
 /** @param {string} id */
 export function buscarPlantilla(id) {

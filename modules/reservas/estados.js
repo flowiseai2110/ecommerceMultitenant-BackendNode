@@ -12,6 +12,12 @@ import { ConflictError } from "../../utils/errors.js";
  *   por_pagar (cupo apartado) ─subir_captura─▶ pago_en_revision ─verificar─▶ confirmada
  *   Si no sube la captura antes de `apartado_hasta`, la compra vence y el cupo se libera.
  *
+ * Locales (docs/specs/alquiler-locales): como hotel, pero la solicitud aparta
+ * la fecha solo durante el plazo de respuesta (`apartado_hasta`), la primera
+ * cuota verificada confirma y una confirmada puede suspenderse por fuerza
+ * mayor (la fecha se libera; lo pagado queda como saldo a favor). Reprogramar
+ * no cambia el estado.
+ *
  * No hay plazos: lo que sigue `solicitada` o `aceptada` al llegar la hora de
  * inicio se anula (`vencida`), y una `confirmada` cuyo servicio ya terminó es
  * `completada`. Ambas cosas se calculan al leer (`estadoEfectivo`), sin cron.
@@ -19,7 +25,7 @@ import { ConflictError } from "../../utils/errors.js";
 
 export const ESTADOS_RESERVA = [
   "solicitada", "aceptada", "por_pagar", "pago_en_revision", "confirmada",
-  "completada", "rechazada", "vencida", "cancelada", "no_show"
+  "completada", "rechazada", "vencida", "cancelada", "no_show", "suspendida"
 ];
 
 /** Esperan algo del negocio o del cliente; vencen a la hora de inicio. */
@@ -46,14 +52,29 @@ export const TRANSICIONES_EVENTO = {
 };
 
 /**
+ * Las cuotas siguientes a la primera no son transiciones: se pagan y verifican
+ * con la reserva ya `confirmada` (operaciones sobre `reserva_cuotas`).
+ */
+export const TRANSICIONES_LOCAL = {
+  solicitada:       { aceptar: "aceptada", rechazar: "rechazada", cancelar_cliente: "cancelada" },
+  aceptada:         { subir_captura: "pago_en_revision", pago_pasarela: "confirmada", cancelar_cliente: "cancelada" },
+  pago_en_revision: { verificar: "confirmada", rechazar_pago: "aceptada", subir_captura: "pago_en_revision" },
+  confirmada:       { reprogramar: "confirmada", suspender: "suspendida", cancelar_negocio: "cancelada", no_show: "no_show" },
+  suspendida:       { reprogramar: "confirmada", cancelar_negocio: "cancelada" },
+  completada:       { no_show: "no_show" }
+};
+
+const MAQUINAS = { evento: TRANSICIONES_EVENTO, local: TRANSICIONES_LOCAL };
+
+/**
  * @param {string} actual
  * @param {string} accion
- * @param {string} [tipo] - tipo del pedido: hotel | tour | evento
+ * @param {string} [tipo] - tipo del pedido: hotel | tour | evento | local
  * @returns {string} estado nuevo
  * @throws {ConflictError} TRANSICION_INVALIDA
  */
 export function transicionar(actual, accion, tipo = "hotel") {
-  const maquina = tipo === "evento" ? TRANSICIONES_EVENTO : TRANSICIONES;
+  const maquina = MAQUINAS[tipo] ?? TRANSICIONES;
   const nuevo = maquina[actual]?.[accion];
   if (!nuevo) {
     // El errorHandler solo expone `details`: el mensaje va también ahí para la interfaz.
@@ -70,8 +91,11 @@ export function transicionar(actual, accion, tipo = "hotel") {
  */
 export function estadoEfectivo({ estado, inicio, fin, apartadoHasta = null }, ahora = new Date()) {
   if (ESTADOS_ABIERTOS.includes(estado) && inicio <= ahora) return "vencida";
-  // Habitación apartada con pago directo (hospedaje-completo C1): si no se pagó a tiempo, se anula.
-  if (estado === "aceptada" && apartadoHasta && apartadoHasta <= ahora) return "vencida";
+  // Habitación apartada con pago directo (hospedaje-completo C1) o local
+  // aceptado sin pagar: si no se pagó a tiempo, se anula. En locales, una
+  // solicitud sin respuesta vence al terminar su plazo (alquiler-locales R6.4);
+  // hotel y tours no ponen `apartadoHasta` en sus solicitudes.
+  if (["solicitada", "aceptada"].includes(estado) && apartadoHasta && apartadoHasta <= ahora) return "vencida";
   // Compra de entradas sin captura: vence al terminar el apartado (o al empezar la función).
   if (estado === "por_pagar" && (inicio <= ahora || (apartadoHasta && apartadoHasta <= ahora))) return "vencida";
   if (estado === "confirmada" && (fin ?? inicio) <= ahora) return "completada";
@@ -88,7 +112,8 @@ const ETIQUETAS = {
   rechazada: "Rechazada",
   vencida: "Anulada",
   cancelada: "Cancelada",
-  no_show: "No se presentó"
+  no_show: "No se presentó",
+  suspendida: "Suspendida, fecha por definir"
 };
 
 export const etiquetaEstado = (estado) => ETIQUETAS[estado] ?? estado;

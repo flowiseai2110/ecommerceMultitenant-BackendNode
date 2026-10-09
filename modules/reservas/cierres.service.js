@@ -1,6 +1,9 @@
 import { prisma } from "../../config/prisma.js";
-import { NotFoundError } from "../../utils/errors.js";
-import { fechaLima } from "./tiempo.js";
+import { ConflictError, NotFoundError } from "../../utils/errors.js";
+import { fechaLima, instanteLima, sumarDias } from "./tiempo.js";
+
+/** Reservas de local que retienen la fecha (alquiler-locales R2.7). */
+const EN_CURSO_LOCAL = ["solicitada", "aceptada", "pago_en_revision", "confirmada", "suspendida"];
 
 /**
  * Fechas cerradas (spec R10): días en que el negocio no recibe reservas, para
@@ -62,11 +65,12 @@ export async function listarCierres(tiendaId, ahora = new Date()) {
   return filas.map(serializar);
 }
 
-export async function crearCierre(tiendaId, { productoId, fechaDesde, fechaHasta, motivo }, user) {
+export async function crearCierre(tiendaId, { productoId, fechaDesde, fechaHasta, motivo }, user, ahora = new Date()) {
   if (productoId) {
     const producto = await prisma.productos.findFirst({ where: { id: productoId, tiendaId }, select: { id: true } });
     if (!producto) throw new NotFoundError("Habitación");
   }
+  await validarCierreSinReservasLocales(tiendaId, { productoId, fechaDesde, fechaHasta }, ahora);
   const cierre = await prisma.cierres_fecha.create({
     data: {
       tiendaId, productoId, fechaDesde: aFecha(fechaDesde), fechaHasta: aFecha(fechaHasta), motivo,
@@ -80,4 +84,31 @@ export async function crearCierre(tiendaId, { productoId, fechaDesde, fechaHasta
 export async function eliminarCierre(tiendaId, id) {
   const { count } = await prisma.cierres_fecha.deleteMany({ where: { id, tiendaId } });
   if (count === 0) throw new NotFoundError("Fecha cerrada");
+}
+
+/**
+ * Locales (alquiler-locales R2.7, CE-05): no se cierra una fecha con eventos
+ * en curso. Responde 409 con la lista para reprogramarlos o cancelarlos antes.
+ * En hotel y tours el cierre solo afecta reservas nuevas (no hay reservas de
+ * tipo local), así que la consulta no encuentra nada.
+ */
+async function validarCierreSinReservasLocales(tiendaId, { productoId, fechaDesde, fechaHasta }, ahora) {
+  const afectadas = await prisma.pedidos.findMany({
+    where: {
+      tiendaId, tipo: "local", estado: { in: EN_CURSO_LOCAL },
+      reserva: {
+        ...(productoId ? { productoId } : {}),
+        fin: { gt: ahora },
+        inicio: { gte: instanteLima(fechaDesde), lt: instanteLima(sumarDias(fechaHasta, 1)) }
+      }
+    },
+    orderBy: { fechaServicio: "asc" },
+    select: { id: true, numeroPedido: true, clienteNombre: true, estado: true, reserva: { select: { inicio: true } } }
+  });
+  if (!afectadas.length) return;
+  const message = `Hay ${afectadas.length} ${afectadas.length === 1 ? "evento" : "eventos"} en esas fechas. Reprográmalos o cancélalos antes de cerrar.`;
+  throw new ConflictError(message, {
+    message, motivo: "CAMBIO_CON_RESERVAS",
+    reservas: afectadas.map(p => ({ pedidoId: p.id, codigo: p.numeroPedido, cliente: p.clienteNombre, estado: p.estado, fecha: fechaLima(p.reserva.inicio) }))
+  });
 }

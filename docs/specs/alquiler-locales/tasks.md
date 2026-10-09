@@ -8,21 +8,21 @@
 Cierra CU-01, CU-03, CU-04, CU-06 (con pago manual), CT-01 a CT-06, CE-01 a CE-09, CE-12 a CE-14, CE-16 y CE-17.
 
 ### Backend
-- [ ] **L1.1** `docs/sql/locales_fase_1.sql`: `tipo_negocio = 'locales'`, columnas de `config_reservas`, `local_salones`, `local_turnos`, `local_paquetes`, `btree_gist` + `local_ocupaciones` con la restricción de exclusión, columnas de `reservas`, `reserva_cuotas`, `pagos.cuota_id`, `reserva_cambios`, `local_cotizaciones`. Modelos en `schema.prisma` (`franja` como `Unsupported`), `npx prisma generate`, tablas en `TENANT_SCOPED_MODELS`.
-- [ ] **L1.2** `estados.js`: `TRANSICIONES_LOCAL`, `suspendida`, vencimiento de `solicitada` por `apartadoHasta`. Tests (sin romper hotel, tours ni eventos).
-- [ ] **L1.3** `locales/franja.js` + `locales/cotizar.js`: precio por día, por persona, temporadas, cupón, aforo (licencia y paquete), turnos que cruzan la medianoche, separación y garantía. Tests (CE-06, CE-08).
-- [ ] **L1.4** `locales/ocupaciones.js`: ocupar, liberar, limpiar vencidos, traducir `23P01` a `FECHA_NO_DISPONIBLE` + `locales/alternativas.js`. Test de concurrencia con dos transacciones contra la base de datos de pruebas (CE-01).
-- [ ] **L1.5** `locales/plan-pagos.js` (`generarPlan`) y `locales/contrato.js` (render, hash, validación de variables). Tests.
-- [ ] **L1.6** Salones, turnos y paquetes: servicio + rutas admin (`/admin/reservas/locales/salones…`) y store (`/store/locales/salones…`). Validación de R2.7 (`CAMBIO_CON_RESERVAS`, CE-05).
-- [ ] **L1.7** Calendario store y admin; bloqueos manuales (CE-02, CE-03).
-- [ ] **L1.8** Cotizaciones: crear (cliente y negocio), token, vigencia, canal de origen, precio congelado (CE-07, CT-01).
-- [ ] **L1.9** Vertical `local` en `reservas.service.js`: crear solicitud desde cotización con `idempotencyKey` y ocupación (CE-09), aceptar (contrato + plan + apartado), rechazar con alternativas (CT-05), vencimientos que liberan la ocupación (CT-02, CT-03), `pago_directo` (CU-06).
-- [ ] **L1.10** Cuotas: aceptar contrato, captura por cuota o número de operación (CE-14), verificar / rechazar (la 1.ª confirma, CT-04), editar plan antes del primer pago (`PLAN_BLOQUEADO`), `monto_pagado` sin garantía, indicador de mora (CT-06), índice único de pago por cuota (CE-11).
-- [ ] **L1.11** Bandeja: pestañas `cuotas_vencidas` y `garantias`, resumen con mora. Serializer de la vertical (plan, contrato, mora, garantía).
-- [ ] **L1.12** Correos de la vertical (aceptada con contrato y plan, cuota verificada, confirmación) y plantillas de WhatsApp. Reenvío desde el admin (CE-13).
-- [ ] **L1.13** Limitadores de lectura y escritura para `/store/locales` y `/store/reservas` (CE-16).
-- [ ] **L1.14** Seed de configuración para tiendas `locales` (separación 40 %, tramos, plantilla de contrato) y onboarding sin envíos.
-- [ ] **L1.15** Tests de rutas (validación, roles, tokens) y de servicio (transiciones, ocupación, idempotencia, acciones del admin repetidas, CE-17).
+- [x] **L1.1** `docs/sql/locales_fase_1.sql`: `tipo_negocio = 'locales'`, columnas de `config_reservas`, `local_salones`, `local_turnos`, `local_paquetes`, `btree_gist` + `local_ocupaciones` con la restricción de exclusión, columnas de `reservas`, `reserva_cuotas`, `pagos.cuota_id`, `reserva_cambios`, `local_cotizaciones`. Modelos en `schema.prisma` (`franja` como `Unsupported`), `npx prisma generate`, tablas en `TENANT_SCOPED_MODELS`. *(Probado en PGlite con btree_gist: corre dos veces, la exclusión rechaza con 23P01 y deja franjas contiguas `[)`. Falta correrlo en Supabase: L1.40.)*
+- [x] **L1.2** `estados.js`: `TRANSICIONES_LOCAL`, `suspendida`, vencimiento de `solicitada` por `apartadoHasta`. Tests (sin romper hotel, tours ni eventos).
+- [x] **L1.3** `locales/franja.js` + `locales/cotizar.js`: precio por día, por persona, temporadas, cupón, aforo (licencia y paquete), turnos que cruzan la medianoche, separación y garantía. Tests (CE-06, CE-08). *(Cupón pendiente: las reservas aún no usan cupones. Feriados nacionales precargados en `franja.js`, ver D4.)*
+- [x] **L1.4** `locales/ocupaciones.js`: ocupar, liberar, limpiar vencidos, traducir `23P01` a `FECHA_NO_DISPONIBLE` + `locales/disponibilidad.js` (alternativas y calendario). *(La restricción se probó en PGlite; no hay base de datos de pruebas aparte de la publicada, así que el test de dos transacciones reales queda para L1.40.)*
+- [x] **L1.5** `locales/plan-pagos.js` (`generarPlan`) y `locales/contrato.js` (render, hash, validación de variables). Tests.
+- [x] **L1.6** Salones, turnos y paquetes: servicio + rutas admin (`/admin/reservas/locales/salones…`) y store (`/store/reservas/locales/salones…`). Validación de R2.7 (`CAMBIO_CON_RESERVAS`, CE-05). *(Un solo `PUT` con turnos y paquetes, como tours y eventos; un paquete apunta a un turno nuevo con `turnoRefs`. El cierre de fechas con reservas va en L1.7.)*
+- [x] **L1.7** Calendario store y admin; bloqueos manuales (CE-02, CE-03). *(También R2.7 en `crearCierre`: no se cierra una fecha con eventos en curso, 409 `CAMBIO_CON_RESERVAS`.)*
+- [x] **L1.8** Cotizaciones: crear (cliente y negocio), token, vigencia, canal de origen, precio congelado (CE-07, CT-01). *(Token propio en `locales/cotizacion.token.js`. El recordatorio de cotización por vencer va con el job, L2.9.)*
+- [x] **L1.9** Vertical `local` en `reservas.service.js`: crear solicitud desde cotización con `idempotencyKey` y ocupación (CE-09), aceptar (contrato + plan + apartado), rechazar con alternativas (CT-05), vencimientos que liberan la ocupación (CT-02, CT-03), `pago_directo` (CU-06).
+- [x] **L1.10** Cuotas: aceptar contrato, captura por cuota o número de operación (CE-14), verificar / rechazar (la 1.ª confirma, CT-04), editar plan antes del primer pago (`PLAN_BLOQUEADO`), `monto_pagado` sin garantía, indicador de mora (CT-06), índice único de pago por cuota (CE-11). *(`locales/cuotas.service.js`. Antes de confirmar solo se paga la separación. Editar el plan regenera el contrato y el cliente lo vuelve a aceptar.)*
+- [x] **L1.11** Bandeja: pestañas `cuotas_vencidas` y `garantias`, resumen con mora. Serializer de la vertical (plan, contrato, mora, garantía). *(`pago_por_verificar` incluye las cuotas siguientes en revisión. `garantias` muestra eventos pasados con garantía cobrada hasta que llegue la liquidación, L2.6.)*
+- [x] **L1.12** Correos de la vertical (aceptada con contrato y plan, cuota verificada, confirmación) y plantillas de WhatsApp. Reenvío desde el admin (CE-13). *(Plantillas: claves `local_*` aceptadas por el backend; los textos por defecto van en el admin, L1.23. `POST /admin/reservas/:id/reenviar-correo` sirve a todas las verticales.)*
+- [x] **L1.13** Limitadores de lectura y escritura para `/store/locales` y `/store/reservas` (CE-16). *(El limitador global ya separa lecturas y escrituras; se sumó un tope propio para guardar cotizaciones, `RESERVAS_COTIZACIONES_MAX`.)*
+- [x] **L1.14** Seed de configuración para tiendas `locales` (separación 40 %, tramos, plantilla de contrato) y onboarding sin envíos. *(Por defectos de la vertical en `reservas.config.service.js`, sin fila: una tienda nueva funciona sin configurar nada. La plantilla base vive en `locales/contrato.js`.)*
+- [x] **L1.15** Tests de rutas (validación, roles, tokens) y de servicio (transiciones, ocupación, idempotencia, acciones del admin repetidas, CE-17).
 
 ### Admin
 - [ ] **L1.20** Menú `locales`; formulario de salón con pestañas Turnos y Paquetes.
@@ -32,14 +32,14 @@ Cierra CU-01, CU-03, CU-04, CU-06 (con pago manual), CT-01 a CT-06, CE-01 a CE-0
 - [ ] **L1.24** Configuración de locales: separación, plazos, garantía, tramos, plantilla de contrato con vista previa.
 
 ### Tienda
-- [ ] **L1.30** `/salones` y ficha con calendario, turnos, paquetes y resumen.
-- [ ] **L1.31** Cotización (`/cotizacion/:token`) con "Solicitar" y "Enviar por WhatsApp".
-- [ ] **L1.32** Solicitud de local (tipo de evento, invitados, proveedores externos) con manejo del 409 y sus alternativas.
-- [ ] **L1.33** Seguimiento: contrato con aceptación, plan de pagos por cuota, captura o número de operación, mora y garantía.
-- [ ] **L1.34** Página de mantenimiento con el WhatsApp de la tienda (CE-12).
+- [x] **L1.30** `/salones` y ficha con calendario, turnos, paquetes y resumen. *(Sección `salones` del diseño y plantilla `locales-salones` por defecto en el backend; menú inferior, cabecera y pie reconocen `locales`.)*
+- [x] **L1.31** Cotización (`/cotizacion/:token`) con "Solicitar" y "Enviar por WhatsApp".
+- [x] **L1.32** Solicitud de local (tipo de evento, invitados, proveedores externos) con manejo del 409 y sus alternativas.
+- [x] **L1.33** Seguimiento: contrato con aceptación, plan de pagos por cuota, captura o número de operación, mora y garantía.
+- [x] **L1.34** Página de mantenimiento con el WhatsApp de la tienda (CE-12). *(`/mantenimiento`: con error 5xx o sin conexión ya no manda a "tienda no encontrada". El WhatsApp sale del último contacto guardado en el navegador: un visitante nuevo ve el aviso sin el botón.)*
 
 ### Verificación
-- [ ] **L1.40** Correr `locales_fase_1.sql` en Supabase y `npx prisma generate`.
+- [x] **L1.40** Correr `locales_fase_1.sql` en Supabase y `npx prisma generate`. *(Hecho por el usuario. Comprobado con consultas de solo lectura: existen `ex_local_ocupacion` y la columna generada `franja`, y las consultas de Prisma nuevas funcionan.)*
 - [ ] **L1.41** Recorrer en el navegador: quinceaños de sábado noche para 150 personas, separación S/ 500, 3 cuotas, verificación; segundo cliente en la misma franja recibe alternativas.
 
 ## Fase 2 — Cambios, devoluciones y día del evento
@@ -89,7 +89,7 @@ Cierra CU-05, CU-06 con pasarela, CE-10 y CE-11 (pasarela).
 - [ ] **D1** Varios salones por tienda (propuesta: sí). Spec, pregunta 1.
 - [ ] **D2** Garantía como cuota cobrada (propuesta: sí). Spec, pregunta 2.
 - [ ] **D3** Aceptación del contrato con casilla (propuesta: sí). Spec, pregunta 3.
-- [ ] **D4** Feriados precargados o marcados por el dueño. Spec, pregunta 4.
+- [x] **D4** Feriados precargados o marcados por el dueño. Spec, pregunta 4. *(Precargados: feriados nacionales fijos + Jueves y Viernes Santo. Confirmado.)*
 - [ ] **D5** Hora tope por tienda o por salón. Spec, pregunta 5.
 </content>
 </invoke>

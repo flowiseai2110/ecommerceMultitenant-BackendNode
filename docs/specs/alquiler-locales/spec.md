@@ -1,6 +1,6 @@
 # Spec: Alquiler de locales para eventos (quinceaños, promociones, cumpleaños, conferencias)
 
-> Estado: **análisis y diseño** (2026-10-09). Sin implementar.
+> Estado: **en implementación** (2026-10-09). Fase 1 backend completa (L1.1–L1.15); faltan el admin, la tienda y el recorrido L1.41 (ver [tasks.md](tasks.md)).
 > Diseño técnico: [plan.md](plan.md). Tareas: [tasks.md](tasks.md).
 > Investigación de mercado: [analisis-mercado.md](analisis-mercado.md). Casos de uso: [casos-de-uso.md](casos-de-uso.md).
 > Base: [mini-booking](../mini-booking/spec.md) (vitrina, solicitud, bandeja, pago manual, seguimiento) y [hospedaje-completo](../hospedaje-completo/spec.md) (inventario con bloqueo, temporadas, confirmación inmediata).

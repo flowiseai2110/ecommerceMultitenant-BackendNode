@@ -1,5 +1,9 @@
 import { estadoEfectivo, etiquetaEstado } from "./estados.js";
 import { textoEn, traducirTour } from "../traducciones/traducciones.service.js";
+import { fechaLima } from "./tiempo.js";
+import { resumenPlan } from "./locales/plan-pagos.js";
+import { etiquetaTipoEvento } from "./locales/cotizar.js";
+import { etiquetaConcepto } from "./locales/contrato.js";
 
 /**
  * Contrato de salida del mini booking. La reserva se construye campo por campo
@@ -48,10 +52,55 @@ function fichaTour(r) {
   return { duracion: t.duracion ?? null, puntoEncuentro: t.puntoEncuentro ?? null, recojo: t.recojo ?? null };
 }
 
+const serializarCuota = (c) => ({
+  id: c.id,
+  numero: c.numero,
+  concepto: c.concepto,
+  conceptoEtiqueta: etiquetaConcepto(c.concepto),
+  monto: num(c.monto),
+  // Columna DATE (medianoche UTC): se lee tal cual, sin pasar a hora de Lima.
+  venceEn: (c.venceEn instanceof Date ? c.venceEn.toISOString() : String(c.venceEn)).slice(0, 10),
+  estado: c.estado,
+  pagadaEn: c.pagadaEn ?? null
+});
+
+/**
+ * Alquiler de locales (alquiler-locales R7.5): salón, turno, paquete, plan de
+ * pagos con su resumen (pagado, saldo, próxima cuota, mora, garantía) y el
+ * estado del contrato. El texto del contrato lo agrega cada audiencia.
+ */
+function bloqueLocal(pedido, estado, ahora) {
+  const r = pedido.reserva;
+  const l = r.local ?? {};
+  const cuotas = (pedido.cuotas ?? []).filter(c => c.estado !== "anulada");
+  return {
+    salon: l.salon?.nombre ?? null,
+    aforoMaximo: l.salon?.aforoMaximo ?? null,
+    turno: l.turno ?? null,
+    paquete: l.paquete ?? null,
+    tipoEvento: r.tipoEvento,
+    tipoEventoEtiqueta: etiquetaTipoEvento(r.tipoEvento),
+    invitados: r.invitados,
+    agasajado: r.agasajado,
+    fecha: l.fecha ?? fechaLima(r.inicio),
+    horaInicio: l.horaInicio ?? null,
+    horaFin: l.horaFin ?? null,
+    proveedoresExternos: l.proveedoresExternos ?? false,
+    garantia: num(l.garantia) ?? 0,
+    // Hasta cuándo la fecha queda apartada sin respuesta o sin pago (R6.4).
+    apartadoHasta: ["solicitada", "aceptada"].includes(estado) ? r.apartadoHasta : null,
+    plan: cuotas.map(serializarCuota),
+    resumen: resumenPlan(cuotas, fechaLima(ahora)),
+    contrato: r.contrato ? { version: r.contrato.version, hash: r.contrato.hash, generadoEn: r.contrato.generadoEn, aceptadoEn: r.contrato.aceptadoEn ?? null } : null,
+    reprogramaciones: r.reprogramaciones ?? 0
+  };
+}
+
 function base(pedido, ahora) {
   const r = pedido.reserva;
   const esTour = r.tipo === "tour";
   const esEvento = r.tipo === "evento";
+  const esLocal = r.tipo === "local";
   const pasajeros = esTour ? pasajerosDe(r) : null;
   const entradas = esEvento ? entradasDe(pedido) : null;
   const estado = estadoEfectivo({ estado: pedido.estado, inicio: r.inicio, fin: r.fin, apartadoHasta: r.apartadoHasta }, ahora);
@@ -67,8 +116,8 @@ function base(pedido, ahora) {
       slug: r.producto?.slug ?? null,
       imagenUrl: imagenPrincipal(r.producto)
     },
-    // Solo hotel: tours y eventos no tienen modalidad de estadía.
-    modalidad: esTour || esEvento ? null : {
+    // Solo hotel: tours, eventos y locales no tienen modalidad de estadía.
+    modalidad: esTour || esEvento || esLocal ? null : {
       id: r.modalidadId,
       tipo: r.modalidad?.tipo ?? (r.horas ? "horas" : "noche"),
       etiqueta: etiquetaModalidad(r.modalidad, r)
@@ -104,9 +153,11 @@ function base(pedido, ahora) {
       apartadoHasta: estado === "por_pagar" ? r.apartadoHasta : null
     } : null,
     entradas,
+    local: esLocal ? bloqueLocal(pedido, estado, ahora) : null,
     personas: esTour ? pasajeros.reduce((s, p) => s + p.cantidad, 0)
       : esEvento ? entradas.reduce((s, e) => s + e.cantidad, 0)
-        : (r.adultos ?? 0) + (r.ninos ?? 0),
+        : esLocal ? r.invitados ?? 0
+          : (r.adultos ?? 0) + (r.ninos ?? 0),
     total: num(pedido.total),
     montoAPagar: num(r.montoAPagar),
     saldoDestino: num(r.saldoDestino),
@@ -135,9 +186,14 @@ export function serializeReservaStore(pedido, { tienda, config, metodosPago = []
   const r = pedido.reserva;
   const dto = base(pedido, ahora);
   const pago = ultimoPagoManual(pedido.pagos);
-  const esperaPago = dto.estado === "aceptada" || dto.estado === "por_pagar";
+  // Locales: se paga por cuotas, con el contrato aceptado, mientras quede algo pendiente.
+  const esperaPago = dto.local
+    ? Boolean(r.contrato?.aceptadoEn) && ["aceptada", "pago_en_revision", "confirmada"].includes(dto.estado) && dto.local.plan.some(c => c.estado === "pendiente")
+    : dto.estado === "aceptada" || dto.estado === "por_pagar";
   return {
     ...dto,
+    // El cliente lee el contrato antes de aceptarlo (R8.3) y lo imprime después (R8.4).
+    ...(dto.local && r.contrato ? { local: { ...dto.local, contrato: { ...dto.local.contrato, texto: r.contrato.texto } } } : {}),
     lineas: lineas(pedido),
     ajuste: ajuste(r),
     motivoRechazo: dto.estado === "rechazada" ? r.motivoRechazo : null,
@@ -152,7 +208,9 @@ export function serializeReservaStore(pedido, { tienda, config, metodosPago = []
       // Datos de pago solo cuando toca pagar (R6.2).
       metodos: esperaPago ? metodosPago : [],
       capturaSubida: Boolean(pago),
-      rechazoMotivo: pago?.estado === "fallido" && esperaPago ? pago.metadata?.motivo ?? null : null
+      rechazoMotivo: pago?.estado === "fallido" && esperaPago ? pago.metadata?.motivo ?? null : null,
+      // Locales: por qué se rechazó la captura de cada cuota que volvió a pendiente.
+      ...(dto.local ? { rechazosCuota: rechazosPorCuota(pedido) } : {})
     },
     factura: pedido.comprobante === "factura" ? { ruc: pedido.comprobanteDocNumero, razonSocial: pedido.razonSocial } : null,
     negocio: {
@@ -173,6 +231,16 @@ export function serializeReservaStore(pedido, { tienda, config, metodosPago = []
     comprobanteEn: config.comprobanteEn,
     puedeCancelar: ["solicitada", "aceptada", "por_pagar"].includes(dto.estado)
   };
+}
+
+/** Último motivo de rechazo de las cuotas pendientes: { cuotaId: motivo }. */
+function rechazosPorCuota(pedido) {
+  const pendientes = new Set((pedido.cuotas ?? []).filter(c => c.estado === "pendiente").map(c => c.id));
+  const out = {};
+  for (const p of [...(pedido.pagos ?? [])].sort((a, b) => new Date(a.fechaRegistro) - new Date(b.fechaRegistro))) {
+    if (p.cuotaId && pendientes.has(p.cuotaId)) out[p.cuotaId] = p.estado === "fallido" ? p.metadata?.motivo ?? null : null;
+  }
+  return Object.fromEntries(Object.entries(out).filter(([, v]) => v));
 }
 
 /** Fila de la bandeja del admin (R11.1). */
@@ -223,9 +291,18 @@ export function serializeReservaAdmin(pedido, { urlsCaptura = new Map(), ahora =
       estado: p.estado,
       numeroOperacion: p.metadata?.numeroOperacion ?? null,
       motivo: p.metadata?.motivo ?? null,
+      cuotaId: p.cuotaId ?? null,
       capturaUrl: urlsCaptura.get(p.id) ?? null,
       fechaRegistro: p.fechaRegistro
     })),
-    historial: (pedido.historialEstados ?? []).map(h => ({ estado: h.estado, notas: h.notas, fecha: h.fechaRegistro }))
+    historial: (pedido.historialEstados ?? []).map(h => ({ estado: h.estado, notas: h.notas, fecha: h.fechaRegistro })),
+    // Locales: contrato completo y cambios (ajustes de monto y de plan).
+    ...(r.tipo === "local" ? {
+      contratoTexto: r.contrato?.texto ?? null,
+      contratoAceptadoPor: r.contrato?.aceptadoPor ?? null,
+      cambios: (pedido.cambios ?? []).map(c => ({
+        tipo: c.tipo, actor: c.actor, motivo: c.motivo, nota: c.nota, diferencia: num(c.diferencia), antes: c.antes, despues: c.despues, fecha: c.fechaRegistro
+      }))
+    } : {})
   };
 }

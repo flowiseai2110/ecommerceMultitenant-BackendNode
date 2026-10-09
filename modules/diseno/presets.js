@@ -52,5 +52,7 @@ export const PRESETS_SECCION = congelar({
   // Tours (fase 2).
   tours: { tipo: "tours", variante: "grilla", fondo: "superficie", titulo: "Nuestros tours" },
   // Eventos con entradas (fase 3).
-  eventos: { tipo: "eventos", variante: "grilla", fondo: "superficie", titulo: "Próximos eventos" }
+  eventos: { tipo: "eventos", variante: "grilla", fondo: "superficie", titulo: "Próximos eventos" },
+  // Alquiler de locales (alquiler-locales L1.30).
+  salones: { tipo: "salones", variante: "grilla", fondo: "superficie", titulo: "Nuestros salones" }
 });

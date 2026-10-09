@@ -24,7 +24,9 @@ export const TIPOS_SECCION = [
   // Eventos con entradas (fase 3).
   "eventos",
   // Fotos del lugar (docs/specs/hospedaje-completo B7).
-  "galeria"
+  "galeria",
+  // Salones del local de eventos (docs/specs/alquiler-locales L1.30).
+  "salones"
 ];
 
 // Secciones que puede usar cada tipo de negocio (docs/specs/diseno-por-rubro).
@@ -37,7 +39,8 @@ export const TIPOS_POR_NEGOCIO = Object.freeze({
   productos: Object.freeze([...TIPOS_COMUNES, "categorias", "productos", "oferta"]),
   hotel: Object.freeze([...TIPOS_COMUNES, ...TIPOS_RESERVAS, "habitaciones"]),
   tours: Object.freeze([...TIPOS_COMUNES, ...TIPOS_RESERVAS, "tours"]),
-  eventos: Object.freeze([...TIPOS_COMUNES, ...TIPOS_RESERVAS, "eventos"])
+  eventos: Object.freeze([...TIPOS_COMUNES, ...TIPOS_RESERVAS, "eventos"]),
+  locales: Object.freeze([...TIPOS_COMUNES, ...TIPOS_RESERVAS, "salones"])
 });
 
 /** Tipos de sección permitidos para un tipo de negocio. */
@@ -51,7 +54,7 @@ export const MAX_SECCIONES = 15;
 export const MAX_POR_TIPO = Object.freeze({
   hero: 1, categorias: 1, testimonios: 1, faq: 1, oferta: 1, cinta: 1, contacto: 1,
   "imagen-texto": 3, productos: 4,
-  habitaciones: 1, servicios: 1, ubicacion: 1, politicas: 1, tours: 1, eventos: 1, galeria: 2
+  habitaciones: 1, servicios: 1, ubicacion: 1, politicas: 1, tours: 1, eventos: 1, galeria: 2, salones: 1
 });
 export const ICONOS_BENEFICIO = ["envio", "pago", "cambios", "soporte", "garantia", "rapido", "calidad"];
 // Servicios de un hospedaje o de una agencia ("por qué viajar con nosotros").
@@ -248,6 +251,16 @@ const seccionSchema = z.discriminatedUnion("tipo", [
     ...base,
     tipo: z.literal("eventos"),
     variante: z.enum(["grilla", "carrusel", "agenda"]),
+    fondo,
+    titulo: texto(80),
+    subtitulo: textoOpcional(160),
+    limite: z.number().int().min(1).max(12).optional()
+  }),
+  // ── Salones del local de eventos (alquiler-locales L1.30) ──
+  z.object({
+    ...base,
+    tipo: z.literal("salones"),
+    variante: z.enum(["grilla", "carrusel"]),
     fondo,
     titulo: texto(80),
     subtitulo: textoOpcional(160),

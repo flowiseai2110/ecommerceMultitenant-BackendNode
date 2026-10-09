@@ -2,7 +2,7 @@ import { z } from "zod";
 import { RUBROS } from "./rubros.js";
 
 /** Vertical de la tienda (docs/specs/mini-booking). Solo cambia sin pedidos ni reservas. */
-export const TIPOS_NEGOCIO = ["productos", "hotel", "tours", "eventos"];
+export const TIPOS_NEGOCIO = ["productos", "hotel", "tours", "eventos", "locales"];
 
 /**
  * Schemas Zod de entrada para tiendas. El schema ES el contrato de entrada

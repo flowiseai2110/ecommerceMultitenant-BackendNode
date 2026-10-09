@@ -2,6 +2,7 @@ import { prisma } from "../../config/prisma.js";
 import { ConflictError, NotFoundError } from "../../utils/errors.js";
 import { vozAlojamiento } from "./hotel/alojamiento.js";
 import { textoEn } from "../traducciones/traducciones.service.js";
+import { PLANTILLA_BASE } from "./locales/contrato.js";
 
 /**
  * Configuración de reservas de la tienda (spec R1.3). Sin fila en
@@ -14,8 +15,16 @@ export const TEXTOS_AVISO = {
   // {negocio} / {alNegocio}: el hotel, el hostal, la casa… (tipo de alojamiento, hospedaje-completo B1).
   hotel: "Tu reserva es para dentro de poco. Si {negocio} no la confirma antes de las {hora}, se anula. Te recomendamos llamar o escribir {alNegocio} por WhatsApp.",
   tours: "Tu tour sale pronto ({hora}). La agencia necesita confirmar el cupo y organizar la salida; si no la confirma antes, la solicitud se anula. Te recomendamos escribir a la agencia por WhatsApp.",
-  eventos: "El organizador verifica los pagos por Yape o transferencia a mano. Si tu pago no se verifica antes de la función ({hora}), lleva tu captura: la validarán en la puerta."
+  eventos: "El organizador verifica los pagos por Yape o transferencia a mano. Si tu pago no se verifica antes de la función ({hora}), lleva tu captura: la validarán en la puerta.",
+  locales: "Tu evento es pronto ({hora}). El local necesita confirmar la fecha y recibir la separación; te recomendamos escribir por WhatsApp."
 };
+
+/** Política de cancelación por tramos por defecto (alquiler-locales R10.2), de más a menos días. */
+export const TRAMOS_POR_DEFECTO = Object.freeze([
+  { desdeDias: 60, separacionPct: 0, restoPct: 100 },
+  { desdeDias: 30, separacionPct: 0, restoPct: 50 },
+  { desdeDias: 0, separacionPct: 0, restoPct: 0 }
+]);
 
 const BASE = {
   modoConfirmacion: "solicitud",
@@ -40,7 +49,31 @@ const BASE = {
   apartadoManualMin: 120,
   maxEntradasPorCompra: 10,
   umbralUltimasEntradas: 20,
-  cierrePagoManualHoras: null
+  cierrePagoManualHoras: null,
+  // Solo locales (docs/specs/alquiler-locales R1.2)
+  separacionTipo: "porcentaje",
+  separacionMonto: null,
+  respuestaHoras: 24,
+  apartadoHoras: 48,
+  saldoDiasAntes: 30,
+  maxCuotas: 3,
+  garantiaMonto: 0,
+  garantiaDevolucionDias: 3,
+  invitadosConfirmarDias: 7,
+  reprogramacionesMax: 1,
+  reprogramacionMinDias: 30,
+  cargoReprogramacion: 0,
+  // politicaTramos y visitasHorario (JSON) no van aquí: Prisma no acepta null
+  // en un Json al crear la fila. Sin tramos rigen TRAMOS_POR_DEFECTO.
+  graciaMoraDias: 3,
+  saldoFavorMeses: 6,
+  cotizacionVigenciaDias: 7,
+  contratoPlantilla: null,
+  contratoVersion: 1,
+  proveedoresExternos: true,
+  tarifaCoordinacion: null,
+  descorcheBotella: null,
+  horaTope: "03:00"
 };
 
 const POR_VERTICAL = {
@@ -48,6 +81,8 @@ const POR_VERTICAL = {
   hotel: { avisoProximoHoras: 2, comprobanteEn: "en_el_servicio" },
   tours: { avisoProximoHoras: 24, comprobanteEn: "al_pagar" },
   eventos: { avisoProximoHoras: 6, comprobanteEn: "al_pagar" },
+  // Locales: el negocio acepta y la separación es el 40 % (alquiler-locales, plan).
+  locales: { avisoProximoHoras: null, comprobanteEn: "al_pagar", cobro: "adelanto", adelantoPct: 40 },
   productos: { avisoProximoHoras: null, comprobanteEn: "al_pagar" }
 };
 
@@ -56,8 +91,15 @@ export const CAMPOS_CONFIG = [
   "maxSolicitudesAbiertas", "instrucciones", "politicaCancelacion", "horaCheckin", "horaCheckout", "comprobanteEn",
   "apartadoManualMin", "maxEntradasPorCompra", "umbralUltimasEntradas", "cierrePagoManualHoras",
   "tipoAlojamiento", "ninosGratisHasta", "cargoNinoNoche", "exoneraIgvExtranjeros",
-  "tipoCambioUsd", "resenasExternas"
+  "tipoCambioUsd", "resenasExternas",
+  "separacionTipo", "separacionMonto", "respuestaHoras", "apartadoHoras", "saldoDiasAntes", "maxCuotas", "garantiaMonto",
+  "garantiaDevolucionDias", "invitadosConfirmarDias", "reprogramacionesMax", "reprogramacionMinDias", "cargoReprogramacion",
+  "politicaTramos", "graciaMoraDias", "saldoFavorMeses", "cotizacionVigenciaDias", "contratoPlantilla", "contratoVersion",
+  "proveedoresExternos", "tarifaCoordinacion", "descorcheBotella", "horaTope", "visitasHorario"
 ];
+
+/** Montos Decimal de Prisma que la lógica usa como número. */
+const CAMPOS_MONTO = ["cargoNinoNoche", "tipoCambioUsd", "separacionMonto", "garantiaMonto", "cargoReprogramacion", "tarifaCoordinacion", "descorcheBotella"];
 
 /** Defaults de una vertical, sin consultar la BD (para tests y para el seed). */
 export function configPorDefecto(tipoNegocio) {
@@ -71,8 +113,13 @@ export function configPorDefecto(tipoNegocio) {
 export function resolverConfig(tipoNegocio, fila) {
   const config = { ...configPorDefecto(tipoNegocio) };
   if (fila) for (const campo of CAMPOS_CONFIG) if (fila[campo] !== undefined) config[campo] = fila[campo];
-  if (config.cargoNinoNoche != null) config.cargoNinoNoche = Number(config.cargoNinoNoche);
-  if (config.tipoCambioUsd != null) config.tipoCambioUsd = Number(config.tipoCambioUsd);
+  for (const campo of CAMPOS_MONTO) if (config[campo] != null) config[campo] = Number(config[campo]);
+  if (tipoNegocio === "locales") {
+    // Sin tramos ni plantilla propios rigen los de la plataforma.
+    if (!Array.isArray(config.politicaTramos) || !config.politicaTramos.length) config.politicaTramos = TRAMOS_POR_DEFECTO.map(t => ({ ...t }));
+    config.contratoPersonalizado = Boolean(config.contratoPlantilla);
+    config.contratoPlantilla = config.contratoPlantilla || PLANTILLA_BASE;
+  }
   config.resenasExternas = Array.isArray(config.resenasExternas) ? config.resenasExternas : [];
   const v = vozAlojamiento(config.tipoAlojamiento);
   const avisoPorDefecto = (TEXTOS_AVISO[tipoNegocio] ?? TEXTOS_AVISO.hotel)
@@ -125,18 +172,40 @@ export function configPublica(config, lang = "es") {
     exoneraIgvExtranjeros: config.exoneraIgvExtranjeros,
     // Fase C: "≈ US$" en la vitrina y puntaje en otros sitios.
     tipoCambioUsd: config.tipoCambioUsd,
-    resenasExternas: config.resenasExternas
+    resenasExternas: config.resenasExternas,
+    // Locales (alquiler-locales R1.2): reglas que el cliente ve antes de reservar.
+    ...(config.tipoNegocio === "locales" ? {
+      separacionTipo: config.separacionTipo,
+      separacionMonto: config.separacionMonto,
+      saldoDiasAntes: config.saldoDiasAntes,
+      maxCuotas: config.maxCuotas,
+      garantiaMonto: config.garantiaMonto,
+      reprogramacionesMax: config.reprogramacionesMax,
+      reprogramacionMinDias: config.reprogramacionMinDias,
+      cargoReprogramacion: config.cargoReprogramacion,
+      politicaTramos: config.politicaTramos,
+      cotizacionVigenciaDias: config.cotizacionVigenciaDias,
+      proveedoresExternos: config.proveedoresExternos,
+      tarifaCoordinacion: config.tarifaCoordinacion,
+      descorcheBotella: config.descorcheBotella,
+      horaTope: config.horaTope
+    } : {})
   };
 }
 
 /** Guarda la configuración (upsert). `data` ya viene validada por Zod. */
 export async function guardarConfig(tiendaId, data, user) {
   const usuario = user?.email ?? user?.id ?? null;
-  const campos = Object.fromEntries(CAMPOS_CONFIG.filter(c => c in data).map(c => [c, data[c]]));
+  const campos = Object.fromEntries(CAMPOS_CONFIG.filter(c => c in data && c !== "contratoVersion").map(c => [c, data[c]]));
   if (campos.cobro && campos.cobro !== "adelanto") campos.adelantoPct = null;
+  const actual = await obtenerConfig(tiendaId);
+  // Locales (R8.2): cada cambio de la plantilla sube la versión del contrato.
+  if ("contratoPlantilla" in campos && (campos.contratoPlantilla || PLANTILLA_BASE) !== actual.contratoPlantilla) {
+    campos.contratoVersion = (actual.contratoVersion ?? 1) + 1;
+  }
   await prisma.config_reservas.upsert({
     where: { tiendaId },
-    create: { ...configPorDefecto((await obtenerConfig(tiendaId)).tipoNegocio), ...campos, tiendaId, usuarioRegistro: usuario },
+    create: { ...configPorDefecto(actual.tipoNegocio), ...campos, tiendaId, usuarioRegistro: usuario },
     update: { ...campos, fechaActualizacion: new Date(), usuarioActualizacion: usuario }
   });
   return obtenerConfig(tiendaId);

@@ -3,13 +3,17 @@ import { documentoValido, TIPOS_DOCUMENTO } from "../libro-reclamaciones/libro.s
 import { esRucValido } from "../sunat/ruc.service.js";
 import { MAX_NOCHES } from "./hotel/cotizar.js";
 import { TIPOS_ALOJAMIENTO } from "./hotel/alojamiento.js";
+import { variablesDesconocidas } from "./locales/contrato.js";
+import { MODALIDADES as MODALIDADES_LOCAL, TIPOS_EVENTO } from "./locales/cotizar.js";
 
 /**
  * Schemas Zod del mini booking (docs/specs/mini-booking). El schema ES el
  * contrato de entrada (docs/ARQUITECTURA.md).
  */
 
-export const PESTANAS = ["por_responder", "pago_por_verificar", "confirmadas", "historial"];
+export const PESTANAS = ["por_responder", "pago_por_verificar", "confirmadas", "historial", "cuotas_vencidas", "garantias"];
+/** De dónde llegó el cliente (alquiler-locales R4.5). */
+export const CANALES_ORIGEN = ["tiktok", "instagram", "facebook", "google", "portal", "recomendacion", "cartel", "otro"];
 export const METODOS_PAGO_MANUAL = ["yape", "plin", "transferencia"];
 export const MOTIVOS_RECHAZO = ["sin_disponibilidad", "fecha_cerrada", "otro"];
 /** Sitios de reseñas externas (C6). Booking y Tripadvisor puntúan sobre 10 y 5; Google sobre 5. */
@@ -73,7 +77,17 @@ const estadiaBase = {
   entradas: z.array(z.object({
     tipoId: uuid("tipoId"),
     cantidad: z.coerce.number().int().min(0).max(50)
-  })).max(20).optional().default([])
+  })).max(20).optional().default([]),
+  // Locales (alquiler-locales R4.1, R6.1). La hora de inicio del alquiler por horas va en `hora`.
+  paqueteId: uuid("paqueteId").nullish().transform(v => v || null),
+  turnoId: uuid("turnoId").nullish().transform(v => v || null),
+  horas: z.coerce.number().int().min(1).max(24).nullish().transform(v => v ?? null),
+  invitados: z.coerce.number().int().min(1, "Indica el número de invitados").max(5000).nullish().transform(v => v ?? null),
+  tipoEvento: z.enum(TIPOS_EVENTO, { message: "Elige el tipo de evento" }).nullish().transform(v => v ?? null),
+  agasajado: z.string().trim().max(120).nullish().transform(v => v || null),
+  proveedoresExternos: z.boolean().optional().default(false),
+  // Solicitud desde una cotización guardada: respeta su precio congelado (R4.2).
+  cotizacionToken: z.string().min(10).max(2000).nullish().transform(v => v || null)
 };
 
 export const cotizarSchema = z.object(estadiaBase);
@@ -332,10 +346,44 @@ export const configSchema = z.object({
     puntaje: z.coerce.number().min(1).max(10),
     cantidad: z.coerce.number().int().min(1).max(1000000),
     url: z.string().trim().url("Enlace inválido").startsWith("https://", "El enlace debe empezar con https://").max(500)
-  })).max(3, "Hasta 3 sitios").optional()
+  })).max(3, "Hasta 3 sitios").optional(),
+  // Locales (docs/specs/alquiler-locales R1.2)
+  separacionTipo: z.enum(["porcentaje", "monto_fijo"]).optional(),
+  separacionMonto: monto.refine(v => v > 0, "El monto de separación debe ser mayor a 0").nullable().optional(),
+  respuestaHoras: z.coerce.number().int().min(1).max(168).optional(),
+  apartadoHoras: z.coerce.number().int().min(1).max(336).optional(),
+  saldoDiasAntes: z.coerce.number().int().min(0).max(365).optional(),
+  maxCuotas: z.coerce.number().int().min(1).max(12).optional(),
+  garantiaMonto: monto.optional(),
+  garantiaDevolucionDias: z.coerce.number().int().min(0).max(60).optional(),
+  invitadosConfirmarDias: z.coerce.number().int().min(0).max(60).optional(),
+  reprogramacionesMax: z.coerce.number().int().min(0).max(10).optional(),
+  reprogramacionMinDias: z.coerce.number().int().min(0).max(365).optional(),
+  cargoReprogramacion: monto.optional(),
+  politicaTramos: z.array(z.object({
+    desdeDias: z.coerce.number().int().min(0).max(730),
+    separacionPct: z.coerce.number().int().min(0).max(100),
+    restoPct: z.coerce.number().int().min(0).max(100)
+  })).min(1).max(6).optional()
+    .transform(v => v && [...v].sort((a, b) => b.desdeDias - a.desdeDias))
+    .refine(v => !v || new Set(v.map(t => t.desdeDias)).size === v.length, "Hay dos tramos con los mismos días")
+    .refine(v => !v || v.some(t => t.desdeDias === 0), "Agrega el tramo de 0 días (lo que se devuelve a última hora)"),
+  graciaMoraDias: z.coerce.number().int().min(0).max(60).optional(),
+  saldoFavorMeses: z.coerce.number().int().min(1).max(24).optional(),
+  cotizacionVigenciaDias: z.coerce.number().int().min(1).max(60).optional(),
+  // Vacío = plantilla base de la plataforma. Una variable desconocida se rechaza al guardar (R8.1).
+  contratoPlantilla: textoParcial(20000).refine(v => !v || !variablesDesconocidas(v).length,
+    v => ({ message: `Variables desconocidas: ${variablesDesconocidas(v ?? "").map(x => `{{${x}}}`).join(", ")}` })),
+  proveedoresExternos: z.boolean().optional(),
+  tarifaCoordinacion: monto.nullable().optional(),
+  descorcheBotella: monto.nullable().optional(),
+  horaTope: hora.optional()
 }).superRefine((d, ctx) => {
   if (d.cobro === "adelanto" && !d.adelantoPct) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adelantoPct"], message: "Indica el porcentaje de adelanto" });
+  }
+  if (d.separacionTipo === "monto_fijo" && !d.separacionMonto) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["separacionMonto"], message: "Indica el monto de la separación" });
   }
 });
 
@@ -381,6 +429,181 @@ export const habitacionSchema = z.object({
   if (new Set(claves).size !== claves.length) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["modalidades"], message: "Hay modalidades repetidas (misma cantidad de horas o dos de noche)" });
   }
+});
+
+// ---------- Locales: salón, turnos y paquetes (alquiler-locales R2) ----------
+
+const precioDia = monto.refine(v => v > 0, "El precio debe ser mayor a 0");
+/** Precio por día: lunes a jueves obligatorio; viernes, sábado, domingo y feriado opcionales (caen en lunes a jueves). */
+const preciosDiaSchema = z.object({
+  lj: precioDia,
+  v: precioDia.nullish(),
+  s: precioDia.nullish(),
+  d: precioDia.nullish(),
+  f: precioDia.nullish()
+}).transform(p => Object.fromEntries(Object.entries(p).filter(([, v]) => v != null)));
+
+const turnoSchema = z.object({
+  id: uuid("id").optional(),
+  nombre: texto("El nombre del turno", 1, 60),
+  horaInicio: hora,
+  horaFin: hora,
+  diasSemana: z.array(z.coerce.number().int().min(1).max(7)).min(1, "Elige al menos un día").max(7),
+  precios: preciosDiaSchema,
+  activo: z.boolean().optional().default(true),
+  orden: z.coerce.number().int().min(0).max(999).optional()
+}).refine(t => t.horaInicio !== t.horaFin, { path: ["horaFin"], message: "El turno no puede empezar y terminar a la misma hora" });
+
+const paqueteSchema = z.object({
+  id: uuid("id").optional(),
+  nombre: texto("El nombre del paquete", 1, 80),
+  descripcion: textoOpcional(300),
+  modalidad: z.enum(MODALIDADES_LOCAL, { message: "Elige la modalidad" }),
+  precioTipo: z.enum(["fijo", "por_persona"]).optional().default("fijo"),
+  precios: preciosDiaSchema.nullish().transform(v => v ?? null),
+  minPersonas: z.coerce.number().int().min(1).max(5000).nullish().transform(v => v ?? null),
+  maxPersonas: z.coerce.number().int().min(1).max(5000).nullish().transform(v => v ?? null),
+  incluye: listaTextos(30, 120),
+  horasIncluidas: z.coerce.number().int().min(1).max(24).nullish().transform(v => v ?? null),
+  horaExtraPrecio: monto.nullish().transform(v => v ?? null),
+  tiposEvento: z.array(z.enum(TIPOS_EVENTO)).max(TIPOS_EVENTO.length).optional().default([]),
+  esPromocion: z.boolean().optional().default(false),
+  // Turnos existentes por id; los nuevos (sin id aún) por su posición en `turnos`.
+  turnoIds: z.array(uuid("turnoId")).max(10).optional().default([]),
+  turnoRefs: z.array(z.coerce.number().int().min(0).max(9)).max(10).optional().default([]),
+  activo: z.boolean().optional().default(true),
+  orden: z.coerce.number().int().min(0).max(999).optional()
+}).superRefine((p, ctx) => {
+  if (p.modalidad === "paquete" && !p.precios) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["precios"], message: "Indica el precio del paquete" });
+  }
+  if (p.minPersonas && p.maxPersonas && p.maxPersonas < p.minPersonas) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["maxPersonas"], message: "El máximo no puede ser menor que el mínimo" });
+  }
+  if (p.esPromocion && !(p.modalidad === "paquete" && p.precioTipo === "por_persona")) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["esPromocion"], message: "Solo un paquete por persona puede ser de promoción" });
+  }
+});
+
+export const salonSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  metros: z.coerce.number().int().min(1).max(100000).nullish().transform(v => v ?? null),
+  // El de la licencia de funcionamiento / ITSE (R2.2).
+  aforoMaximo: z.coerce.number({ invalid_type_error: "Indica el aforo" }).int().min(1, "Indica el aforo").max(5000),
+  preparacionMin: z.coerce.number().int().min(0).max(480).optional().default(60),
+  porHoras: z.boolean().optional().default(false),
+  precioHora: monto.nullish().transform(v => v ?? null),
+  minHoras: z.coerce.number().int().min(1).max(24).nullish().transform(v => v ?? null),
+  horasDesde: hora.nullish().transform(v => v || null),
+  horasHasta: hora.nullish().transform(v => v || null),
+  servicios: listaTextos(30, 40),
+  turnos: z.array(turnoSchema).max(10),
+  paquetes: z.array(paqueteSchema).min(1, "Agrega al menos un paquete (por ejemplo, Solo local)").max(20)
+}).superRefine((d, ctx) => {
+  const issue = (path, message) => ctx.addIssue({ code: z.ZodIssueCode.custom, path, message });
+  if (d.porHoras) {
+    if (!d.precioHora) issue(["precioHora"], "Indica el precio por hora");
+    if (!d.minHoras) issue(["minHoras"], "Indica el mínimo de horas");
+    if (!d.horasDesde || !d.horasHasta) issue(["horasDesde"], "Indica desde y hasta qué hora se alquila por horas");
+  }
+  const unico = (lista, path, que) => {
+    const nombres = lista.map(x => x.nombre.toLowerCase());
+    if (new Set(nombres).size !== nombres.length) issue([path], `Hay ${que} con el mismo nombre`);
+  };
+  unico(d.turnos, "turnos", "turnos");
+  unico(d.paquetes, "paquetes", "paquetes");
+  d.paquetes.forEach((p, i) => {
+    if (p.modalidad === "por_horas" && !d.porHoras) issue(["paquetes", i, "modalidad"], "Activa el alquiler por horas del salón para ofrecer este paquete");
+    if (p.modalidad !== "por_horas" && !d.turnos.length) issue(["turnos"], "Agrega al menos un turno para ofrecer paquetes por turno");
+    if (p.maxPersonas && p.maxPersonas > d.aforoMaximo) issue(["paquetes", i, "maxPersonas"], `No puede pasar del aforo del salón (${d.aforoMaximo})`);
+    if (p.turnoRefs.some(r => r >= d.turnos.length)) issue(["paquetes", i, "turnoRefs"], "Turno inválido");
+  });
+});
+
+// ---------- Locales: calendario, bloqueos, cotizaciones y cuotas (alquiler-locales) ----------
+
+const rangoFechas = (d, ctx) => {
+  if (d.desde > d.hasta) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["hasta"], message: "Rango inválido" });
+  else if ((Date.parse(d.hasta) - Date.parse(d.desde)) / 86_400_000 > 62) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["hasta"], message: "Máximo 62 días" });
+};
+
+export const calendarioStoreQuerySchema = z.object({ tiendaId: uuid("tiendaId"), desde: fecha, hasta: fecha }).superRefine(rangoFechas);
+export const calendarioAdminQuerySchema = z.object({ tiendaId: uuid("tiendaId"), productoId: uuid("productoId"), desde: fecha, hasta: fecha }).superRefine(rangoFechas);
+
+export const bloqueoSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  productoId: uuid("productoId"),
+  fecha,
+  // Un turno, unas horas, o nada (todo el día).
+  turnoId: uuid("turnoId").nullish().transform(v => v || null),
+  horaInicio: hora.nullish().transform(v => v || null),
+  horaFin: hora.nullish().transform(v => v || null),
+  motivo: textoOpcional(100)
+}).refine(d => !d.horaInicio === !d.horaFin, { path: ["horaFin"], message: "Indica la hora de inicio y la de fin" });
+
+const clienteCotizacionSchema = z.object({
+  nombre: textoOpcional(100),
+  whatsapp: z.string().trim().regex(/^\+?[0-9\s-]{9,20}$/, "Número de WhatsApp inválido").nullish().transform(v => v || null),
+  email: z.string().trim().toLowerCase().email("Correo inválido").max(100).nullish().or(z.literal("")).transform(v => v || null)
+}).nullish().transform(v => v ?? null);
+
+const cotizacionLocalBase = {
+  tiendaId: uuid("tiendaId"),
+  productoId: uuid("productoId"),
+  paqueteId: uuid("paqueteId"),
+  turnoId: uuid("turnoId").nullish().transform(v => v || null),
+  fecha,
+  hora: hora.nullish().transform(v => v || null),
+  horas: z.coerce.number().int().min(1).max(24).nullish().transform(v => v ?? null),
+  invitados: z.coerce.number({ invalid_type_error: "Indica el número de invitados" }).int().min(1, "Indica el número de invitados").max(5000),
+  tipoEvento: z.enum(TIPOS_EVENTO, { message: "Elige el tipo de evento" }),
+  proveedoresExternos: z.boolean().optional().default(false),
+  canalOrigen: z.enum(CANALES_ORIGEN).nullish().transform(v => v ?? null),
+  cliente: clienteCotizacionSchema
+};
+
+export const cotizacionLocalSchema = z.object(cotizacionLocalBase);
+
+/** El negocio cotiza después de una visita o un chat, con ajuste y motivo (R4.4). */
+export const cotizacionAdminSchema = z.object({
+  ...cotizacionLocalBase,
+  nuevoTotal: monto.nullish().transform(v => v ?? null),
+  ajusteMotivo: textoOpcional(200)
+}).superRefine((d, ctx) => {
+  if (d.nuevoTotal !== null && !d.ajusteMotivo) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ajusteMotivo"], message: "Explica el ajuste al cliente" });
+  }
+});
+
+export const listarCotizacionesQuerySchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  productoId: uuid("productoId").optional(),
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(20)
+});
+
+export const aceptarContratoSchema = z.object({
+  version: z.coerce.number().int().min(1),
+  hash: z.string().regex(/^[0-9a-f]{64}$/, "Contrato inválido"),
+  acepta: z.literal(true, { errorMap: () => ({ message: "Marca la casilla para aceptar el contrato" }) })
+});
+
+export const cuotaStoreParamSchema = z.object({ token: z.string().min(10).max(2000), cuotaId: uuid("cuotaId") });
+export const cuotaAdminParamSchema = z.object({ id: uuid("id"), cuotaId: uuid("cuotaId") });
+
+/** Captura de una cuota: la imagen es opcional si hay número de operación (R14.6). */
+export const capturaCuotaBodySchema = z.object({
+  metodo: z.enum(METODOS_PAGO_MANUAL, { message: "Elige cómo pagaste" }),
+  numeroOperacion: textoOpcional(40)
+});
+
+export const planPagosSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  cuotas: z.array(z.object({
+    concepto: z.enum(["separacion", "cuota", "saldo", "garantia"]),
+    monto: monto.refine(v => v > 0, "Cada cuota debe ser mayor a 0"),
+    venceEn: fecha
+  })).min(1).max(15)
 });
 
 // ---------- Tarifas del hotel (hospedaje-completo B2, B3) ----------

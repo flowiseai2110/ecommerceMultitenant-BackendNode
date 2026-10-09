@@ -12,14 +12,18 @@ import {
 import { disponibilidadTienda } from "./hotel/disponibilidad.service.js";
 import { guardarFichaTour, listarToursAdmin, obtenerFichaTourAdmin } from "./tours/tours.service.js";
 import { asistentesFuncion, guardarFichaEvento, listarEventosAdmin, obtenerFichaEventoAdmin } from "./eventos/eventos.service.js";
+import { guardarFichaSalon, listarSalonesAdmin, obtenerFichaSalonAdmin } from "./locales/salones.service.js";
+import { calendarioAdmin, crearBloqueo, crearCotizacion, eliminarBloqueo, listarCotizacionesAdmin } from "./locales/locales.service.js";
+import { editarPlan, rechazarCuota, verificarCuota } from "./locales/cuotas.service.js";
 import {
   aceptarReserva, agendaReservas, cancelarPorNegocio, detalleReservaAdmin, listarReservasAdmin, marcarNoShow,
-  rechazarPago, rechazarReserva, resumenReservas, verificarPago
+  rechazarPago, rechazarReserva, reenviarCorreo, resumenReservas, verificarPago
 } from "./reservas.service.js";
 import {
   aceptarSchema, agendaQuerySchema, configSchema, crearCierreSchema, habitacionSchema, idParamSchema,
   listarAdminQuerySchema, motivoSchema, productoParamSchema, rechazarPagoSchema, rechazarSchema, tiendaQuerySchema, tourSchema,
-  eventoSchema, funcionParamSchema, temporadaSchema, extraSchema, planSchema, disponibilidadQuerySchema
+  eventoSchema, funcionParamSchema, temporadaSchema, extraSchema, planSchema, disponibilidadQuerySchema, salonSchema,
+  calendarioAdminQuerySchema, bloqueoSchema, cotizacionAdminSchema, listarCotizacionesQuerySchema, cuotaAdminParamSchema, planPagosSchema
 } from "./reservas.schema.js";
 
 /**
@@ -27,7 +31,7 @@ import {
  *
  * Roles: ver, cualquier miembro (viewer+). Responder solicitudes y verificar
  * pagos, editor+ (en un hostal pequeño el recepcionista suele ser editor).
- * Configuración, habitaciones, tours, eventos y fechas cerradas, admin+.
+ * Configuración, habitaciones, tours, eventos, salones y fechas cerradas, admin+.
  */
 
 const router = Router();
@@ -175,6 +179,64 @@ router.put("/eventos/:productoId", ...gestion, validate({ params: productoParamS
     } catch (error) { next(error); }
   });
 
+// ---------- Locales: salones con turnos y paquetes (alquiler-locales R2) ----------
+
+router.get("/locales/salones", ...lectura, validate({ query: tiendaQuerySchema }), async (req, res, next) => {
+  try { return ok(res, "SALONES_ADMIN", await listarSalonesAdmin(req.tiendaId)); } catch (error) { next(error); }
+});
+
+router.get("/locales/salones/:productoId", ...lectura, validate({ params: productoParamSchema, query: tiendaQuerySchema }),
+  async (req, res, next) => {
+    try { return ok(res, "SALON_FICHA", await obtenerFichaSalonAdmin(req.tiendaId, req.params.productoId)); } catch (error) { next(error); }
+  });
+
+// 409 CAMBIO_CON_RESERVAS (con la lista) si baja el aforo o quita un turno con reservas en curso (R2.7).
+router.put("/locales/salones/:productoId", ...gestion, validate({ params: productoParamSchema, body: salonSchema }),
+  async (req, res, next) => {
+    try {
+      const { tiendaId, ...data } = req.body;
+      return ok(res, "SALON_FICHA_UPDATED", await guardarFichaSalon(req.tiendaId, req.params.productoId, data, req.user));
+    } catch (error) { next(error); }
+  });
+
+// Calendario del salón (R12.2): reservas, apartados, bloqueos y cierres.
+router.get("/locales/calendario", ...lectura, validate({ query: calendarioAdminQuerySchema }), async (req, res, next) => {
+  try {
+    const { productoId, desde, hasta } = req.validatedQuery;
+    return ok(res, "LOCAL_CALENDARIO", await calendarioAdmin(req.tiendaId, { productoId, desde, hasta }));
+  } catch (error) { next(error); }
+});
+
+// Bloqueo manual: "la vendí por WhatsApp" (R3.6). Editor+: lo hace quien atiende.
+router.post("/locales/bloqueos", ...operacion, validate({ body: bloqueoSchema }), async (req, res, next) => {
+  try {
+    const { tiendaId, ...data } = req.body;
+    return ok(res, "LOCAL_BLOQUEO_CREADO", await crearBloqueo(req.tiendaId, data, req.user));
+  } catch (error) { next(error); }
+});
+
+router.delete("/locales/bloqueos/:id", ...operacion, validate({ params: idParamSchema, query: tiendaQuerySchema }), async (req, res, next) => {
+  try {
+    await eliminarBloqueo(req.tiendaId, req.params.id);
+    return ok(res, "LOCAL_BLOQUEO_ELIMINADO", null);
+  } catch (error) { next(error); }
+});
+
+// Cotizaciones del negocio (R4.4): con ajuste y motivo; se comparten por enlace o WhatsApp.
+router.get("/locales/cotizaciones", ...lectura, validate({ query: listarCotizacionesQuerySchema }), async (req, res, next) => {
+  try {
+    const { data, meta } = await listarCotizacionesAdmin(req.tiendaId, req.validatedQuery);
+    return ok(res, "LOCAL_COTIZACIONES", data, meta);
+  } catch (error) { next(error); }
+});
+
+router.post("/locales/cotizaciones", ...operacion, validate({ body: cotizacionAdminSchema }), async (req, res, next) => {
+  try {
+    const { tiendaId, ...datos } = req.body;
+    return ok(res, "LOCAL_COTIZACION_CREADA", await crearCotizacion(req.tiendaId, datos, { creadaPor: "negocio", user: req.user }));
+  } catch (error) { next(error); }
+});
+
 // ---------- Bandeja ----------
 
 router.get("/resumen", ...lectura, validate({ query: tiendaQuerySchema }), async (req, res, next) => {
@@ -219,6 +281,27 @@ router.post("/:id/rechazar-pago", ...operacion, validate({ params: idParamSchema
 
 router.post("/:id/cancelar", ...operacion, validate({ params: idParamSchema, body: motivoSchema }), async (req, res, next) => {
   try { return ok(res, "RESERVA_CANCELADA", await cancelarPorNegocio(req.tiendaId, req.params.id, req.body, req.user)); } catch (error) { next(error); }
+});
+
+// ---------- Locales: plan de pagos (R7) ----------
+
+// Edita el plan antes del primer pago (409 PLAN_BLOQUEADO después).
+router.put("/:id/plan", ...operacion, validate({ params: idParamSchema, body: planPagosSchema }), async (req, res, next) => {
+  try { return ok(res, "RESERVA_PLAN_ACTUALIZADO", await editarPlan(req.tiendaId, req.params.id, req.body, req.user)); } catch (error) { next(error); }
+});
+
+// La primera cuota verificada confirma la reserva.
+router.post("/:id/cuotas/:cuotaId/verificar", ...operacion, validate({ params: cuotaAdminParamSchema, body: tiendaQuerySchema }), async (req, res, next) => {
+  try { return ok(res, "RESERVA_CUOTA_VERIFICADA", await verificarCuota(req.tiendaId, req.params.id, req.params.cuotaId, req.user)); } catch (error) { next(error); }
+});
+
+router.post("/:id/cuotas/:cuotaId/rechazar", ...operacion, validate({ params: cuotaAdminParamSchema, body: rechazarPagoSchema }), async (req, res, next) => {
+  try { return ok(res, "RESERVA_CUOTA_RECHAZADA", await rechazarCuota(req.tiendaId, req.params.id, req.params.cuotaId, req.body, req.user)); } catch (error) { next(error); }
+});
+
+// Reenvía al cliente el correo de su estado actual (CE-13).
+router.post("/:id/reenviar-correo", ...operacion, validate({ params: idParamSchema, body: tiendaQuerySchema }), async (req, res, next) => {
+  try { return ok(res, "RESERVA_CORREO_REENVIADO", await reenviarCorreo(req.tiendaId, req.params.id)); } catch (error) { next(error); }
 });
 
 router.post("/:id/no-show", ...operacion, validate({ params: idParamSchema, body: tiendaQuerySchema }), async (req, res, next) => {

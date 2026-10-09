@@ -13,6 +13,10 @@ import { extrasPublicos, planesPublicos, temporadasPublicas } from "./hotel/tari
 import { disponibilidadTienda } from "./hotel/disponibilidad.service.js";
 import { listarToursStore, obtenerTourStore } from "./tours/tours.service.js";
 import { listarEventosStore, obtenerEventoStore } from "./eventos/eventos.service.js";
+import { listarSalonesStore, obtenerSalonStore } from "./locales/salones.service.js";
+import { calendarioStore, crearCotizacion, obtenerCotizacionStore } from "./locales/locales.service.js";
+import { aceptarContrato, subirCapturaCuota } from "./locales/cuotas.service.js";
+import { clientIp } from "../../kernel/http/client-ip.js";
 import { verificarTokenReserva } from "./reservas.token.js";
 import { uploadCaptura } from "./reservas.capturas.js";
 import {
@@ -20,7 +24,7 @@ import {
 } from "./reservas.service.js";
 import {
   capturaBodySchema, cierresQuerySchema, cotizarSchema, crearSolicitudSchema, slugParamSchema, tiendaQuerySchema, tokenParamSchema,
-  disponibilidadQuerySchema
+  disponibilidadQuerySchema, calendarioStoreQuerySchema, cotizacionLocalSchema, aceptarContratoSchema, cuotaStoreParamSchema, capturaCuotaBodySchema
 } from "./reservas.schema.js";
 
 /**
@@ -36,6 +40,15 @@ const solicitudesLimiter = crearLimitador({
   max: config.reservas.rateLimitMax,
   code: "TOO_MANY_BOOKINGS",
   message: "Enviaste varias solicitudes en poco tiempo. Espera unos minutos e intenta de nuevo."
+});
+
+// Cotizaciones de locales guardadas: más holgado que las solicitudes (se cotiza
+// varias veces antes de decidir), pero con tope propio (alquiler-locales R14.8).
+const cotizacionesLimiter = crearLimitador({
+  windowMs: config.rateLimit.windowMs,
+  max: config.reservas.cotizacionesMax,
+  code: "TOO_MANY_QUOTES",
+  message: "Hiciste muchas cotizaciones en poco tiempo. Espera unos minutos e intenta de nuevo."
 });
 
 const ok = (res, code, data, status = 200) => apiResponse(res, { status, type: "SUCCESS", code, data });
@@ -136,6 +149,50 @@ router.get("/eventos/:slug", validate({ params: slugParamSchema, query: tiendaQu
     } catch (error) { next(error); }
   });
 
+// GET /locales/salones?tiendaId= — salones del local de eventos (alquiler-locales R2)
+router.get("/locales/salones", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
+  try {
+    res.set("Cache-Control", "public, max-age=60");
+    return ok(res, "SALONES_LIST", await listarSalonesStore(req.validatedQuery.tiendaId));
+  } catch (error) { next(error); }
+});
+
+// GET /locales/salones/:slug?tiendaId= — ficha con turnos, paquetes y servicios
+router.get("/locales/salones/:slug", validate({ params: slugParamSchema, query: tiendaQuerySchema }), scopeQueryToTienda,
+  async (req, res, next) => {
+    try {
+      res.set("Cache-Control", "public, max-age=60");
+      return ok(res, "SALON", await obtenerSalonStore(req.validatedQuery.tiendaId, req.params.slug));
+    } catch (error) { next(error); }
+  });
+
+// GET /locales/salones/:slug/calendario?tiendaId=&desde=&hasta= — libre / parcial / ocupada / cerrada por fecha y turno (R3.1)
+router.get("/locales/salones/:slug/calendario", validate({ params: slugParamSchema, query: calendarioStoreQuerySchema }), scopeQueryToTienda,
+  async (req, res, next) => {
+    try {
+      const { tiendaId, desde, hasta } = req.validatedQuery;
+      // Corto: la disponibilidad cambia con cada solicitud. Se revalida al cotizar y al enviar (R3.5).
+      res.set("Cache-Control", "public, max-age=15");
+      return ok(res, "SALON_CALENDARIO", await calendarioStore(tiendaId, req.params.slug, { desde, hasta }));
+    } catch (error) { next(error); }
+  });
+
+// POST /locales/cotizaciones — cotiza y guarda con precio congelado (R4.2). 409 con alternativas si la franja está ocupada.
+router.post("/locales/cotizaciones", cotizacionesLimiter, scopeBodyToTienda, validate({ body: cotizacionLocalSchema }), async (req, res, next) => {
+  try {
+    const { tiendaId, ...datos } = req.body;
+    return ok(res, "COTIZACION_CREADA", await crearCotizacion(tiendaId, datos, { creadaPor: "cliente" }), 201);
+  } catch (error) { next(error); }
+});
+
+// GET /locales/cotizaciones/:token — la cotización (vigente, vencida o usada) y si la fecha sigue libre
+router.get("/locales/cotizaciones/:token", validate({ params: tokenParamSchema }), async (req, res, next) => {
+  try {
+    res.set("Cache-Control", "private, no-store");
+    return ok(res, "COTIZACION", await obtenerCotizacionStore(req.params.token, req.tiendaId ?? null));
+  } catch (error) { next(error); }
+});
+
 // GET /cierres?tiendaId=&desde=&hasta=&productoId= — fechas no elegibles del calendario
 router.get("/cierres", validate({ query: cierresQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
   try {
@@ -186,6 +243,23 @@ router.post("/seguimiento/:token/captura", solicitudesLimiter, validate({ params
       const { pedidoId, tiendaId } = await reservaDelToken(req);
       const data = await subirCapturaCliente(tiendaId, pedidoId, { file: req.file, ...req.body });
       return ok(res, "RESERVA_CAPTURA_SUBIDA", data);
+    } catch (error) { next(error); }
+  });
+
+// POST /seguimiento/:token/contrato — el cliente acepta el contrato que leyó (versión + hash, R8.3)
+router.post("/seguimiento/:token/contrato", validate({ params: tokenParamSchema, body: aceptarContratoSchema }), async (req, res, next) => {
+  try {
+    const { pedidoId, tiendaId } = await reservaDelToken(req);
+    return ok(res, "RESERVA_CONTRATO_ACEPTADO", await aceptarContrato(tiendaId, pedidoId, req.body, { ip: clientIp(req) ?? null }));
+  } catch (error) { next(error); }
+});
+
+// POST /seguimiento/:token/cuotas/:cuotaId/captura — pago manual de una cuota (multipart: captura opcional, metodo, numeroOperacion)
+router.post("/seguimiento/:token/cuotas/:cuotaId/captura", solicitudesLimiter, validate({ params: cuotaStoreParamSchema }), uploadCaptura,
+  validate({ body: capturaCuotaBodySchema }), async (req, res, next) => {
+    try {
+      const { pedidoId, tiendaId } = await reservaDelToken(req);
+      return ok(res, "RESERVA_CUOTA_CAPTURA", await subirCapturaCuota(tiendaId, pedidoId, req.params.cuotaId, { file: req.file, ...req.body }));
     } catch (error) { next(error); }
   });
 

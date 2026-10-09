@@ -13,7 +13,14 @@ export const PLANTILLAS_WHATSAPP_KEYS = [
   "pago_pendiente",
   "pago_pagado",
   "pago_rechazado",
-  "pago_reembolsado"
+  "pago_reembolsado",
+  // Alquiler de locales (docs/specs/alquiler-locales R12.4): "Responder por WhatsApp".
+  "local_aceptada",
+  "local_rechazada",
+  "local_cuota_por_vencer",
+  "local_confirmada",
+  "local_reprogramada",
+  "local_cancelada"
 ];
 
 // Cada clave es opcional: string vacío o ausente = usar la plantilla default.
