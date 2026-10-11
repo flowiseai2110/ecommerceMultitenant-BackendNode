@@ -30,7 +30,7 @@ describe("cotizarHotel — fracción por horas (ventana fija)", () => {
     expect(fechaLima(c.fin)).toBe("2026-09-25");
     expect(horaLima(c.fin)).toBe("00:30");
     expect(c.horas).toBe(6);
-    expect(c.lineas).toEqual([{ descripcion: "Estadía de 6 horas", cantidad: 1, precioUnitario: 100, total: 100 }]);
+    expect(c.lineas).toEqual([{ descripcion: "6 horas × S/ 100 × 1 hab.", cantidad: 1, precioUnitario: 100, total: 100 }]);
     expect(c.total).toBe(100);
     expect(c.montoAPagar).toBe(100);
     expect(c.saldoDestino).toBe(0);
@@ -49,8 +49,8 @@ describe("cotizarHotel — noches", () => {
     const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 3, adultos: 2, config, ahora });
     expect(c.errores).toEqual([]);
     expect(c.lineas).toEqual([
-      { descripcion: "1 noche (jue 24/09)", cantidad: 1, precioUnitario: 160, total: 160 },
-      { descripcion: "2 noches (vie 25/09, sáb 26/09)", cantidad: 2, precioUnitario: 180, total: 360 }
+      { descripcion: "1 noche × S/ 160 × 1 hab.", cantidad: 1, precioUnitario: 160, total: 160 },
+      { descripcion: "2 noches × S/ 180 × 1 hab.", cantidad: 2, precioUnitario: 180, total: 360 }
     ]);
     expect(c.total).toBe(520);
     expect(horaLima(c.inicio)).toBe("14:00");          // sin hora: check-in estándar
@@ -72,6 +72,14 @@ describe("cotizarHotel — reglas", () => {
     const codigos = c.errores.map(e => e.codigo);
     expect(codigos).toContain("CAPACIDAD");
     expect(codigos).toContain("FECHA_PASADA");
+  });
+
+  it("por noche, llegar hoy después del check-in no es fecha pasada", () => {
+    const tarde = instanteLima("2026-09-24", "19:00");
+    const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 1, adultos: 1, config, ahora: tarde });
+    expect(c.errores).toEqual([]);
+    const ayer = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-23", noches: 1, adultos: 1, config, ahora: tarde });
+    expect(ayer.errores.map(e => e.codigo)).toContain("FECHA_PASADA");
   });
 
   it("aplica la anticipación mínima (límite duro)", () => {
@@ -156,8 +164,8 @@ describe("cotizarHotel — temporadas (B2)", () => {
     const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 3, adultos: 2, config, ahora, temporadas: [fiestas] });
     expect(c.errores).toEqual([]);
     expect(c.lineas).toEqual([
-      { descripcion: "1 noche (jue 24/09)", cantidad: 1, precioUnitario: 160, total: 160 },
-      { descripcion: "2 noches Fiestas Patrias (vie 25/09, sáb 26/09)", cantidad: 2, precioUnitario: 270, total: 540 }
+      { descripcion: "1 noche × S/ 160 × 1 hab.", cantidad: 1, precioUnitario: 160, total: 160 },
+      { descripcion: "2 noches Fiestas Patrias × S/ 270 × 1 hab.", cantidad: 2, precioUnitario: 270, total: 540 }
     ]);
     expect(c.total).toBe(700);
   });
@@ -252,7 +260,7 @@ describe("cotizarHotel — varias habitaciones, cupo y plan (C1, C2, C5)", () =>
   it("dos habitaciones duplican capacidad y precio", () => {
     const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-21", noches: 2, adultos: 4, habitaciones: 2, config, ahora: lunes });
     expect(c.errores).toEqual([]);
-    expect(c.lineas).toEqual([{ descripcion: "2 noches (lun 21/09, mar 22/09) · 2 habitaciones", cantidad: 4, precioUnitario: 160, total: 640 }]);
+    expect(c.lineas).toEqual([{ descripcion: "2 noches × S/ 160 × 2 hab.", cantidad: 4, precioUnitario: 160, total: 640 }]);
     expect(c.habitaciones).toBe(2);
   });
 
@@ -294,7 +302,7 @@ describe("estadoEfectivo — habitación apartada (C1)", () => {
 describe("cotizarHotel — en inglés (C3)", () => {
   it("las líneas y los errores salen en inglés", () => {
     const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 3, adultos: 2, config, ahora, idioma: "en" });
-    expect(c.lineas.map(l => l.descripcion)).toEqual(["1 night (Thu Sep 24)", "2 nights (Fri Sep 25, Sat Sep 26)"]);
+    expect(c.lineas.map(l => l.descripcion)).toEqual(["1 night × S/ 160 × 1 room", "2 nights × S/ 180 × 1 room"]);
     const err = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 1, adultos: 3, config, ahora, idioma: "en" });
     expect(err.errores[0].mensaje).toBe("This room fits up to 2 adults");
   });

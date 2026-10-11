@@ -416,8 +416,10 @@ export const habitacionSchema = z.object({
   capacidadMax: z.coerce.number().int().min(1).max(50),
   porPersona: z.boolean().optional().default(false),
   soloMujeres: z.boolean().optional().default(false),
-  // Inventario (C1): habitaciones de este tipo (o camas); vacío = el negocio confirma a mano.
-  unidades: z.coerce.number().int().min(1).max(500).nullish().transform(v => v ?? null),
+  // Inventario (C1): total de habitaciones físicas de este tipo (o camas en un
+  // dormitorio). Obligatorio (hotel-inventario R1.1): sin él la tienda no sabe qué fechas están llenas.
+  unidades: z.coerce.number({ invalid_type_error: "Indica el total de habitaciones" })
+    .int().min(1, "Indica el total de habitaciones (al menos 1)").max(500),
   camas: textoOpcional(100),
   amenities: z.array(z.string().trim().min(1).max(40)).max(30).optional().default([]),
   modalidades: z.array(modalidadSchema).min(1, "Agrega al menos una modalidad (noche o por horas)").max(10)

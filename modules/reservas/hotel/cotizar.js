@@ -73,18 +73,21 @@ export function temporadaDe(fecha, temporadas) {
   return elegida;
 }
 
+/** "160" o "162.50": el precio unitario de la línea, sin decimales si no los tiene. */
+const montoCorto = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+
 /**
  * Líneas de precio. Las noches se agrupan por precio (y temporada) para que
- * el detalle sea corto ("3 noches × S/ 160") sin perder qué noches son.
+ * el detalle sea corto: "3 noches × S/ 160 × 1 hab.", sin listar cada día.
  */
 export function lineasPrecio({ modalidad, personas, fechas, porPersona, temporadas = [], habitaciones = 1, t = textosCotizar("es") }) {
   const factor = porPersona ? personas : habitaciones;
-  const sufijo = porPersona ? t.personas(personas) : habitaciones > 1 ? t.habitaciones(habitaciones) : "";
+  const sufijo = porPersona ? t.personas(personas) : t.habitaciones(habitaciones);
 
   if (modalidad.tipo === "horas") {
     const precio = Number(modalidad.precio);
     return [{
-      descripcion: `${t.estadiaHoras(modalidad.horas)}${sufijo}`,
+      descripcion: `${t.estadiaHoras(modalidad.horas)} × S/ ${montoCorto(precio)}${sufijo}`,
       cantidad: factor,
       precioUnitario: precio,
       total: redondear(precio * factor)
@@ -102,9 +105,8 @@ export function lineasPrecio({ modalidad, personas, fechas, porPersona, temporad
   }
   return [...grupos.values()].map(({ precio, temporada, dias }) => {
     const cantidad = dias.length * factor;
-    const detalle = dias.map(d => `${t.dias[diaSemana(d)]} ${(t.fecha ?? fechaCorta)(d)}`).join(", ");
     return {
-      descripcion: `${t.noches(dias.length)}${temporada ? ` ${temporada}` : ""} (${detalle})${sufijo}`,
+      descripcion: `${t.noches(dias.length)}${temporada ? ` ${temporada}` : ""} × S/ ${montoCorto(precio)}${sufijo}`,
       cantidad,
       precioUnitario: precio,
       total: redondear(precio * cantidad)
@@ -234,8 +236,11 @@ export function validarSolicitud({
     }
   }
 
-  const horasFaltan = horasEntre(ahora, inicio);
-  if (horasFaltan <= 0) {
+  // Por noche, llegar hoy después de la hora de check-in es válido: el
+  // huésped llega tarde, no es una fecha pasada. Solo cuenta la anticipación.
+  const llegaHoy = modalidad.tipo === "noche" && fecha === fechaLima(ahora);
+  const horasFaltan = llegaHoy ? Math.max(0, horasEntre(ahora, inicio)) : horasEntre(ahora, inicio);
+  if (horasFaltan <= 0 && !llegaHoy) {
     errores.push(error("FECHA_PASADA", e.fechaPasada, "hora"));
   } else if (horasFaltan < config.anticipacionMinHoras) {
     errores.push(error("ANTICIPACION_INSUFICIENTE", e.anticipacion(config.anticipacionMinHoras), "hora"));
