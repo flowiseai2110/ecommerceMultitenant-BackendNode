@@ -57,7 +57,7 @@ function precioDesde(tipos, lang = "es") {
 const ORDEN_TIPOS = [{ orden: "asc" }, { precio: "desc" }];
 
 const SELECT_PRODUCTO_STORE = {
-  id: true, nombre: true, slug: true, descripcion: true, descripcionCorta: true, traducciones: true,
+  id: true, nombre: true, slug: true, descripcion: true, descripcionCorta: true, traducciones: true, categoriaId: true,
   ratingPromedio: true, ratingCantidad: true, destacado: true,
   imagenes: { select: { url: true, textoAlternativo: true, esPrincipal: true, orden: true }, orderBy: { orden: "asc" } },
   tour: { include: { tiposPasajero: { where: { activo: true }, orderBy: ORDEN_TIPOS } } }
@@ -73,6 +73,8 @@ function serializarTourStore(original, { detalle = false, lang = "es" } = {}) {
     id: p.id,
     nombre: p.nombre,
     slug: p.slug,
+    // Categoría de la tienda: la vitrina filtra por ella en /categorias/:slug (layout-por-rubro 3.4).
+    categoriaId: p.categoriaId ?? null,
     descripcionCorta: p.descripcionCorta,
     ...(detalle ? { descripcion: p.descripcion } : {}),
     imagenes: imagenes.map(i => ({ url: i.url, alt: i.textoAlternativo ?? p.nombre })),

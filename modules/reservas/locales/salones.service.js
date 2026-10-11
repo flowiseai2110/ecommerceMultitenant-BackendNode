@@ -94,7 +94,7 @@ const INCLUDE_FICHA = {
 // ============================================
 
 const SELECT_PRODUCTO_STORE = {
-  id: true, nombre: true, slug: true, descripcion: true, descripcionCorta: true,
+  id: true, nombre: true, slug: true, descripcion: true, descripcionCorta: true, categoriaId: true,
   ratingPromedio: true, ratingCantidad: true, destacado: true,
   imagenes: { select: { url: true, textoAlternativo: true, esPrincipal: true, orden: true }, orderBy: { orden: "asc" } },
   salon: { include: { turnos: { where: { activo: true }, orderBy: ORDEN }, paquetes: { where: { activo: true }, orderBy: ORDEN } } }
@@ -107,6 +107,8 @@ function serializarSalonStore(p, { detalle = false } = {}) {
     id: p.id,
     nombre: p.nombre,
     slug: p.slug,
+    // Categoría de la tienda: la vitrina filtra por ella en /categorias/:slug (layout-por-rubro 3.4).
+    categoriaId: p.categoriaId ?? null,
     descripcionCorta: p.descripcionCorta,
     ...(detalle ? { descripcion: p.descripcion } : {}),
     imagenes: imagenes.map(i => ({ url: i.url, alt: i.textoAlternativo ?? p.nombre })),

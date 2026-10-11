@@ -28,8 +28,6 @@ function serializarFicha(t) {
     capacidadAdultos: t.capacidadAdultos,
     capacidadNinos: t.capacidadNinos,
     capacidadMax: t.capacidadMax,
-    porPersona: t.porPersona,
-    soloMujeres: t.soloMujeres ?? false,
     camas: t.camas,
     amenities: t.amenities
   };
@@ -139,7 +137,6 @@ export async function listarHabitacionesAdmin(tiendaId) {
     imagenUrl: (p.imagenes.find(i => i.esPrincipal) ?? p.imagenes[0])?.url ?? null,
     configurada: Boolean(p.hotelTipo?.modalidades.some(m => m.activo)),
     capacidadMax: p.hotelTipo?.capacidadMax ?? null,
-    porPersona: p.hotelTipo?.porPersona ?? false,
     modalidades: (p.hotelTipo?.modalidades ?? []).map(serializarModalidad),
     desde: p.hotelTipo ? precioDesde(p.hotelTipo.modalidades) : null
   }));
@@ -152,8 +149,13 @@ export async function obtenerFichaAdmin(tiendaId, productoId) {
     where: { productoId, tiendaId },
     include: { modalidades: { orderBy: [{ orden: "asc" }, { precio: "asc" }] } }
   });
-  // Las unidades (inventario, C1) solo las ve el negocio.
-  return t ? { productoId, ...serializarFicha(t), unidades: t.unidades ?? null, modalidades: t.modalidades.map(serializarModalidad) } : null;
+  // Las unidades (inventario, C1) solo las ve el negocio. Con habitaciones
+  // físicas (Recepción R1.2) se calculan de ellas y no se editan aquí.
+  const fisicas = t ? await prisma.hotel_habitaciones.count({ where: { productoId } }) : 0;
+  return t ? {
+    productoId, ...serializarFicha(t), unidades: t.unidades ?? null, unidadesPorHabitaciones: fisicas > 0,
+    modalidades: t.modalidades.map(serializarModalidad)
+  } : null;
 }
 
 /**
@@ -165,13 +167,13 @@ export async function obtenerFichaAdmin(tiendaId, productoId) {
 export async function guardarFicha(tiendaId, productoId, data, user) {
   await productoDeTienda(tiendaId, productoId);
   const usuario = user?.email ?? user?.id ?? null;
+  // Con habitaciones físicas (Recepción R1.2) el total lo ponen ellas.
+  const fisicas = await prisma.hotel_habitaciones.count({ where: { productoId } });
   const ficha = {
     capacidadAdultos: data.capacidadAdultos,
     capacidadNinos: data.capacidadNinos,
     capacidadMax: data.capacidadMax,
-    porPersona: data.porPersona,
-    soloMujeres: data.soloMujeres,
-    unidades: data.unidades ?? null,
+    ...(fisicas ? {} : { unidades: data.unidades ?? null }),
     camas: data.camas,
     amenities: data.amenities
   };

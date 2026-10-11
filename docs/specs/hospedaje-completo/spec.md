@@ -28,7 +28,7 @@ Un hostal o un hotel puede mostrar sus habitaciones y recibir solicitudes, pero:
 - **A1 Pie de página de reservas.** En hotel, tours y eventos el pie no muestra carrito, rastreo de pedido, envíos, devoluciones ni "todos los productos". Muestra: Inicio, el catálogo (Habitaciones / Tours / Eventos) con sus categorías, Políticas de reserva, Preguntas frecuentes (si la home las tiene), Libro de Reclamaciones y Contacto. En métodos de pago no se muestra "contra entrega".
 - **A2 Onboarding de reservas.** Una tienda de hotel, tours o eventos no recibe métodos de envío precargados ni "contra entrega".
 - **A3 Subtítulo de `/habitaciones`** (y `/tours`, `/eventos`): usa el de la sección del diseño; el texto fijo queda solo como respaldo.
-- **A4 Precio por cama.** Con `porPersona`, la tarjeta, la ficha y "Otras habitaciones" dicen "por cama" y "Dormitorio de N camas" en lugar de "Hasta N personas".
+- ~~**A4 Precio por cama.** Con `porPersona`, la tarjeta, la ficha y "Otras habitaciones" dicen "por cama" y "Dormitorio de N camas" en lugar de "Hasta N personas".
 - **A5 Modalidades.** La etiqueta de modalidad ("Noche", "6 horas") se muestra solo si la habitación tiene más de una.
 - **A6 Cobro en destino.** El panel dice "Pagas todo al llegar: S/ X" en lugar de "Pagas S/ 0.00 al confirmar".
 - **A7 Mapa.** La búsqueda del mapa usa solo la dirección (sin el nombre de la tienda). En "Mi Tienda", la dirección explica que con calle y número el mapa marca el local.
@@ -41,7 +41,7 @@ Un hostal o un hotel puede mostrar sus habitaciones y recibir solicitudes, pero:
 - **B3 Extras** (`hotel_extras`): nombre, descripción, precio, cómo se cobra (por estadía, por noche, por persona, por persona y noche), un dato que se le pide al huésped (opcional: "Número de vuelo y hora de llegada"), activo y orden. El huésped los elige en la ficha o en la solicitud; van como líneas del pedido y la reserva guarda una copia.
 - **B4 Niños**: `config_reservas.ninos_gratis_hasta` (edad, null = no aplica) y `cargo_nino_noche` (monto por niño mayor a esa edad, por noche). La solicitud pide la edad de cada niño; la reserva guarda las edades. En habitaciones `porPersona` los niños ya cuentan como persona y no se aplica el cargo.
 - **B5 IGV turistas** (`config_reservas.exonera_igv_extranjeros`): si está activo y el titular no es peruano, el total se muestra sin IGV (precio ÷ 1.18) con la línea "Exoneración de IGV (turista extranjero)" y el aviso de presentar pasaporte y tarjeta andina. La ficha muestra "Extranjeros: S/ X sin IGV". La reserva guarda `exonerado_igv`.
-- **B6 Solo mujeres** (`hotel_tipos_habitacion.solo_mujeres`): la tarjeta y la ficha lo indican y la solicitud pide confirmar "Todas las personas de esta reserva son mujeres". No se guarda el sexo de nadie.
+- ~~**B6 Solo mujeres** (`hotel_tipos_habitacion.solo_mujeres`): la tarjeta y la ficha lo indican y la solicitud pide confirmar "Todas las personas de esta reserva son mujeres". No se guarda el sexo de nadie.
 - **B7 Fotos propias en el diseño.** `imagen-texto` acepta `imagen: "propia"` con una foto subida desde el admin, y hay una sección nueva **`galeria`** (de 3 a 12 fotos con pie opcional) para hotel, tours y eventos.
 
 ## Fase C — Lo que el huésped espera
@@ -72,3 +72,7 @@ Un hostal o un hotel puede mostrar sus habitaciones y recibir solicitudes, pero:
 ## Datos
 
 Una migración por fase (`docs/sql/hospedaje_fase_b.sql`, `hospedaje_fase_c.sql`), generada con `prisma migrate diff`, para correr en el SQL Editor de Supabase.
+
+## Cambio 2026-10-11: sin "precio por persona" ni "solo mujeres"
+
+A4 y B6 quedan reemplazados. Cada tipo de habitación tiene capacidad y precio fijos y el cliente solo elige cuántas quiere (como en Booking). Una cama de dormitorio es un tipo más con capacidad 1 (`Cama en dormitorio femenino de 6`): `unidades` = total de camas y 3 personas piden 3. Mixto, femenino o masculino va en el nombre del tipo. Se quitaron `por_persona` y `solo_mujeres` (migración: `docs/sql/hotel_sin_por_persona.sql`). La tienda acepta hasta 10 del mismo tipo, igual que el backend.

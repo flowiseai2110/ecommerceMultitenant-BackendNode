@@ -4,6 +4,7 @@ import { validate } from "../../middlewares/validation.middleware.js";
 import { authMiddleware, scopeQueryToTienda } from "../../kernel/tenant/index.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import PedidosService from "./pedidos.service.js";
+import { listarReservasCuenta } from "../reservas/reservas.service.js";
 
 const pedidosService = new PedidosService();
 
@@ -55,6 +56,26 @@ router.get(
       const data = await pedidosService.listByAuthUser(tiendaId, req.user.id);
 
       return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUENTA_PEDIDOS", data });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// GET /reservas?tiendaId=X — "Mis reservas" en esta tienda (rubros de reservas)
+// ============================================
+router.get(
+  "/reservas",
+  authMiddleware,
+  validate({ query: tiendaQuerySchema }),
+  scopeQueryToTienda,
+  async (req, res, next) => {
+    try {
+      const { tiendaId } = req.validatedQuery || req.query;
+      const data = await listarReservasCuenta(tiendaId, req.user.id);
+
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUENTA_RESERVAS", data });
     } catch (error) {
       next(error);
     }

@@ -516,6 +516,35 @@ function wherePestana(pestana, ahora) {
 }
 
 /** Bandeja (R11.1): las abiertas, por hora de inicio; el historial, lo más reciente primero. */
+/**
+ * "Mis reservas" del comprador con sesión en la tienda (Mi cuenta; layout-por-rubro 3.5):
+ * la más próxima o reciente primero, con el estado que ve el cliente y el link
+ * firmado de seguimiento, que es donde se gestiona la reserva.
+ * @param {string} tiendaId
+ * @param {string} authUserId - req.user.id, nunca del request
+ */
+export async function listarReservasCuenta(tiendaId, authUserId, ahora = new Date()) {
+  const pedidos = await prisma.pedidos.findMany({
+    where: { tiendaId, authUserId, tipo: { in: TIPOS_RESERVA }, reserva: { isNot: null } },
+    orderBy: { fechaServicio: "desc" },
+    take: 50,
+    select: {
+      id: true, numeroPedido: true, estado: true, total: true,
+      reserva: { select: { tipo: true, inicio: true, fin: true, apartadoHasta: true, producto: { select: { nombre: true } } } }
+    }
+  });
+  return Promise.all(pedidos.map(async ({ id, numeroPedido, estado, total, reserva: r }) => ({
+    numeroPedido,
+    tipo: r.tipo,
+    nombre: r.producto.nombre,
+    inicio: r.inicio,
+    fin: r.fin,
+    estado: estadoEfectivo({ estado, inicio: r.inicio, fin: r.fin, apartadoHasta: r.apartadoHasta }, ahora),
+    total: Number(total),
+    token: await firmarTokenReserva({ pedidoId: id, tiendaId })
+  })));
+}
+
 export async function listarReservasAdmin(tiendaId, filtros, ahora = new Date()) {
   await persistirVencimientos(tiendaId);
   const { pestana, productoId, desde, hasta, q, page, limit } = filtros;
@@ -709,14 +738,13 @@ async function validarCupoAlAceptar(tiendaId, pedido, ahora) {
   const r = pedido.reserva;
   if (!r.noches) return;
   const tipo = await prisma.hotel_tipos_habitacion.findUnique({
-    where: { productoId: r.productoId }, select: { productoId: true, porPersona: true, unidades: true }
+    where: { productoId: r.productoId }, select: { productoId: true, unidades: true }
   });
   if (tipo?.unidades == null) return;
   const cupo = await cupoEstadia(prisma, tiendaId, tipo, fechaLima(r.inicio), r.noches, { ahora, excluirPedidoId: pedido.id });
-  const pide = tipo.porPersona ? (r.adultos ?? 0) + (r.ninos ?? 0) : (r.habitaciones ?? 1);
+  const pide = r.habitaciones ?? 1;
   if (cupo && pide > cupo.libres) {
-    const unidad = tipo.porPersona ? "camas" : "habitaciones";
-    const message = `No hay cupo: para esas noches te quedan ${cupo.libres} de ${cupo.unidades} ${unidad} y esta reserva pide ${pide}.`;
+    const message = `No hay cupo: para esas noches te quedan ${cupo.libres} de ${cupo.unidades} y esta reserva pide ${pide}.`;
     throw new ConflictError(message, { message, motivo: "SIN_CUPO", libres: cupo.libres, unidades: cupo.unidades, pide });
   }
 }

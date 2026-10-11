@@ -1,3 +1,4 @@
+import { ahoraPublico } from "./hotel/recepcion.service.js";
 import { Router } from "express";
 import config from "../../config/index.js";
 import { crearLimitador } from "../../kernel/http/rate-limit.js";
@@ -76,6 +77,15 @@ router.get("/habitaciones", validate({ query: tiendaQuerySchema }), scopeQueryTo
   try {
     res.set("Cache-Control", "public, max-age=60");
     return ok(res, "HABITACIONES_LIST", await listarHabitacionesStore(req.validatedQuery.tiendaId, langDe(req)));
+  } catch (error) { next(error); }
+});
+
+// GET /ahora?tiendaId= — hostal al paso (docs/specs/recepcion R8): tipos, tarifas y
+// si hay una habitación libre ahora. Caché corto: cambia con cada entrada y salida.
+router.get("/ahora", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
+  try {
+    res.set("Cache-Control", "public, max-age=20");
+    return ok(res, "RESERVAS_AHORA", await ahoraPublico(req.validatedQuery.tiendaId, langDe(req)));
   } catch (error) { next(error); }
 });
 

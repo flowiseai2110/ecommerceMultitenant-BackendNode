@@ -117,7 +117,6 @@ export async function ejecutarToolHotel(nombre, input, { tiendaId }) {
         servicios: h.amenities,
         modalidades: h.modalidades.map(m => m.etiqueta),
         tiene_tarifa_por_horas: h.modalidades.some(m => m.tipo === "horas"),
-        precio_por_persona: h.porPersona,
         es_la_mas_economica: habitaciones.length > 1 && h.desde?.precio === minimo
       }))
     }

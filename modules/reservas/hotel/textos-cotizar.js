@@ -9,7 +9,6 @@ const MESES_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
 
 const es = {
   fecha: null, // fechaCorta: 24/09
-  personas: (n) => ` × ${n} ${plural(n, "persona", "personas")}`,
   habitaciones: (n) => ` × ${n} hab.`,
   estadiaHoras: (h) => `${h} horas`,
   noches: (n) => `${n} ${plural(n, "noche", "noches")}`,
@@ -28,9 +27,7 @@ const es = {
     sinNinos: "Esta habitación no admite niños",
     capNinos: (max, en) => `Esta habitación admite hasta ${max} ${plural(max, "niño", "niños")}${en}`,
     capTotal: (max, en) => `Esta habitación admite hasta ${max} personas en total${en}`,
-    sinCamas: "No quedan camas para esas fechas. Elige otras fechas",
     sinHabitaciones: "No quedan habitaciones de este tipo para esas fechas. Elige otras fechas",
-    quedanCamas: (n) => `Solo quedan ${n} ${plural(n, "cama", "camas")} para esas fechas`,
     quedanHabitaciones: (n) => `Solo ${n === 1 ? "queda 1 habitación" : `quedan ${n} habitaciones`} de este tipo para esas fechas`,
     fechaPasada: "Elige una fecha y hora futuras",
     anticipacion: (h) => `Las reservas se piden con al menos ${h} ${plural(h, "hora", "horas")} de anticipación`,
@@ -44,7 +41,6 @@ const es = {
 const en = {
   // "Sep 24": 24/09 se lee al revés en inglés de EE. UU.
   fecha: (f) => `${MESES_EN[Number(f.slice(5, 7)) - 1]} ${Number(f.slice(8, 10))}`,
-  personas: (n) => ` × ${n} ${plural(n, "guest", "guests")}`,
   habitaciones: (n) => ` × ${n} ${plural(n, "room", "rooms")}`,
   estadiaHoras: (h) => `${h} hours`,
   noches: (n) => `${n} ${plural(n, "night", "nights")}`,
@@ -63,9 +59,7 @@ const en = {
     sinNinos: "This room does not accept children",
     capNinos: (max, en2) => `This room fits up to ${max} ${plural(max, "child", "children")}${en2}`,
     capTotal: (max, en2) => `This room fits up to ${max} guests in total${en2}`,
-    sinCamas: "No beds left for those dates. Please choose other dates",
     sinHabitaciones: "No rooms of this type left for those dates. Please choose other dates",
-    quedanCamas: (n) => `Only ${n} ${plural(n, "bed", "beds")} left for those dates`,
     quedanHabitaciones: (n) => `Only ${n} ${plural(n, "room", "rooms")} of this type left for those dates`,
     fechaPasada: "Choose a future date and time",
     anticipacion: (h) => `Bookings must be made at least ${h} ${plural(h, "hour", "hours")} in advance`,

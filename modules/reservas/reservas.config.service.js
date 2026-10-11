@@ -38,6 +38,9 @@ const BASE = {
   // Fase C
   tipoCambioUsd: null,
   resenasExternas: [],
+  // Recepción (docs/specs/recepcion R3.2)
+  recepcionDocumento: "noche",
+  vitrinaAlPaso: false,
   // Solo eventos
   apartadoManualMin: 120,
   maxEntradasPorCompra: 10,
@@ -74,7 +77,7 @@ export const CAMPOS_CONFIG = [
   "maxSolicitudesAbiertas", "instrucciones", "politicaCancelacion", "horaCheckin", "horaCheckout", "comprobanteEn",
   "apartadoManualMin", "maxEntradasPorCompra", "umbralUltimasEntradas", "cierrePagoManualHoras",
   "tipoAlojamiento", "ninosGratisHasta", "cargoNinoNoche", "exoneraIgvExtranjeros",
-  "tipoCambioUsd", "resenasExternas",
+  "tipoCambioUsd", "resenasExternas", "recepcionDocumento", "vitrinaAlPaso",
   "separacionTipo", "separacionMonto", "respuestaHoras", "apartadoHoras", "saldoDiasAntes", "maxCuotas", "garantiaMonto",
   "garantiaDevolucionDias", "invitadosConfirmarDias", "reprogramacionesMax", "reprogramacionMinDias", "cargoReprogramacion",
   "politicaTramos", "graciaMoraDias", "saldoFavorMeses", "cotizacionVigenciaDias", "contratoPlantilla", "contratoVersion",
@@ -150,6 +153,8 @@ export function configPublica(config, lang = "es") {
     maxEntradasPorCompra: config.maxEntradasPorCompra,
     cierrePagoManualHoras: config.cierrePagoManualHoras,
     tipoAlojamiento: config.tipoAlojamiento,
+    // Recepción R8: hostal al paso, sin formulario de reserva.
+    vitrinaAlPaso: config.vitrinaAlPaso,
     ninosGratisHasta: config.ninosGratisHasta,
     cargoNinoNoche: config.cargoNinoNoche,
     exoneraIgvExtranjeros: config.exoneraIgvExtranjeros,

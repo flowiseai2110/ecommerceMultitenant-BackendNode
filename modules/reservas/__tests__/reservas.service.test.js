@@ -11,7 +11,7 @@ const PEDIDO = "77777777-7777-4777-8777-777777777777";
 
 const prisma = {
   tiendas: { findUnique: jest.fn() },
-  pedidos: { findFirst: jest.fn(), updateMany: jest.fn(), count: jest.fn(), create: jest.fn() },
+  pedidos: { findFirst: jest.fn(), findMany: jest.fn(), updateMany: jest.fn(), count: jest.fn(), create: jest.fn() },
   reservas: { update: jest.fn() },
   pagos: { update: jest.fn(), create: jest.fn() },
   pedido_historial_estados: { create: jest.fn() },
@@ -156,7 +156,7 @@ describe("cobro en destino (hospedaje-completo A6)", () => {
 });
 
 describe("aceptar con inventario (C1)", () => {
-  beforeEach(() => { prisma.hotel_tipos_habitacion = { findUnique: jest.fn(async () => ({ productoId: "p", porPersona: false, unidades: 3 })) }; });
+  beforeEach(() => { prisma.hotel_tipos_habitacion = { findUnique: jest.fn(async () => ({ productoId: "p", unidades: 3 })) }; });
 
   it("sin cupo responde 409 SIN_CUPO; con forzar, acepta", async () => {
     prisma.pedidos.findFirst.mockResolvedValue(pedido({ tipo: "hotel" }, { noches: 2, horas: null, habitaciones: 1 }));
@@ -345,5 +345,25 @@ describe("eventos — compra con cupo apartado", () => {
     prisma.pedidos.findFirst.mockResolvedValue(compra("por_pagar"));
     await expect(svc.subirCapturaCliente(TIENDA, PEDIDO, { file: {}, metodo: "yape" }, instanteLima("2026-09-24", "12:00")))
       .rejects.toMatchObject({ statusCode: 409, details: expect.objectContaining({ estado: "vencida" }) });
+  });
+});
+
+describe("listarReservasCuenta (Mi cuenta, layout-por-rubro 3.5)", () => {
+  const USUARIO = "99999999-9999-4999-8999-999999999999";
+  const fila = (estado, inicio) => ({
+    id: PEDIDO, numeroPedido: "R-0001", estado, total: { toString: () => "180" },
+    reserva: { tipo: "tour", inicio, fin: null, apartadoHasta: null, producto: { nombre: "Machu Picchu full day" } }
+  });
+
+  it("solo las reservas del usuario en la tienda, con estado efectivo y link de seguimiento", async () => {
+    prisma.pedidos.findMany.mockResolvedValue([fila("confirmada", instanteLima("2026-09-20", "06:00"))]);
+    const [r] = await svc.listarReservasCuenta(TIENDA, USUARIO, instanteLima("2026-09-24", "12:00"));
+
+    expect(prisma.pedidos.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ tiendaId: TIENDA, authUserId: USUARIO, reserva: { isNot: null } })
+    }));
+    expect(r).toMatchObject({ numeroPedido: "R-0001", tipo: "tour", nombre: "Machu Picchu full day", estado: "completada", total: 180 });
+    const { verificarTokenReserva } = await import("../reservas.token.js");
+    await expect(verificarTokenReserva(r.token)).resolves.toMatchObject({ pedidoId: PEDIDO, tiendaId: TIENDA });
   });
 });

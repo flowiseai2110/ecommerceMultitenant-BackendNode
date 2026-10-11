@@ -583,6 +583,8 @@ model pedidos {
   resenas          resenas[]
   hojasReclamacion libro_reclamaciones[]
   reserva          reservas?
+  // Recepción (docs/specs/recepcion R3.5): estadías del mostrador de esta reserva web.
+  estadiasRecepcion hotel_estadias[]
   itemsEvento      evento_compra_items[]
   // Alquiler de locales (docs/specs/alquiler-locales)
   cuotas           reserva_cuotas[]
@@ -1008,6 +1010,10 @@ model config_reservas {
   // Fase C
   tipoCambioUsd          Decimal? @map("tipo_cambio_usd") @db.Decimal(6, 3) // "≈ US$" en la vitrina; null = no se muestra
   resenasExternas        Json?    @map("resenas_externas") @db.JsonB // [{ fuente, puntaje, cantidad, url }] (hasta 3)
+  // Recepción (docs/specs/recepcion R3.2): cuándo pide el documento del huésped en el mostrador.
+  recepcionDocumento     String   @default("noche") @map("recepcion_documento") @db.VarChar(8) // siempre | noche | nunca
+  // Recepción R8 (fase 4): la tienda online muestra "Disponibilidad ahora" con WhatsApp en lugar del formulario de reserva.
+  vitrinaAlPaso          Boolean  @default(false) @map("vitrina_al_paso")
   traducciones           Json?    @db.JsonB // { en: { instrucciones, politicaCancelacion } } (C3)
   // Alquiler de locales (docs/specs/alquiler-locales R1.2). `adelantoPct` es el % cuando separacionTipo = porcentaje.
   separacionTipo         String   @default("porcentaje") @map("separacion_tipo") @db.VarChar(10) // porcentaje | monto_fijo
@@ -1137,12 +1143,8 @@ model hotel_tipos_habitacion {
   capacidadAdultos Int      @default(2) @map("capacidad_adultos")
   capacidadNinos   Int      @default(0) @map("capacidad_ninos")
   capacidadMax     Int      @default(2) @map("capacidad_max")
-  // Cama en dormitorio compartido: el precio se multiplica por personas.
-  porPersona       Boolean  @default(false) @map("por_persona")
-  // Dormitorio o habitación solo para mujeres (la solicitud lo hace confirmar).
-  soloMujeres      Boolean  @default(false) @map("solo_mujeres")
-  // Inventario (hospedaje-completo C1): habitaciones de este tipo, o camas si
-  // porPersona. null = sin control: el negocio confirma a mano.
+  // Inventario (hospedaje-completo C1): habitaciones de este tipo (o camas, si
+  // el tipo es una cama de dormitorio). null = sin control: el negocio confirma a mano.
   unidades         Int?
   traducciones     Json?    @db.JsonB // { en: { camas, amenities } } (C3)
   camas            String?  @db.VarChar(100)
@@ -1150,8 +1152,149 @@ model hotel_tipos_habitacion {
 
   producto    productos           @relation(fields: [productoId], references: [id], onDelete: Cascade)
   modalidades hotel_modalidades[]
+  // Recepción (docs/specs/recepcion R1): con habitaciones físicas, `unidades` = las activas.
+  habitacionesFisicas hotel_habitaciones[]
 
   @@index([tiendaId], name: "idx_hotel_tipos_tienda")
+}
+
+// Recepción (docs/specs/recepcion R1): habitación física (la 101, "Jacuzzi 2").
+// Una tienda usa Recepción cuando tiene habitaciones.
+model hotel_habitaciones {
+  id         String   @id @default(uuid()) @db.Uuid
+  tiendaId   String   @map("tienda_id") @db.Uuid
+  productoId String   @map("producto_id") @db.Uuid // tipo de habitación
+  numero     String   @db.VarChar(20)
+  piso       String?  @db.VarChar(20)
+  orden      Int      @default(0)
+  estado     String   @default("activa") @db.VarChar(14) // activa | mantenimiento
+  limpieza   String   @default("limpia") @db.VarChar(12) // limpia | por_limpiar
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  tipo        hotel_tipos_habitacion @relation(fields: [productoId], references: [productoId], onDelete: Cascade)
+  estadias    hotel_estadias[]
+  incidencias hotel_incidencias[]
+
+  @@unique([tiendaId, numero], name: "uq_hotel_habitaciones_numero")
+  @@index([productoId], name: "idx_hotel_habitaciones_tipo")
+}
+
+// Recepción (R3/R4): estadía registrada en el mostrador. "Pasajero libre" =
+// sin datos del huésped. Una habitación tiene a lo más una `en_curso` (índice
+// parcial en docs/sql/recepcion_fase_1.sql).
+model hotel_estadias {
+  id            String    @id @default(uuid()) @db.Uuid
+  tiendaId      String    @map("tienda_id") @db.Uuid
+  habitacionId  String    @map("habitacion_id") @db.Uuid
+  productoId    String    @map("producto_id") @db.Uuid // tipo al entrar (snapshot)
+  modalidad     String    @db.VarChar(6) // noche | horas (la última: "pasa a noche" la cambia)
+  inicio        DateTime  @db.Timestamptz
+  fin           DateTime  @db.Timestamptz // salida prevista; extender la mueve
+  salida        DateTime? @db.Timestamptz // salida real
+  estado        String    @default("en_curso") @db.VarChar(10) // en_curso | cerrada | anulada
+  cargos        Json      @db.JsonB // [{ concepto, precioLista, monto, en, usuario }]
+  total         Decimal   @db.Decimal(10, 2) // suma de cargos
+  pagado        Decimal   @default(0) @db.Decimal(10, 2) // suma de cobros
+  personas      Int?
+  huespedDocTipo   String? @map("huesped_doc_tipo") @db.VarChar(10) // DNI | CE | PASAPORTE
+  huespedDocNumero String? @map("huesped_doc_numero") @db.VarChar(20)
+  huespedNombre    String? @map("huesped_nombre") @db.VarChar(150)
+  motivoAnulacion  String? @map("motivo_anulacion") @db.VarChar(200)
+  // R3.5: llegada de una reserva web. Su noche ya la cuenta la reserva: no suma cupo otra vez.
+  pedidoId         String? @map("pedido_id") @db.Uuid
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  habitacion hotel_habitaciones @relation(fields: [habitacionId], references: [id], onDelete: Restrict)
+  pedido     pedidos?           @relation(fields: [pedidoId], references: [id], onDelete: SetNull)
+  cobros     hotel_cobros[]
+
+  @@index([tiendaId, estado], name: "idx_hotel_estadias_tienda_estado")
+  @@index([habitacionId, inicio], name: "idx_hotel_estadias_habitacion")
+  @@index([pedidoId], name: "idx_hotel_estadias_pedido")
+}
+
+// Recepción: cada cobro del mostrador. La caja por turno (fase 2) los agrupa.
+model hotel_cobros {
+  id         String   @id @default(uuid()) @db.Uuid
+  tiendaId   String   @map("tienda_id") @db.Uuid
+  estadiaId  String   @map("estadia_id") @db.Uuid
+  monto      Decimal  @db.Decimal(10, 2)
+  formaPago  String   @map("forma_pago") @db.VarChar(10) // efectivo | yape | plin | tarjeta
+  concepto   String   @db.VarChar(100)
+  fecha      DateTime @default(now()) @db.Timestamptz
+  usuario    String?  @db.VarChar(100)
+  // Caja (recepcion fase 2): turno en que entró la plata. null = cobro anterior a la caja.
+  turnoId    String?  @map("turno_id") @db.Uuid
+
+  estadia hotel_estadias @relation(fields: [estadiaId], references: [id], onDelete: Cascade)
+  turno   hotel_turnos?  @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+
+  @@index([tiendaId, fecha], name: "idx_hotel_cobros_tienda_fecha")
+  @@index([turnoId], name: "idx_hotel_cobros_turno")
+}
+
+// Recepción R5: turno de caja. Un solo cajón por tienda: a lo más un turno
+// abierto (índice parcial en docs/sql/recepcion_fase_2.sql).
+model hotel_turnos {
+  id               String    @id @default(uuid()) @db.Uuid
+  tiendaId         String    @map("tienda_id") @db.Uuid
+  estado           String    @default("abierto") @db.VarChar(8) // abierto | cerrado
+  abiertoEn        DateTime  @default(now()) @map("abierto_en") @db.Timestamptz
+  abiertoPor       String?   @map("abierto_por") @db.VarChar(100)
+  montoInicial     Decimal   @map("monto_inicial") @db.Decimal(10, 2)
+  cerradoEn        DateTime? @map("cerrado_en") @db.Timestamptz
+  cerradoPor       String?   @map("cerrado_por") @db.VarChar(100)
+  efectivoEsperado Decimal?  @map("efectivo_esperado") @db.Decimal(10, 2)
+  efectivoContado  Decimal?  @map("efectivo_contado") @db.Decimal(10, 2)
+  diferencia       Decimal?  @db.Decimal(10, 2) // contado − esperado
+  nota             String?   @db.VarChar(300)
+  resumen          Json?     @db.JsonB // foto del turno al cerrar (totales por forma de pago, entradas, descuentos…)
+
+  cobros      hotel_cobros[]
+  movimientos hotel_caja_movimientos[]
+
+  @@index([tiendaId, abiertoEn], name: "idx_hotel_turnos_tienda")
+}
+
+// Recepción R5.2: gastos e ingresos de caja que no son de una estadía (en efectivo).
+model hotel_caja_movimientos {
+  id       String   @id @default(uuid()) @db.Uuid
+  tiendaId String   @map("tienda_id") @db.Uuid
+  turnoId  String   @map("turno_id") @db.Uuid
+  tipo     String   @db.VarChar(7) // ingreso | egreso
+  monto    Decimal  @db.Decimal(10, 2)
+  motivo   String   @db.VarChar(150)
+  fecha    DateTime @default(now()) @db.Timestamptz
+  usuario  String?  @db.VarChar(100)
+
+  turno hotel_turnos @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+
+  @@index([turnoId], name: "idx_hotel_caja_mov_turno")
+}
+
+// Recepción R5.5: "uso sin registrar" y demás avisos para el dueño.
+model hotel_incidencias {
+  id           String    @id @default(uuid()) @db.Uuid
+  tiendaId     String    @map("tienda_id") @db.Uuid
+  habitacionId String    @map("habitacion_id") @db.Uuid
+  tipo         String    @db.VarChar(20) // uso_sin_registrar
+  nota         String?   @db.VarChar(200)
+  fecha        DateTime  @default(now()) @db.Timestamptz
+  usuario      String?   @db.VarChar(100)
+  revisadaEn   DateTime? @map("revisada_en") @db.Timestamptz
+  revisadaPor  String?   @map("revisada_por") @db.VarChar(100)
+
+  habitacion hotel_habitaciones @relation(fields: [habitacionId], references: [id], onDelete: Cascade)
+
+  @@index([tiendaId, fecha], name: "idx_hotel_incidencias_tienda")
 }
 
 // Modalidades de estadía de un tipo: noche y bloques de N horas ("fracción 6 h").

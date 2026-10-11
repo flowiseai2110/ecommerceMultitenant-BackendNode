@@ -80,9 +80,9 @@ const montoCorto = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
  * Líneas de precio. Las noches se agrupan por precio (y temporada) para que
  * el detalle sea corto: "3 noches × S/ 160 × 1 hab.", sin listar cada día.
  */
-export function lineasPrecio({ modalidad, personas, fechas, porPersona, temporadas = [], habitaciones = 1, t = textosCotizar("es") }) {
-  const factor = porPersona ? personas : habitaciones;
-  const sufijo = porPersona ? t.personas(personas) : t.habitaciones(habitaciones);
+export function lineasPrecio({ modalidad, fechas, temporadas = [], habitaciones = 1, t = textosCotizar("es") }) {
+  const factor = habitaciones;
+  const sufijo = t.habitaciones(habitaciones);
 
   if (modalidad.tipo === "horas") {
     const precio = Number(modalidad.precio);
@@ -116,11 +116,10 @@ export function lineasPrecio({ modalidad, personas, fechas, porPersona, temporad
 
 /**
  * Cargo por niño (B4): los mayores a `ninosGratisHasta` pagan `cargoNinoNoche`
- * por noche (un bloque por horas cuenta como una). No aplica a camas por persona:
- * ahí cada niño ya paga su cama.
+ * por noche (un bloque por horas cuenta como una).
  */
-export function lineaNinos({ edadesNinos, noches, esHoras, porPersona, config, t = textosCotizar("es") }) {
-  if (porPersona || config.ninosGratisHasta == null || !config.cargoNinoNoche) return null;
+export function lineaNinos({ edadesNinos, noches, esHoras, config, t = textosCotizar("es") }) {
+  if (config.ninosGratisHasta == null || !config.cargoNinoNoche) return null;
   const pagan = edadesNinos.filter(e => e > config.ninosGratisHasta).length;
   if (!pagan) return null;
   const veces = esHoras ? 1 : noches;
@@ -209,8 +208,9 @@ export function validarSolicitud({
     errores.push(error("NOCHES_INVALIDAS", e.nochesInvalidas(MAX_NOCHES), "noches"));
   }
 
-  // Con varias habitaciones (C2) la capacidad se multiplica; una cama de dormitorio va de a una.
-  const h = tipo.porPersona ? 1 : habitaciones;
+  // Con varias habitaciones (C2) la capacidad se multiplica. Una cama de
+  // dormitorio es un tipo con capacidad 1: 3 personas piden 3 camas.
+  const h = habitaciones;
   const enHabitaciones = e.enHabitaciones(h);
   if (!Number.isInteger(habitaciones) || habitaciones < 1 || habitaciones > MAX_HABITACIONES) {
     errores.push(error("HABITACIONES_INVALIDAS", e.habitacionesInvalidas(MAX_HABITACIONES), "habitaciones"));
@@ -226,13 +226,12 @@ export function validarSolicitud({
     errores.push(error("CAPACIDAD", e.capTotal(tipo.capacidadMax * h, enHabitaciones), "adultos"));
   }
 
-  // Inventario (C1): las camas o habitaciones libres de la noche más llena.
+  // Inventario (C1): las habitaciones (o camas) libres de la noche más llena.
   if (cupo && cupo.libres !== null) {
-    const pide = tipo.porPersona ? adultos + ninos : habitaciones;
     if (cupo.libres <= 0) {
-      errores.push(error("SIN_CUPO", tipo.porPersona ? e.sinCamas : e.sinHabitaciones, "fecha"));
-    } else if (pide > cupo.libres) {
-      errores.push(error("SIN_CUPO", tipo.porPersona ? e.quedanCamas(cupo.libres) : e.quedanHabitaciones(cupo.libres), tipo.porPersona ? "adultos" : "habitaciones"));
+      errores.push(error("SIN_CUPO", e.sinHabitaciones, "fecha"));
+    } else if (habitaciones > cupo.libres) {
+      errores.push(error("SIN_CUPO", e.quedanHabitaciones(cupo.libres), "habitaciones"));
     }
   }
 
@@ -259,7 +258,7 @@ export function validarSolicitud({
   }
 
   // Con cargo por niño hay que saber la edad de cada uno (B4).
-  if (ninos > 0 && !tipo.porPersona && config.ninosGratisHasta != null && config.cargoNinoNoche && edadesNinos.length !== ninos) {
+  if (ninos > 0 && config.ninosGratisHasta != null && config.cargoNinoNoche && edadesNinos.length !== ninos) {
     errores.push(error("EDADES_NINOS", e.edades, "edadesNinos"));
   }
 
@@ -274,7 +273,7 @@ export function validarSolicitud({
 /**
  * Cotización completa.
  * @param {object} p
- * @param {object} p.tipo - hotel_tipos_habitacion (capacidades, porPersona)
+ * @param {object} p.tipo - hotel_tipos_habitacion (capacidades)
  * @param {object} p.modalidad - hotel_modalidades
  * @param {string} p.fecha - "YYYY-MM-DD" de llegada / ingreso
  * @param {string} [p.hora] - "HH:mm": ingreso (horas) o llegada estimada (noche)
@@ -291,8 +290,6 @@ export function cotizarHotel({
   habitaciones = 1, cupo = null, plan = null, idioma = "es"
 }) {
   const t = textosCotizar(idioma);
-  // Una cama de dormitorio se reserva de a una persona: no hay "2 habitaciones".
-  const nHab = tipo.porPersona ? 1 : habitaciones;
   const { inicio, fin, fechas } = ventanaEstadia({
     modalidad, fecha, hora, noches, horaCheckin: config.horaCheckin, horaCheckout: config.horaCheckout
   });
@@ -305,8 +302,8 @@ export function cotizarHotel({
 
   const personas = adultos + ninos;
   const esHoras = modalidad.tipo === "horas";
-  const alojamiento = lineasPrecio({ modalidad, personas, fechas, porPersona: tipo.porPersona, temporadas: temporadasNoche, habitaciones: nHab, t });
-  const ninosLinea = lineaNinos({ edadesNinos, noches, esHoras, porPersona: tipo.porPersona, config, t });
+  const alojamiento = lineasPrecio({ modalidad, fechas, temporadas: temporadasNoche, habitaciones, t });
+  const ninosLinea = lineaNinos({ edadesNinos, noches, esHoras, config, t });
   if (ninosLinea) alojamiento.push(ninosLinea);
   // Plan de tarifa (C5): "No reembolsable −10 %" sobre el alojamiento.
   if (plan?.ajustePct) {
@@ -346,7 +343,7 @@ export function cotizarHotel({
     aviso,
     errores,
     extras: extras.snapshot,
-    habitaciones: nHab,
+    habitaciones,
     plan: plan ? { id: plan.id, nombre: plan.nombre, ajustePct: plan.ajustePct, reembolsable: plan.reembolsable } : null,
     // Camas o habitaciones libres en la noche más llena (C1); null = sin inventario.
     quedan: modalidad.tipo === "noche" && cupo ? cupo.libres : null,

@@ -108,7 +108,7 @@ export async function apartarEntradas(tx, { tiendaId, pedidoId, items, confirmar
 // ============================================
 
 const SELECT_EVENTO_STORE = (ahora) => ({
-  id: true, nombre: true, slug: true, descripcion: true, descripcionCorta: true,
+  id: true, nombre: true, slug: true, descripcion: true, descripcionCorta: true, categoriaId: true,
   ratingPromedio: true, ratingCantidad: true, destacado: true,
   imagenes: { select: { url: true, textoAlternativo: true, esPrincipal: true, orden: true }, orderBy: { orden: "asc" } },
   evento: {
@@ -165,6 +165,8 @@ function serializarEventoStore(p, { apartadas, config, ahora, detalle = false })
     id: p.id,
     nombre: p.nombre,
     slug: p.slug,
+    // Categoría de la tienda: la cartelera filtra por ella en /categorias/:slug (layout-por-rubro 3.4).
+    categoriaId: p.categoriaId ?? null,
     descripcionCorta: p.descripcionCorta,
     ...(detalle ? { descripcion: p.descripcion, direccion: e.direccion, mapaUrl: e.mapaUrl, organizador: e.organizador } : {}),
     imagenes: imagenes.map(i => ({ url: i.url, alt: i.textoAlternativo ?? p.nombre })),

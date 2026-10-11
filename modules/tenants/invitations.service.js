@@ -24,6 +24,7 @@ const getExpirationDate = (days = 7) => {
   return date;
 };
 
+// "recepcionista" (docs/specs/recepcion R6) queda fuera: está por debajo de todos y cualquier admin lo puede invitar.
 const JERARQUIA = ["viewer", "editor", "admin", "owner"];
 
 /**

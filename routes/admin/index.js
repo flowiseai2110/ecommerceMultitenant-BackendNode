@@ -22,6 +22,7 @@ import consumoIaRoutes from "../../modules/consumo-ia/consumo-ia.admin.routes.js
 import disenoRoutes from "../../modules/diseno/diseno.admin.routes.js";
 import libroRoutes from "../../modules/libro-reclamaciones/libro.admin.routes.js";
 import reservasRoutes from "../../modules/reservas/reservas.admin.routes.js";
+import recepcionRoutes from "../../modules/reservas/hotel/recepcion.routes.js";
 import transmisionesRoutes from "../../modules/transmisiones/transmisiones.admin.routes.js";
 import comunicadosRoutes from "../../modules/comunicados/comunicados.admin.routes.js";
 import traduccionesRoutes from "../../modules/traducciones/traducciones.admin.routes.js";
@@ -57,6 +58,7 @@ router.use("/consumo-ia", consumoIaRoutes);
 router.use("/diseno", disenoRoutes);
 router.use("/libro-reclamaciones", libroRoutes);
 router.use("/reservas", traducirTrasGuardar, reservasRoutes);
+router.use("/recepcion", recepcionRoutes);
 router.use("/traducciones", traduccionesRoutes);
 router.use("/transmisiones", transmisionesRoutes);
 router.use("/comunicados", comunicadosRoutes);

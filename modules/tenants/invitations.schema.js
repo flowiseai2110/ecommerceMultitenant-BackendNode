@@ -9,7 +9,7 @@ import { z } from "zod";
 export const createInvitacionSchema = z.object({
   tiendaId: z.string().uuid("tiendaId debe ser un UUID válido"),
   email: z.string().email("Email inválido"),
-  rol: z.enum(["owner", "admin", "editor", "viewer"]).default("viewer"),
+  rol: z.enum(["owner", "admin", "editor", "viewer", "recepcionista"]).default("viewer"),
   mensaje: z.string().max(500).optional()
 });
 

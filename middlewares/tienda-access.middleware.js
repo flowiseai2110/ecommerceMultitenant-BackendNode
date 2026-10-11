@@ -30,9 +30,13 @@ function _setCache(userId, tiendaId, data) {
  *
  * Agrega req.tiendaId y req.tiendaMembership al request para uso posterior.
  *
+ * Los roles fuera de la jerarquía (p. ej. "recepcionista", docs/specs/recepcion
+ * R6) no pasan ningún mínimo: entran solo donde la ruta los nombra en `tambien`.
+ *
  * @param {string} minRol - Rol mínimo: "viewer" | "editor" | "admin" | "owner"
+ * @param {{ tambien?: string[] }} [opciones] - roles que entran aunque no lleguen al mínimo
  */
-export function requireTiendaAccess(minRol = "viewer") {
+export function requireTiendaAccess(minRol = "viewer", { tambien = [] } = {}) {
   return async (req, res, next) => {
     try {
       if (!req.user) {
@@ -66,7 +70,7 @@ export function requireTiendaAccess(minRol = "viewer") {
       const nivelUsuario = ROL_JERARQUIA.indexOf(codigoRol);
       const nivelMinimo = ROL_JERARQUIA.indexOf(minRol);
 
-      if (nivelUsuario < nivelMinimo) {
+      if (nivelUsuario < nivelMinimo && !tambien.includes(codigoRol)) {
         return next(
           new ForbiddenError(
             `Se requiere rol "${minRol}" o superior. Tu rol actual es "${codigoRol}"`
@@ -76,6 +80,7 @@ export function requireTiendaAccess(minRol = "viewer") {
 
       req.tiendaId = tiendaId;
       req.tiendaMembership = membership;
+      req.tiendaRol = codigoRol;
       setContextTiendaId(tiendaId); // auto-scope de Prisma (defensa en profundidad)
 
       next();

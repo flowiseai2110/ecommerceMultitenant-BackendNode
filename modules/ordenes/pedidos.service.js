@@ -675,7 +675,8 @@ class PedidosService {
    */
   async listByAuthUser(tiendaId, authUserId) {
     const pedidos = await prisma.pedidos.findMany({
-      where: { tiendaId, authUserId },
+      // Solo compras: las reservas tienen su lista con link de seguimiento (/cuenta/reservas).
+      where: { tiendaId, authUserId, reserva: { is: null } },
       orderBy: { fechaRegistro: "desc" },
       take: 50,
       select: {

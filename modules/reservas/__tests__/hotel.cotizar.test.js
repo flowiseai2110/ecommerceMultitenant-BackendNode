@@ -3,7 +3,7 @@ import { estadoEfectivo, transicionar } from "../estados.js";
 import { fechaLima, horaLima, instanteLima } from "../tiempo.js";
 
 // Caso real (Hotel Verona, Los Olivos): Matrimonial, noche S/ 160 y fracción 6 h S/ 100.
-const tipo = { capacidadAdultos: 2, capacidadNinos: 0, capacidadMax: 2, porPersona: false };
+const tipo = { capacidadAdultos: 2, capacidadNinos: 0, capacidadMax: 2 };
 const noche = { tipo: "noche", horas: null, precio: 160, precioVieSab: 180, activo: true };
 const seisHoras = { tipo: "horas", horas: 6, precio: 100, precioVieSab: null, activo: true };
 const config = {
@@ -58,11 +58,13 @@ describe("cotizarHotel — noches", () => {
     expect(horaLima(c.fin)).toBe("12:00");
   });
 
-  it("precio por persona (cama en dormitorio) se multiplica", () => {
-    const dorm = { ...tipo, capacidadAdultos: 6, capacidadMax: 6, porPersona: true };
-    const c = cotizarHotel({ tipo: dorm, modalidad: { ...noche, precioVieSab: null, precio: 35 }, fecha: "2026-09-28", noches: 2, adultos: 3, config, ahora });
+  it("una cama de dormitorio es un tipo de capacidad 1: 3 personas piden 3 camas", () => {
+    const cama = { ...tipo, capacidadAdultos: 1, capacidadMax: 1 };
+    const c = cotizarHotel({ tipo: cama, modalidad: { ...noche, precioVieSab: null, precio: 35 }, fecha: "2026-09-28", noches: 2, adultos: 3, habitaciones: 3, config, ahora });
+    expect(c.errores).toEqual([]);
     expect(c.total).toBe(210);
-    expect(c.lineas[0].descripcion).toContain("3 personas");
+    const solo2 = cotizarHotel({ tipo: cama, modalidad: noche, fecha: "2026-09-28", noches: 2, adultos: 3, habitaciones: 2, config, ahora });
+    expect(solo2.errores.map(e => e.codigo)).toContain("CAPACIDAD");
   });
 });
 
@@ -190,7 +192,7 @@ describe("cotizarHotel — temporadas (B2)", () => {
 });
 
 describe("cotizarHotel — niños (B4)", () => {
-  const familiar = { capacidadAdultos: 2, capacidadNinos: 2, capacidadMax: 4, porPersona: false };
+  const familiar = { capacidadAdultos: 2, capacidadNinos: 2, capacidadMax: 4 };
   const conCargo = { ...config, ninosGratisHasta: 5, cargoNinoNoche: 40 };
 
   it("cobra por noche solo a los niños mayores a la edad gratuita", () => {
@@ -275,10 +277,10 @@ describe("cotizarHotel — varias habitaciones, cupo y plan (C1, C2, C5)", () =>
     expect(c.quedan).toBe(1);
   });
 
-  it("en un dormitorio el cupo son camas", () => {
-    const dorm = { capacidadAdultos: 8, capacidadNinos: 0, capacidadMax: 8, porPersona: true };
-    const c = cotizarHotel({ tipo: dorm, modalidad: noche, fecha: "2026-09-21", noches: 1, adultos: 3, config, ahora: lunes, cupo: { unidades: 8, libres: 2 } });
-    expect(c.errores[0]).toEqual(expect.objectContaining({ codigo: "SIN_CUPO", mensaje: "Solo quedan 2 camas para esas fechas" }));
+  it("en un tipo de cama de dormitorio el cupo son las camas que se piden", () => {
+    const cama = { capacidadAdultos: 1, capacidadNinos: 0, capacidadMax: 1 };
+    const c = cotizarHotel({ tipo: cama, modalidad: noche, fecha: "2026-09-21", noches: 1, adultos: 3, habitaciones: 3, config, ahora: lunes, cupo: { unidades: 8, libres: 2 } });
+    expect(c.errores[0]).toEqual(expect.objectContaining({ codigo: "SIN_CUPO", campo: "habitaciones" }));
   });
 
   it("el plan no reembolsable descuenta sobre el alojamiento y queda en la copia", () => {

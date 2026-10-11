@@ -23,9 +23,6 @@ export const verticalHotel = {
     const c = await cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora });
     // Al crear (trae titular): lo que solo se pide en la solicitud (hospedaje-completo B3, B6).
     if (datos.titular) {
-      if (tipo.soloMujeres && !datos.confirmaSoloMujeres) {
-        c.errores.push({ codigo: "SOLO_MUJERES", mensaje: "Esta habitación es solo para mujeres: confírmalo para enviar la solicitud", campo: "confirmaSoloMujeres" });
-      }
       for (const x of c.extras) {
         if (x.datoPedido && !x.dato) c.errores.push({ codigo: "DATO_EXTRA", mensaje: `${x.nombre}: ${x.datoPedido}`, campo: "extras" });
       }
@@ -38,7 +35,7 @@ export const verticalHotel = {
         ...(c.extras.length ? { extras: c.extras } : {}), ...(c.plan ? { plan: c.plan } : {})
       },
       // Para revalidar el cupo dentro de la transacción (C1).
-      inventario: tipo.unidades != null && c.noches ? { productoId: producto.id, porPersona: tipo.porPersona, unidades: tipo.unidades, fecha: datos.fecha, noches: c.noches } : null,
+      inventario: tipo.unidades != null && c.noches ? { productoId: producto.id, unidades: tipo.unidades, fecha: datos.fecha, noches: c.noches } : null,
       log: `${modalidad.tipo}, ingreso ${c.inicio.toISOString()}`
     };
   },
@@ -51,8 +48,7 @@ export const verticalHotel = {
     if (!inventario || !["aceptada", "confirmada"].includes(estadoInicial)) return;
     await bloquearTipo(tx, inventario.productoId);
     const cupo = await cupoEstadia(tx, tiendaId, inventario, inventario.fecha, inventario.noches, { ahora });
-    const pide = inventario.porPersona ? c.personasHotel : c.habitaciones;
-    if (cupo && pide > cupo.libres) {
+    if (cupo && c.habitaciones > cupo.libres) {
       const message = "Se acaba de ocupar el último cupo para esas fechas. Elige otras fechas.";
       throw new ConflictError(message, { message, motivo: "SIN_CUPO" });
     }
@@ -67,7 +63,7 @@ async function cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora })
     modalidad.tipo === "noche" ? temporadasParaEstadia(datos.tiendaId, datos.productoId, desde, hasta, datos.lang) : [],
     datos.extras?.length ? extrasDeTienda(datos.tiendaId, datos.lang) : [],
     modalidad.tipo === "noche" && datos.noches
-      ? cupoEstadia(prisma, datos.tiendaId, { productoId: datos.productoId, porPersona: tipo.porPersona, unidades: tipo.unidades }, datos.fecha, datos.noches, { ahora })
+      ? cupoEstadia(prisma, datos.tiendaId, { productoId: datos.productoId, unidades: tipo.unidades }, datos.fecha, datos.noches, { ahora })
       : null,
     datos.planId ? planDeTienda(datos.tiendaId, datos.planId, datos.lang) : null
   ]);
@@ -81,7 +77,6 @@ async function cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora })
     idioma: datos.lang
   });
   if (datos.planId && !plan) cotizacion.errores.push({ codigo: "PLAN_INVALIDO", mensaje: "Esa tarifa ya no está disponible", campo: "planId" });
-  cotizacion.personasHotel = (datos.adultos ?? 0) + (datos.ninos ?? 0);
   if (modalidad.tipo === "horas" && !datos.hora) {
     cotizacion.errores.unshift({ codigo: "HORA_REQUERIDA", mensaje: "Indica la hora de ingreso", campo: "hora" });
   }

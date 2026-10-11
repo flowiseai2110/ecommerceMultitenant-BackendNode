@@ -21,7 +21,7 @@ describe("disponibilidad", () => {
 
   it("las noches de una estadía y las unidades que consume", () => {
     expect(nochesDe("2026-12-30", 3)).toEqual(["2026-12-30", "2026-12-31", "2027-01-01"]);
-    expect(unidadesDe({ adultos: 2, ninos: 1, habitaciones: 1 }, true)).toBe(3);
-    expect(unidadesDe({ adultos: 4, ninos: 0, habitaciones: 2 }, false)).toBe(2);
+    expect(unidadesDe({ adultos: 4, ninos: 0, habitaciones: 2 })).toBe(2);
+    expect(unidadesDe({ adultos: 1, ninos: 0 })).toBe(1);
   });
 });

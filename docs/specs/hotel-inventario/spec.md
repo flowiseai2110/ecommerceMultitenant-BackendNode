@@ -34,7 +34,7 @@ Además, el formulario de reserva de la ficha (fase 0) se ve como un formulario 
 | `unidades` | **Obligatorio** (≥ 1). Se migran los null | Mantener "sin control" | Tomada |
 | Solicitud sin responder | **Aparta el cupo durante el plazo de respuesta** (`respuesta_horas`, como locales; sugerido 3 h para hotel). Al vencer, la solicitud sigue viva pero deja de apartar y el negocio la acepta solo si hay cupo | No aparta (hoy) | **Por confirmar** |
 | Precio al reprogramar | **Tarifa vigente** de las fechas nuevas; la recepcionista puede ajustar el total con motivo | Respetar la tarifa original | **Por confirmar** |
-| Habitaciones físicas | **Fase 5** (después de anulación y reprogramación, que funcionan igual sobre el pool) | En este ciclo, antes que todo | **Por confirmar** |
+| Habitaciones físicas | **Fase 5** (después de anulación y reprogramación, que funcionan igual sobre el pool). Las tiendas con Recepción las tienen antes: ver [recepcion](../recepcion/spec.md) R1 | En este ciclo, antes que todo | **Por confirmar** |
 
 ## Modelo de inventario (enfoque Booking.com)
 

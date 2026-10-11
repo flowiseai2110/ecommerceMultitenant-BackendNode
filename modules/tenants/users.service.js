@@ -22,7 +22,8 @@ const PERMISOS_POR_ROL = {
     invitarUsuarios: true,
     cambiarRoles: true,
     eliminarUsuarios: true,
-    eliminarTienda: true
+    eliminarTienda: true,
+    recepcion: true
   },
   admin: {
     verDatos: true,
@@ -36,7 +37,8 @@ const PERMISOS_POR_ROL = {
     invitarUsuarios: true,
     cambiarRoles: false,
     eliminarUsuarios: false,
-    eliminarTienda: false
+    eliminarTienda: false,
+    recepcion: true
   },
   editor: {
     verDatos: true,
@@ -50,7 +52,8 @@ const PERMISOS_POR_ROL = {
     invitarUsuarios: false,
     cambiarRoles: false,
     eliminarUsuarios: false,
-    eliminarTienda: false
+    eliminarTienda: false,
+    recepcion: true
   },
   viewer: {
     verDatos: true,
@@ -64,7 +67,24 @@ const PERMISOS_POR_ROL = {
     invitarUsuarios: false,
     cambiarRoles: false,
     eliminarUsuarios: false,
-    eliminarTienda: false
+    eliminarTienda: false,
+    recepcion: true
+  },
+  // Recepción (docs/specs/recepcion R6): solo el mostrador y su caja.
+  recepcionista: {
+    verDatos: false,
+    crearProductos: false,
+    editarProductos: false,
+    eliminarProductos: false,
+    gestionarPedidos: false,
+    configurarTienda: false,
+    configurarPagos: false,
+    configurarEnvios: false,
+    invitarUsuarios: false,
+    cambiarRoles: false,
+    eliminarUsuarios: false,
+    eliminarTienda: false,
+    recepcion: true
   }
 };
 

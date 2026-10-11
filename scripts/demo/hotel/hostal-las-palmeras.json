@@ -1,0 +1,64 @@
+{
+  "habitaciones": [
+    {
+      "nombre": "Simple con baño compartido",
+      "categoria": "Simples",
+      "sku": "SIM",
+      "pexels": [2029722, 28054887],
+      "corta": "Cama de 1½ plaza, ventilador y baño compartido con agua caliente.",
+      "descripcion": "Habitación sencilla y limpia con cama de 1½ plaza y ventilador. Baño compartido en el mismo piso, con agua caliente. Sábanas y toalla incluidas.",
+      "unidades": 4, "capacidadAdultos": 2, "capacidadMax": 2,
+      "camas": "1 cama de 1½ plaza",
+      "amenities": ["Ventilador", "Baño compartido", "Agua caliente", "Toallas incluidas"],
+      "modalidades": [
+        { "tipo": "horas", "horas": 3, "precio": 15, "orden": 0 },
+        { "tipo": "noche", "precio": 30, "orden": 1 }
+      ]
+    },
+    {
+      "nombre": "Matrimonial",
+      "categoria": "Matrimoniales",
+      "sku": "MAT",
+      "pexels": [14580368, 271643],
+      "corta": "Cama de 2 plazas, baño propio con agua caliente y TV.",
+      "descripcion": "Cama de 2 plazas, baño propio con agua caliente, TV y Wi-Fi. Sábanas y toallas incluidas.",
+      "unidades": 6, "capacidadAdultos": 2, "capacidadMax": 2,
+      "camas": "1 cama de 2 plazas",
+      "amenities": ["Baño privado", "Agua caliente", "TV", "Wi-Fi", "Toallas incluidas"],
+      "modalidades": [
+        { "tipo": "horas", "horas": 3, "precio": 30, "orden": 0 },
+        { "tipo": "noche", "precio": 45, "precioVieSab": 55, "orden": 1 }
+      ]
+    },
+    {
+      "nombre": "Matrimonial con cable",
+      "categoria": "Matrimoniales",
+      "sku": "MAT-CAB",
+      "pexels": [271643, 14580368],
+      "corta": "Cama de 2 plazas, TV cable, frigobar y baño propio.",
+      "descripcion": "Habitación más amplia con cama de 2 plazas, TV con cable, frigobar, Wi-Fi y baño propio con agua caliente.",
+      "unidades": 4, "capacidadAdultos": 2, "capacidadMax": 2,
+      "camas": "1 cama de 2 plazas",
+      "amenities": ["Baño privado", "Agua caliente", "TV", "Frigobar", "Wi-Fi"],
+      "modalidades": [
+        { "tipo": "horas", "horas": 3, "precio": 40, "orden": 0 },
+        { "tipo": "noche", "precio": 60, "precioVieSab": 70, "orden": 1 }
+      ]
+    },
+    {
+      "nombre": "Suite con jacuzzi",
+      "categoria": "Suites",
+      "sku": "JAC",
+      "pexels": [14465274, 271643],
+      "corta": "Cama de 2 plazas, jacuzzi, TV cable y frigobar.",
+      "descripcion": "La mejor del hostal: cama de 2 plazas, jacuzzi, TV con cable, frigobar y Wi-Fi.",
+      "unidades": 2, "capacidadAdultos": 2, "capacidadMax": 2,
+      "camas": "1 cama de 2 plazas",
+      "amenities": ["Jacuzzi", "Baño privado", "TV", "Frigobar", "Wi-Fi"],
+      "modalidades": [
+        { "tipo": "horas", "horas": 3, "precio": 50, "orden": 0 },
+        { "tipo": "noche", "precio": 80, "precioVieSab": 90, "orden": 1 }
+      ]
+    }
+  ]
+}

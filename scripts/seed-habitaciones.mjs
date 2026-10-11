@@ -25,7 +25,7 @@
 // Formato del JSON (ver demobooking.json):
 //   habitaciones[] { nombre, categoria? (tipo de habitación; por defecto el nombre), sku?, pexels?[] (IDs de fotos de Pexels, en orden; la primera es la portada),
 //                    foto? (búsqueda en Pexels si no hay IDs; requiere PEXELS_API_KEY), corta?, descripcion?,
-//                    capacidadAdultos, capacidadNinos?, capacidadMax, porPersona?, camas?, amenities?[],
+//                    capacidadAdultos, capacidadNinos?, capacidadMax, camas?, amenities?[],
 //                    modalidades[] { tipo: "noche" | "horas", horas?, precio, precioVieSab?, orden? } }
 //
 // La ficha se valida con el mismo schema del admin (habitacionSchema): un dato

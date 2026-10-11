@@ -122,8 +122,6 @@ export const crearSolicitudSchema = z.object({
   aceptaDatos: z.literal(true, {
     errorMap: () => ({ message: "Debes aceptar el tratamiento de tus datos para enviar la solicitud" })
   }),
-  // Habitación solo para mujeres (B6): el titular lo declara; no se guarda el sexo de nadie.
-  confirmaSoloMujeres: z.boolean().optional().default(false),
   // Un doble clic o un reintento con mala señal devuelve la misma reserva.
   idempotencyKey: uuid("idempotencyKey"),
   // Honeypot: una persona nunca llena este campo. Se valida en la ruta.
@@ -347,6 +345,10 @@ export const configSchema = z.object({
     cantidad: z.coerce.number().int().min(1).max(1000000),
     url: z.string().trim().url("Enlace inválido").startsWith("https://", "El enlace debe empezar con https://").max(500)
   })).max(3, "Hasta 3 sitios").optional(),
+  // Recepción (docs/specs/recepcion R3.2): documento del huésped en el mostrador.
+  recepcionDocumento: z.enum(["siempre", "noche", "nunca"]).optional(),
+  // R8: la vitrina muestra "Disponibilidad ahora" con WhatsApp en lugar del formulario de reserva.
+  vitrinaAlPaso: z.boolean().optional(),
   // Locales (docs/specs/alquiler-locales R1.2)
   separacionTipo: z.enum(["porcentaje", "monto_fijo"]).optional(),
   separacionMonto: monto.refine(v => v > 0, "El monto de separación debe ser mayor a 0").nullable().optional(),
@@ -414,10 +416,8 @@ export const habitacionSchema = z.object({
   capacidadAdultos: z.coerce.number().int().min(1).max(50),
   capacidadNinos: z.coerce.number().int().min(0).max(50).optional().default(0),
   capacidadMax: z.coerce.number().int().min(1).max(50),
-  porPersona: z.boolean().optional().default(false),
-  soloMujeres: z.boolean().optional().default(false),
-  // Inventario (C1): total de habitaciones físicas de este tipo (o camas en un
-  // dormitorio). Obligatorio (hotel-inventario R1.1): sin él la tienda no sabe qué fechas están llenas.
+  // Inventario (C1): total de habitaciones físicas de este tipo (o camas, si
+  // el tipo es una cama de dormitorio). Obligatorio (hotel-inventario R1.1): sin él la tienda no sabe qué fechas están llenas.
   unidades: z.coerce.number({ invalid_type_error: "Indica el total de habitaciones" })
     .int().min(1, "Indica el total de habitaciones (al menos 1)").max(500),
   camas: textoOpcional(100),

@@ -1,15 +1,16 @@
 import { prisma } from "../../../config/prisma.js";
 import { fechaLima, instanteLima, rangoFechas, sumarDias } from "../tiempo.js";
+import { ocupaNoche } from "./recepcion.js";
 
 /**
  * Inventario del hotel (docs/specs/hospedaje-completo C1): cuántas
- * habitaciones (o camas, si el tipo es por persona) quedan libres cada noche.
+ * habitaciones (o camas, en un tipo de dormitorio) quedan libres cada noche.
  *
  * Ocupan cupo las reservas confirmadas, con pago en revisión y aceptadas; una
  * aceptada con confirmación inmediata solo mientras dura su apartado (si no
  * paga a tiempo, se anula y el cupo vuelve). Una solicitud sin responder no
  * ocupa: el negocio decide al aceptarla. Las estadías por horas no usan el
- * inventario de noches.
+ * inventario de noches; las de noche registradas en Recepción, sí.
  */
 
 const ESTADOS_QUE_OCUPAN = ["aceptada", "pago_en_revision", "confirmada"];
@@ -17,8 +18,8 @@ const ESTADOS_QUE_OCUPAN = ["aceptada", "pago_en_revision", "confirmada"];
 /** Noches ("YYYY-MM-DD") de una estadía que empieza el día `fecha`. */
 export const nochesDe = (fecha, noches) => rangoFechas(fecha, sumarDias(fecha, noches - 1));
 
-/** Unidades que consume una reserva: personas en dormitorio, habitaciones en el resto. */
-export const unidadesDe = (r, porPersona) => (porPersona ? (r.adultos ?? 0) + (r.ninos ?? 0) : (r.habitaciones ?? 1));
+/** Unidades que consume una reserva: sus habitaciones (o camas, en un tipo de dormitorio). */
+export const unidadesDe = (r) => r.habitaciones ?? 1;
 
 /**
  * ¿Ocupa cupo? Pura, para testearla.
@@ -35,24 +36,23 @@ export function ocupaCupo(r, ahora) {
  * @returns {Promise<Map<string, Map<string, number>>>} productoId → (fecha → unidades ocupadas)
  */
 export async function ocupacion(db, tiendaId, tipos, desde, hasta, { ahora = new Date(), excluirPedidoId = null } = {}) {
-  const porPersona = new Map(tipos.map(t => [t.productoId, t.porPersona]));
   const filas = await db.reservas.findMany({
     where: {
-      tiendaId, tipo: "hotel", productoId: { in: [...porPersona.keys()] }, noches: { not: null },
+      tiendaId, tipo: "hotel", productoId: { in: tipos.map(t => t.productoId) }, noches: { not: null },
       inicio: { lt: instanteLima(sumarDias(hasta, 1), "00:00") },
       fin: { gt: instanteLima(desde, "00:00") },
       ...(excluirPedidoId ? { pedidoId: { not: excluirPedidoId } } : {}),
       pedido: { estado: { in: ESTADOS_QUE_OCUPAN } }
     },
     select: {
-      productoId: true, inicio: true, noches: true, adultos: true, ninos: true, habitaciones: true, apartadoHasta: true,
+      productoId: true, inicio: true, noches: true, habitaciones: true, apartadoHasta: true,
       pedido: { select: { estado: true } }
     }
   });
   const mapa = new Map();
   for (const r of filas) {
     if (!ocupaCupo({ estado: r.pedido.estado, apartadoHasta: r.apartadoHasta }, ahora)) continue;
-    const unidades = unidadesDe(r, porPersona.get(r.productoId));
+    const unidades = unidadesDe(r);
     const porFecha = mapa.get(r.productoId) ?? new Map();
     for (const f of nochesDe(fechaLima(r.inicio), r.noches)) {
       if (f < desde || f > hasta) continue;
@@ -60,13 +60,30 @@ export async function ocupacion(db, tiendaId, tipos, desde, hasta, { ahora = new
     }
     mapa.set(r.productoId, porFecha);
   }
+  // Recepción (docs/specs/recepcion R3.4): quien entró por noche en el mostrador también ocupa.
+  const estadias = await db.hotel_estadias.findMany({
+    where: {
+      // Sin las llegadas de reservas web (R3.5): esas noches ya las cuenta la reserva.
+      tiendaId, productoId: { in: tipos.map(t => t.productoId) }, estado: "en_curso", modalidad: "noche", pedidoId: null,
+      inicio: { lt: instanteLima(sumarDias(hasta, 1), "00:00") },
+      fin: { gt: instanteLima(sumarDias(desde, 1), "00:00") }
+    },
+    select: { productoId: true, modalidad: true, inicio: true, fin: true }
+  });
+  for (const e of estadias) {
+    const porFecha = mapa.get(e.productoId) ?? new Map();
+    for (const f of rangoFechas(desde, hasta)) {
+      if (ocupaNoche(e, f)) porFecha.set(f, (porFecha.get(f) ?? 0) + 1);
+    }
+    mapa.set(e.productoId, porFecha);
+  }
   return mapa;
 }
 
 /**
  * Libres en la noche más llena de una estadía, o null si el tipo no lleva
  * inventario. Es lo que la cotización compara con lo que se pide.
- * @param {{ productoId: string, porPersona: boolean, unidades: number|null }} tipo
+ * @param {{ productoId: string, unidades: number|null }} tipo
  */
 export async function cupoEstadia(db, tiendaId, tipo, fecha, noches, opciones = {}) {
   if (tipo.unidades == null || !noches) return null;
@@ -79,12 +96,12 @@ export async function cupoEstadia(db, tiendaId, tipo, fecha, noches, opciones = 
 /**
  * Disponibilidad de todos los tipos con inventario entre dos fechas: para la
  * grilla de la vitrina (ocultar los llenos) y la vista del admin.
- * @returns {Promise<Array<{ productoId, nombre, unidades, porPersona, fechas: Record<string, { ocupadas, libres }> }>>}
+ * @returns {Promise<Array<{ productoId, nombre, unidades, fechas: Record<string, { ocupadas, libres }> }>>}
  */
 export async function disponibilidadTienda(tiendaId, desde, hasta, { ahora = new Date(), conNombre = false } = {}) {
   const tipos = await prisma.hotel_tipos_habitacion.findMany({
     where: { tiendaId, unidades: { not: null }, producto: { activo: true } },
-    select: { productoId: true, porPersona: true, unidades: true, ...(conNombre ? { producto: { select: { nombre: true } } } : {}) }
+    select: { productoId: true, unidades: true, ...(conNombre ? { producto: { select: { nombre: true } } } : {}) }
   });
   if (!tipos.length) return [];
   const mapa = await ocupacion(prisma, tiendaId, tipos, desde, hasta, { ahora });
@@ -95,7 +112,6 @@ export async function disponibilidadTienda(tiendaId, desde, hasta, { ahora = new
       productoId: t.productoId,
       ...(conNombre ? { nombre: t.producto.nombre } : {}),
       unidades: t.unidades,
-      porPersona: t.porPersona,
       fechas: Object.fromEntries(fechas.map(f => {
         const o = ocupadas.get(f) ?? 0;
         return [f, { ocupadas: o, libres: Math.max(t.unidades - o, 0) }];

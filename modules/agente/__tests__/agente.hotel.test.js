@@ -23,13 +23,13 @@ jest.unstable_mockModule("../tools/buscar-productos.js", () => ({
 const habitaciones = [
   {
     id: "h1", nombre: "Matrimonial", slug: "matrimonial", imagenes: [{ url: "https://img/mt.jpg", alt: "Matrimonial" }],
-    capacidadAdultos: 2, capacidadNinos: 0, capacidadMax: 2, porPersona: false, camas: "1 de dos plazas", amenities: ["TV"],
+    capacidadAdultos: 2, capacidadNinos: 0, capacidadMax: 2, camas: "1 de dos plazas", amenities: ["TV"],
     modalidades: [{ id: "m1", tipo: "horas", horas: 6, precio: 100, etiqueta: "6 horas" }, { id: "m2", tipo: "noche", precio: 160, etiqueta: "Noche" }],
     desde: { precio: 100, etiqueta: "6 horas" }
   },
   {
     id: "h2", nombre: "Suite Presidencial", slug: "suite", imagenes: [],
-    capacidadAdultos: 2, capacidadNinos: 2, capacidadMax: 4, porPersona: false, camas: "King", amenities: ["Jacuzzi"],
+    capacidadAdultos: 2, capacidadNinos: 2, capacidadMax: 4, camas: "King", amenities: ["Jacuzzi"],
     modalidades: [{ id: "m3", tipo: "noche", precio: 300, etiqueta: "Noche" }],
     desde: { precio: 300, etiqueta: "Por noche" }
   }
