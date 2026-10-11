@@ -325,10 +325,10 @@ Lo nuevo frente a mini-booking: `suspendida`, la transición `reprogramar` (no c
 
 ## Preguntas abiertas
 
-1. **Varios salones por tienda.** Propuesta: sí, cada salón es un producto con su propio calendario (R2.1). Confirmar.
-2. **Garantía por pasarela.** Propuesta: se cobra como una cuota más (pasarela o manual) y se devuelve como devolución registrada. Una "preautorización" sin cobro no se ofrece porque Yape y transferencia no la permiten. Confirmar.
-3. **Firma del contrato.** Propuesta: casilla de aceptación con nombre, DNI, fecha, hora e IP (R8.3); sin firma manuscrita ni certificada. Confirmar.
-4. **Feriados.** ¿Se precargan los feriados nacionales para la tarifa de feriado (R2.6) o los marca el dueño?
-5. **Turnos que pasan la medianoche y la hora tope.** ¿La hora tope (por defecto 03:00) es por tienda o por salón? Varía por distrito.
+1. ~~**Varios salones por tienda.**~~ **Confirmado: sí.** Cada salón es un producto con su propio calendario (R2.1). Caso real: un local de dos pisos, cada uno con su propia recepción, se modela como dos salones independientes que se pueden alquilar por separado o juntos. Un salón en sí no se subdivide (no hay "medio salón"): la bulla de un evento interrumpiría al vecino, así que la unidad mínima de alquiler es el salón completo.
+2. ~~**Garantía por pasarela.**~~ **Confirmado: se cobra como una cuota más y se devuelve como devolución registrada.** Es la práctica más común en el rubro cuando no hay tarjeta de por medio: muchos locales en EE.UU./Europa prefieren retener una autorización de tarjeta (pre-auth) y solo cobrar si hay daño, pero eso requiere una pasarela con soporte de holds — Yape y transferencia no lo permiten, y ninguna pasarela de tarjeta está integrada todavía (depende de T1.14 de mini-booking). Mientras tanto, cobrar la garantía como una cuota normal y devolverla por `reserva_devoluciones` si no hay novedad es el único camino viable, y es también lo que hacen los locales que solo aceptan cheque o depósito (la cobran completa y la devuelven en 3–7 días hábiles). Si en el futuro se integra una pasarela de tarjeta con pre-autorización, se puede ofrecer como alternativa opcional sin romper este flujo.
+3. ~~**Firma del contrato.**~~ **Confirmado: sí.** Casilla de aceptación con nombre, DNI, fecha, hora e IP (R8.3); sin firma manuscrita ni certificada.
+4. **Feriados.** Precargados: feriados nacionales fijos + Jueves y Viernes Santo. Confirmado.
+5. ~~**Turnos que pasan la medianoche y la hora tope.**~~ **Confirmado: por salón, no por tienda.** La hora tope (por defecto 03:00) varía por distrito/zona, y dos salones de la misma tienda pueden estar en zonas distintas, así que el límite se configura a nivel de salón.
 </content>
 </invoke>

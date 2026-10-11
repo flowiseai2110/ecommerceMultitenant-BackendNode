@@ -25,6 +25,8 @@ export const slugify = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLower
 export const tiendaSchema = z.object({
   descripcion: z.string().max(1000).optional(),
   banner: z.string().optional(),
+  // ID de una foto de Pexels para el banner (no requiere PEXELS_API_KEY); gana sobre `banner`.
+  bannerPexels: z.number().int().positive().optional(),
   home: z.array(z.any()).optional()
 }).optional();
 
@@ -259,8 +261,8 @@ export async function armarHome({ tienda, datosTienda, plantillaId, usuario }) {
   const actual = await prisma.tiendas.findUnique({ where: { id: tienda.id }, select: { descripcion: true, bannerUrl: true } });
   const cambios = {};
   if (!actual.descripcion && datosTienda.descripcion) cambios.descripcion = datosTienda.descripcion;
-  if (!actual.bannerUrl && datosTienda.banner) {
-    const [foto] = await fotosPexels(datosTienda.banner, 1);
+  if (!actual.bannerUrl && (datosTienda.bannerPexels || datosTienda.banner)) {
+    const [foto] = datosTienda.bannerPexels ? await fotosPexelsPorId([datosTienda.bannerPexels]) : await fotosPexels(datosTienda.banner, 1);
     if (foto) {
       // Igual que la subida de banner del admin: 1200×400 cover en {tienda}/banners.
       const { webp } = await processAndUploadImage(foto.buffer, "banner.jpg", { fit: "cover", folder: `${tienda.id}/banners`, width: 1200, height: 400 });

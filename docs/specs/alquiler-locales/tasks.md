@@ -19,17 +19,17 @@ Cierra CU-01, CU-03, CU-04, CU-06 (con pago manual), CT-01 a CT-06, CE-01 a CE-0
 - [x] **L1.9** Vertical `local` en `reservas.service.js`: crear solicitud desde cotización con `idempotencyKey` y ocupación (CE-09), aceptar (contrato + plan + apartado), rechazar con alternativas (CT-05), vencimientos que liberan la ocupación (CT-02, CT-03), `pago_directo` (CU-06).
 - [x] **L1.10** Cuotas: aceptar contrato, captura por cuota o número de operación (CE-14), verificar / rechazar (la 1.ª confirma, CT-04), editar plan antes del primer pago (`PLAN_BLOQUEADO`), `monto_pagado` sin garantía, indicador de mora (CT-06), índice único de pago por cuota (CE-11). *(`locales/cuotas.service.js`. Antes de confirmar solo se paga la separación. Editar el plan regenera el contrato y el cliente lo vuelve a aceptar.)*
 - [x] **L1.11** Bandeja: pestañas `cuotas_vencidas` y `garantias`, resumen con mora. Serializer de la vertical (plan, contrato, mora, garantía). *(`pago_por_verificar` incluye las cuotas siguientes en revisión. `garantias` muestra eventos pasados con garantía cobrada hasta que llegue la liquidación, L2.6.)*
-- [x] **L1.12** Correos de la vertical (aceptada con contrato y plan, cuota verificada, confirmación) y plantillas de WhatsApp. Reenvío desde el admin (CE-13). *(Plantillas: claves `local_*` aceptadas por el backend; los textos por defecto van en el admin, L1.23. `POST /admin/reservas/:id/reenviar-correo` sirve a todas las verticales.)*
+- [x] **L1.12** Correos de la vertical (aceptada con contrato y plan, cuota verificada, confirmación) y plantillas de WhatsApp. Reenvío desde el admin (CE-13). *(Los mensajes de WhatsApp del detalle de reserva ya tienen textos de locales; las claves `local_*` para personalizarlos en la página "Mensajes" del admin quedan pendientes. `POST /admin/reservas/:id/reenviar-correo` sirve a todas las verticales.)*
 - [x] **L1.13** Limitadores de lectura y escritura para `/store/locales` y `/store/reservas` (CE-16). *(El limitador global ya separa lecturas y escrituras; se sumó un tope propio para guardar cotizaciones, `RESERVAS_COTIZACIONES_MAX`.)*
 - [x] **L1.14** Seed de configuración para tiendas `locales` (separación 40 %, tramos, plantilla de contrato) y onboarding sin envíos. *(Por defectos de la vertical en `reservas.config.service.js`, sin fila: una tienda nueva funciona sin configurar nada. La plantilla base vive en `locales/contrato.js`.)*
 - [x] **L1.15** Tests de rutas (validación, roles, tokens) y de servicio (transiciones, ocupación, idempotencia, acciones del admin repetidas, CE-17).
 
 ### Admin
-- [ ] **L1.20** Menú `locales`; formulario de salón con pestañas Turnos y Paquetes.
-- [ ] **L1.21** Calendario por salón (mes y semana) con bloqueos y "crear cotización".
-- [ ] **L1.22** Cotizaciones del negocio (crear con ajuste, compartir por WhatsApp).
-- [ ] **L1.23** Detalle de reserva local: contrato, plan de pagos (editar, verificar cuota), aviso de bloqueo manual al aceptar (R12.3).
-- [ ] **L1.24** Configuración de locales: separación, plazos, garantía, tramos, plantilla de contrato con vista previa.
+- [x] **L1.20** Menú `locales`; formulario de salón con pestañas Turnos y Paquetes. *(También la opción "Local de eventos" al crear la tienda y la sección `salones` en el editor de diseño.)*
+- [x] **L1.21** Calendario por salón (mes y semana) con bloqueos y "crear cotización".
+- [x] **L1.22** Cotizaciones del negocio (crear con ajuste, compartir por WhatsApp).
+- [x] **L1.23** Detalle de reserva local: contrato, plan de pagos (editar, verificar cuota), aviso de bloqueo manual al aceptar (R12.3).
+- [x] **L1.24** Configuración de locales: separación, plazos, garantía, tramos, plantilla de contrato con vista previa.
 
 ### Tienda
 - [x] **L1.30** `/salones` y ficha con calendario, turnos, paquetes y resumen. *(Sección `salones` del diseño y plantilla `locales-salones` por defecto en el backend; menú inferior, cabecera y pie reconocen `locales`.)*
@@ -86,10 +86,10 @@ Cierra CU-05, CU-06 con pasarela, CE-10 y CE-11 (pasarela).
 
 ## Pendientes de decisión
 
-- [ ] **D1** Varios salones por tienda (propuesta: sí). Spec, pregunta 1.
-- [ ] **D2** Garantía como cuota cobrada (propuesta: sí). Spec, pregunta 2.
-- [ ] **D3** Aceptación del contrato con casilla (propuesta: sí). Spec, pregunta 3.
+- [x] **D1** Varios salones por tienda. Spec, pregunta 1. *(Confirmado: sí. Un local de dos pisos con recepción propia en cada uno = dos salones. Un salón no se subdivide, la bulla interrumpiría al vecino.)*
+- [x] **D2** Garantía como cuota cobrada. Spec, pregunta 2. *(Confirmado: se cobra como cuota normal y se devuelve por `reserva_devoluciones`. Es la práctica estándar cuando no hay pre-autorización de tarjeta disponible (Yape/transferencia no la soportan); si se integra una pasarela de tarjeta más adelante se puede ofrecer el hold como alternativa.)*
+- [x] **D3** Aceptación del contrato con casilla. Spec, pregunta 3. *(Confirmado: casilla con nombre, DNI, fecha, hora e IP; sin firma manuscrita ni certificada.)*
 - [x] **D4** Feriados precargados o marcados por el dueño. Spec, pregunta 4. *(Precargados: feriados nacionales fijos + Jueves y Viernes Santo. Confirmado.)*
-- [ ] **D5** Hora tope por tienda o por salón. Spec, pregunta 5.
+- [x] **D5** Hora tope por tienda o por salón. Spec, pregunta 5. *(Confirmado: por salón, ya que varía por distrito/zona y dos salones de la misma tienda pueden estar en zonas distintas.)*
 </content>
 </invoke>

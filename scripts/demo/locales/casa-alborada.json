@@ -1,0 +1,184 @@
+{
+  "alta": {
+    "nombre": "Casa Alborada Eventos",
+    "whatsappNumero": "51987654321",
+    "email": "eventos@casa-alborada.demo",
+    "ruc": "20999999990",
+    "razonSocial": "Casa Alborada Eventos S.A.C.",
+    "razonComercial": "Casa Alborada Eventos",
+    "direccionFiscal": "Av. Las Alamedas 1450, Los Olivos, Lima",
+    "direccion": "Av. Las Alamedas 1450, Los Olivos, Lima"
+  },
+  "tienda": {
+    "descripcion": "Local de eventos en Lima Norte con tres ambientes: un gran salón para quinceaños, bodas y promociones, una terraza para cumpleaños y una sala para conferencias. Mira las fechas libres, cotiza al instante y separa tu fecha en línea.",
+    "bannerPexels": 13834522,
+    "home": [
+      { "id": "hero", "tipo": "hero", "variante": "imagen-completa", "titulo": "Tu fiesta, en el lugar perfecto", "subtitulo": "Quinceaños, promociones, cumpleaños y conferencias en Los Olivos. Mira las fechas libres, cotiza al instante y separa tu fecha en línea.", "textoBoton": "Ver salones" },
+      { "id": "salones", "tipo": "salones", "variante": "grilla", "fondo": "superficie", "titulo": "Nuestros ambientes", "subtitulo": "Elige el salón, mira las fechas libres y cotiza tu evento al instante." },
+      { "id": "servicios", "tipo": "servicios", "variante": "iconos", "fondo": "suave", "titulo": "Separar tu fecha es fácil", "items": [
+        { "icono": "calendario", "titulo": "Calendario con fechas libres" },
+        { "icono": "seguro", "titulo": "Contrato y pagos en cuotas" },
+        { "icono": "musica", "titulo": "Paquetes con DJ y hora loca" },
+        { "icono": "restaurante", "titulo": "Buffet criollo e internacional" },
+        { "icono": "bar", "titulo": "Barra libre opcional" },
+        { "icono": "cochera", "titulo": "Estacionamiento para 30 autos" }
+      ] },
+      { "id": "galeria", "tipo": "galeria", "variante": "mosaico", "fondo": "pagina", "titulo": "Nuestros ambientes", "subtitulo": null, "fotos": [], "oculto": true },
+      { "id": "faq", "tipo": "faq", "fondo": "superficie", "titulo": "Preguntas frecuentes", "items": [
+        { "pregunta": "¿Cómo separo la fecha?", "respuesta": "Con el 30% del total. Primero nos envías la solicitud desde la web; la aceptamos en menos de 24 horas y tienes 48 horas para pagar la separación. El saldo se paga hasta en 3 cuotas y debe estar completo 7 días antes del evento." },
+        { "pregunta": "¿Puedo traer mi propio catering o DJ?", "respuesta": "Sí. Con proveedores externos cobramos S/ 300 de coordinación y S/ 15 de descorche por botella. Los paquetes ya incluyen buffet, DJ y hora loca." },
+        { "pregunta": "¿Hasta qué hora puede durar la fiesta?", "respuesta": "El turno noche va de 7 p. m. a 3 a. m. Puedes agregar horas extra hasta las 3 a. m., que es nuestra hora tope." },
+        { "pregunta": "¿Hay garantía?", "respuesta": "Sí, S/ 500 por daños. Se paga junto con el saldo, 7 días antes del evento, y la devolvemos dentro de los 3 días siguientes al evento si el local queda en buen estado." },
+        { "pregunta": "¿Puedo visitar el local antes?", "respuesta": "Claro. Recibimos visitas de lunes a sábado de 10 a. m. a 6 p. m. Escríbenos por WhatsApp para agendarla." }
+      ] },
+      { "id": "ubicacion", "tipo": "ubicacion", "fondo": "pagina", "titulo": "Cómo llegar", "texto": "A dos cuadras de la Panamericana Norte, con estacionamiento propio para 30 autos.", "cercanos": ["Panamericana Norte (2 cuadras)", "Mega Plaza (10 min)", "Estación Naranjal (12 min)"], "mapa": true },
+      { "id": "politicas", "tipo": "politicas", "fondo": "superficie", "titulo": "Antes de reservar" },
+      { "id": "contacto", "tipo": "contacto", "titulo": "¿Quieres visitar el local?", "texto": "Escríbenos por WhatsApp, agenda tu visita y te mostramos los ambientes con la decoración de un evento real." }
+    ]
+  },
+  "config": {
+    "modoConfirmacion": "solicitud",
+    "cobro": "adelanto",
+    "adelantoPct": 30,
+    "separacionTipo": "porcentaje",
+    "anticipacionMinHoras": 72,
+    "respuestaHoras": 24,
+    "apartadoHoras": 48,
+    "saldoDiasAntes": 7,
+    "maxCuotas": 3,
+    "garantiaMonto": 500,
+    "garantiaDevolucionDias": 3,
+    "invitadosConfirmarDias": 7,
+    "reprogramacionesMax": 1,
+    "reprogramacionMinDias": 30,
+    "cargoReprogramacion": 150,
+    "politicaTramos": [
+      { "desdeDias": 60, "separacionPct": 50, "restoPct": 100 },
+      { "desdeDias": 30, "separacionPct": 0, "restoPct": 80 },
+      { "desdeDias": 0, "separacionPct": 0, "restoPct": 0 }
+    ],
+    "graciaMoraDias": 3,
+    "saldoFavorMeses": 6,
+    "cotizacionVigenciaDias": 7,
+    "proveedoresExternos": true,
+    "tarifaCoordinacion": 300,
+    "descorcheBotella": 15,
+    "horaTope": "03:00",
+    "instrucciones": "Paga la separación por Yape o transferencia y sube la captura desde el enlace de tu reserva. Te confirmamos el pago en el día.",
+    "politicaCancelacion": "Si cancelas con 60 días o más de anticipación te devolvemos la mitad de la separación y todo lo demás que hayas pagado. Entre 30 y 59 días, la separación no se devuelve y del resto devolvemos el 80%. Con menos de 30 días no hay devolución. Puedes cambiar la fecha una vez, con 30 días de anticipación, pagando S/ 150."
+  },
+  "categorias": [
+    { "nombre": "Salones", "descripcion": "Ambientes para fiestas, quinceaños, bodas y promociones.", "pexels": [17023020] },
+    { "nombre": "Salas corporativas", "descripcion": "Salas para conferencias, capacitaciones y reuniones.", "pexels": [8761328] }
+  ],
+  "salones": [
+    {
+      "nombre": "Salón Imperial",
+      "categoria": "Salones",
+      "sku": "SAL-IMP",
+      "pexels": [13834522, 17023020, 17931371],
+      "corta": "Gran salón con lámparas de cristal, pista de baile y escenario. Hasta 250 invitados.",
+      "descripcion": "Nuestro salón principal: 350 m² con techos altos, lámparas de cristal, pista de baile iluminada y escenario para la orquesta. Incluye mesas redondas con mantelería, sillas tiffany, equipo de sonido, cocina equipada, baños para damas y caballeros y estacionamiento. Ideal para quinceaños, bodas y fiestas de promoción.",
+      "metros": 350,
+      "aforoMaximo": 250,
+      "preparacionMin": 90,
+      "servicios": ["Mesas y sillas tiffany", "Mantelería", "Pista de baile iluminada", "Escenario", "Equipo de sonido", "Cocina equipada", "Aire acondicionado", "Estacionamiento", "Seguridad"],
+      "turnos": [
+        { "nombre": "Día", "horaInicio": "10:00", "horaFin": "17:00", "diasSemana": [1, 2, 3, 4, 5, 6, 7], "precios": { "lj": 1800, "s": 2500, "d": 2200, "f": 2500 } },
+        { "nombre": "Noche", "horaInicio": "19:00", "horaFin": "03:00", "diasSemana": [1, 2, 3, 4, 5, 6, 7], "precios": { "lj": 2400, "v": 3200, "s": 3800, "f": 3800 } }
+      ],
+      "paquetes": [
+        { "nombre": "Solo local", "descripcion": "El salón con mesas, sillas y sonido. Tú traes el catering y la decoración.", "modalidad": "solo_local", "turnoRefs": [0, 1] },
+        {
+          "nombre": "Quinceaños Clásico",
+          "descripcion": "Todo lo de la fiesta en un solo precio por invitado.",
+          "modalidad": "paquete", "precioTipo": "por_persona",
+          "precios": { "lj": 95, "v": 105, "s": 115, "f": 115 },
+          "minPersonas": 80, "maxPersonas": 250,
+          "horasIncluidas": 8, "horaExtraPrecio": 350,
+          "incluye": ["Buffet criollo (2 entradas, 2 fondos)", "Torta de 3 pisos", "Bebidas sin alcohol ilimitadas", "DJ y luces", "Hora loca", "Decoración temática", "Mozos y anfitriona", "Coordinadora del evento"],
+          "tiposEvento": ["quinceanos", "cumpleanos", "boda"],
+          "turnoRefs": [1]
+        },
+        {
+          "nombre": "Promo 2026",
+          "descripcion": "Precio especial para fiestas de promoción de colegios.",
+          "modalidad": "paquete", "precioTipo": "por_persona",
+          "precios": { "lj": 79, "v": 85, "s": 89, "f": 89 },
+          "minPersonas": 100, "maxPersonas": 250,
+          "horasIncluidas": 8, "horaExtraPrecio": 350,
+          "incluye": ["Cena de dos tiempos", "Bebidas sin alcohol ilimitadas", "DJ y luces", "Hora loca", "Photobooth", "Seguridad en puerta"],
+          "tiposEvento": ["promocion"],
+          "esPromocion": true,
+          "turnoRefs": [1]
+        }
+      ]
+    },
+    {
+      "nombre": "Terraza Los Jardines",
+      "categoria": "Salones",
+      "sku": "TER-JAR",
+      "pexels": [17206153, 15591481],
+      "corta": "Terraza techada con jardín vertical y luz natural. Hasta 120 invitados.",
+      "descripcion": "Terraza de 180 m² con techo de vidrio, jardín vertical y barra propia. De día entra luz natural y de noche se ilumina con guirnaldas. Perfecta para cumpleaños, baby showers y matrimonios civiles.",
+      "metros": 180,
+      "aforoMaximo": 120,
+      "preparacionMin": 60,
+      "servicios": ["Mesas y sillas", "Mantelería", "Barra", "Equipo de sonido", "Jardín vertical", "Baños propios", "Estacionamiento"],
+      "turnos": [
+        { "nombre": "Día", "horaInicio": "11:00", "horaFin": "18:00", "diasSemana": [1, 2, 3, 4, 5, 6, 7], "precios": { "lj": 1200, "s": 1600, "d": 1500, "f": 1600 } },
+        { "nombre": "Noche", "horaInicio": "19:00", "horaFin": "02:00", "diasSemana": [1, 2, 3, 4, 5, 6, 7], "precios": { "lj": 1500, "v": 1900, "s": 2300, "f": 2300 } }
+      ],
+      "paquetes": [
+        { "nombre": "Solo local", "descripcion": "La terraza con mesas, sillas, barra y sonido.", "modalidad": "solo_local", "turnoRefs": [0, 1] },
+        {
+          "nombre": "Cumpleaños Familiar",
+          "descripcion": "Para celebrar con la familia sin preocuparte de nada.",
+          "modalidad": "paquete", "precioTipo": "por_persona",
+          "precios": { "lj": 75, "v": 82, "s": 89, "d": 85, "f": 89 },
+          "minPersonas": 50, "maxPersonas": 120,
+          "horasIncluidas": 6, "horaExtraPrecio": 250,
+          "incluye": ["Buffet de dos fondos", "Torta", "Bebidas sin alcohol ilimitadas", "DJ", "Decoración con globos", "Mozos"],
+          "tiposEvento": ["cumpleanos", "otro"],
+          "turnoRefs": [0, 1]
+        }
+      ]
+    },
+    {
+      "nombre": "Sala Ejecutiva",
+      "categoria": "Salas corporativas",
+      "sku": "SAL-EJE",
+      "pexels": [8761328, 22718136],
+      "corta": "Sala para conferencias y capacitaciones con proyector. Hasta 60 personas.",
+      "descripcion": "Sala de 90 m² con proyector, pantalla, micrófonos inalámbricos y wifi. Se arma en auditorio, escuela o mesa de directorio. Se alquila por turno o por horas, de lunes a sábado.",
+      "metros": 90,
+      "aforoMaximo": 60,
+      "preparacionMin": 30,
+      "porHoras": true,
+      "precioHora": 150,
+      "minHoras": 3,
+      "horasDesde": "08:00",
+      "horasHasta": "22:00",
+      "servicios": ["Proyector y pantalla", "Micrófonos inalámbricos", "Wifi", "Aire acondicionado", "Pizarra", "Estacionamiento"],
+      "turnos": [
+        { "nombre": "Mañana", "horaInicio": "08:00", "horaFin": "13:00", "diasSemana": [1, 2, 3, 4, 5, 6], "precios": { "lj": 450, "v": 450, "s": 550 } },
+        { "nombre": "Tarde", "horaInicio": "14:00", "horaFin": "19:00", "diasSemana": [1, 2, 3, 4, 5, 6], "precios": { "lj": 450, "v": 450, "s": 550 } }
+      ],
+      "paquetes": [
+        { "nombre": "Solo sala", "descripcion": "La sala con proyector, micrófonos y wifi.", "modalidad": "solo_local", "turnoRefs": [0, 1] },
+        { "nombre": "Por horas", "descripcion": "Desde 3 horas, entre las 8 a. m. y las 10 p. m.", "modalidad": "por_horas" },
+        {
+          "nombre": "Conferencia con coffee break",
+          "descripcion": "La sala más un coffee break a media jornada.",
+          "modalidad": "paquete", "precioTipo": "por_persona",
+          "precios": { "lj": 45, "v": 45, "s": 50 },
+          "minPersonas": 20, "maxPersonas": 60,
+          "horasIncluidas": 5, "horaExtraPrecio": 150,
+          "incluye": ["Sala por un turno", "Coffee break (café, infusiones, bocaditos)", "Agua para los ponentes", "Proyector y micrófonos"],
+          "tiposEvento": ["conferencia", "corporativo"],
+          "turnoRefs": [0, 1]
+        }
+      ]
+    }
+  ]
+}
