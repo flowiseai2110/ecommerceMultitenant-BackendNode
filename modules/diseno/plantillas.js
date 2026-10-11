@@ -1,3 +1,5 @@
+import { datosDe } from "../negocio/datos.js";
+
 // Plantillas de estructura por rubro (layout + secciones de la home). Son de
 // la plataforma: la tienda aplica una y se guarda una COPIA completa que
 // edita a partir de ahí (docs/specs/estructura-tienda). Si cambias el
@@ -432,18 +434,18 @@ export const PLANTILLAS = congelar([
 
 export const PLANTILLA_IDS = PLANTILLAS.map((p) => p.id);
 export const PLANTILLA_DEFAULT = "clasica";
-// Con qué se ve una tienda sin estructura guardada, según su tipo de negocio
-// (diseno-por-rubro H4). Los tipos sin plantillas propias usan la clásica.
-const DEFAULT_POR_NEGOCIO = Object.freeze({ hotel: "hotel-boutique", tours: "tours-catalogo", eventos: "eventos-cartelera", locales: "locales-salones" });
 
 /** @param {string} id */
 export function buscarPlantilla(id) {
   return PLANTILLAS.find((p) => p.id === id) ?? null;
 }
 
-/** Plantilla por defecto de un tipo de negocio (H4). */
+/**
+ * Con qué se ve una tienda sin estructura guardada, según su tipo de negocio
+ * (diseno-por-rubro H4): la define cada rubro en modules/negocio/<rubro>/datos.js.
+ */
 export function plantillaPorDefecto(tipoNegocio) {
-  return buscarPlantilla(DEFAULT_POR_NEGOCIO[tipoNegocio] ?? PLANTILLA_DEFAULT);
+  return buscarPlantilla(datosDe(tipoNegocio).diseno.plantillaPorDefecto) ?? buscarPlantilla(PLANTILLA_DEFAULT);
 }
 
 /** Tipo de negocio de una plantilla (las viejas no lo declaran: productos). */

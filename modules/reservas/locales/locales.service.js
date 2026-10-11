@@ -359,6 +359,8 @@ async function cotizacionParaSolicitud(tiendaId, token, ahora) {
 export const verticalLocal = {
   tipoPedido: "local",
   este: "este local",
+  /** Separación, garantía y si la franja está libre (R3.5, R4.1). */
+  extraCotizacion: extraCotizacionLocal,
 
   /**
    * Con `cotizacionToken` respeta el precio congelado; sin ella, cotiza en el

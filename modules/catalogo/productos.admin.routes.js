@@ -13,6 +13,7 @@ import {
 } from "../../kernel/tenant/index.js";
 import { makeUploadImagenForProducto } from "../../controllers/producto-imagenes.controller.js";
 import { invalidateProductoDetailCache } from "./productos.cache.js";
+import { prepararProductoDelRubro } from "../negocio/negocio.middleware.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import { sincronizarVariantesSchema } from "./producto-opciones.js";
 import { sincronizarVariantes, opcionesUsadasPorTienda } from "./producto-opciones.service.js";
@@ -170,6 +171,7 @@ router.post(
   authMiddleware,
   requireTiendaAccess("editor"),
   validate({ body: createProductoSchema }),
+  prepararProductoDelRubro("crear"),
   productosController.create
 );
 
@@ -180,6 +182,7 @@ router.put(
   resolveProductoTiendaId,
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateProductoSchema }),
+  prepararProductoDelRubro("editar"),
   invalidateProductoCacheOnSuccess,
   productosController.update
 );

@@ -14,6 +14,7 @@
 import { prisma, Prisma } from "../../../config/prisma.js";
 import MemoryCache from "../../../utils/memory-cache.js";
 import { expandirConsulta } from "../glosario.js";
+import { conPrecioSql } from "../../catalogo/productos.vitrina.js";
 
 // Tope del texto libre que manda el modelo (spec: 100 caracteres).
 const MAX_CARACTERES_QUERY = 100;
@@ -249,7 +250,7 @@ export async function ejecutarBuscarProductos({ tiendaId, input, facetas }) {
   const soloConStock = input?.soloConStock !== false;
 
   // $queryRaw no pasa por el auto-scope de Prisma: el tienda_id va explícito.
-  const filtros = [Prisma.sql`p.tienda_id = ${tiendaId}::uuid`, Prisma.sql`p.activo = true`];
+  const filtros = [Prisma.sql`p.tienda_id = ${tiendaId}::uuid`, Prisma.sql`p.activo = true`, conPrecioSql()];
   // Contra lo que paga el cliente (la oferta si es menor), igual que
   // precioEfectivo() en precios.js: una zapatilla de 250 en oferta a 180 entra
   // en un presupuesto de 200.

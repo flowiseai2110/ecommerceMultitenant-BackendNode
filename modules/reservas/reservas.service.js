@@ -5,18 +5,12 @@ import { sendTransactionalEmail } from "../../services/email.service.js";
 import { urlTienda } from "../resenas/resenas.service.js";
 import { generarNumeroPedido, upsertCliente } from "../ordenes/pedidos.service.js";
 import { datosFactura } from "../sunat/ruc.service.js";
-import { cotizarHotel, montoACuenta } from "./hotel/cotizar.js";
+import { montoACuenta } from "./hotel/cotizar.js";
 import { vozAlojamiento } from "./hotel/alojamiento.js";
 import { ESTADOS_EN_CURSO, transicionar, estadoEfectivo } from "./estados.js";
 import { obtenerConfig } from "./reservas.config.service.js";
-import { cierresDeProducto } from "./cierres.service.js";
-import { cargarHabitacionParaReserva } from "./hotel/habitaciones.service.js";
-import { extrasDeTienda, planDeTienda, temporadasParaEstadia } from "./hotel/tarifas.service.js";
-import { bloquearTipo, cupoEstadia } from "./hotel/disponibilidad.service.js";
-import { cotizarTour } from "./tours/cotizar.js";
-import { cargarTourParaReserva } from "./tours/tours.service.js";
-import { cotizarEvento } from "./eventos/cotizar.js";
-import { apartarEntradas, cargarFuncionParaCompra, moverVendidos } from "./eventos/eventos.service.js";
+import { cupoEstadia } from "./hotel/disponibilidad.service.js";
+import { moverVendidos } from "./eventos/eventos.service.js";
 import { firmarTokenReserva } from "./reservas.token.js";
 import { subirCaptura, urlCaptura } from "./reservas.capturas.js";
 import { serializeReservaAdmin, serializeReservaLista, serializeReservaStore } from "./reservas.serializer.js";
@@ -24,7 +18,8 @@ import {
   aceptadaEmail, compraPendienteEmail, confirmadaEmail, nuevaReservaEmail, nuevaSolicitudEmail, pagoSubidoEmail, rechazadaEmail, solicitudRecibidaEmail
 } from "./reservas.emails.js";
 import { instanteLima, fechaLima, sumarDias } from "./tiempo.js";
-import { errorNoDisponible, extraCotizacionLocal, filasCuotas, prepararAceptacion, verticalLocal } from "./locales/locales.service.js";
+import { estrategiaDe } from "../negocio/registro.js";
+import { errorNoDisponible, filasCuotas, prepararAceptacion } from "./locales/locales.service.js";
 import { actualizarOcupacion, FechaNoDisponibleError, liberar, liberarHuerfanas, ocupar } from "./locales/ocupaciones.js";
 import { conPreparacion } from "./locales/franja.js";
 
@@ -40,7 +35,7 @@ import { conPreparacion } from "./locales/franja.js";
  * al terminar; ambas cosas se calculan al leer.
  *
  * La bandeja, los estados, el pago y los correos son comunes; cada vertical
- * aporta su cotización (VERTICALES).
+ * aporta su cotización (la estrategia del rubro, modules/negocio/registro.js).
  */
 
 const SELECT_TIENDA = {
@@ -108,105 +103,11 @@ const nuevoApartado = (inicio, config, ahora) => {
 };
 const redondear = (n) => Math.round(n * 100) / 100;
 
-/**
- * Cotización por vertical (Strategy): carga el producto, aplica sus reglas y
- * devuelve lo que la reserva guarda como detalle.
- *   → { producto, c (cotización), detalle (columnas propias de `reservas`), log }
- */
-const VERTICALES = {
-  hotel: {
-    tipoPedido: "hotel",
-    este: "este hotel",
-    async cotizar({ tiendaId, datos, config, ahora }) {
-      if (!datos.modalidadId) {
-        throw new ValidationError("Elige una modalidad de estadía", { message: "Elige una modalidad de estadía", motivo: "MODALIDAD_INVALIDA" });
-      }
-      const { producto, tipo, modalidad } = await cargarHabitacionParaReserva(tiendaId, datos.productoId, datos.modalidadId);
-      const c = await cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora });
-      // Al crear (trae titular): lo que solo se pide en la solicitud (hospedaje-completo B3, B6).
-      if (datos.titular) {
-        if (tipo.soloMujeres && !datos.confirmaSoloMujeres) {
-          c.errores.push({ codigo: "SOLO_MUJERES", mensaje: "Esta habitación es solo para mujeres: confírmalo para enviar la solicitud", campo: "confirmaSoloMujeres" });
-        }
-        for (const x of c.extras) {
-          if (x.datoPedido && !x.dato) c.errores.push({ codigo: "DATO_EXTRA", mensaje: `${x.nombre}: ${x.datoPedido}`, campo: "extras" });
-        }
-      }
-      return {
-        producto, c,
-        detalle: {
-          modalidadId: modalidad.id, noches: c.noches, horas: c.horas, adultos: datos.adultos, ninos: datos.ninos,
-          edadesNinos: c.edadesNinos, exoneradoIgv: c.exoneradoIgv, habitaciones: c.habitaciones,
-          ...(c.extras.length ? { extras: c.extras } : {}), ...(c.plan ? { plan: c.plan } : {})
-        },
-        // Para revalidar el cupo dentro de la transacción (C1).
-        inventario: tipo.unidades != null && c.noches ? { productoId: producto.id, porPersona: tipo.porPersona, unidades: tipo.unidades, fecha: datos.fecha, noches: c.noches } : null,
-        log: `${modalidad.tipo}, ingreso ${c.inicio.toISOString()}`
-      };
-    },
-    /**
-     * Con inventario, una reserva que nace aceptada (pago directo) o
-     * confirmada aparta el cupo: se revalida con el tipo bloqueado para que
-     * dos huéspedes no se lleven la última habitación (C1).
-     */
-    async enTransaccion(tx, { tiendaId, c, estadoInicial, ahora, inventario }) {
-      if (!inventario || !["aceptada", "confirmada"].includes(estadoInicial)) return;
-      await bloquearTipo(tx, inventario.productoId);
-      const cupo = await cupoEstadia(tx, tiendaId, inventario, inventario.fecha, inventario.noches, { ahora });
-      const pide = inventario.porPersona ? c.personasHotel : c.habitaciones;
-      if (cupo && pide > cupo.libres) {
-        const message = "Se acaba de ocupar el último cupo para esas fechas. Elige otras fechas.";
-        throw new ConflictError(message, { message, motivo: "SIN_CUPO" });
-      }
-    }
-  },
-  tours: {
-    tipoPedido: "tour",
-    este: "esta agencia",
-    async cotizar({ tiendaId, datos, config, ahora }) {
-      const { producto, tour, tiposPasajero } = await cargarTourParaReserva(tiendaId, datos.productoId, datos.lang);
-      const cierres = await cierresDeProducto(tiendaId, datos.productoId, datos.fecha, datos.fecha);
-      const c = cotizarTour({
-        tour, tiposPasajero, pasajeros: datos.pasajeros, fecha: datos.fecha, hora: datos.hora,
-        idioma: datos.idioma, cierres, config, ahora, lang: datos.lang
-      });
-      return {
-        producto, c,
-        detalle: { pasajeros: c.pasajeros, idioma: c.idioma },
-        log: `${c.personas} pax, salida ${c.inicio.toISOString()}`
-      };
-    }
-  },
-  eventos: {
-    tipoPedido: "evento",
-    este: "este evento",
-    async cotizar({ tiendaId, datos, config, ahora }) {
-      const { producto, funcion, tipos, apartadas } = await cargarFuncionParaCompra(tiendaId, datos.productoId, datos.funcionId, ahora);
-      const c = cotizarEvento({ funcion, tipos, apartadas, entradas: datos.entradas, config, ahora });
-      return {
-        producto, c,
-        detalle: { funcionId: funcion.id, apartadoHasta: c.total > 0 ? c.apartadoHasta : null },
-        log: `${c.personas} entradas, función ${c.inicio.toISOString()}`
-      };
-    },
-    // Sin solicitud: la compra aparta el cupo y espera el pago. Gratis = confirmada en el acto.
-    estadoInicial: (c) => (c.total > 0 ? "por_pagar" : "confirmada"),
-    // Cuentan las compras que retienen cupo (anti-acaparamiento).
-    whereAbiertas: (ahora) => ({
-      OR: [{ estado: "pago_en_revision" }, { estado: "por_pagar", reserva: { apartadoHasta: { gt: ahora }, inicio: { gt: ahora } } }]
-    }),
-    /** Dentro de la transacción: bloquea los tipos, revalida el cupo y registra las entradas. */
-    enTransaccion: (tx, { tiendaId, pedidoId, c, estadoInicial, ahora }) =>
-      apartarEntradas(tx, { tiendaId, pedidoId, items: c.items, confirmar: estadoInicial === "confirmada", ahora })
-  },
-  // Locales: la franja del salón se ocupa en la transacción (restricción de exclusión).
-  locales: verticalLocal
-};
-
 async function tiendaDeReservas(tiendaId) {
   const tienda = await prisma.tiendas.findUnique({ where: { id: tiendaId }, select: SELECT_TIENDA });
   if (!tienda || !tienda.activo) throw new NotFoundError("Tienda");
-  const vertical = VERTICALES[tienda.tipoNegocio];
+  // La vertical (cotizar, estadoInicial, enTransaccion…) es parte de la estrategia del rubro.
+  const vertical = estrategiaDe(tienda).reservas;
   if (!vertical) {
     throw new ValidationError("Esta tienda no recibe reservas", { message: "Esta tienda no recibe reservas", motivo: "TIENDA_SIN_RESERVAS" });
   }
@@ -304,41 +205,9 @@ export async function cotizar(datos, ahora = new Date()) {
   const { vertical } = await tiendaDeReservas(datos.tiendaId);
   const config = await obtenerConfig(datos.tiendaId);
   const { c } = await vertical.cotizar({ tiendaId: datos.tiendaId, datos, config, ahora });
-  // Locales: separación, garantía y si la franja está libre (R3.5, R4.1).
-  if (vertical === verticalLocal) return { ...serializarCotizacion(c), ...await extraCotizacionLocal(datos.tiendaId, datos, c, ahora) };
+  // Lo que una vertical agrega a la cotización (locales: separación, garantía y si la franja está libre, R3.5, R4.1).
+  if (vertical.extraCotizacion) return { ...serializarCotizacion(c), ...await vertical.extraCotizacion(datos.tiendaId, datos, c, ahora) };
   return serializarCotizacion(c);
-}
-
-async function cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora }) {
-  const desde = datos.fecha;
-  const hasta = sumarDias(datos.fecha, Math.max(datos.noches ?? 1, 1));
-  const [cierres, temporadas, extrasCatalogo, cupo, plan] = await Promise.all([
-    cierresDeProducto(datos.tiendaId, datos.productoId, desde, hasta),
-    modalidad.tipo === "noche" ? temporadasParaEstadia(datos.tiendaId, datos.productoId, desde, hasta, datos.lang) : [],
-    datos.extras?.length ? extrasDeTienda(datos.tiendaId, datos.lang) : [],
-    modalidad.tipo === "noche" && datos.noches
-      ? cupoEstadia(prisma, datos.tiendaId, { productoId: datos.productoId, porPersona: tipo.porPersona, unidades: tipo.unidades }, datos.fecha, datos.noches, { ahora })
-      : null,
-    datos.planId ? planDeTienda(datos.tiendaId, datos.planId, datos.lang) : null
-  ]);
-  const cotizacion = cotizarHotel({
-    tipo, modalidad, fecha: datos.fecha, hora: datos.hora, noches: datos.noches,
-    adultos: datos.adultos, ninos: datos.ninos, cierres, config, ahora,
-    temporadas, extrasCatalogo, extrasElegidos: datos.extras ?? [], edadesNinos: datos.edadesNinos ?? [],
-    nacionalidad: datos.titular?.nacionalidad ?? datos.nacionalidad ?? null,
-    habitaciones: datos.habitaciones ?? 1, cupo, plan,
-    // El huésped que reserva en inglés ve las líneas y los errores en inglés (C3).
-    idioma: datos.lang
-  });
-  if (datos.planId && !plan) cotizacion.errores.push({ codigo: "PLAN_INVALIDO", mensaje: "Esa tarifa ya no está disponible", campo: "planId" });
-  cotizacion.personasHotel = (datos.adultos ?? 0) + (datos.ninos ?? 0);
-  if (modalidad.tipo === "horas" && !datos.hora) {
-    cotizacion.errores.unshift({ codigo: "HORA_REQUERIDA", mensaje: "Indica la hora de ingreso", campo: "hora" });
-  }
-  if (modalidad.tipo === "noche" && !datos.noches) {
-    cotizacion.errores.unshift({ codigo: "NOCHES_REQUERIDAS", mensaje: "Indica cuántas noches", campo: "noches" });
-  }
-  return cotizacion;
 }
 
 const serializarCotizacion = (c) => ({

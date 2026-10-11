@@ -23,7 +23,12 @@ const productosBaseSchema = {
   descripcion: z.string().optional().nullable(),
   descripcionCorta: z.string().max(500, "La descripción corta no puede exceder 500 caracteres").optional().nullable(),
   sku: z.string().max(50, "El SKU no puede exceder 50 caracteres").optional().nullable(),
-  precioBase: z.coerce.number({ required_error: "El precio base es requerido" }).positive("El precio base debe ser positivo"),
+  // Opcional y >= 0 aquí: si es obligatorio depende del rubro de la tienda (un tipo de
+  // habitación no lleva precio). Lo decide prepararProducto (modules/negocio) con el rubro de la BD.
+  precioBase: z.preprocess(
+    (v) => (v === null || v === "" ? undefined : v),
+    z.coerce.number().min(0, "El precio base no puede ser negativo").optional()
+  ),
   precioOferta: z.coerce.number().positive("El precio oferta debe ser positivo").optional().nullable(),
   precioCosto: z.coerce.number().positive("El precio costo debe ser positivo").optional().nullable(),
   stock: z.coerce.number().int("El stock debe ser un número entero").min(0).optional().default(0),

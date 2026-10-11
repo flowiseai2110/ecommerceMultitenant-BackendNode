@@ -37,9 +37,9 @@ const tours = [
     idiomas: ["es"], edadMinima: 8, desde: { precio: 150, etiqueta: "por adulto" }
   }
 ];
-jest.unstable_mockModule("../../reservas/tours/tours.service.js", () => ({ listarToursStore: jest.fn(async () => tours) }));
+jest.unstable_mockModule("../../reservas/tours/tours.service.js", () => ({ cargarTourParaReserva: jest.fn(), listarToursStore: jest.fn(async () => tours) }));
 const cierresPublicos = jest.fn(async () => []);
-jest.unstable_mockModule("../../reservas/cierres.service.js", () => ({ cierresPublicos }));
+jest.unstable_mockModule("../../reservas/cierres.service.js", () => ({ cierresDeProducto: jest.fn(), cierresPublicos }));
 jest.unstable_mockModule("../../reservas/reservas.config.service.js", () => ({
   obtenerConfig: jest.fn(async () => ({
     modoConfirmacion: "solicitud", cobro: "adelanto", adelantoPct: 30, politicaCancelacion: "Cambios hasta 24 h antes.", instrucciones: null

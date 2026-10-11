@@ -46,7 +46,7 @@ jest.unstable_mockModule("../../ordenes/pedidos.service.js", () => ({
   generarNumeroPedido: jest.fn(async () => "PED-0001"), upsertCliente: jest.fn(async () => ({ id: "cli" }))
 }));
 jest.unstable_mockModule("../reservas.capturas.js", () => ({ subirCaptura: jest.fn(async () => "path/captura.jpg"), urlCaptura: jest.fn(async () => null) }));
-jest.unstable_mockModule("../cierres.service.js", () => ({ cierresDeProducto: jest.fn(async () => []) }));
+jest.unstable_mockModule("../cierres.service.js", () => ({ cierresPublicos: jest.fn(), cierresDeProducto: jest.fn(async () => []) }));
 jest.unstable_mockModule("../hotel/tarifas.service.js", () => ({ temporadasParaEstadia: jest.fn(async () => []), extrasDeTienda: jest.fn(async () => []), planDeTienda: jest.fn(async () => null) }));
 
 const { resolverConfig } = await import("../reservas.config.service.js");
@@ -55,7 +55,7 @@ jest.unstable_mockModule("../reservas.config.service.js", () => ({ obtenerConfig
 
 const noche = { id: "t-noche", nombre: "Noche", horaInicio: "19:00", horaFin: "03:00", diasSemana: [5, 6], precios: { lj: 1800, s: 2700 }, activo: true, orden: 0 };
 const soloLocal = { id: "p-solo", nombre: "Solo local", modalidad: "solo_local", precioTipo: "fijo", activo: true, turnoIds: [], tiposEvento: [], incluye: [] };
-jest.unstable_mockModule("../locales/salones.service.js", () => ({
+jest.unstable_mockModule("../locales/salones.service.js", () => ({ obtenerSalonStore: jest.fn(), listarSalonesStore: jest.fn(),
   cargarSalonParaReserva: jest.fn(async () => ({
     producto: { id: SALON, nombre: "Imperial" },
     salon: { productoId: SALON, nombre: "Imperial", aforoMaximo: 200, preparacionMin: 60, porHoras: false },

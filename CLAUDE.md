@@ -149,3 +149,15 @@ import { algo } from "./ruta/archivo.js";
 - Helmet activo en todas las rutas
 - JWT verificado con JWKS público de Supabase (sin secreto compartido)
 - Validación de input con Zod antes de llegar al controller
+
+
+## Lógica por rubro (Strategy por tipo de negocio)
+
+- Todo lo que distingue a un rubro (`productos`, `hotel`, `tours`, `eventos`, `locales`) va en `negocio/<rubro>/`, con el mismo nombre en los tres repos.
+- El código compartido pregunta por **capacidades**, nunca por **identidad**: no se agrega `esHotel()`, `tipoNegocio === '…'` ni similares fuera de código que ya es de un solo rubro.
+- Rubro nuevo: agregarlo al tipo/registro y crear su carpeta. Si le falta algo del contrato, no compila (front) o falla el test de contrato (backend).
+- Variaciones por cliente, del más común al más raro: 1) configuración por tienda, 2) capacidad opcional del rubro activable por tienda, 3) excepción por tienda (`EXCEPCIONES` en el registro del backend), que hereda del rubro y reemplaza solo lo distinto. Nunca una copia del rubro por cliente.
+- Spec completa: BackendNode `docs/specs/perfil-negocio/spec.md`.
+- Backend: `modules/negocio/` tiene el contrato (`contrato.js`), el registro (`registro.js`: `estrategiaDe(tienda)`) y una carpeta por rubro con sus reglas (`estrategia.js`: `prepararProducto`) y sus datos (`datos.js`: capacidades como `recibeReservas`/`planDePagos`/`transmisiones`, plantilla y secciones de Diseño, config de reservas por defecto). Los módulos compartidos que solo necesitan datos usan `datosDe(tipoNegocio)` (`negocio/datos.js`, sin imports pesados: evita ciclos); el perfil del asistente es `estrategia.agente`. La vertical de reservas de cada rubro (`cotizar`, `estadoInicial`, `enTransaccion`…) vive en `modules/reservas/<rubro>/` y el registro la une como `estrategia.reservas`.
+- **El rubro sale de la BD** (`tiendaDe(tiendaId)`, cacheado en `rubros.cache.js`), nunca de un `tipoNegocio` enviado por el cliente.
+- El backend es la verdad de las reglas; el front las refleja para la UX.

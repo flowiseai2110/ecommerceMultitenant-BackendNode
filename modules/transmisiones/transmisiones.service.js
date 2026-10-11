@@ -9,6 +9,7 @@ import {
   firmarTokenApp, firmarTokenInvitacion, verificarTokenAccion, verificarTokenAnfitrion, verificarTokenApp, verificarTokenInvitacion
 } from "./transmisiones.token.js";
 import { urlVideoYoutube, youtubeVideoId } from "./transmisiones.youtube.js";
+import { datosDe } from "../negocio/datos.js";
 import { saldoHoras, textoMinutos } from "./transmisiones.horas.js";
 import { borrarGrabacion, enlaceAnfitrion, partesConEnlaces } from "./transmisiones.grabaciones.js";
 import {
@@ -60,7 +61,7 @@ async function tiendaDeEventos(tiendaId) {
     select: { id: true, slug: true, nombre: true, logoUrl: true, tipoNegocio: true }
   });
   if (!tienda) throw new NotFoundError("Tienda");
-  if (tienda.tipoNegocio !== "eventos") {
+  if (!datosDe(tienda.tipoNegocio).transmisiones) {
     throw noProcesable("La transmisión en vivo es solo para negocios de eventos", "TIPO_NEGOCIO");
   }
   return tienda;

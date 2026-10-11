@@ -33,15 +33,15 @@ const config = {
   apartadoManualMin: 120, maxEntradasPorCompra: 10, umbralUltimasEntradas: 20, cierrePagoManualHoras: null
 };
 jest.unstable_mockModule("../reservas.config.service.js", () => ({ obtenerConfig: jest.fn(async () => config) }));
-jest.unstable_mockModule("../cierres.service.js", () => ({ cierresDeProducto: jest.fn(async () => []) }));
-jest.unstable_mockModule("../hotel/habitaciones.service.js", () => ({ cargarHabitacionParaReserva: jest.fn() }));
+jest.unstable_mockModule("../cierres.service.js", () => ({ cierresPublicos: jest.fn(), cierresDeProducto: jest.fn(async () => []) }));
+jest.unstable_mockModule("../hotel/habitaciones.service.js", () => ({ listarHabitacionesStore: jest.fn(), cargarHabitacionParaReserva: jest.fn() }));
 jest.unstable_mockModule("../hotel/tarifas.service.js", () => ({ temporadasParaEstadia: jest.fn(async () => []), extrasDeTienda: jest.fn(async () => []), planDeTienda: jest.fn(async () => null) }));
 const disponibilidad = { cupoEstadia: jest.fn(async () => null), bloquearTipo: jest.fn(async () => {}) };
 jest.unstable_mockModule("../hotel/disponibilidad.service.js", () => disponibilidad);
 const tourDb = {
   diasSalida: [2, 3, 4, 5, 6, 7], horasSalida: ["08:00"], idiomas: ["es"], duracionHoras: 2, maxPasajeros: null
 };
-jest.unstable_mockModule("../tours/tours.service.js", () => ({
+jest.unstable_mockModule("../tours/tours.service.js", () => ({ listarToursStore: jest.fn(),
   cargarTourParaReserva: jest.fn(async () => ({
     producto: { id: "tour-1", nombre: "Islas Ballestas" },
     tour: tourDb,
@@ -49,7 +49,7 @@ jest.unstable_mockModule("../tours/tours.service.js", () => ({
   }))
 }));
 const funcionDb = { id: "fun-1", inicio: instanteLimaTest("2026-09-26", "20:00"), fin: null, activa: true };
-const eventosSvc = {
+const eventosSvc = { obtenerEventoStore: jest.fn(), listarEventosStore: jest.fn(),
   cargarFuncionParaCompra: jest.fn(async () => ({
     producto: { id: "evt-1", nombre: "Stand up" },
     funcion: funcionDb,

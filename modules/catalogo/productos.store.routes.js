@@ -8,6 +8,7 @@ import { validate } from "../../middlewares/validation.middleware.js";
 import { scopeQueryToTienda } from "../../kernel/tenant/index.js";
 import { idParamSchema, paginationSchema, homeQuerySchema } from "./productos.schema.js";
 import { NotFoundError } from "../../utils/errors.js";
+import { conPrecioSql, CON_PRECIO_WHERE } from "./productos.vitrina.js";
 import {
   serializeProductoCardStore,
   serializeProductoDetailStore
@@ -62,8 +63,13 @@ const productosService = new GenericService(productosRepository, {
   requireTiendaId: true,
   allowedFilters: ["activo", "categoriaId", "destacado", "esServicio"],
   // El producto de un evento privado (cumpleaños, boda) no se lista ni se busca
-  // (docs/specs/transmision-eventos, R1.4).
-  baseWhere: { NOT: { evento: { is: { privado: true } } } },
+  // (docs/specs/transmision-eventos, R1.4). Tampoco uno sin precio todavía (productos.vitrina.js).
+  baseWhere: {
+    AND: [
+      { NOT: { evento: { is: { privado: true } } } },
+      CON_PRECIO_WHERE
+    ]
+  },
   // El storefront permite marcar varias categorias a la vez (?categoriaId=a,b)
   multiValueFilters: ["categoriaId"],
   allowedOrderBy: ["precioBase", "nombre", "fechaRegistro", "stock", "ratingScore"],
@@ -129,6 +135,7 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
         ) img ON true
         WHERE p.tienda_id = ${tiendaId}::uuid AND p.activo = true AND p.destacado = true
           AND NOT EXISTS (SELECT 1 FROM eventos e WHERE e.producto_id = p.id AND e.privado)
+          AND ${conPrecioSql()}
         ORDER BY p.id DESC
         LIMIT ${take}
       )
@@ -149,6 +156,7 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
         ) img ON true
         WHERE p.tienda_id = ${tiendaId}::uuid AND p.activo = true
           AND NOT EXISTS (SELECT 1 FROM eventos e WHERE e.producto_id = p.id AND e.privado)
+          AND ${conPrecioSql()}
         ORDER BY p.fecha_registro DESC
         LIMIT ${take}
       )
@@ -215,6 +223,7 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
       ) i ON true
       WHERE p.id = ${id}::uuid
         AND NOT EXISTS (SELECT 1 FROM eventos e WHERE e.producto_id = p.id AND e.privado)
+        AND ${conPrecioSql()}
     `;
 
     if (!rows[0]) {

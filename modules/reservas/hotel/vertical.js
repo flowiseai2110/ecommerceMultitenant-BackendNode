@@ -1,0 +1,92 @@
+import { prisma } from "../../../config/prisma.js";
+import { ConflictError, ValidationError } from "../../../utils/errors.js";
+import { cierresDeProducto } from "../cierres.service.js";
+import { sumarDias } from "../tiempo.js";
+import { cotizarHotel } from "./cotizar.js";
+import { cargarHabitacionParaReserva } from "./habitaciones.service.js";
+import { extrasDeTienda, planDeTienda, temporadasParaEstadia } from "./tarifas.service.js";
+import { bloquearTipo, cupoEstadia } from "./disponibilidad.service.js";
+
+/**
+ * Reservas de hotel / hostal (Strategy de reservas, modules/negocio/registro.js):
+ * carga la habitación, cotiza la estadía y, con inventario, aparta el cupo.
+ *   → { producto, c (cotización), detalle (columnas propias de `reservas`), log }
+ */
+export const verticalHotel = {
+  tipoPedido: "hotel",
+  este: "este hotel",
+  async cotizar({ tiendaId, datos, config, ahora }) {
+    if (!datos.modalidadId) {
+      throw new ValidationError("Elige una modalidad de estadía", { message: "Elige una modalidad de estadía", motivo: "MODALIDAD_INVALIDA" });
+    }
+    const { producto, tipo, modalidad } = await cargarHabitacionParaReserva(tiendaId, datos.productoId, datos.modalidadId);
+    const c = await cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora });
+    // Al crear (trae titular): lo que solo se pide en la solicitud (hospedaje-completo B3, B6).
+    if (datos.titular) {
+      if (tipo.soloMujeres && !datos.confirmaSoloMujeres) {
+        c.errores.push({ codigo: "SOLO_MUJERES", mensaje: "Esta habitación es solo para mujeres: confírmalo para enviar la solicitud", campo: "confirmaSoloMujeres" });
+      }
+      for (const x of c.extras) {
+        if (x.datoPedido && !x.dato) c.errores.push({ codigo: "DATO_EXTRA", mensaje: `${x.nombre}: ${x.datoPedido}`, campo: "extras" });
+      }
+    }
+    return {
+      producto, c,
+      detalle: {
+        modalidadId: modalidad.id, noches: c.noches, horas: c.horas, adultos: datos.adultos, ninos: datos.ninos,
+        edadesNinos: c.edadesNinos, exoneradoIgv: c.exoneradoIgv, habitaciones: c.habitaciones,
+        ...(c.extras.length ? { extras: c.extras } : {}), ...(c.plan ? { plan: c.plan } : {})
+      },
+      // Para revalidar el cupo dentro de la transacción (C1).
+      inventario: tipo.unidades != null && c.noches ? { productoId: producto.id, porPersona: tipo.porPersona, unidades: tipo.unidades, fecha: datos.fecha, noches: c.noches } : null,
+      log: `${modalidad.tipo}, ingreso ${c.inicio.toISOString()}`
+    };
+  },
+  /**
+   * Con inventario, una reserva que nace aceptada (pago directo) o
+   * confirmada aparta el cupo: se revalida con el tipo bloqueado para que
+   * dos huéspedes no se lleven la última habitación (C1).
+   */
+  async enTransaccion(tx, { tiendaId, c, estadoInicial, ahora, inventario }) {
+    if (!inventario || !["aceptada", "confirmada"].includes(estadoInicial)) return;
+    await bloquearTipo(tx, inventario.productoId);
+    const cupo = await cupoEstadia(tx, tiendaId, inventario, inventario.fecha, inventario.noches, { ahora });
+    const pide = inventario.porPersona ? c.personasHotel : c.habitaciones;
+    if (cupo && pide > cupo.libres) {
+      const message = "Se acaba de ocupar el último cupo para esas fechas. Elige otras fechas.";
+      throw new ConflictError(message, { message, motivo: "SIN_CUPO" });
+    }
+  }
+};
+
+async function cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora }) {
+  const desde = datos.fecha;
+  const hasta = sumarDias(datos.fecha, Math.max(datos.noches ?? 1, 1));
+  const [cierres, temporadas, extrasCatalogo, cupo, plan] = await Promise.all([
+    cierresDeProducto(datos.tiendaId, datos.productoId, desde, hasta),
+    modalidad.tipo === "noche" ? temporadasParaEstadia(datos.tiendaId, datos.productoId, desde, hasta, datos.lang) : [],
+    datos.extras?.length ? extrasDeTienda(datos.tiendaId, datos.lang) : [],
+    modalidad.tipo === "noche" && datos.noches
+      ? cupoEstadia(prisma, datos.tiendaId, { productoId: datos.productoId, porPersona: tipo.porPersona, unidades: tipo.unidades }, datos.fecha, datos.noches, { ahora })
+      : null,
+    datos.planId ? planDeTienda(datos.tiendaId, datos.planId, datos.lang) : null
+  ]);
+  const cotizacion = cotizarHotel({
+    tipo, modalidad, fecha: datos.fecha, hora: datos.hora, noches: datos.noches,
+    adultos: datos.adultos, ninos: datos.ninos, cierres, config, ahora,
+    temporadas, extrasCatalogo, extrasElegidos: datos.extras ?? [], edadesNinos: datos.edadesNinos ?? [],
+    nacionalidad: datos.titular?.nacionalidad ?? datos.nacionalidad ?? null,
+    habitaciones: datos.habitaciones ?? 1, cupo, plan,
+    // El huésped que reserva en inglés ve las líneas y los errores en inglés (C3).
+    idioma: datos.lang
+  });
+  if (datos.planId && !plan) cotizacion.errores.push({ codigo: "PLAN_INVALIDO", mensaje: "Esa tarifa ya no está disponible", campo: "planId" });
+  cotizacion.personasHotel = (datos.adultos ?? 0) + (datos.ninos ?? 0);
+  if (modalidad.tipo === "horas" && !datos.hora) {
+    cotizacion.errores.unshift({ codigo: "HORA_REQUERIDA", mensaje: "Indica la hora de ingreso", campo: "hora" });
+  }
+  if (modalidad.tipo === "noche" && !datos.noches) {
+    cotizacion.errores.unshift({ codigo: "NOCHES_REQUERIDAS", mensaje: "Indica cuántas noches", campo: "noches" });
+  }
+  return cotizacion;
+}

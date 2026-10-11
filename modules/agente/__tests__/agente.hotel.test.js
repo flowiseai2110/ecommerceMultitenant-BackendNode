@@ -34,7 +34,7 @@ const habitaciones = [
     desde: { precio: 300, etiqueta: "Por noche" }
   }
 ];
-jest.unstable_mockModule("../../reservas/hotel/habitaciones.service.js", () => ({
+jest.unstable_mockModule("../../reservas/hotel/habitaciones.service.js", () => ({ cargarHabitacionParaReserva: jest.fn(),
   listarHabitacionesStore: jest.fn(async () => habitaciones)
 }));
 jest.unstable_mockModule("../../reservas/reservas.config.service.js", () => ({
@@ -61,7 +61,8 @@ describe("asesor — perfil hotel", () => {
     const params = create.mock.calls[0][0];
     expect(params.tools.map(t => t.name)).toEqual(["ver_habitaciones", "info_hotel"]);
     expect(params.system).toContain("NUNCA afirmes que hay disponibilidad");
-    expect(params.system).toMatch(/Hoy es \w+ \d{2}\/\d{2}\/\d{4}/);
+    // \p{L} y no \w: "sábado" y "miércoles" llevan tilde (con \w fallaba esos días).
+    expect(params.system).toMatch(/Hoy es \p{L}+ \d{2}\/\d{2}\/\d{4}/u);
   });
 
   it("ver_habitaciones: el modelo recibe indicadores sin montos; las tarjetas llevan precio y ruta", async () => {

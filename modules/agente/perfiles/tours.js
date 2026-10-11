@@ -163,3 +163,9 @@ export async function ejecutarToolTours(nombre, input, { tiendaId, ahora = new D
     }
   };
 }
+
+/** Perfil del asesor de este rubro (estrategia.agente, modules/negocio/registro.js). */
+export const agenteTours = {
+  system: systemPromptTours, tools: toolsTours, ejecutar: ejecutarToolTours,
+  busqueda: "buscar_tours", saludo: "¿Qué tour te gustaría hacer?"
+};

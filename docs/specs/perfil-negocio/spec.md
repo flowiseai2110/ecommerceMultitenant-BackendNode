@@ -1,6 +1,6 @@
 # Spec: lógica por rubro (Strategy por tipo de negocio)
 
-> Estado: **diseño aprobado** (2026-10-11), por implementar en una sesión nueva. Tareas: al final.
+> Estado: **implementado y verificado** (2026-10-11), salvo la excepción por tienda (4.4, cuando haya un caso real). Tareas: al final.
 > Origen: sesión de [hotel-inventario](../hotel-inventario/spec.md) (R1.7: hoteles sin categorías, formulario del tipo de habitación).
 > Repos: BackendNode, FrontendAdmin, FrontendStore.
 
@@ -134,16 +134,25 @@ Regla: **el rubro define la lógica, la configuración la ajusta por cliente, la
 
 ## Tareas
 
-- [ ] 1.1 Admin: `negocio/perfil-negocio.ts`, `negocio/perfiles.ts`, `negocio/<rubro>/perfil.ts` (5) y `tenantService.perfil()`.
-- [ ] 1.2 `producto-detail` sin `esHotel()` (vocabulario, categoría, precio/stock, variantes, código, máximo del nombre, ruta de vuelta).
-- [ ] 1.3 Menú lateral desde `perfil().menu`.
-- [ ] 1.4 Migas desde el perfil; quitar `breadcrumbHotel` y `breadcrumbHotelUrl`.
-- [ ] 1.5 `categoria-textos.ts` dentro de los perfiles.
-- [ ] 1.6 Verificación: build, 50 tests, navegador con una tienda por rubro.
-- [ ] 2.1 `diseno.component` y `seccion-form`.
-- [ ] 3.1 Tienda: `negocio/<rubro>/vitrina.ts` y migración de los 11 archivos.
-- [ ] 4.1 Backend: `modules/negocio/` con contrato, registro (rubro desde la BD, cacheado) y test de contrato.
-- [ ] 4.2 Backend: `prepararProducto` por rubro; hotel sin precio exigido; quitar el S/ 1 provisional del admin.
-- [ ] 4.3 Backend: integrar `VERTICALES` de reservas al registro.
+- [x] 1.1 Admin: `negocio/perfil-negocio.ts`, `negocio/perfiles.ts`, `negocio/<rubro>/perfil.ts` (5) y `tenantService.perfil()`.
+- [x] 1.2 `producto-detail` sin `esHotel()` (vocabulario, categoría, precio/stock, variantes, código, máximo del nombre, ruta de vuelta).
+- [x] 1.3 Menú lateral desde `perfil().menu`.
+- [x] 1.4 Migas desde el perfil; quitar `breadcrumbHotel` y `breadcrumbHotelUrl`.
+- [x] 1.5 `categoria-textos.ts` dentro de los perfiles.
+- [x] 1.6 Verificación en el navegador con una tienda por rubro (admin y tienda), con Playwright, 2026-10-11: demobooking, tour-test, evento-test, casa-alborada, zapatillas. Encontró y corrigió las migas de las rutas hijas (heredaban la `miga` del padre).
+- [x] 2.1 `diseno.component` y `seccion-form`. Además (decisión 2026-10-11): `reservas-config`, `reservas-list`, alertas y comunicados; el admin ya no tiene `esHotel()`/`esTours()`/`esEventos()`/`esLocales()` (`tenantService.tieneReservas()` reemplaza a `esReservas`).
+- [x] 3.1 Tienda: `negocio/<rubro>/vitrina.ts` y migración de los 11 archivos. Además (decisión 2026-10-11): solicitud y seguimiento de reserva; `voz()` pasó a los perfiles y `vozAlojamiento` a `negocio/hotel/alojamiento.ts`.
+- [x] 4.1 Backend: `modules/negocio/` con contrato, registro (rubro desde la BD, cacheado) y test de contrato.
+- [x] 4.2 Backend: `prepararProducto` por rubro; hotel sin precio exigido; quitar el S/ 1 provisional del admin. (Hotel: crea con 0 y al editar ignora el precio; la tienda no lo muestra hasta tener modalidades.)
+- [x] 4.3 Backend: integrar `VERTICALES` de reservas al registro. Cada vertical vive en `modules/reservas/<rubro>/vertical.js` (locales: `verticalLocal`) y el registro la une como `estrategia.reservas`; `extraCotizacion` reemplaza el `vertical === verticalLocal`.
+- [x] 4.5 Backend (decisión 2026-10-11): los datos de cada rubro en `modules/negocio/<rubro>/datos.js` (capacidades `recibeReservas`, `planDePagos`, `transmisiones`; plantilla y secciones de Diseño; config de reservas por defecto y texto de aviso), reunidos en `negocio/datos.js` (liviano, sin ciclos) y sumados a cada estrategia; el perfil del asistente pasa a `estrategia.agente`, y locales tiene su propio asesor (`modules/agente/perfiles/locales.js`: `ver_salones`, `info_local`; antes usaba el de productos). Reemplaza `TIPOS_POR_NEGOCIO`, `DEFAULT_POR_NEGOCIO`, `POR_VERTICAL`, `TEXTOS_AVISO`, `PERFILES` del agente y los `tipoNegocio === …` de config de reservas, onboarding y transmisiones.
 - [ ] 4.4 Backend: soporte de excepción por tienda (`EXCEPCIONES`) con test que corre la suite del rubro contra ella (solo cuando haya un caso real).
-- [ ] 5.1 Convención en los `CLAUDE.md` de los tres repos.
+- [x] 5.1 Convención en los `CLAUDE.md` de los tres repos (la tienda no tenía: se creó).
+
+## Decisiones tomadas al implementar (2026-10-11)
+
+- Hotel: el tipo de habitación se crea sin precio (queda en 0 hasta guardar la estadía) y la tienda no lo muestra hasta entonces: listado, home, detalle y buscador del asistente excluyen "precio 0 y no servicio" (`modules/catalogo/productos.vitrina.js`).
+- Migas y vuelta del formulario: tours → `/tours`, eventos → `/eventos`, locales → `/salones` (locales volvía a `/productos`).
+- Vocabulario propio en el formulario de producto: tour, evento y salón (antes, el de productos).
+- Textos de otro rubro corregidos en locales/eventos: "Banda baja", reseñas "al terminar cada evento", instrucciones del día del evento / del ingreso, pie "Salones / Todos los salones", título "Para el día del evento". Botón por defecto de tours: "Ver tours" en admin y tienda.
+- Seguimiento de reserva: las ramas por `tipo` de la reserva se mantienen (eligen qué campos del registro listar; no preguntan por el rubro de la tienda).

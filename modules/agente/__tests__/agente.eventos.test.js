@@ -28,7 +28,7 @@ const evento = {
     tipos: [{ id: "gen", nombre: "General", precio: 50, estado: "ultimas", quedan: 3 }, { id: "vip", nombre: "VIP", precio: 120, estado: "agotado", quedan: null }]
   }]
 };
-jest.unstable_mockModule("../../reservas/eventos/eventos.service.js", () => ({
+jest.unstable_mockModule("../../reservas/eventos/eventos.service.js", () => ({ cargarFuncionParaCompra: jest.fn(), apartarEntradas: jest.fn(),
   listarEventosStore: jest.fn(async () => [evento]),
   obtenerEventoStore: jest.fn(async () => evento)
 }));

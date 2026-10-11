@@ -3,6 +3,7 @@ import { PLANTILLA_IDS } from "./plantillas.js";
 import { PALETA_IDS } from "./paletas.js";
 import { TIPOGRAFIA_IDS } from "./tipografias.js";
 import { FORMATO_ACTUAL, migrarEstructura } from "./migrar.js";
+import { DATOS, datosDe } from "../negocio/datos.js";
 
 /**
  * Schemas Zod de la estructura de la tienda (claves "estructura" y "tema" de
@@ -29,23 +30,16 @@ export const TIPOS_SECCION = [
   "salones"
 ];
 
-// Secciones que puede usar cada tipo de negocio (docs/specs/diseno-por-rubro).
-// Las de e-commerce no existen en un hotel y las de hotel no existen en una
-// tienda de productos. Un tipo sin lista propia usa la de productos.
-const TIPOS_COMUNES = ["hero", "beneficios", "testimonios", "imagen-texto", "faq", "cinta", "contacto"];
-// Servicios, ubicación y políticas sirven a todo negocio de reservas.
-const TIPOS_RESERVAS = ["servicios", "ubicacion", "politicas", "galeria"];
-export const TIPOS_POR_NEGOCIO = Object.freeze({
-  productos: Object.freeze([...TIPOS_COMUNES, "categorias", "productos", "oferta"]),
-  hotel: Object.freeze([...TIPOS_COMUNES, ...TIPOS_RESERVAS, "habitaciones"]),
-  tours: Object.freeze([...TIPOS_COMUNES, ...TIPOS_RESERVAS, "tours"]),
-  eventos: Object.freeze([...TIPOS_COMUNES, ...TIPOS_RESERVAS, "eventos"]),
-  locales: Object.freeze([...TIPOS_COMUNES, ...TIPOS_RESERVAS, "salones"])
-});
+// Secciones que puede usar cada tipo de negocio (docs/specs/diseno-por-rubro): las
+// define cada rubro en modules/negocio/<rubro>/datos.js. Las de e-commerce no existen
+// en un hotel y las de hotel no existen en una tienda de productos.
+export const TIPOS_POR_NEGOCIO = Object.freeze(
+  Object.fromEntries(Object.entries(DATOS).map(([tipo, d]) => [tipo, d.diseno.secciones]))
+);
 
-/** Tipos de sección permitidos para un tipo de negocio. */
+/** Tipos de sección permitidos para un tipo de negocio (uno desconocido usa los de productos). */
 export function tiposPermitidos(tipoNegocio) {
-  return TIPOS_POR_NEGOCIO[tipoNegocio] ?? TIPOS_POR_NEGOCIO.productos;
+  return datosDe(tipoNegocio).diseno.secciones;
 }
 
 export const MAX_SECCIONES = 15;

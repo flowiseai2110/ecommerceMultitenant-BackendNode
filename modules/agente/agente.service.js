@@ -25,28 +25,8 @@ import { sumarUso } from "../consumo-ia/consumo-ia.service.js";
 import { indicadoresPrecio, contienePrecio } from "./precios.js";
 import { calcularEnvioToolDef, ejecutarCalcularEnvio } from "./tools/calcular-envio.js";
 import { estadoPedidoToolDef, ejecutarEstadoPedido } from "./tools/estado-pedido.js";
-import { ejecutarToolHotel, systemPromptHotel, toolsHotel } from "./perfiles/hotel.js";
-import { ejecutarToolTours, systemPromptTours, toolsTours } from "./perfiles/tours.js";
-import { ejecutarToolEventos, systemPromptEventos, toolsEventos } from "./perfiles/eventos.js";
+import { estrategiaDe } from "../negocio/registro.js";
 
-/**
- * Perfiles de las verticales de reserva (mini booking). Sin perfil rige el
- * asesor de productos (catálogo, envíos, pedidos).
- */
-const PERFILES = {
-  hotel: {
-    system: systemPromptHotel, tools: toolsHotel, ejecutar: ejecutarToolHotel,
-    busqueda: "ver_habitaciones", saludo: "¿Qué habitación estás buscando?"
-  },
-  tours: {
-    system: systemPromptTours, tools: toolsTours, ejecutar: ejecutarToolTours,
-    busqueda: "buscar_tours", saludo: "¿Qué tour te gustaría hacer?"
-  },
-  eventos: {
-    system: systemPromptEventos, tools: toolsEventos, ejecutar: ejecutarToolEventos,
-    busqueda: "ver_eventos", saludo: "¿A qué evento te gustaría ir?"
-  }
-};
 
 // Si el texto del modelo trae un monto (inventado: no recibe precios).
 const CORRECCION_PRECIO =
@@ -172,7 +152,8 @@ export async function responderTurno({
   // catálogo con stock ni envíos, tienen habitaciones o tours que el negocio
   // confirma. Lo resuelve resolveTienda junto con el tiendaId; sin dato rige
   // el perfil de productos.
-  const perfil = PERFILES[tipoNegocio] ?? null;
+  // El perfil es parte de la estrategia del rubro (estrategia.agente); null = asesor de productos.
+  const perfil = estrategiaDe({ id: tiendaId, tipoNegocio }).agente ?? null;
 
   const system = perfil ? perfil.system(tiendaNombre) : buildSystemPrompt(tiendaNombre);
   const facetas = perfil ? null : await obtenerFacetas(tiendaId);

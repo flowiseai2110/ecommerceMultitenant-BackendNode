@@ -3,6 +3,7 @@ import { ConflictError, NotFoundError } from "../../utils/errors.js";
 import { vozAlojamiento } from "./hotel/alojamiento.js";
 import { textoEn } from "../traducciones/traducciones.service.js";
 import { PLANTILLA_BASE } from "./locales/contrato.js";
+import { DATOS, datosDe } from "../negocio/datos.js";
 
 /**
  * Configuración de reservas de la tienda (spec R1.3). Sin fila en
@@ -11,14 +12,6 @@ import { PLANTILLA_BASE } from "./locales/contrato.js";
  */
 
 /** Aviso de reserva próxima por defecto (R5.3.1, R9.6). */
-export const TEXTOS_AVISO = {
-  // {negocio} / {alNegocio}: el hotel, el hostal, la casa… (tipo de alojamiento, hospedaje-completo B1).
-  hotel: "Tu reserva es para dentro de poco. Si {negocio} no la confirma antes de las {hora}, se anula. Te recomendamos llamar o escribir {alNegocio} por WhatsApp.",
-  tours: "Tu tour sale pronto ({hora}). La agencia necesita confirmar el cupo y organizar la salida; si no la confirma antes, la solicitud se anula. Te recomendamos escribir a la agencia por WhatsApp.",
-  eventos: "El organizador verifica los pagos por Yape o transferencia a mano. Si tu pago no se verifica antes de la función ({hora}), lleva tu captura: la validarán en la puerta.",
-  locales: "Tu evento es pronto ({hora}). El local necesita confirmar la fecha y recibir la separación; te recomendamos escribir por WhatsApp."
-};
-
 /** Política de cancelación por tramos por defecto (alquiler-locales R10.2), de más a menos días. */
 export const TRAMOS_POR_DEFECTO = Object.freeze([
   { desdeDias: 60, separacionPct: 0, restoPct: 100 },
@@ -76,16 +69,6 @@ const BASE = {
   horaTope: "03:00"
 };
 
-const POR_VERTICAL = {
-  // Hotel: el comprobante se emite en el check-out, junto con los consumos.
-  hotel: { avisoProximoHoras: 2, comprobanteEn: "en_el_servicio" },
-  tours: { avisoProximoHoras: 24, comprobanteEn: "al_pagar" },
-  eventos: { avisoProximoHoras: 6, comprobanteEn: "al_pagar" },
-  // Locales: el negocio acepta y la separación es el 40 % (alquiler-locales, plan).
-  locales: { avisoProximoHoras: null, comprobanteEn: "al_pagar", cobro: "adelanto", adelantoPct: 40 },
-  productos: { avisoProximoHoras: null, comprobanteEn: "al_pagar" }
-};
-
 export const CAMPOS_CONFIG = [
   "modoConfirmacion", "cobro", "adelantoPct", "anticipacionMinHoras", "avisoProximoHoras", "avisoProximoTexto",
   "maxSolicitudesAbiertas", "instrucciones", "politicaCancelacion", "horaCheckin", "horaCheckout", "comprobanteEn",
@@ -101,9 +84,9 @@ export const CAMPOS_CONFIG = [
 /** Montos Decimal de Prisma que la lógica usa como número. */
 const CAMPOS_MONTO = ["cargoNinoNoche", "tipoCambioUsd", "separacionMonto", "garantiaMonto", "cargoReprogramacion", "tarifaCoordinacion", "descorcheBotella"];
 
-/** Defaults de una vertical, sin consultar la BD (para tests y para el seed). */
+/** Defaults de una vertical, sin consultar la BD (para tests y para el seed): los de su rubro (negocio/<rubro>/datos.js). */
 export function configPorDefecto(tipoNegocio) {
-  return { ...BASE, ...(POR_VERTICAL[tipoNegocio] ?? POR_VERTICAL.productos) };
+  return { ...BASE, ...datosDe(tipoNegocio).configReservas };
 }
 
 /**
@@ -114,15 +97,15 @@ export function resolverConfig(tipoNegocio, fila) {
   const config = { ...configPorDefecto(tipoNegocio) };
   if (fila) for (const campo of CAMPOS_CONFIG) if (fila[campo] !== undefined) config[campo] = fila[campo];
   for (const campo of CAMPOS_MONTO) if (config[campo] != null) config[campo] = Number(config[campo]);
-  if (tipoNegocio === "locales") {
-    // Sin tramos ni plantilla propios rigen los de la plataforma.
+  if (datosDe(tipoNegocio).planDePagos) {
+    // Plan de pagos (locales): sin tramos ni plantilla propios rigen los de la plataforma.
     if (!Array.isArray(config.politicaTramos) || !config.politicaTramos.length) config.politicaTramos = TRAMOS_POR_DEFECTO.map(t => ({ ...t }));
     config.contratoPersonalizado = Boolean(config.contratoPlantilla);
     config.contratoPlantilla = config.contratoPlantilla || PLANTILLA_BASE;
   }
   config.resenasExternas = Array.isArray(config.resenasExternas) ? config.resenasExternas : [];
   const v = vozAlojamiento(config.tipoAlojamiento);
-  const avisoPorDefecto = (TEXTOS_AVISO[tipoNegocio] ?? TEXTOS_AVISO.hotel)
+  const avisoPorDefecto = (datosDe(tipoNegocio).textoAviso ?? DATOS.hotel.textoAviso)
     .replace("{negocio}", v.negocio).replace("{alNegocio}", v.alNegocio);
   return {
     ...config,
@@ -173,8 +156,8 @@ export function configPublica(config, lang = "es") {
     // Fase C: "≈ US$" en la vitrina y puntaje en otros sitios.
     tipoCambioUsd: config.tipoCambioUsd,
     resenasExternas: config.resenasExternas,
-    // Locales (alquiler-locales R1.2): reglas que el cliente ve antes de reservar.
-    ...(config.tipoNegocio === "locales" ? {
+    // Plan de pagos (alquiler-locales R1.2): reglas que el cliente ve antes de reservar.
+    ...(datosDe(config.tipoNegocio).planDePagos ? {
       separacionTipo: config.separacionTipo,
       separacionMonto: config.separacionMonto,
       saldoDiasAntes: config.saldoDiasAntes,

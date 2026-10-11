@@ -135,3 +135,9 @@ export async function ejecutarToolEventos(nombre, input, { tiendaId, ahora = new
     }
   };
 }
+
+/** Perfil del asesor de este rubro (estrategia.agente, modules/negocio/registro.js). */
+export const agenteEventos = {
+  system: systemPromptEventos, tools: toolsEventos, ejecutar: ejecutarToolEventos,
+  busqueda: "ver_eventos", saludo: "¿A qué evento te gustaría ir?"
+};

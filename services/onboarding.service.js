@@ -17,6 +17,7 @@ import { seedMetodosPagoParaTienda } from "./metodos-pago-seed.service.js";
 import { seedMetodosEnvioParaTienda } from "./metodos-envio-seed.service.js";
 import { TIPOS_NEGOCIO } from "../modules/tenants/tiendas.schema.js";
 import { RUBROS } from "../modules/tenants/rubros.js";
+import { datosDe } from "../modules/negocio/datos.js";
 
 const vacioANull = (v) => (typeof v === "string" && v.trim() === "" ? null : v);
 const opcional = (max) => z.preprocess(vacioANull, z.string().trim().max(max).nullable().optional());
@@ -118,9 +119,9 @@ export async function onboardCliente(input) {
       }
     });
 
-    // Hotel, tours y eventos no envían nada ni cobran contra entrega
+    // Los rubros de reservas no envían nada ni cobran contra entrega
     // (docs/specs/hospedaje-completo A2).
-    const esReservas = datosTienda.tipoNegocio !== "productos";
+    const esReservas = datosDe(datosTienda.tipoNegocio).recibeReservas;
     const metodosPrecargados = await seedMetodosPagoParaTienda(tienda.id, { excluirTipos: esReservas ? ["contra_entrega"] : [] }, tx);
     const enviosPrecargados = esReservas ? 0 : await seedMetodosEnvioParaTienda(tienda.id, {}, tx);
 

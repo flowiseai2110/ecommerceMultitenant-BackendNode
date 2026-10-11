@@ -123,3 +123,9 @@ export async function ejecutarToolHotel(nombre, input, { tiendaId }) {
     }
   };
 }
+
+/** Perfil del asesor de este rubro (estrategia.agente, modules/negocio/registro.js). */
+export const agenteHotel = {
+  system: systemPromptHotel, tools: toolsHotel, ejecutar: ejecutarToolHotel,
+  busqueda: "ver_habitaciones", saludo: "¿Qué habitación estás buscando?"
+};

@@ -1,4 +1,5 @@
 import MemoryCache from "../../utils/memory-cache.js";
+import { invalidarRubrosCache } from "../negocio/rubros.cache.js";
 
 /**
  * Cachés en memoria de tiendas. Se extraen aquí para que la ruta admin y la ruta
@@ -49,4 +50,6 @@ export function invalidateTiendasStoreCache() {
 export function invalidateTiendasCaches() {
   adminListCache.clear();
   storeCache.clear();
+  // El rubro (tipo_negocio) que usan las reglas de modules/negocio.
+  invalidarRubrosCache();
 }
