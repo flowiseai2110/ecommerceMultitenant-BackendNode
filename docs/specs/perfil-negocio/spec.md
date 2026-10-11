@@ -1,12 +1,12 @@
-# Spec: perfil de negocio (Strategy por tipo de negocio)
+# Spec: lógica por rubro (Strategy por tipo de negocio)
 
-> Estado: **propuesta aprobada** (2026-10-11), por implementar en una sesión nueva. Tareas: al final de este archivo.
+> Estado: **diseño aprobado** (2026-10-11), por implementar en una sesión nueva. Tareas: al final.
 > Origen: sesión de [hotel-inventario](../hotel-inventario/spec.md) (R1.7: hoteles sin categorías, formulario del tipo de habitación).
-> Repos: FrontendAdmin (pasos 1 y 2), FrontendStore (paso 3), BackendNode (paso 4).
+> Repos: BackendNode, FrontendAdmin, FrontendStore.
 
 ## Problema
 
-Cada tipo de negocio (productos, hotel, tours, eventos, locales) tiene sus reglas, pero el frontend las resuelve preguntando por la identidad del negocio en cada pantalla:
+Cada rubro (productos, hotel, tours, eventos, locales) tiene sus reglas, pero el frontend las resuelve preguntando por la identidad del negocio en cada pantalla:
 
 ```ts
 // FrontendAdmin, diseno.component.ts (hoy)
@@ -18,56 +18,67 @@ Medición del 2026-10-11 (`esHotel()`, `esTours()`, `esEventos()`, `esLocales()`
 
 | Repo | Condiciones | Archivos con más |
 |---|---|---|
-| FrontendAdmin | **114** | `diseno.component` (33: 20 ts + 13 html), `reservas-config` (32), `producto-detail` (22), `layout.component.html` (12) |
+| FrontendAdmin | **114** | `diseno.component` (33), `reservas-config` (32), `producto-detail` (22), `layout.component.html` (12) |
 | FrontendStore | **49** | `hero-banner` (9), `bottom-nav` (8), `store-footer` (7), `policies-section` (7), `reservas.util` (6) |
-| BackendNode | pocas | Ya usa Strategy en reservas (`VERTICALES` en `modules/reservas/reservas.service.js`) |
+| BackendNode | pocas | Reservas ya usa Strategy (`VERTICALES` en `modules/reservas/reservas.service.js`) |
 
-Cada vertical nueva obliga a recorrer todos esos archivos, y los cambios de hotel-inventario R1.7 (ocultar categoría, precio, stock y variantes; "Código" en vez de SKU; migas `breadcrumbHotel`/`breadcrumbHotelUrl`) sumaron más ternarios del mismo tipo.
+Cada rubro nuevo obliga a recorrer todos esos archivos. Además hay reglas de negocio que viven en el front y no en el backend: p. ej. el admin manda S/ 1 de precio "provisional" al crear un tipo de habitación (hotel-inventario 1.7b) porque el backend exige `precioBase` a todos los rubros.
 
-## Qué ya está bien (no tocar)
+## Principios
 
-- **Backend `VERTICALES`** (reservas.service.js): cada vertical aporta `cotizar`, `estadoInicial`, `enTransaccion`, `whereAbiertas`… y `crearSolicitud` no pregunta "¿es hotel?". Es el modelo a seguir.
-- **Mini-strategies existentes** que se absorben en el perfil: `textosCategoria(esHotel)` (admin), `vitrinaDe(tipoNegocio)`, `voz(...)`, `vozAlojamiento(...)` (tienda).
-- **Módulos propios de una vertical** (ficha de hotel, calendario de locales, cotización de tours): ya están separados; no van al perfil.
+1. **Una carpeta por rubro, en los tres repos, con el mismo nombre** (`productos`, `hotel`, `tours`, `eventos`, `locales`). Ahí vive todo lo que distingue al rubro.
+2. **Un contrato por repo** (lo que todo rubro debe definir) y **un registro** que elige la estrategia en tiempo de ejecución. Si a un rubro le falta algo del contrato, no compila (front) o falla un test de contrato (backend).
+3. **El código compartido pregunta por capacidades, no por identidad**: `perfil().catalogo.usaStock`, nunca `esHotel()`. `esHotel()` solo es válido dentro de código que ya es de un solo rubro.
+4. **El backend es la verdad de las reglas; el front, de la pantalla.** El front refleja las reglas para la UX, pero el backend valida aunque el front se equivoque.
+5. **El rubro sale de la base, no del request.** El front manda el tenant (`tiendaId`) como hoy; el backend lee `tiendas.tipo_negocio` (cacheado). Nunca se confía en un `tipoNegocio` enviado por el cliente: permitiría saltarse reglas (p. ej. crear un producto sin precio en una tienda de productos).
+6. **No se crea un rubro ni una copia por cliente** (ver "Variaciones por cliente").
 
-## Decisión
+## Backend
 
-**Strategy declarativo**: un objeto `PerfilNegocio` por tipo de negocio, elegido una vez (`tenantService.perfil()`), en lugar de una jerarquía de clases. En el frontend el ~90 % de las diferencias son datos (textos, campos visibles, rutas), no comportamiento.
+```
+modules/negocio/
+  contrato.js        ← lo que todo rubro implementa (validarProducto, prepararProducto, …) + test de contrato
+  registro.js        ← estrategiaDe(tienda): excepción por tienda ?? rubro
+  productos/  hotel/  tours/  eventos/  locales/
+```
+
+- **Lo exclusivo de un rubro** (estadía, disponibilidad, tarifas, salones, funciones) ya vive en `modules/reservas/<rubro>/` con sus rutas y servicios: se mantiene ahí o se mueve a `modules/negocio/<rubro>/` en un paso posterior; lo que importa es que no se mezcle con otros rubros.
+- **Lo común** (CRUD de productos, pedidos, pagos) sigue en su módulo, con su Repository → Service → Controller, y le pregunta a la estrategia **solo en los puntos donde el rubro cambia la regla**:
+
+```js
+// Controller/servicio genérico: no sabe de rubros
+const tienda = await tiendaDe(req.tiendaId);                 // rubro desde la BD (cacheado)
+const datos = estrategiaDe(tienda).prepararProducto(req.body); // hotel: el precio lo fija la estadía
+```
+
+- `VERTICALES` de reservas es el modelo: se integra al registro (cotizar, estadoInicial, enTransaccion pasan a ser parte del contrato de los rubros de reservas).
+- Los repositorios siguen genéricos (Prisma); el acceso a datos propio de un rubro va en su carpeta.
+
+## FrontendAdmin y FrontendStore
+
+```
+src/app/negocio/
+  perfil-negocio.ts   ← contrato: interface PerfilNegocio (+ type TipoNegocio)
+  perfiles.ts         ← registro: Record<TipoNegocio, PerfilNegocio>, solo importa
+  productos/perfil.ts
+  hotel/
+    perfil.ts         ← vocabulario, capacidades, menú, migas, vitrina
+    reglas.ts         ← comportamiento de pantalla del rubro (validaciones de UX, armado del guardado)
+  tours/  eventos/  locales/
+```
 
 ```ts
-// FrontendAdmin: src/app/negocio/perfiles.ts (propuesta)
+// perfil-negocio.ts (propuesta; se agrupa para no crecer a 50 flags sueltos)
 export type TipoNegocio = 'productos' | 'hotel' | 'tours' | 'eventos' | 'locales';
-
 export interface PerfilNegocio {
-  /** Cómo se llama lo que se vende. */
   vocab: { item: string; items: string; nuevo: string; editar: string; codigo: string; seccionInfo: string };
-  /** Formulario y lista del catálogo (producto-detail, producto-list). */
-  catalogo: {
-    rutaLista: string;          // '/productos' | '/habitaciones' | '/tours' | …
-    usaCategorias: boolean;     // hotel: false (hotel-inventario R1.7)
-    usaPrecio: boolean;         // hotel: false (lo fija la estadía)
-    usaStock: boolean;
-    usaVariantes: boolean;
-    maxNombre: number;          // productos 60, hotel 100
-  };
-  /** Entradas del menú lateral propias del negocio. */
+  catalogo: { rutaLista: string; usaCategorias: boolean; usaPrecio: boolean; usaStock: boolean; usaVariantes: boolean; maxNombre: number };
   menu: ItemMenu[];
-  /** Textos de la vitrina que el admin muestra (diseño, ayudas). */
   vitrina: { ruta: string; boton: string };
 }
 
-const HOTEL: PerfilNegocio = {
-  vocab: { item: 'Tipo de habitación', items: 'Tipos de habitación', nuevo: 'Nuevo tipo de habitación',
-           editar: 'Editar tipo de habitación', codigo: 'Código', seccionInfo: 'Información del tipo de habitación' },
-  catalogo: { rutaLista: '/habitaciones', usaCategorias: false, usaPrecio: false, usaStock: false, usaVariantes: false, maxNombre: 100 },
-  menu: [/* Tipos de habitación, Tarifas y extras, Config. de reservas… */],
-  vitrina: { ruta: 'habitaciones', boton: 'Ver habitaciones' }
-};
-
-export const PERFILES: Record<TipoNegocio, PerfilNegocio> = { productos: PRODUCTOS, hotel: HOTEL, tours: TOURS, eventos: EVENTOS, locales: LOCALES };
-
 // tenant.service.ts
-readonly perfil = computed(() => PERFILES[this.tipoNegocio() as TipoNegocio] ?? PRODUCTOS);
+readonly perfil = computed(() => PERFILES[this.tipoNegocio() as TipoNegocio] ?? PERFILES.productos);
 ```
 
 ```html
@@ -76,36 +87,63 @@ readonly perfil = computed(() => PERFILES[this.tipoNegocio() as TipoNegocio] ?? 
 <label>{{ perfil().vocab.codigo }}</label>
 ```
 
-### Reglas
+- Admin: pantallas compartidas (formulario de producto, menú, migas, diseño) leen el perfil. Las pantallas exclusivas de un rubro (ficha de estadía, Tarifas y extras, Salones…) pueden mudarse a `negocio/<rubro>/` en un paso posterior (mueve rutas).
+- Tienda: `negocio/<rubro>/vitrina.ts` absorbe `vitrinaDe`, `voz`, `vozAlojamiento` y las condiciones de pie, navegación inferior, hero, políticas, testimonios, home y layout.
+- Admin y tienda son repos distintos: cada uno tiene su contrato con lo que necesita; no se comparte código entre ellos por esto.
 
-1. **Preguntar por capacidades, no por identidad**: `perfil().catalogo.usaStock`, no `esHotel()`. Si un negocio cambia, se cambia un dato y no N archivos.
-2. **El tipo obliga a completar**: `Record<TipoNegocio, PerfilNegocio>` hace que agregar un campo al perfil no compile hasta que las 5 verticales lo definan. Una vertical nueva = un objeto.
-3. **El perfil es para lo compartido que varía** (formulario de producto, menú, migas, diseño, textos). Lo exclusivo de una vertical se queda en su módulo. Agrupar la interfaz (`vocab`, `catalogo`, `menu`, `vitrina`) para que no crezca a 50 flags sueltos.
-4. **`esHotel()` sigue siendo válido dentro de pantallas que ya son de una sola vertical** (p. ej. la sección hotel de `reservas-config`). No se elimina a ciegas.
-5. Admin y tienda son repos distintos: cada uno tiene su perfil con lo que necesita; no se comparte código entre ellos por esto.
+### Reparto front / back (ejemplo)
 
-### Riesgos
+"Un tipo de habitación no lleva precio en su formulario":
 
-- Refactor con poca red: el admin tiene 50 tests y casi ninguno cubre estas pantallas. Migrar **un archivo por vez**, compilar y revisar el diff; comparar antes/después en el navegador con una tienda de cada tipo (`demobooking` hotel, `tour-test` tours, una de eventos, una de locales y una de productos).
-- No cambiar comportamiento en el mismo commit que la migración: el refactor debe ser neutro (mismos textos y campos visibles por vertical).
+| | Dónde | Qué |
+|---|---|---|
+| Regla | Backend `negocio/hotel/` (`prepararProducto`) | El precio no se exige; lo calcula la estadía (el más bajo de sus modalidades). Se elimina el S/ 1 provisional del admin |
+| Pantalla | Admin `negocio/hotel/perfil.ts` | `catalogo.usaPrecio: false`: el formulario no muestra el campo |
+
+## Variaciones por cliente (p. ej. una cadena como Casa Andina)
+
+Un cliente grande **no es un rubro nuevo ni una copia del rubro**. Una copia (`servicioHospedajeCasaAndina`) obliga a repetir cada arreglo y cada mejora en cada cliente: el costo crece con cada cliente y se pierde la ventaja de un SaaS, donde una mejora llega a todos.
+
+Se resuelve en tres niveles, del más común al más raro:
+
+1. **Configuración por tienda** (cubre la mayoría): políticas, horarios, cobro, IGV, planes de tarifa. Ya existe (`config_reservas`).
+2. **Capacidades opcionales del rubro**, activables por tienda: lo que pide un cliente grande suele servir a otros (varias sedes en una cuenta, tarifas corporativas, integración con PMS o channel manager). Se construye una vez en `negocio/hotel/` y se vende al siguiente cliente.
+3. **Excepción por tienda** (último recurso, para algo de verdad único): un objeto que **hereda del rubro y reemplaza solo lo distinto**. Todo lo demás (disponibilidad, anulación, fases futuras) le llega del rubro, y los tests del rubro corren también contra la excepción.
+
+```js
+// negocio/registro.js
+const EXCEPCIONES = { [CASA_ANDINA_ID]: { ...hotel, cotizar: cotizarCasaAndina } };
+export const estrategiaDe = (tienda) => EXCEPCIONES[tienda.id] ?? ESTRATEGIAS[tienda.tipoNegocio];
+```
+
+Regla: **el rubro define la lógica, la configuración la ajusta por cliente, la excepción por tienda es el último recurso y nunca una copia.**
+
+## Riesgos
+
+- Refactor con poca red: el admin tiene 50 tests y casi ninguno cubre estas pantallas. Migrar **un archivo por vez**, compilar, revisar el diff y comparar en el navegador con una tienda de cada rubro (`demobooking` hotel, `tour-test` tours, una de eventos, una de locales y una de productos).
+- Refactor neutro: no cambiar comportamiento en el mismo commit que la migración (mismos textos y campos por rubro). Cambios de regla (p. ej. quitar el S/ 1 provisional) en commits aparte.
+- Que el contrato crezca sin orden: agrupar (vocab / catálogo / menú / vitrina) y dejar lo exclusivo en el módulo del rubro.
 
 ## Pasos
 
-1. **Admin, núcleo**: `src/app/negocio/perfiles.ts` + `tenantService.perfil()`. Migrar `producto-detail` (ts + html), `layout.component.html` (menú), `breadcrumb` (reemplazar `breadcrumbHotel`/`breadcrumbHotelUrl` de `app.routes.ts` por el perfil) y `categoria-textos.ts`.
-2. **Admin, diseño**: `diseno.component` (ts + html) y `seccion-form`.
-3. **Tienda**: perfil de vitrina que absorba `vitrinaDe`, `voz`, `vozAlojamiento` y las condiciones de `store-footer`, `bottom-nav`, `hero-banner`, `policies-section`, `testimonials-section`, `home-page`, `store-header`, `store-layout`.
-4. **Backend (solo si hace falta)**: p. ej. `precioBase` opcional cuando la vertical lo calcula (hoy el admin manda S/ 1 provisional para un tipo de habitación nuevo; ver hotel-inventario 1.7b).
-5. Convención en el `CLAUDE.md` de cada repo: "lo que varía por tipo de negocio va en el perfil; preguntar por capacidades, no por `esX()`".
+1. **Admin, núcleo**: `negocio/` (contrato, registro, carpeta por rubro) + `tenantService.perfil()`. Migrar `producto-detail`, menú lateral, migas (quitar `breadcrumbHotel`/`breadcrumbHotelUrl` de `app.routes.ts`) y `categoria-textos.ts`.
+2. **Admin, diseño**: `diseno.component` y `seccion-form`.
+3. **Tienda**: `negocio/<rubro>/vitrina.ts` y migración de los 11 archivos.
+4. **Backend**: `modules/negocio/` (contrato, registro con rubro desde la BD, test de contrato); primera regla: `prepararProducto` (hotel sin precio en el formulario) y quitar el S/ 1 provisional del admin; integrar `VERTICALES`.
+5. **Convención** en el `CLAUDE.md` de cada repo: "lo que varía por rubro va en `negocio/<rubro>/`; el código compartido pregunta por capacidades; no se agrega `esX()` fuera de código de un solo rubro; variaciones por cliente según los tres niveles".
 
 ## Tareas
 
-- [ ] 1.1 `perfiles.ts` con las 5 verticales y `tenantService.perfil()`.
+- [ ] 1.1 Admin: `negocio/perfil-negocio.ts`, `negocio/perfiles.ts`, `negocio/<rubro>/perfil.ts` (5) y `tenantService.perfil()`.
 - [ ] 1.2 `producto-detail` sin `esHotel()` (vocabulario, categoría, precio/stock, variantes, código, máximo del nombre, ruta de vuelta).
 - [ ] 1.3 Menú lateral desde `perfil().menu`.
-- [ ] 1.4 Migas desde el perfil; quitar `breadcrumbHotel` y `breadcrumbHotelUrl` de las rutas.
-- [ ] 1.5 `categoria-textos.ts` dentro del perfil.
-- [ ] 1.6 Verificación: build, 50 tests, navegador con una tienda por vertical.
+- [ ] 1.4 Migas desde el perfil; quitar `breadcrumbHotel` y `breadcrumbHotelUrl`.
+- [ ] 1.5 `categoria-textos.ts` dentro de los perfiles.
+- [ ] 1.6 Verificación: build, 50 tests, navegador con una tienda por rubro.
 - [ ] 2.1 `diseno.component` y `seccion-form`.
-- [ ] 3.1 Perfil de vitrina en la tienda y migración de los 11 archivos.
-- [ ] 4.1 Backend: `precioBase` según la vertical (si se confirma necesario).
-- [ ] 5.1 Convención en los `CLAUDE.md`.
+- [ ] 3.1 Tienda: `negocio/<rubro>/vitrina.ts` y migración de los 11 archivos.
+- [ ] 4.1 Backend: `modules/negocio/` con contrato, registro (rubro desde la BD, cacheado) y test de contrato.
+- [ ] 4.2 Backend: `prepararProducto` por rubro; hotel sin precio exigido; quitar el S/ 1 provisional del admin.
+- [ ] 4.3 Backend: integrar `VERTICALES` de reservas al registro.
+- [ ] 4.4 Backend: soporte de excepción por tienda (`EXCEPCIONES`) con test que corre la suite del rubro contra ella (solo cuando haya un caso real).
+- [ ] 5.1 Convención en los `CLAUDE.md` de los tres repos.
