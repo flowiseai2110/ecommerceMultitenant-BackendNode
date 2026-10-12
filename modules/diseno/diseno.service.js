@@ -10,6 +10,7 @@ import { FORMATO_ACTUAL } from "./migrar.js";
 import { fotosAjenas, layoutDeNegocio, prefijoFotosDiseno, seccionesAjenas, TIPOS_POR_NEGOCIO } from "./secciones.schema.js";
 import { publicBaseUrl } from "../../services/storage.service.js";
 import { urlTienda } from "../resenas/resenas.service.js";
+import { estructuraVigente, temaPorDefecto } from "./resolver.js";
 
 /** Tipo de negocio de la tienda tal como lo entienden las plantillas. */
 async function negocioDeTienda(tiendaId) {
@@ -57,8 +58,19 @@ export async function validarEstructuraDeTienda(tiendaId, estructura) {
  */
 export async function getDisenoAdmin(tiendaId) {
   const tienda = await prisma.tiendas.findUnique({ where: { id: tiendaId }, select: { slug: true, tipoNegocio: true } });
-  const diseno = disenoAdmin(await getDiseno(tiendaId), tienda?.tipoNegocio);
-  return { ...diseno, urlTienda: tienda ? urlTienda(tienda.slug, "") : null };
+  const guardado = await getDiseno(tiendaId);
+  const diseno = disenoAdmin(guardado, tienda?.tipoNegocio);
+  // El editor en vivo arranca con lo que la tienda muestra hoy, aunque nunca
+  // haya elegido plantilla o la suya sea de otro tipo de negocio
+  // (editor-diseno-en-vivo V16). Esa copia se guarda recién al publicar.
+  const vigente = estructuraVigente({ estructura: guardado.estructura, hero: guardado.hero, tipoNegocio: tienda?.tipoNegocio });
+  const usaGuardada = Boolean(diseno.estructura) && diseno.estructura.plantillaId === vigente.plantillaId;
+  return {
+    ...diseno,
+    estructura: usaGuardada ? diseno.estructura : vigente,
+    temaPorDefecto: temaPorDefecto(tienda?.tipoNegocio),
+    urlTienda: tienda ? urlTienda(tienda.slug, "") : null
+  };
 }
 
 /**
@@ -78,13 +90,8 @@ export function getCatalogo() {
   };
 }
 
-/**
- * Aplica una plantilla (R2.2) o la restaura (R4.5): guarda una copia nueva
- * con las reglas de R3 y deja la estructura previa en `estructura_anterior`
- * para poder deshacer (R3.6). `{ estructura: null }` = la tienda no tenía
- * una (deshacer la vuelve a la clásica por defecto).
- */
-export async function aplicarPlantilla(tiendaId, plantillaId, user) {
+/** La plantilla, si existe y es del tipo de negocio de la tienda (H2). */
+async function plantillaDeTienda(tiendaId, plantillaId) {
   const plantilla = buscarPlantilla(plantillaId);
   if (!plantilla) {
     const message = "Plantilla inexistente";
@@ -94,6 +101,29 @@ export async function aplicarPlantilla(tiendaId, plantillaId, user) {
     const message = "Esta plantilla es para otro tipo de negocio";
     throw new ValidationError(message, { message });
   }
+  return plantilla;
+}
+
+/**
+ * Copia de una plantilla para el borrador del editor, sin guardar nada
+ * (editor-diseno-en-vivo V2): las reglas de copia de siempre (R3), los textos
+ * de portada que la tienda ya tenía y el tema de la plantilla (o null).
+ */
+export async function copiaDePlantilla(tiendaId, plantillaId) {
+  const plantilla = await plantillaDeTienda(tiendaId, plantillaId);
+  const diseno = await getDiseno(tiendaId);
+  const estructura = copiarPlantilla(plantilla, { estructuraAnterior: diseno.estructura, hero: diseno.hero });
+  return { estructura, tema: plantilla.tema ?? null };
+}
+
+/**
+ * Aplica una plantilla (R2.2) o la restaura (R4.5): guarda una copia nueva
+ * con las reglas de R3 y deja la estructura previa en `estructura_anterior`
+ * para poder deshacer (R3.6). `{ estructura: null }` = la tienda no tenía
+ * una (deshacer la vuelve a la clásica por defecto).
+ */
+export async function aplicarPlantilla(tiendaId, plantillaId, user) {
+  const plantilla = await plantillaDeTienda(tiendaId, plantillaId);
 
   const usuario = user?.email || user?.id || "system";
   const diseno = await getDiseno(tiendaId);

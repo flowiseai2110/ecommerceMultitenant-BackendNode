@@ -11,7 +11,7 @@ import { uploadLogo, uploadBanner, deleteLogo, deleteBanner } from "../../contro
 import { seedMetodosPagoParaTienda } from "../../services/metodos-pago-seed.service.js";
 import { seedMetodosEnvioParaTienda } from "../../services/metodos-envio-seed.service.js";
 import { disenoAdmin, saveDiseno } from "../../services/tienda-diseno.service.js";
-import { aplicarPlantilla, deshacerEstructura, getDisenoAdmin, validarEstructuraDeTienda } from "../diseno/diseno.service.js";
+import { aplicarPlantilla, copiaDePlantilla, deshacerEstructura, getDisenoAdmin, validarEstructuraDeTienda } from "../diseno/diseno.service.js";
 import { aplicarPlantillaSchema } from "../diseno/secciones.schema.js";
 import { getPlantillasWhatsapp, savePlantillasWhatsapp } from "../../services/tienda-plantillas-whatsapp.service.js";
 import { logger } from "../../config/logger.js";
@@ -210,9 +210,28 @@ router.put(
   }
 );
 
+// POST /:id/diseno/estructura/copia — Copia de una plantilla para el borrador
+// del editor, sin guardar (docs/specs/editor-diseno-en-vivo V2). Se guarda al
+// publicar, con el PUT /:id/diseno.
+router.post(
+  "/:id/diseno/estructura/copia",
+  authMiddleware,
+  validate({ params: idParamSchema, body: aplicarPlantillaSchema }),
+  resolveTiendaIdFromId,
+  requireTiendaAccess("admin"),
+  async (req, res, next) => {
+    try {
+      const copia = await copiaDePlantilla(req.params.id, req.body.plantillaId);
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_COPIA", data: copia });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // POST /:id/diseno/estructura/aplicar — Copia una plantilla como estructura
 // de la tienda (docs/specs/estructura-tienda, R2.2/R3) o la restaura (R4.5).
-// La estructura previa queda para "Deshacer".
+// La estructura previa queda para "Deshacer". El editor en vivo ya no lo usa.
 router.post(
   "/:id/diseno/estructura/aplicar",
   authMiddleware,

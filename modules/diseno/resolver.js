@@ -22,11 +22,7 @@ import { datosDe } from "../negocio/datos.js";
  */
 export function resolverTema({ tema, estructura, hero, tipoNegocio } = {}, ahora) {
   const porDefecto = plantillaPorDefecto(tipoNegocio);
-  const guardada = estructura ? migrarEstructura(estructura) : null;
-  // Una estructura de otro tipo de negocio (la tienda cambió de tipo después
-  // de elegir plantilla) no se publica: tendría secciones que no aplican.
-  const vigente = guardada && tipoNegocioDe(buscarPlantilla(guardada.plantillaId)) === tipoNegocioDe(porDefecto) ? guardada : null;
-  const base = vigente ?? copiarPlantilla(porDefecto, { hero });
+  const base = estructuraVigente({ estructura, hero, tipoNegocio });
 
   const temaDelRubro = datosDe(tipoNegocio).diseno.temaPorDefecto ?? null;
   const secciones = base.home.secciones.filter((s) => {
@@ -45,5 +41,27 @@ export function resolverTema({ tema, estructura, hero, tipoNegocio } = {}, ahora
     },
     paleta: buscarPaleta(tema?.paleta) ?? buscarPaleta(temaDelRubro?.paleta) ?? buscarPaleta(PALETA_DEFAULT),
     tipografia: buscarTipografia(tema?.tipografia) ?? buscarTipografia(temaDelRubro?.tipografia) ?? buscarTipografia(TIPOGRAFIA_DEFAULT)
+  };
+}
+
+/**
+ * La estructura con que se ve la tienda: la guardada o, sin una (o si es de
+ * otro tipo de negocio, porque la tienda cambió de tipo después de elegir
+ * plantilla), la copia de la plantilla por defecto de su tipo. Sin filtrar
+ * secciones ocultas: el editor también las muestra.
+ */
+export function estructuraVigente({ estructura, hero, tipoNegocio } = {}) {
+  const porDefecto = plantillaPorDefecto(tipoNegocio);
+  const guardada = estructura ? migrarEstructura(estructura) : null;
+  const vigente = guardada && tipoNegocioDe(buscarPlantilla(guardada.plantillaId)) === tipoNegocioDe(porDefecto) ? guardada : null;
+  return vigente ?? copiarPlantilla(porDefecto, { hero });
+}
+
+/** Paleta y tipografía de una tienda que nunca eligió tema (R2.5): las de su rubro o las de siempre. */
+export function temaPorDefecto(tipoNegocio) {
+  const delRubro = datosDe(tipoNegocio).diseno.temaPorDefecto ?? null;
+  return {
+    paleta: buscarPaleta(delRubro?.paleta) ? delRubro.paleta : PALETA_DEFAULT,
+    tipografia: buscarTipografia(delRubro?.tipografia) ? delRubro.tipografia : TIPOGRAFIA_DEFAULT
   };
 }

@@ -38,6 +38,9 @@ function congelar(obj) {
 }
 
 // `tipoNegocio`: el de las tiendas que pueden usarla (docs/specs/diseno-por-rubro).
+// `tema` (opcional): paleta y tipografía con que se prueba en el editor
+// (editor-diseno-en-vivo V1). Sin tema, probarla conserva los colores y las
+// letras de la tienda.
 // El layout es el de su rubro (layout-por-rubro RU8): solo productos lleva la
 // tarjeta y el detalle de producto.
 function plantilla({ layout, tipoNegocio = "productos", ...resto }) {
@@ -446,6 +449,7 @@ export const PLANTILLAS = congelar([
     descripcion: "Para canchas sintéticas: tarifas de día y de noche, horarios libres al instante, reserva con adelanto y preguntas.",
     radio: "suave",
     encabezados: "deportivo",
+    tema: { paleta: "cancha-tinte", tipografia: "deportiva" },
     layout: { header: { logo: "izquierda" } },
     secciones: [
       {

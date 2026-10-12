@@ -1,0 +1,93 @@
+{
+  "alta": {
+    "nombre": "Complejo Deportivo Los Cedros",
+    "whatsappNumero": "51987654321",
+    "email": "reservas@los-cedros.demo",
+    "ruc": "20999999991",
+    "razonSocial": "Complejo Deportivo Los Cedros S.A.C.",
+    "razonComercial": "Los Cedros",
+    "direccionFiscal": "Av. Los Próceres 1240, San Juan de Lurigancho, Lima",
+    "direccion": "Av. Los Próceres 1240, San Juan de Lurigancho, Lima"
+  },
+  "tienda": {
+    "descripcion": "Canchas de grass sintético en San Juan de Lurigancho: fútbol 7, fútbol 6 y una fútbol 5 techada, con reflectores LED. Mira los horarios libres y separa tu cancha en línea.",
+    "home": [
+      {
+        "id": "portada", "tipo": "canchas-portada", "kicker": "Grass sintético · San Juan de Lurigancho",
+        "titulo": "Arma tu pichanga", "acento": "en 1 minuto",
+        "subtitulo": "Elige día y hora, ve la cancha libre al instante y separa con un adelanto por Yape. Sin llamar ni esperar respuesta.",
+        "textoBoton": "Ver horarios libres", "textoBotonSecundario": "Conocer las canchas"
+      },
+      { "id": "canchas", "tipo": "canchas", "variante": "grilla", "fondo": "pagina", "espacio": "compacto", "kicker": null, "titulo": "Nuestras canchas", "subtitulo": "Grass de 50 mm con caucho, arcos con red y reflectores LED en todas." },
+      { "id": "reservador", "tipo": "reservador", "fondo": "superficie", "kicker": "Disponibilidad en tiempo real", "titulo": "Reserva tu horario" },
+      { "id": "pasos", "tipo": "pasos", "fondo": "pagina", "kicker": "Cómo funciona", "titulo": "Tres pasos y a jugar" },
+      { "id": "servicios", "tipo": "servicios", "variante": "tarjetas", "fondo": "pagina", "espacio": "compacto", "kicker": "Servicios", "titulo": "Todo para el partido", "items": [
+        { "icono": "reflectores", "titulo": "Reflectores LED" },
+        { "icono": "vestuarios", "titulo": "Vestuarios y duchas" },
+        { "icono": "cochera", "titulo": "Estacionamiento" },
+        { "icono": "bar", "titulo": "Kiosko y bebidas" },
+        { "icono": "pelota", "titulo": "Pelotas y chalecos" },
+        { "icono": "techada", "titulo": "Cancha techada" },
+        { "icono": "tribuna", "titulo": "Tribuna para 40" },
+        { "icono": "pagos", "titulo": "Yape, Plin y tarjeta" }
+      ] },
+      {
+        "id": "fijo", "tipo": "fijo-semanal", "kicker": "Alquiler fijo semanal", "titulo": "Tu equipo, el mismo día cada semana",
+        "texto": "Separa la misma hora todas las semanas por 1 o 3 meses y paga 10% menos. Ideal para la pichanga de la oficina o la liga del barrio.",
+        "textoBoton": "Pedir horario fijo"
+      },
+      { "id": "faq", "tipo": "faq", "variante": "dos-columnas", "fondo": "pagina", "kicker": "Políticas", "titulo": "Preguntas frecuentes", "items": [
+        { "pregunta": "¿Cuánto tengo que adelantar?", "respuesta": "El 50% del total por Yape o Plin. El saldo se paga en caja antes de entrar a la cancha." },
+        { "pregunta": "¿Puedo cambiar o cancelar?", "respuesta": "Hasta 24 horas antes cambias de día o te devolvemos el adelanto. Con menos de 24 horas el adelanto no se devuelve, pero puedes pasarlo a otra fecha del mismo mes." },
+        { "pregunta": "¿Y si llueve?", "respuesta": "El grass drena rápido y se juega igual. Si hay tormenta eléctrica reprogramamos sin costo." },
+        { "pregunta": "¿Desde qué hora es tarifa noche?", "respuesta": "De lunes a viernes desde las 18:00. Sábados, domingos y feriados se cobra tarifa noche todo el día." },
+        { "pregunta": "¿Qué zapatillas puedo usar?", "respuesta": "Zapatillas de grass sintético (tachos cortos) o de futsal. No se permiten chimpunes de aluminio." },
+        { "pregunta": "¿Cuántos jugadores entran?", "respuesta": "Fútbol 7: hasta 16 personas. Fútbol 6: hasta 14. Fútbol 5 techada: hasta 12." }
+      ] },
+      { "id": "ubicacion", "tipo": "ubicacion", "fondo": "pagina", "kicker": "Ubicación", "titulo": "Cómo llegar", "texto": "A dos cuadras del paradero Los Cedros, con estacionamiento propio.", "cercanos": ["Paradero Los Cedros (2 cuadras)", "Estación San Carlos de la Línea 1 (10 min)"], "mapa": true }
+    ]
+  },
+  "config": {
+    "modoConfirmacion": "pago_directo",
+    "cobro": "adelanto",
+    "adelantoPct": 50,
+    "apartadoManualMin": 30,
+    "anticipacionMinHoras": 0,
+    "avisoProximoHoras": 2,
+    "maxSolicitudesAbiertas": 3,
+    "canchaApertura": "07:00",
+    "canchaCierre": "23:00",
+    "canchaInicioNoche": "18:00",
+    "canchaFindeNoche": true,
+    "canchaDuraciones": [60, 90, 120],
+    "politicaCancelacion": "Hasta 24 horas antes cambias de día o te devolvemos el adelanto. Con menos de 24 horas el adelanto no se devuelve, pero puedes pasarlo a otra fecha del mismo mes.",
+    "instrucciones": "Llega 10 minutos antes y muestra tu código en caja. Solo zapatillas de grass sintético o de futsal: no se permiten chimpunes de aluminio."
+  },
+  "pagos": [
+    { "nombre": "Yape", "numero": "987654321", "titular": "Complejo Los Cedros (demo)" },
+    { "nombre": "Plin", "numero": "987654321", "titular": "Complejo Los Cedros (demo)" }
+  ],
+  "canchas": [
+    {
+      "nombre": "Cancha 1", "sku": "C1",
+      "corta": "Fútbol 7 con grass de 50 mm, arcos con red y reflectores LED.",
+      "descripcion": "Nuestra cancha principal: fútbol 7 de 45 × 25 m con grass sintético de 50 mm sobre caucho, arcos reglamentarios con red y reflectores LED para jugar de noche como de día. Tribuna a un costado y vestuarios a 20 metros.",
+      "formato": "F7", "largoM": 45, "anchoM": 25, "jugadoresMax": 16, "techada": false, "superficie": "Grass sintético 50 mm",
+      "precioDia": 120, "precioNoche": 160
+    },
+    {
+      "nombre": "Cancha 2", "sku": "C2",
+      "corta": "Fútbol 6 de 38 × 20 m, ideal para equipos de 6 con cambios.",
+      "descripcion": "Fútbol 6 de 38 × 20 m con el mismo grass y reflectores que la principal. La más pedida para la pichanga de la oficina entre semana.",
+      "formato": "F6", "largoM": 38, "anchoM": 20, "jugadoresMax": 14, "techada": false, "superficie": "Grass sintético 50 mm",
+      "precioDia": 90, "precioNoche": 130
+    },
+    {
+      "nombre": "Cancha 3", "sku": "C3",
+      "corta": "Fútbol 5 techada: se juega igual con sol o con lluvia.",
+      "descripcion": "Fútbol 5 techada con malla perimetral y luz LED. Se juega igual con sol fuerte o con garúa.",
+      "formato": "F5", "jugadoresMax": 12, "techada": true, "superficie": "Grass sintético 40 mm",
+      "precioDia": 70, "precioNoche": 100
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { resolverTema } from "../resolver.js";
+import { estructuraVigente, resolverTema, temaPorDefecto } from "../resolver.js";
 import { copiarPlantilla } from "../copia.js";
 import { buscarPlantilla } from "../plantillas.js";
 import { FORMATO_ACTUAL, migrarEstructura } from "../migrar.js";
@@ -82,5 +82,31 @@ describe("disenoPublico + tema", () => {
     expect(publico).not.toHaveProperty("estructura");
     expect(publico).not.toHaveProperty("estructura_anterior");
     expect(publico.tema).toMatchObject({ estructura: { plantillaId: "moda" }, paleta: { id: "rose-tinte" }, tipografia: { id: "editorial" } });
+  });
+});
+
+// editor-diseno-en-vivo V16: el editor arranca con lo que la tienda muestra hoy.
+describe("estructuraVigente y temaPorDefecto", () => {
+  it("sin estructura guardada, la copia de la plantilla por defecto del rubro con los textos de la clave hero", () => {
+    const e = estructuraVigente({ estructura: null, hero: { titulo: "Mi hotel" }, tipoNegocio: "hotel" });
+    expect(e.plantillaId).toBe("hotel-boutique");
+    expect(e.home.secciones.find((s) => s.tipo === "hero").titulo).toBe("Mi hotel");
+  });
+
+  it("conserva la guardada si es del rubro de la tienda, con las secciones ocultas incluidas", () => {
+    const guardada = copiarPlantilla(buscarPlantilla("tecnologia"));
+    const e = estructuraVigente({ estructura: guardada, tipoNegocio: "productos" });
+    expect(e.plantillaId).toBe("tecnologia");
+    expect(e.home.secciones.some((s) => s.oculto)).toBe(true);
+  });
+
+  it("una guardada de otro rubro se reemplaza por la del rubro actual", () => {
+    const guardada = copiarPlantilla(buscarPlantilla("moda"));
+    expect(estructuraVigente({ estructura: guardada, tipoNegocio: "canchas" }).plantillaId).toBe("canchas-complejo");
+  });
+
+  it("el tema por defecto es el del rubro o el de siempre", () => {
+    expect(temaPorDefecto("canchas")).toEqual({ paleta: "cancha-tinte", tipografia: "deportiva" });
+    expect(temaPorDefecto("productos")).toEqual({ paleta: "tienda-contraste", tipografia: "inter" });
   });
 });
