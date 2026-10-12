@@ -153,7 +153,7 @@ import { algo } from "./ruta/archivo.js";
 
 ## Lógica por rubro (Strategy por tipo de negocio)
 
-- Todo lo que distingue a un rubro (`productos`, `hotel`, `tours`, `eventos`, `locales`) va en `negocio/<rubro>/`, con el mismo nombre en los tres repos.
+- Todo lo que distingue a un rubro (`productos`, `hotel`, `tours`, `eventos`, `locales`, `canchas`) va en `negocio/<rubro>/`, con el mismo nombre en los tres repos.
 - El código compartido pregunta por **capacidades**, nunca por **identidad**: no se agrega `esHotel()`, `tipoNegocio === '…'` ni similares fuera de código que ya es de un solo rubro.
 - Rubro nuevo: agregarlo al tipo/registro y crear su carpeta. Si le falta algo del contrato, no compila (front) o falla el test de contrato (backend).
 - Variaciones por cliente, del más común al más raro: 1) configuración por tienda, 2) capacidad opcional del rubro activable por tienda, 3) excepción por tienda (`EXCEPCIONES` en el registro del backend), que hereda del rubro y reemplaza solo lo distinto. Nunca una copia del rubro por cliente.

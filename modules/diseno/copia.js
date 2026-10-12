@@ -11,7 +11,8 @@ import { layoutDeNegocio } from "./secciones.schema.js";
 // tienda algo que el dueño no dijo (D.L. 1044, actos de engaño).
 // `servicios` también: "desayuno incluido" o "cochera" son promesas del
 // hospedaje (docs/specs/diseno-por-rubro H5).
-export const TIPOS_CON_AFIRMACIONES = new Set(["beneficios", "cinta", "faq", "imagen-texto", "servicios"]);
+// `fijo-semanal` promete un descuento del negocio (alquiler-canchas).
+export const TIPOS_CON_AFIRMACIONES = new Set(["beneficios", "cinta", "faq", "imagen-texto", "servicios", "fijo-semanal"]);
 
 const clonar = (valor) => structuredClone(valor);
 const vacio = (texto) => !texto || !String(texto).trim();

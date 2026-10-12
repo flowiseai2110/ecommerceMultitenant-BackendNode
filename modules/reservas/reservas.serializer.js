@@ -101,6 +101,7 @@ function base(pedido, ahora) {
   const esTour = r.tipo === "tour";
   const esEvento = r.tipo === "evento";
   const esLocal = r.tipo === "local";
+  const esCancha = r.tipo === "cancha";
   const pasajeros = esTour ? pasajerosDe(r) : null;
   const entradas = esEvento ? entradasDe(pedido) : null;
   const estado = estadoEfectivo({ estado: pedido.estado, inicio: r.inicio, fin: r.fin, apartadoHasta: r.apartadoHasta }, ahora);
@@ -116,8 +117,8 @@ function base(pedido, ahora) {
       slug: r.producto?.slug ?? null,
       imagenUrl: imagenPrincipal(r.producto)
     },
-    // Solo hotel: tours, eventos y locales no tienen modalidad de estadía.
-    modalidad: esTour || esEvento || esLocal ? null : {
+    // Solo hotel: tours, eventos, locales y canchas no tienen modalidad de estadía.
+    modalidad: esTour || esEvento || esLocal || esCancha ? null : {
       id: r.modalidadId,
       tipo: r.modalidad?.tipo ?? (r.horas ? "horas" : "noche"),
       etiqueta: etiquetaModalidad(r.modalidad, r)
@@ -154,7 +155,17 @@ function base(pedido, ahora) {
     } : null,
     entradas,
     local: esLocal ? bloqueLocal(pedido, estado, ahora) : null,
-    personas: esTour ? pasajeros.reduce((s, p) => s + p.cantidad, 0)
+    // Cancha: formato, duración y tramos día/noche (foto de la reserva) y hasta cuándo se aparta sin pagar.
+    cancha: esCancha ? {
+      nombre: r.cancha?.nombre ?? r.producto?.nombre ?? null,
+      formato: r.cancha?.formato ?? null,
+      techada: r.cancha?.techada ?? false,
+      jugadoresMax: r.cancha?.jugadoresMax ?? null,
+      duracionMin: r.cancha?.duracionMin ?? null,
+      tramos: r.cancha?.tramos ?? [],
+      apartadoHasta: ["solicitada", "aceptada"].includes(estado) ? r.apartadoHasta : null
+    } : null,
+    personas: esCancha ? 0 : esTour ? pasajeros.reduce((s, p) => s + p.cantidad, 0)
       : esEvento ? entradas.reduce((s, e) => s + e.cantidad, 0)
         : esLocal ? r.invitados ?? 0
           : (r.adultos ?? 0) + (r.ninos ?? 0),

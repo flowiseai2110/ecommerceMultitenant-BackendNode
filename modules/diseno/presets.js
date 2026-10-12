@@ -54,5 +54,18 @@ export const PRESETS_SECCION = congelar({
   // Eventos con entradas (fase 3).
   eventos: { tipo: "eventos", variante: "grilla", fondo: "superficie", titulo: "Próximos eventos" },
   // Alquiler de locales (alquiler-locales L1.30).
-  salones: { tipo: "salones", variante: "grilla", fondo: "superficie", titulo: "Nuestros salones" }
+  salones: { tipo: "salones", variante: "grilla", fondo: "superficie", titulo: "Nuestros salones" },
+  // Complejo de canchas (alquiler-canchas).
+  "canchas-portada": {
+    tipo: "canchas-portada", kicker: null, titulo: "Arma tu pichanga", acento: "en 1 minuto",
+    subtitulo: "Elige día y hora, ve la cancha libre al instante y separa tu horario en línea.",
+    textoBoton: "Ver horarios libres", textoBotonSecundario: "Conocer las canchas"
+  },
+  canchas: { tipo: "canchas", variante: "grilla", fondo: "pagina", titulo: "Nuestras canchas" },
+  reservador: { tipo: "reservador", fondo: "superficie", kicker: "Disponibilidad en tiempo real", titulo: "Reserva tu horario" },
+  pasos: { tipo: "pasos", fondo: "pagina", kicker: "Cómo funciona", titulo: "Tres pasos y a jugar" },
+  "fijo-semanal": {
+    tipo: "fijo-semanal", oculto: true, kicker: "Alquiler fijo semanal", titulo: "Tu equipo, el mismo día cada semana",
+    texto: "Escribe aquí tu oferta para quienes separan la misma hora todas las semanas.", textoBoton: "Pedir horario fijo"
+  }
 });

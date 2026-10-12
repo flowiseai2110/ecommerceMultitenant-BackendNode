@@ -431,6 +431,55 @@ export const PLANTILLAS = congelar([
       { id: "politicas", tipo: "politicas", fondo: "superficie", titulo: "Antes de reservar" },
       { id: "contacto", tipo: "contacto", titulo: "¿Quieres visitar el local?", texto: "Escríbenos por WhatsApp y agenda tu visita." }
     ]
+  }),
+
+  // ── Complejo de canchas (docs/specs/alquiler-canchas) ──────────────────
+  // El cliente quiere tres cosas: saber si hay hora, cuánto cuesta y separarla
+  // sin llamar. La portada muestra las tarifas y lo libre de hoy, las canchas
+  // con su precio de día y de noche, y el reservador va al centro de la página.
+  // Maqueta aprobada: "Cancha Los Cedros" (spec).
+  plantilla({
+    id: "canchas-complejo",
+    tipoNegocio: "canchas",
+    rubro: "general",
+    nombre: "Complejo deportivo",
+    descripcion: "Para canchas sintéticas: tarifas de día y de noche, horarios libres al instante, reserva con adelanto y preguntas.",
+    radio: "suave",
+    encabezados: "deportivo",
+    layout: { header: { logo: "izquierda" } },
+    secciones: [
+      {
+        id: "portada", tipo: "canchas-portada", kicker: null, titulo: "Arma tu pichanga", acento: "en 1 minuto",
+        subtitulo: "Elige día y hora, ve la cancha libre al instante y separa con un adelanto. Sin llamar ni esperar respuesta.",
+        textoBoton: "Ver horarios libres", textoBotonSecundario: "Conocer las canchas"
+      },
+      { id: "canchas", tipo: "canchas", variante: "grilla", fondo: "pagina", espacio: "compacto", kicker: null, titulo: "Nuestras canchas", subtitulo: null },
+      { id: "reservador", tipo: "reservador", fondo: "superficie", kicker: "Disponibilidad en tiempo real", titulo: "Reserva tu horario" },
+      { id: "pasos", tipo: "pasos", fondo: "pagina", kicker: "Cómo funciona", titulo: "Tres pasos y a jugar" },
+      { id: "servicios", tipo: "servicios", variante: "tarjetas", fondo: "pagina", espacio: "compacto", kicker: "Servicios", titulo: "Todo para el partido", items: [
+        { icono: "reflectores", titulo: "Reflectores LED" },
+        { icono: "vestuarios", titulo: "Vestuarios y duchas" },
+        { icono: "cochera", titulo: "Estacionamiento" },
+        { icono: "bar", titulo: "Kiosko y bebidas" },
+        { icono: "pelota", titulo: "Pelotas y chalecos" },
+        { icono: "techada", titulo: "Cancha techada" },
+        { icono: "tribuna", titulo: "Tribuna" },
+        { icono: "pagos", titulo: "Yape, Plin y tarjeta" }
+      ] },
+      {
+        id: "fijo", tipo: "fijo-semanal", kicker: "Alquiler fijo semanal", titulo: "Tu equipo, el mismo día cada semana",
+        texto: "Separa la misma hora todas las semanas por 1 o 3 meses y paga menos. Ideal para la pichanga de la oficina o la liga del barrio.",
+        textoBoton: "Pedir horario fijo"
+      },
+      { id: "faq", tipo: "faq", variante: "dos-columnas", fondo: "pagina", kicker: "Políticas", titulo: "Preguntas frecuentes", items: [
+        { pregunta: "¿Cuánto tengo que adelantar?", respuesta: "Escribe aquí cuánto se adelanta y cómo se paga el saldo." },
+        { pregunta: "¿Puedo cambiar o cancelar?", respuesta: "Escribe aquí hasta cuándo se puede cambiar de día y si devuelves el adelanto." },
+        { pregunta: "¿Y si llueve?", respuesta: "Escribe aquí qué pasa con la reserva si llueve o hay tormenta." },
+        { pregunta: "¿Qué zapatillas puedo usar?", respuesta: "Escribe aquí qué calzado se permite en la cancha." },
+        { pregunta: "¿Cuántos jugadores entran?", respuesta: "Escribe aquí cuántas personas entran en cada cancha." }
+      ] },
+      { id: "ubicacion", tipo: "ubicacion", fondo: "pagina", kicker: "Ubicación", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true }
+    ]
   })
 ]);
 

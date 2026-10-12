@@ -60,6 +60,7 @@ const fila = (etiqueta, valor) => `
 const esTour = (r) => r.tipo === "tour";
 const esEvento = (r) => r.tipo === "evento";
 const esLocal = (r) => r.tipo === "local";
+const esCancha = (r) => r.tipo === "cancha";
 const hora = new Intl.DateTimeFormat("es-PE", { timeZone: "America/Lima", hour: "2-digit", minute: "2-digit", hour12: false });
 
 /** Cómo se nombra al negocio y al inicio del servicio en cada vertical. */
@@ -67,6 +68,8 @@ const voz = (r) => (esEvento(r)
   ? { Negocio: "El organizador", alNegocio: "al organizador", enNegocio: "en el lugar", inicio: "el inicio de la función", conf: "tu compra" }
   : esLocal(r)
   ? { Negocio: "El local", alNegocio: "al local", enNegocio: "en el local", inicio: "la fecha del evento", conf: "la fecha" }
+  : esCancha(r)
+  ? { Negocio: "La cancha", alNegocio: "a la cancha", enNegocio: "en la cancha", inicio: "la hora del partido", conf: "el horario" }
   : esTour(r)
   ? { Negocio: "La agencia", alNegocio: "a la agencia", enNegocio: "en destino", inicio: "la hora de salida", conf: "la disponibilidad de la salida" }
   : { ...vozAlojamiento(r.negocio?.alojamiento), inicio: "la hora de ingreso", conf: "la disponibilidad" });
@@ -74,7 +77,7 @@ const voz = (r) => (esEvento(r)
 // ── Inglés (docs/specs/hospedaje-completo C3) ──
 // Hotel y tours: el huésped que reservó en inglés recibe sus correos en inglés.
 // Los correos al negocio y los de entradas siguen en español.
-const enIngles = (r) => r.idiomaHuesped === "en" && !esEvento(r) && !esLocal(r);
+const enIngles = (r) => r.idiomaHuesped === "en" && !esEvento(r) && !esLocal(r) && !esCancha(r);
 const formatoEn = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/Lima", weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false
 });
@@ -138,6 +141,10 @@ function resumen(r) {
       fila("Función", e(`${fechaHora(r.inicio)}${r.evento?.funcion ? ` · ${r.evento.funcion}` : ""}`)) +
       (r.evento?.lugar ? fila("Lugar", e(r.evento.lugar)) : "") +
       fila("Entradas", e(textoPersonas(r)))
+    : esCancha(r)
+    ? fila("Cancha", e(`${r.cancha?.nombre ?? r.producto.nombre ?? "—"}${r.cancha?.formato ? ` · ${r.cancha.formato}` : ""}`)) +
+      fila("Horario", e(`${fechaHora(r.inicio)} a ${hora.format(new Date(r.fin))}`)) +
+      (r.montoAPagar && r.montoAPagar < r.total ? fila("Adelanto", soles(r.montoAPagar)) + fila("Saldo en la cancha", soles(r.total - r.montoAPagar)) : "")
     : esTour(r)
     ? fila("Tour", e(r.producto.nombre ?? "—")) +
       fila("Salida", e(fechaHora(r.inicio))) +
@@ -208,6 +215,8 @@ export function nuevaSolicitudEmail(r) {
       ? `🧭 Nueva solicitud ${r.codigo}: ${r.producto.nombre} · ${r.personas} pax · salida ${fechaHora(r.inicio)}`
       : esLocal(r)
       ? `🎉 Nueva solicitud ${r.codigo}: ${r.local?.tipoEventoEtiqueta ?? "evento"} · ${r.local?.invitados ?? r.personas} invitados · ${fechaHora(r.inicio)}`
+      : esCancha(r)
+      ? `⚽ Nueva solicitud ${r.codigo}: ${r.cancha?.nombre ?? r.producto.nombre} · ${fechaHora(r.inicio)}`
       : `🛎️ Nueva solicitud ${r.codigo}: ${r.modalidad.etiqueta} · ingreso ${fechaHora(r.inicio)}`,
     html: layout({
       titulo: "Tienes una nueva solicitud de reserva",
@@ -227,7 +236,7 @@ export function nuevaSolicitudEmail(r) {
 export function nuevaReservaEmail(r) {
   const confirmada = r.estado === "confirmada";
   return {
-    subject: `${confirmada ? "✅ Nueva reserva confirmada" : "🛎️ Nueva reserva por pagar"} ${r.codigo}: ingreso ${fechaHora(r.inicio)}`,
+    subject: `${confirmada ? "✅ Nueva reserva confirmada" : "🛎️ Nueva reserva por pagar"} ${r.codigo}: ${esCancha(r) ? `${r.cancha?.nombre ?? r.producto.nombre} · ` : "ingreso "}${fechaHora(r.inicio)}`,
     html: layout({
       titulo: confirmada ? "Tienes una nueva reserva confirmada" : "Tienes una nueva reserva esperando el pago",
       intro:
@@ -295,6 +304,21 @@ export function aceptadaEmail(r, url) {
   const v = voz(r);
   const ajuste = r.ajuste ? texto(`${v.Negocio} ajustó el total: <em>${e(r.ajuste.motivo)}</em>.`) : "";
   const saldo = r.saldoDestino > 0 ? texto(`El saldo de <strong>${soles(r.saldoDestino)}</strong> se paga ${v.enNegocio}.`) : "";
+  // Canchas (alquiler-canchas R5): el horario queda apartado unos minutos mientras se paga el adelanto.
+  if (esCancha(r)) {
+    const hasta = r.cancha?.apartadoHasta ? hora.format(new Date(r.cancha.apartadoHasta)) : null;
+    return {
+      subject: `Separamos tu horario ${r.codigo}: paga el adelanto`,
+      html: layout({
+        titulo: "Separamos tu horario",
+        intro:
+          texto(`Hola ${e(r.titular.nombres)}, tu horario en <strong>${e(r.negocio.nombre)}</strong> está apartado${hasta ? ` hasta las <strong>${hasta}</strong>` : ""}. Para confirmarlo, paga el adelanto de <strong>${soles(r.montoAPagar)}</strong> y sube la captura desde el link.`) +
+          ajuste + saldo,
+        cuerpo: resumen(r) + boton(url, "Pagar y subir mi captura"),
+        pie: "Si no subes la captura a tiempo, el horario se libera para otro equipo."
+      })
+    };
+  }
   return {
     subject: `Tu reserva ${r.codigo} fue aceptada: completa el pago`,
     html: layout({

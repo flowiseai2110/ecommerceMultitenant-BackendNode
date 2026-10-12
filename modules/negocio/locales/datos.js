@@ -6,6 +6,7 @@ export const locales = {
   // Separación, cuotas, garantía, tramos de cancelación y contrato (R1.2, R7, R8, R10).
   planDePagos: true,
   transmisiones: false,
+  alquilerPorHoras: false,
   diseno: {
     plantillaPorDefecto: "locales-salones",
     secciones: Object.freeze([...SECCIONES_COMUNES, ...SECCIONES_RESERVAS, "salones"])

@@ -5,6 +5,7 @@ export const tours = {
   recibeReservas: true,
   planDePagos: false,
   transmisiones: false,
+  alquilerPorHoras: false,
   diseno: {
     plantillaPorDefecto: "tours-catalogo",
     secciones: Object.freeze([...SECCIONES_COMUNES, ...SECCIONES_RESERVAS, "tours"])

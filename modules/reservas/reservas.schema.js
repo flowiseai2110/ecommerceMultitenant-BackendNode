@@ -5,6 +5,7 @@ import { MAX_NOCHES } from "./hotel/cotizar.js";
 import { TIPOS_ALOJAMIENTO } from "./hotel/alojamiento.js";
 import { variablesDesconocidas } from "./locales/contrato.js";
 import { MODALIDADES as MODALIDADES_LOCAL, TIPOS_EVENTO } from "./locales/cotizar.js";
+import { DURACIONES_CANCHA, FORMATOS_CANCHA, minutosCierre, minutosHora } from "./canchas/tarifa.js";
 
 /**
  * Schemas Zod del mini booking (docs/specs/mini-booking). El schema ES el
@@ -22,6 +23,8 @@ export const FUENTES_RESENA = ["google", "booking", "tripadvisor", "airbnb", "fa
 const uuid = (campo) => z.string({ required_error: `${campo} es requerido` }).uuid(`${campo} inválido`);
 const fecha = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (YYYY-MM-DD)");
 const hora = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora inválida (HH:mm)");
+// Canchas: el horario del complejo va en horas en punto (alquiler-canchas R2).
+const horaEnPunto = z.string().regex(/^([01]\d|2[0-3]):00$/, "Usa una hora en punto (HH:00)");
 
 const texto = (campo, min, max) => z.string({ required_error: `${campo} es requerido` })
   .trim()
@@ -87,7 +90,9 @@ const estadiaBase = {
   agasajado: z.string().trim().max(120).nullish().transform(v => v || null),
   proveedoresExternos: z.boolean().optional().default(false),
   // Solicitud desde una cotización guardada: respeta su precio congelado (R4.2).
-  cotizacionToken: z.string().min(10).max(2000).nullish().transform(v => v || null)
+  cotizacionToken: z.string().min(10).max(2000).nullish().transform(v => v || null),
+  // Canchas (alquiler-canchas R2): duración del turno en minutos. La hora de inicio va en `hora`.
+  duracionMin: z.coerce.number().int().min(30).max(240).nullish().transform(v => v ?? null)
 };
 
 export const cotizarSchema = z.object(estadiaBase);
@@ -379,8 +384,23 @@ export const configSchema = z.object({
   proveedoresExternos: z.boolean().optional(),
   tarifaCoordinacion: monto.nullable().optional(),
   descorcheBotella: monto.nullable().optional(),
-  horaTope: hora.optional()
+  horaTope: hora.optional(),
+  // Canchas (docs/specs/alquiler-canchas R2): horas en punto; cierre "00:00" = medianoche.
+  canchaApertura: horaEnPunto.optional(),
+  canchaCierre: horaEnPunto.optional(),
+  canchaInicioNoche: horaEnPunto.optional(),
+  canchaFindeNoche: z.boolean().optional(),
+  canchaDuraciones: z.array(z.coerce.number().int().refine(v => DURACIONES_CANCHA.includes(v), "Duración no permitida"))
+    .min(1, "Elige al menos una duración").max(DURACIONES_CANCHA.length)
+    .transform(v => [...new Set(v)].sort((a, b) => a - b)).optional()
 }).superRefine((d, ctx) => {
+  if (d.canchaApertura && d.canchaCierre && minutosCierre(d.canchaCierre) <= minutosHora(d.canchaApertura)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["canchaCierre"], message: "El cierre debe ser después de la apertura" });
+  }
+  if (d.canchaInicioNoche && d.canchaApertura && d.canchaCierre
+    && (minutosHora(d.canchaInicioNoche) < minutosHora(d.canchaApertura) || minutosHora(d.canchaInicioNoche) > minutosCierre(d.canchaCierre))) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["canchaInicioNoche"], message: "La tarifa noche debe empezar dentro del horario" });
+  }
   if (d.cobro === "adelanto" && !d.adelantoPct) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adelantoPct"], message: "Indica el porcentaje de adelanto" });
   }
@@ -651,3 +671,34 @@ export const extraSchema = z.object({
   activo: z.boolean().optional().default(true),
   orden: z.coerce.number().int().min(0).max(999).optional().default(0)
 });
+
+// ============================================
+// CANCHAS (docs/specs/alquiler-canchas)
+// ============================================
+
+/** Ficha de una cancha (R1). */
+export const canchaSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  formato: z.enum(FORMATOS_CANCHA, { message: "Elige el formato de la cancha" }),
+  largoM: z.coerce.number().int().min(10, "Largo inválido").max(120, "Largo inválido").nullish().transform(v => v ?? null),
+  anchoM: z.coerce.number().int().min(5, "Ancho inválido").max(90, "Ancho inválido").nullish().transform(v => v ?? null),
+  jugadoresMax: z.coerce.number({ invalid_type_error: "Indica cuántos jugadores entran" }).int().min(2, "Mínimo 2 jugadores").max(40, "Máximo 40 jugadores"),
+  techada: z.boolean().optional().default(false),
+  superficie: textoOpcional(60),
+  precioDia: monto.refine(v => v > 0, "Indica el precio por hora de día"),
+  precioNoche: monto.refine(v => v > 0, "Indica el precio por hora de noche")
+});
+
+/** Agenda de un día (vitrina y admin). */
+export const agendaCanchasStoreQuerySchema = z.object({ tiendaId: uuid("tiendaId"), fecha });
+export const agendaCanchasAdminQuerySchema = z.object({ tiendaId: uuid("tiendaId"), fecha });
+
+/** Bloqueo manual de un horario (R6). Fin "00:00" = medianoche. */
+export const bloqueoCanchaSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  productoId: uuid("productoId"),
+  fecha,
+  horaInicio: hora,
+  horaFin: hora,
+  motivo: textoOpcional(100)
+}).refine(d => minutosCierre(d.horaFin) > minutosHora(d.horaInicio), { path: ["horaFin"], message: "La hora de fin debe ser posterior al inicio" });

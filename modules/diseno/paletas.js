@@ -15,7 +15,9 @@ const BASES = [
   { id: "rose", nombre: "Rosa", primario: "#e11d48", neutro: "neutral" },
   { id: "orange", nombre: "Naranja", primario: "#f97316", neutro: "stone" },
   { id: "amber", nombre: "Ámbar", primario: "#f59e0b", neutro: "stone" },
-  { id: "grafito", nombre: "Grafito", primario: "#1c1917", neutro: "stone" }
+  { id: "grafito", nombre: "Grafito", primario: "#1c1917", neutro: "stone" },
+  // Complejo de canchas (alquiler-canchas): el verde del grass; el ámbar de la tarifa noche es el acento.
+  { id: "cancha", nombre: "Verde cancha", primario: "#1d6b3c", neutro: "gray" }
 ];
 
 const VERSIONES = [

@@ -69,7 +69,13 @@ const BASE = {
   proveedoresExternos: true,
   tarifaCoordinacion: null,
   descorcheBotella: null,
-  horaTope: "03:00"
+  horaTope: "03:00",
+  // Solo canchas (docs/specs/alquiler-canchas R2)
+  canchaApertura: "07:00",
+  canchaCierre: "23:00",
+  canchaInicioNoche: "18:00",
+  canchaFindeNoche: true,
+  canchaDuraciones: [60, 90, 120]
 };
 
 export const CAMPOS_CONFIG = [
@@ -81,7 +87,8 @@ export const CAMPOS_CONFIG = [
   "separacionTipo", "separacionMonto", "respuestaHoras", "apartadoHoras", "saldoDiasAntes", "maxCuotas", "garantiaMonto",
   "garantiaDevolucionDias", "invitadosConfirmarDias", "reprogramacionesMax", "reprogramacionMinDias", "cargoReprogramacion",
   "politicaTramos", "graciaMoraDias", "saldoFavorMeses", "cotizacionVigenciaDias", "contratoPlantilla", "contratoVersion",
-  "proveedoresExternos", "tarifaCoordinacion", "descorcheBotella", "horaTope", "visitasHorario"
+  "proveedoresExternos", "tarifaCoordinacion", "descorcheBotella", "horaTope", "visitasHorario",
+  "canchaApertura", "canchaCierre", "canchaInicioNoche", "canchaFindeNoche", "canchaDuraciones"
 ];
 
 /** Montos Decimal de Prisma que la lógica usa como número. */
@@ -177,6 +184,14 @@ export function configPublica(config, lang = "es") {
       tarifaCoordinacion: config.tarifaCoordinacion,
       descorcheBotella: config.descorcheBotella,
       horaTope: config.horaTope
+    } : {}),
+    // Alquiler por horas (alquiler-canchas R2): la vitrina arma la grilla de horas con esto.
+    ...(datosDe(config.tipoNegocio).alquilerPorHoras ? {
+      canchaApertura: config.canchaApertura,
+      canchaCierre: config.canchaCierre,
+      canchaInicioNoche: config.canchaInicioNoche,
+      canchaFindeNoche: config.canchaFindeNoche,
+      canchaDuraciones: [...config.canchaDuraciones].sort((a, b) => a - b)
     } : {})
   };
 }

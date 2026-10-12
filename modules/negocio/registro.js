@@ -1,9 +1,11 @@
 import { productos } from "./productos/estrategia.js";
 import { hotel } from "./hotel/estrategia.js";
+import { canchas } from "./canchas/estrategia.js";
 import { verticalHotel } from "../reservas/hotel/vertical.js";
 import { verticalTours } from "../reservas/tours/vertical.js";
 import { verticalEventos } from "../reservas/eventos/vertical.js";
 import { verticalLocal } from "../reservas/locales/locales.service.js";
+import { verticalCanchas } from "../reservas/canchas/vertical.js";
 import { agenteHotel } from "../agente/perfiles/hotel.js";
 import { agenteTours } from "../agente/perfiles/tours.js";
 import { agenteEventos } from "../agente/perfiles/eventos.js";
@@ -31,7 +33,9 @@ export const ESTRATEGIAS = {
   // ficha lo reemplaza luego por el precio "desde"). Si su regla cambia, tendrán su carpeta.
   tours: { ...DATOS.tours, ...productos, reservas: verticalTours, agente: agenteTours },
   eventos: { ...DATOS.eventos, ...productos, reservas: verticalEventos, agente: agenteEventos },
-  locales: { ...DATOS.locales, ...productos, reservas: verticalLocal, agente: agenteLocales }
+  locales: { ...DATOS.locales, ...productos, reservas: verticalLocal, agente: agenteLocales },
+  // Canchas: el precio lo fija la ficha (día/noche), como la estadía del hotel. Sin asesor propio aún.
+  canchas: { ...DATOS.canchas, ...canchas, reservas: verticalCanchas, agente: null }
 };
 
 /**
@@ -41,6 +45,13 @@ export const ESTRATEGIAS = {
  * Vacío hasta que haya un caso real (tarea 4.4).
  */
 const EXCEPCIONES = {};
+
+/**
+ * Vertical de reservas de un pedido por su `tipo` (hotel, tour, evento, local, cancha):
+ * el servicio común la usa en las transiciones sin preguntar por el tipo.
+ */
+export const verticalDePedido = (tipoPedido) =>
+  Object.values(ESTRATEGIAS).find((e) => e.reservas?.tipoPedido === tipoPedido)?.reservas ?? null;
 
 /** @param {{ id: string, tipoNegocio: string }} tienda */
 export const estrategiaDe = (tienda) =>

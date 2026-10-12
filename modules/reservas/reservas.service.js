@@ -18,7 +18,7 @@ import {
   aceptadaEmail, compraPendienteEmail, confirmadaEmail, nuevaReservaEmail, nuevaSolicitudEmail, pagoSubidoEmail, rechazadaEmail, solicitudRecibidaEmail
 } from "./reservas.emails.js";
 import { instanteLima, fechaLima, sumarDias } from "./tiempo.js";
-import { estrategiaDe } from "../negocio/registro.js";
+import { estrategiaDe, verticalDePedido } from "../negocio/registro.js";
 import { errorNoDisponible, filasCuotas, prepararAceptacion } from "./locales/locales.service.js";
 import { actualizarOcupacion, FechaNoDisponibleError, liberar, liberarHuerfanas, ocupar } from "./locales/ocupaciones.js";
 import { conPreparacion } from "./locales/franja.js";
@@ -68,7 +68,7 @@ const INCLUDE_RESERVA = {
 };
 
 /** Tipos de pedido que son reservas (comparten bandeja, pago y seguimiento). */
-export const TIPOS_RESERVA = ["hotel", "tour", "evento", "local"];
+export const TIPOS_RESERVA = ["hotel", "tour", "evento", "local", "cancha"];
 
 const MOTIVOS_RECHAZO = {
   hotel: {
@@ -78,6 +78,10 @@ const MOTIVOS_RECHAZO = {
   tour: {
     sin_disponibilidad: "No hay cupo en esa salida",
     fecha_cerrada: "No hay salida en esa fecha"
+  },
+  cancha: {
+    sin_disponibilidad: "Ese horario ya no está disponible",
+    fecha_cerrada: "La cancha no atiende esa fecha"
   }
 };
 
@@ -183,6 +187,8 @@ export async function aplicarAccion(tx, pedido, accion, { ahora = new Date(), da
     throw new ConflictError("La reserva cambió mientras la revisabas. Actualiza la página.", { message: "La reserva cambió mientras la revisabas. Actualiza la página.", motivo: "RESERVA_MODIFICADA" });
   }
   await tx.pedido_historial_estados.create({ data: { pedidoId: pedido.id, estado: nuevo, notas: nota } });
+  // La vertical mantiene su inventario en la misma transacción (canchas: la ocupación del horario).
+  await verticalDePedido(pedido.tipo)?.alCambiarEstado?.(tx, { pedido, nuevo, ahora });
   return nuevo;
 }
 

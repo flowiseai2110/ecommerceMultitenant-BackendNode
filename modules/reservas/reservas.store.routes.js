@@ -17,6 +17,7 @@ import { listarEventosStore, obtenerEventoStore } from "./eventos/eventos.servic
 import { listarSalonesStore, obtenerSalonStore } from "./locales/salones.service.js";
 import { calendarioStore, crearCotizacion, obtenerCotizacionStore } from "./locales/locales.service.js";
 import { aceptarContrato, subirCapturaCuota } from "./locales/cuotas.service.js";
+import { agendaStore as agendaCanchasStore, listarCanchasStore, obtenerCanchaStore } from "./canchas/canchas.service.js";
 import { clientIp } from "../../kernel/http/client-ip.js";
 import { verificarTokenReserva } from "./reservas.token.js";
 import { uploadCaptura } from "./reservas.capturas.js";
@@ -25,7 +26,8 @@ import {
 } from "./reservas.service.js";
 import {
   capturaBodySchema, cierresQuerySchema, cotizarSchema, crearSolicitudSchema, slugParamSchema, tiendaQuerySchema, tokenParamSchema,
-  disponibilidadQuerySchema, calendarioStoreQuerySchema, cotizacionLocalSchema, aceptarContratoSchema, cuotaStoreParamSchema, capturaCuotaBodySchema
+  disponibilidadQuerySchema, calendarioStoreQuerySchema, cotizacionLocalSchema, aceptarContratoSchema, cuotaStoreParamSchema, capturaCuotaBodySchema,
+  agendaCanchasStoreQuerySchema
 } from "./reservas.schema.js";
 
 /**
@@ -202,6 +204,33 @@ router.get("/locales/cotizaciones/:token", validate({ params: tokenParamSchema }
     return ok(res, "COTIZACION", await obtenerCotizacionStore(req.params.token, req.tiendaId ?? null));
   } catch (error) { next(error); }
 });
+
+// GET /canchas?tiendaId= — canchas del complejo con formato y precio día/noche (alquiler-canchas R1)
+router.get("/canchas", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
+  try {
+    res.set("Cache-Control", "public, max-age=60");
+    return ok(res, "CANCHAS_LIST", await listarCanchasStore(req.validatedQuery.tiendaId));
+  } catch (error) { next(error); }
+});
+
+// GET /canchas/agenda?tiendaId=&fecha= — bloques de 30 min del día (tarifa, pasados) y los ocupados de cada cancha (R3, R4)
+router.get("/canchas/agenda", validate({ query: agendaCanchasStoreQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
+  try {
+    const { tiendaId, fecha } = req.validatedQuery;
+    // Corto: cambia con cada reserva. Se revalida al cotizar y al enviar (la BD decide).
+    res.set("Cache-Control", "public, max-age=15");
+    return ok(res, "CANCHAS_AGENDA", await agendaCanchasStore(tiendaId, fecha));
+  } catch (error) { next(error); }
+});
+
+// GET /canchas/:slug?tiendaId= — ficha de la cancha
+router.get("/canchas/:slug", validate({ params: slugParamSchema, query: tiendaQuerySchema }), scopeQueryToTienda,
+  async (req, res, next) => {
+    try {
+      res.set("Cache-Control", "public, max-age=60");
+      return ok(res, "CANCHA", await obtenerCanchaStore(req.validatedQuery.tiendaId, req.params.slug));
+    } catch (error) { next(error); }
+  });
 
 // GET /cierres?tiendaId=&desde=&hasta=&productoId= — fechas no elegibles del calendario
 router.get("/cierres", validate({ query: cierresQuerySchema }), scopeQueryToTienda, async (req, res, next) => {

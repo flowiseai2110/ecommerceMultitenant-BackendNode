@@ -120,6 +120,13 @@ const salonesSvc = {
   listarSalonesAdmin: jest.fn(async () => []), obtenerFichaSalonAdmin: jest.fn(async () => null), guardarFichaSalon: jest.fn(async () => ({}))
 };
 jest.unstable_mockModule("../locales/salones.service.js", () => salonesSvc);
+const canchasSvc = {
+  listarCanchasStore: jest.fn(async () => []), obtenerCanchaStore: jest.fn(async () => ({})), agendaStore: jest.fn(async () => ({ canchas: [] })),
+  listarCanchasAdmin: jest.fn(async () => []), obtenerFichaCanchaAdmin: jest.fn(async () => null), guardarFichaCancha: jest.fn(async () => ({})),
+  agendaAdmin: jest.fn(async () => ({ canchas: [] })), crearBloqueo: jest.fn(async () => ({})), eliminarBloqueo: jest.fn(async () => {}),
+  cargarCanchaParaReserva: jest.fn()
+};
+jest.unstable_mockModule("../canchas/canchas.service.js", () => canchasSvc);
 const CUOTA = "88888888-8888-4888-8888-888888888888";
 
 const { default: storeRoutes } = await import("../reservas.store.routes.js");
@@ -144,7 +151,7 @@ beforeAll(async () => {
 afterAll(async () => { await new Promise(resolve => server.close(resolve)); });
 
 beforeEach(() => {
-  for (const fn of [...Object.values(svc), ...Object.values(configSvc), ...Object.values(habSvc), ...Object.values(localesSvc), ...Object.values(cuotasSvc)]) fn.mockClear();
+  for (const fn of [...Object.values(svc), ...Object.values(configSvc), ...Object.values(habSvc), ...Object.values(localesSvc), ...Object.values(cuotasSvc), ...Object.values(canchasSvc)]) fn.mockClear();
 });
 
 async function request(method, path, { user, body, tienda } = {}) {
@@ -337,5 +344,51 @@ describe("locales (alquiler-locales)", () => {
     expect((await request("POST", "/admin/reservas/locales/bloqueos", { user: "recepcion", body: { ...body, horaInicio: "19:00" } })).status).toBe(400);
     expect((await request("POST", "/admin/reservas/locales/bloqueos", { user: "visor", body })).status).toBe(403);
     expect((await request("POST", "/admin/reservas/locales/bloqueos", { user: "recepcion", body: { ...body, motivo: "Vendida por WhatsApp" } })).status).toBe(200);
+  });
+});
+
+describe("canchas (alquiler-canchas)", () => {
+  it("agenda de la vitrina: exige la fecha", async () => {
+    expect((await request("GET", `/store/reservas/canchas/agenda?tiendaId=${TIENDA}`)).status).toBe(400);
+    const r = await request("GET", `/store/reservas/canchas/agenda?tiendaId=${TIENDA}&fecha=2026-10-12`);
+    expect(r.status).toBe(200);
+    expect(canchasSvc.agendaStore).toHaveBeenCalledWith(TIENDA, "2026-10-12");
+  });
+
+  it("cotizar: acepta la duración del turno", async () => {
+    const r = await request("POST", "/store/reservas/cotizar", { body: { tiendaId: TIENDA, productoId: PRODUCTO, fecha: "2026-10-12", hora: "19:00", duracionMin: 90 } });
+    expect(r.status).toBe(200);
+    expect(svc.cotizar).toHaveBeenCalledWith(expect.objectContaining({ hora: "19:00", duracionMin: 90 }));
+  });
+
+  it("ficha: valida formato y precios; solo admin+ la guarda", async () => {
+    const body = { tiendaId: TIENDA, formato: "F7", jugadoresMax: 16, precioDia: 120, precioNoche: 160 };
+    const malo = await request("PUT", `/admin/reservas/canchas/${PRODUCTO}`, { user: "dueno", body: { ...body, formato: "F4", precioNoche: 0 } });
+    expect(malo.status).toBe(400);
+    expect(Object.keys(malo.json.data.body)).toEqual(expect.arrayContaining(["formato", "precioNoche"]));
+    expect((await request("PUT", `/admin/reservas/canchas/${PRODUCTO}`, { user: "recepcion", body })).status).toBe(403);
+    expect((await request("PUT", `/admin/reservas/canchas/${PRODUCTO}`, { user: "dueno", body })).status).toBe(200);
+    expect(canchasSvc.guardarFichaCancha).toHaveBeenCalledWith(TIENDA, PRODUCTO, expect.objectContaining({ formato: "F7", techada: false }), expect.anything());
+  });
+
+  it("bloqueo: el fin debe ser después del inicio (00:00 = medianoche); editor+ bloquea", async () => {
+    const body = { tiendaId: TIENDA, productoId: PRODUCTO, fecha: "2026-10-12", horaInicio: "20:00" };
+    expect((await request("POST", "/admin/reservas/canchas/bloqueos", { user: "recepcion", body: { ...body, horaFin: "19:00" } })).status).toBe(400);
+    expect((await request("POST", "/admin/reservas/canchas/bloqueos", { user: "visor", body: { ...body, horaFin: "21:00" } })).status).toBe(403);
+    expect((await request("POST", "/admin/reservas/canchas/bloqueos", { user: "recepcion", body: { ...body, horaFin: "00:00", motivo: "Academia" } })).status).toBe(200);
+    expect(canchasSvc.crearBloqueo).toHaveBeenCalledWith(TIENDA, expect.objectContaining({ horaFin: "00:00", motivo: "Academia" }), expect.anything());
+  });
+
+  it("config: horario en horas en punto y cierre después de la apertura", async () => {
+    const r = await request("PUT", "/admin/reservas/config", {
+      user: "dueno", body: { tiendaId: TIENDA, canchaApertura: "08:30", canchaCierre: "07:00", canchaDuraciones: [45] }
+    });
+    expect(r.status).toBe(400);
+    expect(Object.keys(r.json.data.body)).toEqual(expect.arrayContaining(["canchaApertura"]));
+    const ok = await request("PUT", "/admin/reservas/config", {
+      user: "dueno", body: { tiendaId: TIENDA, canchaApertura: "08:00", canchaCierre: "00:00", canchaInicioNoche: "18:00", canchaDuraciones: [120, 60] }
+    });
+    expect(ok.status).toBe(200);
+    expect(configSvc.guardarConfig).toHaveBeenCalledWith(TIENDA, expect.objectContaining({ canchaDuraciones: [60, 120] }), expect.anything());
   });
 });

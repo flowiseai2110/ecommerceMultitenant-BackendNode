@@ -5,6 +5,7 @@ export const productos = {
   recibeReservas: false,
   planDePagos: false,
   transmisiones: false,
+  alquilerPorHoras: false,
   diseno: {
     plantillaPorDefecto: "clasica",
     secciones: Object.freeze([...SECCIONES_COMUNES, "categorias", "productos", "oferta"])

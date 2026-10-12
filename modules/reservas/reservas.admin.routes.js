@@ -16,6 +16,10 @@ import { guardarFichaSalon, listarSalonesAdmin, obtenerFichaSalonAdmin } from ".
 import { calendarioAdmin, crearBloqueo, crearCotizacion, eliminarBloqueo, listarCotizacionesAdmin } from "./locales/locales.service.js";
 import { editarPlan, rechazarCuota, verificarCuota } from "./locales/cuotas.service.js";
 import {
+  agendaAdmin as agendaCanchasAdmin, crearBloqueo as crearBloqueoCancha, eliminarBloqueo as eliminarBloqueoCancha,
+  guardarFichaCancha, listarCanchasAdmin, obtenerFichaCanchaAdmin
+} from "./canchas/canchas.service.js";
+import {
   aceptarReserva, agendaReservas, cancelarPorNegocio, detalleReservaAdmin, listarReservasAdmin, marcarNoShow,
   rechazarPago, rechazarReserva, reenviarCorreo, resumenReservas, verificarPago
 } from "./reservas.service.js";
@@ -23,7 +27,8 @@ import {
   aceptarSchema, agendaQuerySchema, configSchema, crearCierreSchema, habitacionSchema, idParamSchema,
   listarAdminQuerySchema, motivoSchema, productoParamSchema, rechazarPagoSchema, rechazarSchema, tiendaQuerySchema, tourSchema,
   eventoSchema, funcionParamSchema, temporadaSchema, extraSchema, planSchema, disponibilidadQuerySchema, salonSchema,
-  calendarioAdminQuerySchema, bloqueoSchema, cotizacionAdminSchema, listarCotizacionesQuerySchema, cuotaAdminParamSchema, planPagosSchema
+  calendarioAdminQuerySchema, bloqueoSchema, cotizacionAdminSchema, listarCotizacionesQuerySchema, cuotaAdminParamSchema, planPagosSchema,
+  canchaSchema, agendaCanchasAdminQuerySchema, bloqueoCanchaSchema
 } from "./reservas.schema.js";
 
 /**
@@ -236,6 +241,45 @@ router.post("/locales/cotizaciones", ...operacion, validate({ body: cotizacionAd
     return ok(res, "LOCAL_COTIZACION_CREADA", await crearCotizacion(req.tiendaId, datos, { creadaPor: "negocio", user: req.user }));
   } catch (error) { next(error); }
 });
+
+// ---------- Canchas: fichas, agenda y bloqueos (alquiler-canchas R1, R6) ----------
+
+router.get("/canchas", ...lectura, validate({ query: tiendaQuerySchema }), async (req, res, next) => {
+  try { return ok(res, "CANCHAS_ADMIN", await listarCanchasAdmin(req.tiendaId)); } catch (error) { next(error); }
+});
+
+// Grilla cancha × hora del día: reservas (con código, cliente y estado), apartados y bloqueos.
+router.get("/canchas/agenda", ...lectura, validate({ query: agendaCanchasAdminQuerySchema }), async (req, res, next) => {
+  try { return ok(res, "CANCHAS_AGENDA", await agendaCanchasAdmin(req.tiendaId, req.validatedQuery.fecha)); } catch (error) { next(error); }
+});
+
+// Bloqueo manual: reserva por teléfono, mantenimiento, academia. 409 HORARIO_OCUPADO si choca. Editor+: lo hace quien atiende.
+router.post("/canchas/bloqueos", ...operacion, validate({ body: bloqueoCanchaSchema }), async (req, res, next) => {
+  try {
+    const { tiendaId, ...data } = req.body;
+    return ok(res, "CANCHA_BLOQUEO_CREADO", await crearBloqueoCancha(req.tiendaId, data, req.user));
+  } catch (error) { next(error); }
+});
+
+router.delete("/canchas/bloqueos/:id", ...operacion, validate({ params: idParamSchema, query: tiendaQuerySchema }), async (req, res, next) => {
+  try {
+    await eliminarBloqueoCancha(req.tiendaId, req.params.id);
+    return ok(res, "CANCHA_BLOQUEO_ELIMINADO", null);
+  } catch (error) { next(error); }
+});
+
+router.get("/canchas/:productoId", ...lectura, validate({ params: productoParamSchema, query: tiendaQuerySchema }),
+  async (req, res, next) => {
+    try { return ok(res, "CANCHA_FICHA", await obtenerFichaCanchaAdmin(req.tiendaId, req.params.productoId)); } catch (error) { next(error); }
+  });
+
+router.put("/canchas/:productoId", ...gestion, validate({ params: productoParamSchema, body: canchaSchema }),
+  async (req, res, next) => {
+    try {
+      const { tiendaId, ...data } = req.body;
+      return ok(res, "CANCHA_FICHA_UPDATED", await guardarFichaCancha(req.tiendaId, req.params.productoId, data, req.user));
+    } catch (error) { next(error); }
+  });
 
 // ---------- Bandeja ----------
 

@@ -5,6 +5,7 @@ export const hotel = {
   recibeReservas: true,
   planDePagos: false,
   transmisiones: false,
+  alquilerPorHoras: false,
   diseno: {
     plantillaPorDefecto: "hotel-boutique",
     secciones: Object.freeze([...SECCIONES_COMUNES, ...SECCIONES_RESERVAS, "habitaciones"])

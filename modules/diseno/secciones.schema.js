@@ -27,7 +27,10 @@ export const TIPOS_SECCION = [
   // Fotos del lugar (docs/specs/hospedaje-completo B7).
   "galeria",
   // Salones del local de eventos (docs/specs/alquiler-locales L1.30).
-  "salones"
+  "salones",
+  // Complejo de canchas (docs/specs/alquiler-canchas): portada con tarifas, canchas,
+  // reservador por horas, cómo funciona y alquiler fijo semanal.
+  "canchas-portada", "canchas", "reservador", "pasos", "fijo-semanal"
 ];
 
 // Secciones que puede usar cada tipo de negocio (docs/specs/diseno-por-rubro): las
@@ -48,7 +51,8 @@ export const MAX_SECCIONES = 15;
 export const MAX_POR_TIPO = Object.freeze({
   hero: 1, categorias: 1, testimonios: 1, faq: 1, oferta: 1, cinta: 1, contacto: 1,
   "imagen-texto": 3, productos: 4,
-  habitaciones: 1, servicios: 1, ubicacion: 1, politicas: 1, tours: 1, eventos: 1, galeria: 2, salones: 1
+  habitaciones: 1, servicios: 1, ubicacion: 1, politicas: 1, tours: 1, eventos: 1, galeria: 2, salones: 1,
+  "canchas-portada": 1, canchas: 1, reservador: 1, pasos: 1, "fijo-semanal": 1
 });
 export const ICONOS_BENEFICIO = ["envio", "pago", "cambios", "soporte", "garantia", "rapido", "calidad"];
 // Servicios de un hospedaje o de una agencia ("por qué viajar con nosotros").
@@ -59,7 +63,9 @@ export const ICONOS_SERVICIO = [
   // Tours (fase 2).
   "guia", "grupo", "seguro", "calendario", "idiomas",
   // Eventos (fase 3).
-  "entrada", "musica", "bar"
+  "entrada", "musica", "bar",
+  // Canchas (alquiler-canchas).
+  "reflectores", "vestuarios", "pelota", "techada", "tribuna", "pagos"
 ];
 
 const texto = (max) => z.string().trim().min(1, "No puede estar vacío").max(max, `Máximo ${max} caracteres`);
@@ -146,7 +152,10 @@ const seccionSchema = z.discriminatedUnion("tipo", [
   z.object({
     ...base,
     tipo: z.literal("faq"),
+    // Sin variante: una columna (como hasta ahora).
+    variante: z.enum(["lista", "dos-columnas"]).optional(),
     fondo,
+    kicker: textoOpcional(40),
     titulo: texto(80),
     items: z
       .array(z.object({ pregunta: texto(120), respuesta: texto(500) }))
@@ -188,8 +197,9 @@ const seccionSchema = z.discriminatedUnion("tipo", [
   z.object({
     ...base,
     tipo: z.literal("servicios"),
-    variante: z.enum(["iconos", "lista"]),
+    variante: z.enum(["iconos", "lista", "tarjetas"]),
     fondo,
+    kicker: textoOpcional(40),
     titulo: texto(80),
     items: z
       .array(z.object({ icono: z.enum(ICONOS_SERVICIO), titulo: texto(40) }))
@@ -215,6 +225,7 @@ const seccionSchema = z.discriminatedUnion("tipo", [
     ...base,
     tipo: z.literal("ubicacion"),
     fondo,
+    kicker: textoOpcional(40),
     titulo: texto(80),
     texto: textoOpcional(300),
     cercanos: z.array(texto(60)).max(4, "Máximo 4 lugares cercanos").default([]),
@@ -259,6 +270,55 @@ const seccionSchema = z.discriminatedUnion("tipo", [
     titulo: texto(80),
     subtitulo: textoOpcional(160),
     limite: z.number().int().min(1).max(12).optional()
+  }),
+  // ── Complejo de canchas (docs/specs/alquiler-canchas) ──
+  // Portada: las tarifas "desde" y los horarios libres de hoy salen de las canchas.
+  // `acento` es el final del título, resaltado ("en 1 minuto").
+  z.object({
+    ...base,
+    tipo: z.literal("canchas-portada"),
+    kicker: textoOpcional(60),
+    titulo: textoOpcional(80),
+    acento: textoOpcional(40),
+    subtitulo: textoOpcional(300),
+    textoBoton: textoOpcional(40),
+    textoBotonSecundario: textoOpcional(40)
+  }),
+  // Las canchas salen de la vitrina; el dueño solo elige cómo se ven.
+  z.object({
+    ...base,
+    tipo: z.literal("canchas"),
+    variante: z.enum(["grilla", "carrusel"]),
+    fondo,
+    kicker: textoOpcional(40),
+    titulo: texto(80),
+    subtitulo: textoOpcional(160),
+    limite: z.number().int().min(1).max(12).optional()
+  }),
+  // Reservador: día, cancha, duración y hora con el precio calculado.
+  z.object({
+    ...base,
+    tipo: z.literal("reservador"),
+    fondo,
+    kicker: textoOpcional(40),
+    titulo: texto(80)
+  }),
+  // Cómo funciona: los pasos salen de la configuración (adelanto y plazo reales).
+  z.object({
+    ...base,
+    tipo: z.literal("pasos"),
+    fondo,
+    kicker: textoOpcional(40),
+    titulo: texto(80)
+  }),
+  // Alquiler fijo semanal: banda con un botón que abre WhatsApp con el pedido armado.
+  z.object({
+    ...base,
+    tipo: z.literal("fijo-semanal"),
+    kicker: textoOpcional(40),
+    titulo: texto(80),
+    texto: texto(300),
+    textoBoton: texto(40)
   })
 ]);
 
@@ -396,7 +456,9 @@ export const LAYOUT_POR_NEGOCIO = Object.freeze({
   tours: z.object({ header: headerSchema, tour: tourSchema.default({}) }),
   eventos: z.object({ header: headerSchema, evento: eventoSchema.default({}) }),
   // El salón todavía no tiene opciones de ficha.
-  locales: z.object({ header: headerSchema })
+  locales: z.object({ header: headerSchema }),
+  // La cancha todavía no tiene opciones de ficha.
+  canchas: z.object({ header: headerSchema })
 });
 
 /** Esquema del layout de un tipo de negocio (uno desconocido usa el de productos). */
@@ -423,7 +485,7 @@ export const estructuraSchema = z.preprocess(
     plantillaId: z.enum(PLANTILLA_IDS),
     plantillaVersion: z.number().int().min(1),
     radio: z.enum(["recto", "suave", "redondeado"]),
-    encabezados: z.enum(["comercial", "editorial", "impacto"]),
+    encabezados: z.enum(["comercial", "editorial", "impacto", "deportivo"]),
     layout: layoutSchema,
     home: z.object({ secciones: seccionesSchema })
   })

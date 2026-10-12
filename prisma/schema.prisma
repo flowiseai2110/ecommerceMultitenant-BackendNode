@@ -393,6 +393,7 @@ model productos {
   tour      tours?
   evento    eventos?
   salon     local_salones?
+  cancha    cancha_canchas?
   cierres   cierres_fecha[]
   reservas  reservas[]
 
@@ -591,6 +592,8 @@ model pedidos {
   cambios          reserva_cambios[]
   ocupaciones      local_ocupaciones[]
   cotizaciones     local_cotizaciones[]
+  // Alquiler de canchas (docs/specs/alquiler-canchas)
+  ocupacionesCancha cancha_ocupaciones[]
 
   @@unique([tiendaId, numeroPedido], name: "uq_numero_pedido")
   @@unique([tiendaId, idempotencyKey], name: "uq_pedidos_idempotency")
@@ -1039,6 +1042,12 @@ model config_reservas {
   descorcheBotella       Decimal? @map("descorche_botella") @db.Decimal(10, 2)
   horaTope               String   @default("03:00") @map("hora_tope") @db.VarChar(5) // ordenanza municipal
   visitasHorario         Json?    @map("visitas_horario") @db.JsonB // { "1": ["16:00-19:00"] } (día ISO → rangos)
+  // Alquiler de canchas (docs/specs/alquiler-canchas R2): horario del complejo, en horas en punto.
+  canchaApertura         String   @default("07:00") @map("cancha_apertura") @db.VarChar(5)
+  canchaCierre           String   @default("23:00") @map("cancha_cierre") @db.VarChar(5) // "00:00" = medianoche
+  canchaInicioNoche      String   @default("18:00") @map("cancha_inicio_noche") @db.VarChar(5)
+  canchaFindeNoche       Boolean  @default(true) @map("cancha_finde_noche") // sábado, domingo y feriado: tarifa noche todo el día
+  canchaDuraciones       Int[]    @default([60, 90, 120]) @map("cancha_duraciones") // minutos
 
   // Auditoría
   fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
@@ -1355,6 +1364,8 @@ model reservas {
   reprogramaciones       Int       @default(0)
   saldoFavorHasta        DateTime? @map("saldo_favor_hasta") @db.Timestamptz
   invitadosConfirmadosEn DateTime? @map("invitados_confirmados_en") @db.Timestamptz
+  // Alquiler de canchas: foto de la reserva (cancha, formato, duración, tramos día/noche).
+  cancha                 Json?     @db.JsonB
 
   // Titular (registro de huésped)
   titularNombres      String    @map("titular_nombres") @db.VarChar(100)
@@ -1713,6 +1724,65 @@ model local_cotizaciones {
   @@index([tiendaId, fechaRegistro(sort: Desc)], name: "idx_local_cotizaciones_tienda")
   @@index([productoId], name: "idx_local_cotizaciones_salon")
   @@index([pedidoId], name: "idx_local_cotizaciones_pedido")
+}
+
+// ============================================
+// MÓDULO: ALQUILER DE CANCHAS (docs/specs/alquiler-canchas)
+// Una cancha es un `productos` + su ficha 1:1 en `cancha_canchas` (formato y
+// precio por hora de día y de noche). La reserva es un `pedidos` tipo =
+// 'cancha' + `reservas`. La disponibilidad la garantiza `cancha_ocupaciones`
+// con una restricción de exclusión sobre la franja (solo en SQL).
+// DDL: docs/sql/canchas_fase_1.sql
+// ============================================
+
+model cancha_canchas {
+  productoId   String   @id @map("producto_id") @db.Uuid
+  tiendaId     String   @map("tienda_id") @db.Uuid
+  formato      String   @db.VarChar(4) // F5 | F6 | F7 | F8 | F9 | F11
+  largoM       Int?     @map("largo_m")
+  anchoM       Int?     @map("ancho_m")
+  jugadoresMax Int      @map("jugadores_max")
+  techada      Boolean  @default(false)
+  superficie   String?  @db.VarChar(60) // "Grass sintético 50 mm"
+  precioDia    Decimal  @map("precio_dia") @db.Decimal(10, 2) // por hora
+  precioNoche  Decimal  @map("precio_noche") @db.Decimal(10, 2) // por hora, desde config_reservas.cancha_inicio_noche
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  producto    productos            @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  ocupaciones cancha_ocupaciones[]
+
+  @@index([tiendaId], name: "idx_cancha_canchas_tienda")
+}
+
+// Franja ocupada de una cancha: apartado (esperando el pago), reserva o bloqueo
+// manual. `franja` es una columna generada (tstzrange) con la restricción de
+// exclusión ex_cancha_ocupacion: dos filas activas de la misma cancha no se
+// cruzan (R4). Una fila con `expira_en` vencido no ocupa.
+model cancha_ocupaciones {
+  id              String                    @id @default(uuid()) @db.Uuid
+  tiendaId        String                    @map("tienda_id") @db.Uuid
+  productoId      String                    @map("producto_id") @db.Uuid
+  pedidoId        String?                   @map("pedido_id") @db.Uuid // null = bloqueo manual
+  tipo            String                    @db.VarChar(10) // apartado | reserva | bloqueo
+  inicio          DateTime                  @db.Timestamptz
+  fin             DateTime                  @db.Timestamptz
+  franja          Unsupported("tstzrange")?
+  expiraEn        DateTime?                 @map("expira_en") @db.Timestamptz
+  activo          Boolean                   @default(true)
+  motivo          String?                   @db.VarChar(100) // bloqueos manuales (solo admin)
+  fechaRegistro   DateTime?                 @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro String?                   @map("usuario_registro") @db.VarChar(100)
+
+  cancha cancha_canchas @relation(fields: [productoId], references: [productoId], onDelete: Cascade)
+  pedido pedidos?       @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@index([productoId, inicio], name: "idx_cancha_ocupaciones_cancha")
+  @@index([tiendaId, inicio], name: "idx_cancha_ocupaciones_tienda")
+  @@index([pedidoId], name: "idx_cancha_ocupaciones_pedido")
 }
 
 // ============================================

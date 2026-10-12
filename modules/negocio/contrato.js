@@ -9,18 +9,19 @@ import { ValidationError } from "../../utils/errors.js";
  *
  * - prepararProducto(datos, { modo }): recibe el body ya validado por Zod
  *   ("crear" | "editar") y devuelve los datos a guardar, o lanza ValidationError.
- * - Datos del rubro (negocio/<rubro>/datos.js): recibeReservas, planDePagos y
- *   transmisiones (capacidades), diseno { plantillaPorDefecto, secciones },
- *   configReservas (defaults) y textoAviso (string o null).
+ * - Datos del rubro (negocio/<rubro>/datos.js): recibeReservas, planDePagos,
+ *   transmisiones y alquilerPorHoras (capacidades), diseno { plantillaPorDefecto,
+ *   secciones, temaPorDefecto? }, configReservas (defaults) y textoAviso (string o null).
  * - agente: perfil del asesor de ventas, o null (usa el de productos).
  * - reservas: la vertical del mini booking, o null si el rubro no recibe reservas.
  *   Obligatorio: cotizar({ tiendaId, datos, config, ahora }), tipoPedido, este.
  *   Opcional: estadoInicial, apartadoInicial, whereAbiertas, enTransaccion,
- *   traducirError, extraCotizacion.
+ *   traducirError, extraCotizacion y alCambiarEstado(tx, { pedido, nuevo, ahora })
+ *   (lo llama aplicarAccion en cada transición: la vertical mantiene su inventario).
  */
 export const CONTRATO = ["prepararProducto"];
 export const CONTRATO_RESERVAS = { funciones: ["cotizar"], textos: ["tipoPedido", "este"] };
-export const CAPACIDADES = ["recibeReservas", "planDePagos", "transmisiones"];
+export const CAPACIDADES = ["recibeReservas", "planDePagos", "transmisiones", "alquilerPorHoras"];
 
 /** Lo que le falta a los datos de un rubro (negocio/<rubro>/datos.js). */
 export function faltantesDeDatos(d) {

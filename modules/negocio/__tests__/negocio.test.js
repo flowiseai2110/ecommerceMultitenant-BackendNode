@@ -36,16 +36,19 @@ describe("contrato", () => {
 
   it("capacidades por rubro", () => {
     const con = (c) => Object.keys(ESTRATEGIAS).filter((t) => ESTRATEGIAS[t][c]);
-    expect(con("recibeReservas")).toEqual(["hotel", "tours", "eventos", "locales"]);
+    expect(con("recibeReservas")).toEqual(["hotel", "tours", "eventos", "locales", "canchas"]);
     expect(con("planDePagos")).toEqual(["locales"]);
     expect(con("transmisiones")).toEqual(["eventos"]);
+    expect(con("alquilerPorHoras")).toEqual(["canchas"]);
     expect(Object.keys(ESTRATEGIAS).filter((t) => ESTRATEGIAS[t].agente)).toEqual(["hotel", "tours", "eventos", "locales"]);
   });
 
   it("solo productos no recibe reservas; cada rubro de reservas tiene su vertical", () => {
     expect(ESTRATEGIAS.productos.reservas).toBeNull();
-    expect(["hotel", "tours", "eventos", "locales"].map((t) => ESTRATEGIAS[t].reservas.tipoPedido))
-      .toEqual(["hotel", "tour", "evento", "local"]);
+    expect(["hotel", "tours", "eventos", "locales", "canchas"].map((t) => ESTRATEGIAS[t].reservas.tipoPedido))
+      .toEqual(["hotel", "tour", "evento", "local", "cancha"]);
+    // Canchas mantiene la ocupación del horario en cada transición (alquiler-canchas R5).
+    expect(typeof ESTRATEGIAS.canchas.reservas.alCambiarEstado).toBe("function");
     expect(typeof ESTRATEGIAS.locales.reservas.extraCotizacion).toBe("function");
   });
 });

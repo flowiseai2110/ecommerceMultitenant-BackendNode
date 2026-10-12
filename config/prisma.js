@@ -29,7 +29,9 @@ const TENANT_SCOPED_MODELS = new Set([
   "eventos", "evento_funciones", "evento_tipos_entrada", "evento_compra_items",
   // Alquiler de locales
   "local_salones", "local_turnos", "local_paquetes", "local_ocupaciones", "local_cotizaciones",
-  "reserva_cuotas", "reserva_cambios"
+  "reserva_cuotas", "reserva_cambios",
+  // Alquiler de canchas
+  "cancha_canchas", "cancha_ocupaciones"
 ]);
 
 // Solo lecturas y operaciones masivas. findUnique/update/delete/create se dejan
