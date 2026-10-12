@@ -500,6 +500,10 @@ Estos datos salen de búsquedas en la web; las páginas oficiales de Mux y Cloud
 12. **Grabación** (decidida el 2026-10-07 al empezar la Fase 4): en Privado está incluida y activada por defecto (30 días para ver y descargar). "Guardar 1 año" cuesta S/ 50, como cargo manual a la tienda. El MP4 se copia a R2 privado solo en ese caso.
 13. **Premium** (decidido el 2026-10-09 al empezar la Fase 5): S/ 40 por evento, cargo manual a la tienda, además de las horas. La retransmisión a Facebook y YouTube va incluida (hasta 2 destinos). La grabación se ve 90 días y se descarga durante 1 año. El resumen con IA usa los subtítulos automáticos en español de Cloudflare y Claude.
 
+## Pendiente al terminar
+
+- **Dashboard de eventos** ([dashboard-por-rubro](../dashboard-por-rubro/spec.md), tarea 4.1): al completar esta spec, agregar el widget de saldo de minutos (plan del mes, paquetes vigentes y excedente) a `negocio/eventos/dashboard.js`, usando el mismo cálculo de saldo que el admin de transmisiones.
+
 ## Preguntas abiertas
 
 > Se deciden en la fase que las necesita: la 1 al inicio de la Fase 1, la 3 al inicio de la Fase 2, y la 2 y la 4 al inicio de la Fase 3 ([plan.md](plan.md#decisiones-pendientes-por-fase)).

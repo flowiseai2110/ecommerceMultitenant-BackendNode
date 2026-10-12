@@ -34,23 +34,6 @@ async function resolvePedidoTiendaId(req, res, next) {
   }
 }
 
-// GET /resumen - Listado compacto para tabla del admin
-router.get(
-  "/resumen",
-  authMiddleware,
-  requireTiendaAccess("viewer"),
-  validate({ query: paginationSchema }),
-  async (req, res, next) => {
-    try {
-      const query = req.validatedQuery || req.query;
-      const { data, meta } = await pedidosService.findResumen(query);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDOS_RESUMEN", data, meta });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
 // GET / - Listar pedidos (requiere tiendaId en query)
 router.get(
   "/",

@@ -13,6 +13,8 @@ import { ValidationError } from "../../utils/errors.js";
  *   transmisiones y alquilerPorHoras (capacidades), diseno { plantillaPorDefecto,
  *   secciones, temaPorDefecto? }, configReservas (defaults) y textoAviso (string o null).
  * - agente: perfil del asesor de ventas, o null (usa el de productos).
+ * - dashboard: widgets del dashboard del admin, arreglo no vacío de funciones
+ *   `(ctx) => Promise<Widget | null>` (docs/specs/dashboard-por-rubro).
  * - reservas: la vertical del mini booking, o null si el rubro no recibe reservas.
  *   Obligatorio: cotizar({ tiendaId, datos, config, ahora }), tipoPedido, este.
  *   Opcional: estadoInicial, apartadoInicial, whereAbiertas, enTransaccion,
@@ -38,6 +40,8 @@ export function faltantesDelContrato(estrategia) {
   const faltan = CONTRATO.filter((m) => typeof estrategia?.[m] !== "function");
   faltan.push(...faltantesDeDatos(estrategia));
   if (estrategia && !("agente" in estrategia)) faltan.push("agente");
+  const d = estrategia?.dashboard;
+  if (!Array.isArray(d) || !d.length || !d.every((w) => typeof w === "function")) faltan.push("dashboard");
   if (!estrategia || !("reservas" in estrategia)) return [...faltan, "reservas"];
   const r = estrategia.reservas;
   if (r === null) return faltan;

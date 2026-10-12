@@ -1,6 +1,6 @@
 # Spec: Alquiler de canchas sintéticas (rubro `canchas`)
 
-> Estado: **implementado, sin desplegar ni verificar en el navegador** (2026-10-11). Builds y tests OK en los tres repos (backend 1069, tienda 105, admin 60). Falta correr `docs/sql/canchas_fase_1.sql` en Supabase, `npx prisma generate` en el servidor y probar con una tienda demo (C5).
+> Estado: **implementado y verificado** (2026-10-12): SQL aplicado en Supabase, tienda demo `los-cedros` (`scripts/seed-canchas.mjs`, dueño `canchas@yopmail.com`) y flujo probado por el usuario. Falta commit y deploy.
 > Repos: BackendNode, FrontendStore, FrontendAdmin.
 > Diseño de la vista del cliente: maqueta aprobada "Cancha Los Cedros" (claude.ai/artifact/1pvieL2mWPLwB4XYJHwb98).
 > Base: [perfil-negocio](../perfil-negocio/spec.md) (Strategy por rubro), [layout-por-rubro](../layout-por-rubro/spec.md) (Abstract Factory de piezas), [mini-booking](../mini-booking/spec.md) (estados, pago y seguimiento), [alquiler-locales](../alquiler-locales/plan.md) (ocupaciones con restricción de exclusión).
@@ -79,7 +79,7 @@ Igual a la maqueta aprobada:
 - [x] C2 Backend: rubro (`negocio/canchas/`, capacidad `alquilerPorHoras`), tarifa y cotización puras, ocupaciones con exclusión, vertical con `alCambiarEstado` (hook en `aplicarAccion`, `verticalDePedido`), rutas de tienda y admin, correos, serializer, Diseño (5 secciones, variantes `tarjetas` y `dos-columnas`, antetítulos, 6 íconos, encabezados `deportivo`, plantilla `canchas-complejo`, paleta `cancha-*`, tipografía `deportiva`, tema por defecto del rubro). Tests: `canchas.cotizar`, `canchas.vertical`, rutas, contrato.
 - [x] C3 Tienda: perfil y UI del rubro (botón "Reservar" del header, barra inferior, rutas `/canchas` y `/canchas/:slug`), secciones de la home, reservador, ficha, solicitud (`?cancha=&fecha=&hora=&min=`) y seguimiento, tema. Test `canchas.util.spec`.
 - [x] C4 Admin: perfil y registro, lista y ficha de canchas, agenda cancha × hora con bloqueos, sección "Horario de las canchas" en Config. de reservas, editor de Diseño (secciones nuevas), detalle de reserva, alta de tienda "Canchas deportivas".
-- [ ] C5 Correr el SQL en Supabase, `npx prisma generate` en Railway, crear una tienda demo con 3 canchas y verificar en el navegador (escritorio y celular): reservar, subir captura, verificar pago, cancelar, bloquear desde la agenda y que dos reservas del mismo horario den 409.
+- [x] C5 Correr el SQL en Supabase, `npx prisma generate` en Railway, crear una tienda demo con 3 canchas y verificar en el navegador (escritorio y celular): reservar, subir captura, verificar pago, cancelar, bloquear desde la agenda y que dos reservas del mismo horario den 409.
 
 ## Decisiones tomadas al implementar (2026-10-11)
 

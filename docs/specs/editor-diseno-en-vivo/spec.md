@@ -69,7 +69,7 @@ Además, cada rubro tiene una o dos plantillas fijas en el código. Cuando un cl
 
 ## Fase 2 — Plantillas sin programar
 
-> Estado: **implementada** (2026-10-12), sin commit. Falta correr `docs/sql/plantillas_diseno.sql` en Supabase, poner `PLATFORM_ADMIN_EMAILS` y probar en el navegador.
+> Estado: **implementada, probada y con commit** (2026-10-12); SQL corrido en Supabase. Solo falta el pase a producción.
 
 ### Problema
 

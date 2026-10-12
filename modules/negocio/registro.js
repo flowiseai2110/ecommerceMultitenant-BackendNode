@@ -10,6 +10,12 @@ import { agenteHotel } from "../agente/perfiles/hotel.js";
 import { agenteTours } from "../agente/perfiles/tours.js";
 import { agenteEventos } from "../agente/perfiles/eventos.js";
 import { agenteLocales } from "../agente/perfiles/locales.js";
+import { dashboardProductos } from "./productos/dashboard.js";
+import { dashboardHotel } from "./hotel/dashboard.js";
+import { dashboardTours } from "./tours/dashboard.js";
+import { dashboardEventos } from "./eventos/dashboard.js";
+import { dashboardLocales } from "./locales/dashboard.js";
+import { dashboardCanchas } from "./canchas/dashboard.js";
 import { DATOS } from "./datos.js";
 
 export { tiendaDe, invalidarRubrosCache } from "./rubros.cache.js";
@@ -24,18 +30,19 @@ export { tiendaDe, invalidarRubrosCache } from "./rubros.cache.js";
  * Cada estrategia = datos del rubro (negocio/<rubro>/datos.js: capacidades, Diseño,
  * config de reservas) + reglas (prepararProducto) + `reservas`, la vertical del mini
  * booking (cotizar, estadoInicial, enTransaccion…; vive en modules/reservas/<rubro>/)
- * + `agente`, el perfil del asesor (modules/agente/perfiles/<rubro>.js; null = el de productos).
+ * + `agente`, el perfil del asesor (modules/agente/perfiles/<rubro>.js; null = el de productos)
+ * + `dashboard`, los widgets del dashboard del admin (negocio/<rubro>/dashboard.js, docs/specs/dashboard-por-rubro).
  */
 export const ESTRATEGIAS = {
-  productos: { ...DATOS.productos, ...productos, reservas: null, agente: null },
-  hotel: { ...DATOS.hotel, ...hotel, reservas: verticalHotel, agente: agenteHotel },
+  productos: { ...DATOS.productos, ...productos, reservas: null, agente: null, dashboard: dashboardProductos },
+  hotel: { ...DATOS.hotel, ...hotel, reservas: verticalHotel, agente: agenteHotel, dashboard: dashboardHotel },
   // Tours, eventos y locales piden precio en el formulario igual que productos (su
   // ficha lo reemplaza luego por el precio "desde"). Si su regla cambia, tendrán su carpeta.
-  tours: { ...DATOS.tours, ...productos, reservas: verticalTours, agente: agenteTours },
-  eventos: { ...DATOS.eventos, ...productos, reservas: verticalEventos, agente: agenteEventos },
-  locales: { ...DATOS.locales, ...productos, reservas: verticalLocal, agente: agenteLocales },
+  tours: { ...DATOS.tours, ...productos, reservas: verticalTours, agente: agenteTours, dashboard: dashboardTours },
+  eventos: { ...DATOS.eventos, ...productos, reservas: verticalEventos, agente: agenteEventos, dashboard: dashboardEventos },
+  locales: { ...DATOS.locales, ...productos, reservas: verticalLocal, agente: agenteLocales, dashboard: dashboardLocales },
   // Canchas: el precio lo fija la ficha (día/noche), como la estadía del hotel. Sin asesor propio aún.
-  canchas: { ...DATOS.canchas, ...canchas, reservas: verticalCanchas, agente: null }
+  canchas: { ...DATOS.canchas, ...canchas, reservas: verticalCanchas, agente: null, dashboard: dashboardCanchas }
 };
 
 /**

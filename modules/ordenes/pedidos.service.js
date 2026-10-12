@@ -773,57 +773,6 @@ class PedidosService {
   }
 
   /**
-   * Listado compacto de pedidos para la tabla del admin.
-   * Devuelve solo los campos necesarios para el resumen.
-   */
-  async findResumen(query = {}) {
-    const { page = 1, limit = 20, tiendaId, estado } = query;
-
-    const take = Math.min(parseInt(limit) || 20, 100);
-    const skip = ((parseInt(page) || 1) - 1) * take;
-
-    const where = { tiendaId };
-    if (estado) where.estado = estado;
-
-    const [data, total] = await Promise.all([
-      prisma.pedidos.findMany({
-        where,
-        orderBy: { fechaRegistro: "desc" },
-        select: {
-          id: true,
-          numeroPedido: true,
-          estado: true,
-          total: true,
-          fechaRegistro: true,
-          clienteNombre: true
-        },
-        skip,
-        take
-      }),
-      prisma.pedidos.count({ where })
-    ]);
-
-    // Nombre desde el snapshot del pedido, no desde la ficha actual del cliente
-    const mapped = data.map(({ clienteNombre, ...pedido }) => ({
-      ...pedido,
-      cliente: { nombre: clienteNombre }
-    }));
-
-    const p = parseInt(page) || 1;
-    return {
-      data: mapped,
-      meta: {
-        total,
-        page: p,
-        limit: take,
-        totalPages: Math.ceil(total / take),
-        hasNextPage: p < Math.ceil(total / take),
-        hasPrevPage: p > 1
-      }
-    };
-  }
-
-  /**
    * Listado optimizado para la tabla del admin.
    * Una sola query con JOIN a clientes — sin detalles ni historial.
    * Índice usado: idx_pedidos_tienda_fecha (tiendaId, fechaRegistro DESC)

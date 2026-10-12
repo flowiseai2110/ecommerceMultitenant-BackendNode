@@ -521,6 +521,11 @@ function wherePestana(pestana, ahora) {
   }
 }
 
+/** Cuántas reservas hay en una pestaña de la bandeja (franja de atención del dashboard). */
+export function contarPestana(tiendaId, pestana, ahora = new Date()) {
+  return prisma.pedidos.count({ where: { tiendaId, tipo: { in: TIPOS_RESERVA }, ...wherePestana(pestana, ahora) } });
+}
+
 /** Bandeja (R11.1): las abiertas, por hora de inicio; el historial, lo más reciente primero. */
 /**
  * "Mis reservas" del comprador con sesión en la tienda (Mi cuenta; layout-por-rubro 3.5):

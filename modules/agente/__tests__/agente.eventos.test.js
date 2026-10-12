@@ -28,7 +28,9 @@ const evento = {
     tipos: [{ id: "gen", nombre: "General", precio: 50, estado: "ultimas", quedan: 3 }, { id: "vip", nombre: "VIP", precio: 120, estado: "agotado", quedan: null }]
   }]
 };
+// moverVendidos (reservas.service) y apartadasPorTipo (dashboard de eventos): los carga el registro.
 jest.unstable_mockModule("../../reservas/eventos/eventos.service.js", () => ({ cargarFuncionParaCompra: jest.fn(), apartarEntradas: jest.fn(),
+  moverVendidos: jest.fn(), apartadasPorTipo: jest.fn(async () => new Map()),
   listarEventosStore: jest.fn(async () => [evento]),
   obtenerEventoStore: jest.fn(async () => evento)
 }));

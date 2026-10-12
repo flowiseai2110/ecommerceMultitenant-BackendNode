@@ -45,7 +45,7 @@ export function sesion(token, t) {
   group("admin:dashboard", () => {
     lote([req(token, "admin:perfil", "/admin/users/me/profile")], { formato: false }); // envelope propio
     lote([
-      req(token, "admin:stats", `/admin/tiendas/${t.id}/stats`, { tiendaId: t.id }),
+      req(token, "admin:dashboard", `/admin/tiendas/${t.id}/dashboard`, { tiendaId: t.id }),
       req(token, "admin:pendientes", "/admin/pedidos/pendientes/count", { tiendaId: t.id })
     ]);
   });
@@ -90,6 +90,6 @@ export function sesion(token, t) {
 
 /** Nombres de los endpoints de la sesión (para el p95 por endpoint del resumen). */
 export const ENDPOINTS_ADMIN = [
-  "admin:perfil", "admin:stats", "admin:pendientes", "admin:pedidos-lista", "admin:pedido",
+  "admin:perfil", "admin:dashboard", "admin:pendientes", "admin:pedidos-lista", "admin:pedido",
   "admin:productos-lista", "admin:producto", "admin:producto-editar"
 ];

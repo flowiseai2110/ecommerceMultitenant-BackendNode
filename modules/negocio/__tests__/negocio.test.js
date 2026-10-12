@@ -29,7 +29,10 @@ describe("contrato", () => {
   });
 
   it("detecta lo que falta", () => {
-    expect(faltantesDelContrato({})).toEqual(expect.arrayContaining([...CONTRATO, "recibeReservas", "diseno.secciones", "agente", "reservas"]));
+    expect(faltantesDelContrato({})).toEqual(expect.arrayContaining([...CONTRATO, "recibeReservas", "diseno.secciones", "agente", "dashboard", "reservas"]));
+    // Dashboard por rubro (docs/specs/dashboard-por-rubro DR2): lista no vacía de widgets.
+    expect(faltantesDelContrato({ ...ESTRATEGIAS.productos, dashboard: [] })).toEqual(["dashboard"]);
+    expect(faltantesDelContrato({ ...ESTRATEGIAS.productos, dashboard: [{}] })).toEqual(["dashboard"]);
     const completo = { ...ESTRATEGIAS.productos, reservas: { este: "x" } };
     expect(faltantesDelContrato(completo)).toEqual(["reservas.cotizar", "reservas.tipoPedido"]);
   });

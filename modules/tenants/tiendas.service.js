@@ -2,8 +2,8 @@ import { prisma } from "../../config/prisma.js";
 
 /**
  * Servicio de tiendas (contexto tenants/usuarios): consultas de negocio que no
- * cubre el CRUD genérico — el listado scopeado a la membresía del usuario y las
- * estadísticas agregadas del dashboard.
+ * cubre el CRUD genérico: el listado scopeado a la membresía del usuario. El
+ * dashboard vive en modules/dashboard (docs/specs/dashboard-por-rubro).
  */
 
 // Campos que la tabla de administración (tienda-list) realmente renderiza.
@@ -80,36 +80,5 @@ export async function listTiendasForUser(userId, query = {}) {
       hasNextPage: page < Math.ceil(total / limit),
       hasPrevPage: page > 1
     }
-  };
-}
-
-/**
- * Estadísticas agregadas de una tienda para el dashboard. Una sola consulta con
- * subqueries correlacionadas (evita 7 round-trips a Supabase).
- * @param {string} tiendaId
- * @returns {Promise<object>} Métricas de la tienda.
- */
-export async function getTiendaStats(tiendaId) {
-  const [row] = await prisma.$queryRaw`
-    SELECT
-      (SELECT COUNT(*) FROM categorias WHERE tienda_id = ${tiendaId}::uuid) AS categorias,
-      (SELECT COUNT(*) FROM productos WHERE tienda_id = ${tiendaId}::uuid AND activo = true) AS productos,
-      (SELECT COUNT(*) FROM pedidos WHERE tienda_id = ${tiendaId}::uuid) AS pedidos_total,
-      (SELECT COUNT(*) FROM pedidos WHERE tienda_id = ${tiendaId}::uuid AND estado = 'pendiente') AS pedidos_pendientes,
-      (SELECT COUNT(*) FROM clientes WHERE tienda_id = ${tiendaId}::uuid) AS clientes,
-      (SELECT COUNT(*) FROM usuario_tiendas WHERE tienda_id = ${tiendaId}::uuid AND activo = true) AS miembros,
-      (SELECT COALESCE(SUM(total), 0) FROM pedidos WHERE tienda_id = ${tiendaId}::uuid AND estado <> 'cancelado') AS ventas_total
-  `;
-
-  return {
-    categorias: Number(row.categorias),
-    productos: Number(row.productos),
-    pedidos: {
-      total: Number(row.pedidos_total),
-      pendientes: Number(row.pedidos_pendientes)
-    },
-    clientes: Number(row.clientes),
-    miembros: Number(row.miembros),
-    ventasTotal: parseFloat(row.ventas_total)
   };
 }

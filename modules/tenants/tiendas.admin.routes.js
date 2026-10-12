@@ -27,7 +27,8 @@ import { updateDisenoSchema } from "../../validators/tienda-diseno.validator.js"
 import { calendarioQuerySchema, vistaPreviaQuerySchema } from "../campanas/campanas.schema.js";
 import { getCalendario, getVistaPrevia } from "../campanas/campanas.service.js";
 import { updatePlantillasWhatsappSchema } from "../../validators/tienda-plantillas-whatsapp.validator.js";
-import { listTiendasForUser, getTiendaStats } from "./tiendas.service.js";
+import { listTiendasForUser } from "./tiendas.service.js";
+import { armarDashboard } from "../dashboard/dashboard.service.js";
 import {
   getTiendasAdminList,
   setTiendasAdminList,
@@ -90,16 +91,17 @@ router.get(
   }
 );
 
-// GET /:tiendaId/stats - Estadísticas agregadas del dashboard
+// GET /:tiendaId/dashboard - Dashboard del rubro de la tienda (docs/specs/dashboard-por-rubro).
+// El viewer recibe solo cantidades: el rol sale de la membresía, nunca del request.
 router.get(
-  "/:tiendaId/stats",
+  "/:tiendaId/dashboard",
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ params: tiendaIdParamSchema }),
   async (req, res, next) => {
     try {
-      const data = await getTiendaStats(req.params.tiendaId);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_STATS", data });
+      const data = await armarDashboard(req.params.tiendaId, { rol: req.tiendaRol });
+      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DASHBOARD", data });
     } catch (error) {
       next(error);
     }
