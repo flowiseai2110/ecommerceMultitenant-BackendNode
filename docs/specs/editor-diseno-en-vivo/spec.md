@@ -1,7 +1,8 @@
 # Spec: editor de Diseño en vivo
 
-> Estado: **Fase 1 implementada** (2026-10-12), sin commit. La vista previa de la tienda se probó en el navegador con una página de prueba (borrador, orden, selección en los dos sentidos). Falta probar el editor del admin con sesión y backend local, y configurar `ADMIN_ORIGINS` en Vercel.
+> Estado: **Fase 1 implementada y probada** (2026-10-12, commit "fase 1 diseño"). Lo pendiente de producción está en [pase-a-produccion.md](pase-a-produccion.md).
 > Repos involucrados: BackendNode, FrontendAdmin, FrontendStore.
+> Pase a producción: [pase-a-produccion.md](pase-a-produccion.md).
 > Base: [estructura-tienda](../estructura-tienda/spec.md) (plantillas, copia, tema) y [diseno-por-rubro](../diseno-por-rubro/spec.md) (plantillas y secciones por tipo de negocio).
 > Propuesta elegida: "Opción A · Lienzo con panel" (claude.ai/artifact/7rNJojVewHZMc6MebjWNHz). Ejemplo con canchas: claude.ai/artifact/RkiwZVaqtx2ZYAqCxzQ7fW.
 
@@ -65,6 +66,42 @@ Además, cada rubro tiene una o dos plantillas fijas en el código. Cuando un cl
 - Borrador guardado en el servidor (si se cierra la pestaña, se pierde lo no publicado).
 - Vista previa de la ficha: la pestaña de la ficha sigue con su formulario.
 - Programar plantillas nuevas: el contenido de las plantillas lo arma la plataforma (fase 2).
+
+## Fase 2 — Plantillas sin programar
+
+> Estado: **implementada** (2026-10-12), sin commit. Falta correr `docs/sql/plantillas_diseno.sql` en Supabase, poner `PLATFORM_ADMIN_EMAILS` y probar en el navegador.
+
+### Problema
+
+Cada plantilla vive en `plantillas.js`: agregar una para un rubro (la "Simple" que pide un cliente de canchas) exige programar y desplegar el backend.
+
+### Conceptos
+
+- **Administrador de la plataforma.** Quien vende el SaaS, no el dueño de una tienda. Se reconoce por su email en `PLATFORM_ADMIN_EMAILS` (separados por coma). Hoy no existe otro rol de plataforma.
+- **Plantillas del código y de la base.** Las de `plantillas.js` son la base y siempre existen. La tabla `plantillas_diseno` **agrega** plantillas nuevas y **reemplaza** las del código con el mismo id (cambiar textos, ocultarla, cambiar el orden). Así la plantilla por defecto de un rubro no puede faltar aunque la base no responda.
+- **Ocultar, nunca borrar.** Una plantilla oculta no se ofrece a las tiendas, pero las tiendas que la usan siguen viéndose igual: su estructura es una copia y el backend la sigue encontrando.
+
+### Requisitos
+
+- **P1** Tabla `plantillas_diseno`: `id`, `tipo_negocio`, `rubro`, `nombre`, `descripcion`, `version`, `orden`, `activa`, `contenido` (radio, encabezados, layout, secciones, tema) y auditoría. Sin `tienda_id`: es de la plataforma.
+- **P2** El catálogo (`GET /admin/diseno/catalogo`) y las búsquedas de plantillas usan la combinación código + base, guardada en memoria y recargada al arrancar, cada 5 minutos y después de cada cambio. Si la base falla, se usan las del código.
+- **P3** El catálogo solo trae las activas, ordenadas por `orden` (las del código, en su orden de siempre).
+- **P4** `POST /admin/diseno/plantillas` (solo administrador de la plataforma) crea una plantilla a partir del diseño de una tienda: `{ tiendaId, nombre, descripcion, estructura, tema }`. El tipo de negocio y el rubro son los de esa tienda. La estructura pasa las mismas validaciones que al publicar.
+- **P5** Al crearla o actualizarla, las fotos propias de la tienda no viajan: "imagen y texto" con foto propia pasa a usar el banner de cada tienda y la galería queda vacía. Los textos se guardan como ejemplo y, al copiarla a una tienda, rigen las reglas de copia (R3).
+- **P6** `PUT /admin/diseno/plantillas/:id` (solo administrador de la plataforma) cambia nombre, descripción, orden o visibilidad, o reemplaza el diseño con el de una tienda (`tiendaId`, `estructura`, `tema`). Cambiar el diseño sube la `version`. Una plantilla del código se edita guardando su reemplazo en la base.
+- **P7** No se puede ocultar la plantilla por defecto de un tipo de negocio (400).
+- **P8** `GET /admin/diseno/plantillas?tipoNegocio=` (solo administrador de la plataforma) lista todas las del tipo, también las ocultas, con su origen (`codigo` / `editor`).
+- **P9** `GET /admin/tiendas/:id/diseno` incluye `puedeEditarPlantillas`.
+- **P10** En el editor, el administrador de la plataforma ve en **Estilo**:
+  - "Guardar como plantilla nueva" (nombre y descripción) con el borrador actual.
+  - "Actualizar «X»" cuando el borrador parte de la plantilla X.
+  - En cada tarjeta: subir, bajar, ocultar o mostrar. Las ocultas aparecen atenuadas solo para él.
+
+### Fuera de la fase 2
+
+- Borrar plantillas (solo se ocultan).
+- Plantillas de una sola tienda o de un grupo de tiendas.
+- Una pantalla de plantillas fuera del editor de Diseño.
 
 ## Decisiones
 

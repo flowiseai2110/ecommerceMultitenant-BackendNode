@@ -484,15 +484,153 @@ export const PLANTILLAS = congelar([
       ] },
       { id: "ubicacion", tipo: "ubicacion", fondo: "pagina", kicker: "Ubicación", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true }
     ]
+  }),
+
+  // Propuesta aprobada "Tres plantillas para canchas" (docs/specs/plantillas-canchas).
+  plantilla({
+    id: "canchas-noche",
+    tipoNegocio: "canchas",
+    rubro: "general",
+    nombre: "Noche de reflectores",
+    descripcion: "Fondo oscuro, la foto de tu cancha de noche y el ámbar de los reflectores. Para el complejo que vive de los partidos de noche.",
+    radio: "suave",
+    encabezados: "deportivo",
+    tema: { paleta: "amber-noche", tipografia: "deportiva" },
+    layout: { header: { logo: "izquierda" } },
+    secciones: [
+      {
+        id: "portada", tipo: "canchas-portada", variante: "foto", kicker: null, titulo: "El partido", acento: "de la noche",
+        subtitulo: "Canchas con reflectores hasta tarde. Elige tu hora y sepárala en un minuto.",
+        textoBoton: "Ver horarios de hoy", textoBotonSecundario: null
+      },
+      { id: "reservador", tipo: "reservador", fondo: "superficie", kicker: null, titulo: "Reserva tu horario" },
+      { id: "galeria", tipo: "galeria", variante: "mosaico", fondo: "pagina", titulo: "Así se ve de noche", subtitulo: null, fotos: [], oculto: true },
+      { id: "canchas", tipo: "canchas", variante: "grilla", fondo: "pagina", kicker: null, titulo: "Nuestras canchas", subtitulo: null },
+      { id: "testimonios", tipo: "testimonios", fondo: "superficie", titulo: "Lo que dicen los equipos", items: [] },
+      {
+        id: "fijo", tipo: "fijo-semanal", kicker: "Alquiler fijo semanal", titulo: "Tu noche, todas las semanas",
+        texto: "Separa la misma hora todas las semanas y asegura la cancha para tu equipo.",
+        textoBoton: "Pedir horario fijo"
+      },
+      { id: "ubicacion", tipo: "ubicacion", fondo: "pagina", kicker: "Ubicación", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true }
+    ]
+  }),
+
+  plantilla({
+    id: "canchas-liga",
+    tipoNegocio: "canchas",
+    rubro: "general",
+    nombre: "Liga y equipos",
+    descripcion: "El alquiler fijo y la tabla del campeonato primero. Para el complejo que vive de los equipos que juegan cada semana.",
+    radio: "suave",
+    encabezados: "deportivo",
+    tema: { paleta: "indigo-contraste", tipografia: "comercial" },
+    layout: { header: { logo: "izquierda" } },
+    secciones: [
+      {
+        id: "portada", tipo: "canchas-portada", variante: "dibujo", kicker: "Ligas y alquiler fijo", titulo: "Tu equipo, tu cancha,", acento: "cada semana",
+        subtitulo: "Separa el mismo horario todas las semanas o juega el campeonato del complejo.",
+        textoBoton: "Ver horarios libres", textoBotonSecundario: "Conocer las canchas"
+      },
+      {
+        id: "fijo", tipo: "fijo-semanal", kicker: "Alquiler fijo semanal", titulo: "El mismo día y la misma hora, toda la temporada",
+        texto: "Escribe aquí tu oferta para los equipos que juegan cada semana.",
+        textoBoton: "Pedir horario fijo"
+      },
+      { id: "liga", tipo: "liga", fondo: "superficie", kicker: "Campeonato", titulo: "Tabla de posiciones", campeonato: "Copa del barrio", nota: "Próxima fecha: el sábado desde las 4 p. m.", equipos: [
+        { nombre: "Los Veteranos", pj: 5, pg: 4, pe: 1, pp: 0, gf: 18, gc: 6 },
+        { nombre: "Real Comas", pj: 5, pg: 3, pe: 1, pp: 1, gf: 14, gc: 9 },
+        { nombre: "Deportivo Oficina", pj: 5, pg: 2, pe: 0, pp: 3, gf: 10, gc: 12 },
+        { nombre: "Los del Jueves", pj: 5, pg: 0, pe: 0, pp: 5, gf: 4, gc: 19 }
+      ] },
+      { id: "pasos", tipo: "pasos", fondo: "pagina", kicker: "Cómo funciona", titulo: "Tres pasos y a jugar" },
+      { id: "reservador", tipo: "reservador", fondo: "superficie", kicker: "Disponibilidad en tiempo real", titulo: "Reserva tu horario" },
+      { id: "canchas", tipo: "canchas", variante: "grilla", fondo: "pagina", espacio: "compacto", kicker: null, titulo: "Nuestras canchas", subtitulo: null },
+      { id: "faq", tipo: "faq", variante: "dos-columnas", fondo: "pagina", kicker: "Políticas", titulo: "Preguntas frecuentes", items: [
+        { pregunta: "¿Cómo inscribo a mi equipo en el campeonato?", respuesta: "Escribe aquí cómo se inscriben los equipos y cuánto cuesta." },
+        { pregunta: "¿Cuánto tengo que adelantar?", respuesta: "Escribe aquí cuánto se adelanta y cómo se paga el saldo." },
+        { pregunta: "¿Puedo cambiar o cancelar?", respuesta: "Escribe aquí hasta cuándo se puede cambiar de día y si devuelves el adelanto." }
+      ] },
+      { id: "ubicacion", tipo: "ubicacion", fondo: "pagina", kicker: "Ubicación", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true }
+    ]
   })
 ]);
 
-export const PLANTILLA_IDS = PLANTILLAS.map((p) => p.id);
 export const PLANTILLA_DEFAULT = "clasica";
 
-/** @param {string} id */
+// ── Registro: código + base (docs/specs/editor-diseno-en-vivo, fase 2) ──
+// Las de arriba son la base y siempre existen. Las filas de la tabla
+// plantillas_diseno (plantillas.repo.js las carga) reemplazan a la del código
+// con el mismo id o agregan plantillas nuevas. Mientras no se cargan, o si la
+// base falla, se usan solo las del código.
+
+// Separación entre las del código: deja lugar para intercalar otras.
+const PASO_ORDEN = 10;
+
+const DEL_CODIGO = congelar(PLANTILLAS.map((p, i) => ({ ...p, origen: "codigo", orden: i * PASO_ORDEN, activa: true })));
+let todas = DEL_CODIGO;
+
+/**
+ * Plantillas del código con las filas de la base encima, ordenadas por
+ * `orden` (P2, P3). Pura: no toca el registro.
+ */
+export function combinarPlantillas(codigo, filas) {
+  const delCodigo = new Set(codigo.map((p) => p.id));
+  const porId = new Map(filas.map((f) => [f.id, f]));
+  const base = codigo.map((p) => (porId.has(p.id) ? desdeFila(porId.get(p.id), "codigo") : p));
+  const nuevas = filas.filter((f) => !delCodigo.has(f.id)).map((f) => desdeFila(f, "editor"));
+  // sort es estable: a igual orden, primero las del código.
+  return congelar([...base, ...nuevas].sort((a, b) => a.orden - b.orden));
+}
+
+function desdeFila(fila, origen) {
+  const { radio, encabezados, layout, secciones, tema = null } = fila.contenido ?? {};
+  return {
+    id: fila.id,
+    version: fila.version,
+    tipoNegocio: fila.tipoNegocio,
+    rubro: fila.rubro,
+    nombre: fila.nombre,
+    descripcion: fila.descripcion,
+    radio,
+    encabezados,
+    tema,
+    layout,
+    secciones,
+    origen,
+    orden: fila.orden,
+    activa: fila.activa
+  };
+}
+
+/** Registra las filas de la base (plantillas.repo.js). */
+export function usarFilasDeLaBase(filas) {
+  todas = combinarPlantillas(DEL_CODIGO, filas);
+}
+
+/** Todas, también las ocultas (P8). */
+export function todasLasPlantillas() {
+  return todas;
+}
+
+/** Las que se ofrecen a las tiendas (P3). */
+export function plantillasActivas() {
+  return todas.filter((p) => p.activa);
+}
+
+/**
+ * Por id, también una oculta: las tiendas que la usan la siguen necesitando
+ * para saber su tipo de negocio.
+ * @param {string} id
+ */
 export function buscarPlantilla(id) {
-  return PLANTILLAS.find((p) => p.id === id) ?? null;
+  return todas.find((p) => p.id === id) ?? null;
+}
+
+/** Orden para una plantilla nueva: al final de su tipo de negocio. */
+export function siguienteOrden(tipoNegocio) {
+  const delTipo = todas.filter((p) => tipoNegocioDe(p) === tipoNegocio).map((p) => p.orden);
+  return (delTipo.length ? Math.max(...delTipo) : 0) + PASO_ORDEN;
 }
 
 /**
@@ -510,5 +648,5 @@ export function tipoNegocioDe(plantilla) {
 
 /** Plantilla sugerida para un rubro (R2.3). Sin rubro → la clásica. */
 export function plantillaPara(rubro) {
-  return PLANTILLAS.find((p) => p.rubro === (rubro ?? "general")) ?? buscarPlantilla(PLANTILLA_DEFAULT);
+  return plantillasActivas().find((p) => p.rubro === (rubro ?? "general")) ?? buscarPlantilla(PLANTILLA_DEFAULT);
 }

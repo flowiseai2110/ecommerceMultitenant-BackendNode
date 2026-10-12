@@ -11,7 +11,7 @@ export const canchas = {
     plantillaPorDefecto: "canchas-complejo",
     secciones: Object.freeze([
       ...SECCIONES_COMUNES, ...SECCIONES_RESERVAS,
-      "canchas-portada", "canchas", "reservador", "pasos", "fijo-semanal"
+      "canchas-portada", "canchas", "reservador", "pasos", "fijo-semanal", "liga"
     ]),
     // Verde cancha con el ámbar de los reflectores y títulos condensados, como la maqueta aprobada.
     temaPorDefecto: { paleta: "cancha-tinte", tipografia: "deportiva" }

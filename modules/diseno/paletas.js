@@ -26,7 +26,11 @@ const VERSIONES = [
   // Todo claro, el color solo en botones y acentos.
   { id: "clara", nombre: "Clara", fondos: { topBar: "claro", header: "blanco", pagina: "blanco", footer: "claro" } },
   // El color de marca también en los fondos.
-  { id: "tinte", nombre: "Tinte", fondos: { topBar: "primario", header: "tinte", pagina: "tinte", footer: "oscuro" } }
+  { id: "tinte", nombre: "Tinte", fondos: { topBar: "primario", header: "tinte", pagina: "tinte", footer: "oscuro" } },
+  // Fondo oscuro en toda la tienda (plantillas-canchas PC1): el storefront invierte
+  // los neutros. La barra de arriba lleva el color de marca y el pie va en la
+  // superficie oscura.
+  { id: "noche", nombre: "Noche", oscura: true, fondos: { topBar: "primario", header: "blanco", pagina: "neutro", footer: "claro" } }
 ];
 
 export const PALETAS = Object.freeze(
@@ -38,6 +42,7 @@ export const PALETAS = Object.freeze(
         grupo: base.nombre,
         primario: base.primario ?? null,
         neutro: base.neutro,
+        oscura: v.oscura ?? false,
         fondos: Object.freeze({ ...v.fondos })
       })
     )

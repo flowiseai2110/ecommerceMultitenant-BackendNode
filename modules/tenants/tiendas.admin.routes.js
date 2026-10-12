@@ -180,7 +180,7 @@ router.get(
   requireTiendaAccess("viewer"),
   async (req, res, next) => {
     try {
-      const diseno = await getDisenoAdmin(req.params.id);
+      const diseno = await getDisenoAdmin(req.params.id, req.user);
       return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO", data: diseno });
     } catch (error) {
       next(error);

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PLANTILLA_IDS } from "./plantillas.js";
+import { buscarPlantilla } from "./plantillas.js";
 import { PALETA_IDS } from "./paletas.js";
 import { TIPOGRAFIA_IDS } from "./tipografias.js";
 import { FORMATO_ACTUAL, migrarEstructura } from "./migrar.js";
@@ -30,7 +30,9 @@ export const TIPOS_SECCION = [
   "salones",
   // Complejo de canchas (docs/specs/alquiler-canchas): portada con tarifas, canchas,
   // reservador por horas, cómo funciona y alquiler fijo semanal.
-  "canchas-portada", "canchas", "reservador", "pasos", "fijo-semanal"
+  "canchas-portada", "canchas", "reservador", "pasos", "fijo-semanal",
+  // Tabla del campeonato del complejo (docs/specs/plantillas-canchas PC3).
+  "liga"
 ];
 
 // Secciones que puede usar cada tipo de negocio (docs/specs/diseno-por-rubro): las
@@ -52,7 +54,7 @@ export const MAX_POR_TIPO = Object.freeze({
   hero: 1, categorias: 1, testimonios: 1, faq: 1, oferta: 1, cinta: 1, contacto: 1,
   "imagen-texto": 3, productos: 4,
   habitaciones: 1, servicios: 1, ubicacion: 1, politicas: 1, tours: 1, eventos: 1, galeria: 2, salones: 1,
-  "canchas-portada": 1, canchas: 1, reservador: 1, pasos: 1, "fijo-semanal": 1
+  "canchas-portada": 1, canchas: 1, reservador: 1, pasos: 1, "fijo-semanal": 1, liga: 1
 });
 export const ICONOS_BENEFICIO = ["envio", "pago", "cambios", "soporte", "garantia", "rapido", "calidad"];
 // Servicios de un hospedaje o de una agencia ("por qué viajar con nosotros").
@@ -71,6 +73,9 @@ export const ICONOS_SERVICIO = [
 const texto = (max) => z.string().trim().min(1, "No puede estar vacío").max(max, `Máximo ${max} caracteres`);
 const textoOpcional = (max) => z.string().trim().max(max, `Máximo ${max} caracteres`).nullable().optional();
 const fondo = z.enum(["superficie", "pagina", "suave"]);
+// Tabla de la liga: números de una temporada.
+const partidos = z.number().int().min(0).max(200);
+const goles = z.number().int().min(0).max(999);
 const urlImagen = z.string().url("Imagen inválida").startsWith("https://", "Imagen inválida").max(500);
 
 const base = {
@@ -277,6 +282,9 @@ const seccionSchema = z.discriminatedUnion("tipo", [
   z.object({
     ...base,
     tipo: z.literal("canchas-portada"),
+    // dibujo: la cancha dibujada (por defecto); foto: el banner de la tienda de
+    // fondo (plantillas-canchas PC2).
+    variante: z.enum(["dibujo", "foto"]).optional(),
     kicker: textoOpcional(60),
     titulo: textoOpcional(80),
     acento: textoOpcional(40),
@@ -310,6 +318,24 @@ const seccionSchema = z.discriminatedUnion("tipo", [
     fondo,
     kicker: textoOpcional(40),
     titulo: texto(80)
+  }),
+  // Tabla de la liga (plantillas-canchas PC3): el dueño escribe los equipos y
+  // sus resultados; la tienda calcula puntos y orden. Sin equipos no se dibuja.
+  z.object({
+    ...base,
+    tipo: z.literal("liga"),
+    fondo,
+    kicker: textoOpcional(40),
+    titulo: texto(80),
+    campeonato: textoOpcional(80),
+    nota: textoOpcional(160),
+    equipos: z
+      .array(z.object({
+        nombre: texto(40),
+        pj: partidos, pg: partidos, pe: partidos, pp: partidos,
+        gf: goles, gc: goles
+      }).refine((e) => e.pg + e.pe + e.pp === e.pj, { message: "Ganados, empatados y perdidos deben sumar los jugados", path: ["pj"] }))
+      .max(20, "Máximo 20 equipos")
   }),
   // Alquiler fijo semanal: banda con un botón que abre WhatsApp con el pedido armado.
   z.object({
@@ -476,13 +502,17 @@ export const layoutDeNegocio = (layout, tipoNegocio) => layoutSchemaDe(tipoNegoc
 // header; lo del rubro lo valida validarEstructuraDeTienda con layoutDeNegocio.
 export const layoutSchema = z.object({ header: headerSchema }).passthrough();
 
+// Las plantillas también viven en la base (editor-diseno-en-vivo P2): el id se
+// valida contra el registro al momento, no contra una lista fija.
+const plantillaIdSchema = z.string().max(60).refine((id) => buscarPlantilla(id) !== null, { message: "Plantilla inexistente" });
+
 // La estructura se migra al formato actual ANTES de validarla (R1.4): un
 // admin con datos viejos en memoria no recibe un 400 por un cambio de forma.
 export const estructuraSchema = z.preprocess(
   (valor) => (valor && typeof valor === "object" ? migrarEstructura(valor) ?? valor : valor),
   z.object({
     formato: z.literal(FORMATO_ACTUAL),
-    plantillaId: z.enum(PLANTILLA_IDS),
+    plantillaId: plantillaIdSchema,
     plantillaVersion: z.number().int().min(1),
     radio: z.enum(["recto", "suave", "redondeado"]),
     encabezados: z.enum(["comercial", "editorial", "impacto", "deportivo"]),
@@ -497,5 +527,5 @@ export const temaSchema = z.object({
 });
 
 export const aplicarPlantillaSchema = z.object({
-  plantillaId: z.enum(PLANTILLA_IDS, { errorMap: () => ({ message: "Plantilla inexistente" }) })
+  plantillaId: plantillaIdSchema
 });

@@ -17,6 +17,7 @@ import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js
 import { performanceMiddleware, getRouteMetrics, resetRouteMetrics } from "./middlewares/performance.middleware.js";
 import { iniciarJobTransmisiones } from "./jobs/transmisiones.job.js";
 import { iniciarJobResenasReservas } from "./jobs/resenas-reservas.job.js";
+import { iniciarRecargaPlantillas } from "./modules/diseno/plantillas.repo.js";
 
 // Soporte para serializar BigInt a JSON
 BigInt.prototype.toJSON = function() {
@@ -234,6 +235,8 @@ async function startServer() {
     // Corte, señal y limpieza de las transmisiones en vivo (plan Privado).
     iniciarJobTransmisiones();
     iniciarJobResenasReservas();
+    // Plantillas de diseño de la base sobre las del código (editor-diseno-en-vivo P2).
+    iniciarRecargaPlantillas();
   } catch (error) {
     logger.error("Error al iniciar el servidor:", error);
     process.exit(1);

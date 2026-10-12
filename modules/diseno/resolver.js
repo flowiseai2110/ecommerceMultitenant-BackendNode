@@ -53,7 +53,10 @@ export function resolverTema({ tema, estructura, hero, tipoNegocio } = {}, ahora
 export function estructuraVigente({ estructura, hero, tipoNegocio } = {}) {
   const porDefecto = plantillaPorDefecto(tipoNegocio);
   const guardada = estructura ? migrarEstructura(estructura) : null;
-  const vigente = guardada && tipoNegocioDe(buscarPlantilla(guardada.plantillaId)) === tipoNegocioDe(porDefecto) ? guardada : null;
+  // Una plantilla que no está en el registro (de la base, mientras carga) no
+  // descarta la estructura: se validó con su tipo de negocio al publicarla.
+  const plantilla = guardada ? buscarPlantilla(guardada.plantillaId) : null;
+  const vigente = guardada && (!plantilla || tipoNegocioDe(plantilla) === tipoNegocioDe(porDefecto)) ? guardada : null;
   return vigente ?? copiarPlantilla(porDefecto, { hero });
 }
 

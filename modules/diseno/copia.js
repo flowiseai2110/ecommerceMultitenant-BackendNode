@@ -41,6 +41,9 @@ function copiarSeccion(seccion, hero) {
     case "testimonios":
       // Nunca reseñas inventadas como si fueran reales (R3.2).
       return { ...s, items: [] };
+    case "liga":
+      // Ni equipos inventados: llega vacía y oculta (plantillas-canchas PC3).
+      return { ...s, equipos: [], oculto: true };
     case "oferta":
       // Sin fecha no hay cuenta regresiva: el dueño la pone para mostrarla (R3.3).
       return { ...s, oculto: true, terminaEn: null };
@@ -68,4 +71,45 @@ export function copiarPlantilla(plantilla, { estructuraAnterior = null, hero = n
     layout: layoutDeNegocio(clonar(plantilla.layout), plantilla.tipoNegocio),
     home: { secciones: plantilla.secciones.map((s) => copiarSeccion(s, textosHero)) }
   };
+}
+
+// ── Plantilla a partir del diseño de una tienda (editor-diseno-en-vivo P5) ──
+
+/**
+ * Lo que guarda una plantilla creada desde el editor: la estructura de la
+ * tienda sin sus fotos propias (son de su bucket; otra tienda no podría
+ * publicarlas) y sin la marca de ejemplo. Los textos quedan como ejemplo:
+ * al copiarla a una tienda rigen las reglas de copia (R3).
+ */
+export function contenidoDePlantilla(estructura, tema = null) {
+  const secciones = estructura.home.secciones.map((seccion) => {
+    const { ejemplo: _ejemplo, ...s } = clonar(seccion);
+    if (s.tipo === "imagen-texto" && s.imagen === "propia") return { ...s, imagen: "banner", imagenUrl: null };
+    // Sin fotos no puede mostrarse (mínimo 3): queda oculta, como su preset.
+    if (s.tipo === "galeria") return { ...s, fotos: [], oculto: true };
+    return s;
+  });
+  return {
+    radio: estructura.radio,
+    encabezados: estructura.encabezados,
+    layout: clonar(estructura.layout),
+    secciones,
+    tema: tema ? { paleta: tema.paleta, tipografia: tema.tipografia } : null
+  };
+}
+
+/** Id legible y único: "canchas-simple-4f2a". */
+export function idDePlantilla(nombre, existe, azar = () => Math.random().toString(16).slice(2, 6)) {
+  const base = nombre
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 50) || "plantilla";
+  let id;
+  do {
+    id = `${base}-${azar()}`;
+  } while (existe(id));
+  return id;
 }

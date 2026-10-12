@@ -107,7 +107,13 @@ export const config = {
     // Sin baseDomain (dev local) los links a una tienda usan el modo por ruta:
     // <storefrontUrl>/<slug>/... (ej. link "califica tu compra").
     storefrontUrl: process.env.STOREFRONT_URL || "http://localhost:4200",
-    reservedSubdomains: ["www", "api", "admin", "tiendas", "store", "app"]
+    reservedSubdomains: ["www", "api", "admin", "tiendas", "store", "app"],
+    // Administradores de la plataforma (quien vende el SaaS): crean y editan
+    // plantillas de diseño (docs/specs/editor-diseno-en-vivo, fase 2).
+    adminEmails: (process.env.PLATFORM_ADMIN_EMAILS || "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean)
   },
 
   // Email - Resend

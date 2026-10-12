@@ -1,7 +1,7 @@
 import { prisma } from "../../config/prisma.js";
 import { ValidationError } from "../../utils/errors.js";
 import { borrarClaves, disenoAdmin, getDiseno, upsertClave } from "../../services/tienda-diseno.service.js";
-import { buscarPlantilla, PLANTILLAS, plantillaPorDefecto, tipoNegocioDe } from "./plantillas.js";
+import { buscarPlantilla, plantillasActivas, plantillaPorDefecto, tipoNegocioDe } from "./plantillas.js";
 import { PALETAS } from "./paletas.js";
 import { TIPOGRAFIAS } from "./tipografias.js";
 import { PRESETS_SECCION } from "./presets.js";
@@ -11,6 +11,7 @@ import { fotosAjenas, layoutDeNegocio, prefijoFotosDiseno, seccionesAjenas, TIPO
 import { publicBaseUrl } from "../../services/storage.service.js";
 import { urlTienda } from "../resenas/resenas.service.js";
 import { estructuraVigente, temaPorDefecto } from "./resolver.js";
+import { esAdminPlataforma } from "../../middlewares/platform-admin.middleware.js";
 
 /** Tipo de negocio de la tienda tal como lo entienden las plantillas. */
 async function negocioDeTienda(tiendaId) {
@@ -56,7 +57,7 @@ export async function validarEstructuraDeTienda(tiendaId, estructura) {
  * Diseño para el editor del admin, con la URL pública de la tienda para el
  * botón "Ver en mi tienda" (R7.4).
  */
-export async function getDisenoAdmin(tiendaId) {
+export async function getDisenoAdmin(tiendaId, user = null) {
   const tienda = await prisma.tiendas.findUnique({ where: { id: tiendaId }, select: { slug: true, tipoNegocio: true } });
   const guardado = await getDiseno(tiendaId);
   const diseno = disenoAdmin(guardado, tienda?.tipoNegocio);
@@ -69,6 +70,8 @@ export async function getDisenoAdmin(tiendaId) {
     ...diseno,
     estructura: usaGuardada ? diseno.estructura : vigente,
     temaPorDefecto: temaPorDefecto(tienda?.tipoNegocio),
+    // El editor ofrece crear y editar plantillas (editor-diseno-en-vivo P9-P10).
+    puedeEditarPlantillas: esAdminPlataforma(user),
     urlTienda: tienda ? urlTienda(tienda.slug, "") : null
   };
 }
@@ -82,7 +85,7 @@ export async function getDisenoAdmin(tiendaId) {
 export function getCatalogo() {
   return {
     formato: FORMATO_ACTUAL,
-    plantillas: PLANTILLAS,
+    plantillas: plantillasActivas(),
     paletas: PALETAS,
     tipografias: TIPOGRAFIAS,
     presetsSeccion: PRESETS_SECCION,

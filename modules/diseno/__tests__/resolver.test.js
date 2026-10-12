@@ -110,3 +110,10 @@ describe("estructuraVigente y temaPorDefecto", () => {
     expect(temaPorDefecto("productos")).toEqual({ paleta: "tienda-contraste", tipografia: "inter" });
   });
 });
+
+describe("estructura de una plantilla que todavía no está en el registro (fase 2)", () => {
+  it("se conserva: se validó al publicar", () => {
+    const guardada = { ...copiarPlantilla(buscarPlantilla("canchas-complejo")), plantillaId: "canchas-simple-1a2b" };
+    expect(estructuraVigente({ estructura: guardada, tipoNegocio: "canchas" }).plantillaId).toBe("canchas-simple-1a2b");
+  });
+});

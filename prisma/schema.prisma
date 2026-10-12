@@ -219,6 +219,30 @@ model tienda_configuraciones {
   @@unique([tiendaId, clave], name: "uq_tienda_clave")
 }
 
+// Plantillas de diseño de la plataforma creadas o editadas desde el editor
+// (docs/specs/editor-diseno-en-vivo, fase 2; docs/sql/plantillas_diseno.sql).
+// Sin tienda_id: son de la plataforma. Las de modules/diseno/plantillas.js
+// son la base; una fila con el mismo id las reemplaza.
+model plantillas_diseno {
+  id          String  @id @db.VarChar(60)
+  tipoNegocio String  @map("tipo_negocio") @db.VarChar(30)
+  rubro       String  @default("general") @db.VarChar(30)
+  nombre      String  @db.VarChar(80)
+  descripcion String  @default("") @db.VarChar(300)
+  version     Int     @default(1)
+  orden       Int     @default(0)
+  activa      Boolean @default(true)
+  contenido   Json    @db.JsonB
+
+  // Auditoría
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  @@index([tipoNegocio, orden], map: "idx_plantillas_diseno_tipo")
+}
+
 // ============================================
 // MÓDULO: PLANES Y CUOTAS DE USO
 // ============================================

@@ -67,5 +67,7 @@ export const PRESETS_SECCION = congelar({
   "fijo-semanal": {
     tipo: "fijo-semanal", oculto: true, kicker: "Alquiler fijo semanal", titulo: "Tu equipo, el mismo día cada semana",
     texto: "Escribe aquí tu oferta para quienes separan la misma hora todas las semanas.", textoBoton: "Pedir horario fijo"
-  }
+  },
+  // Sin equipos no se dibuja: oculta hasta que el dueño cargue la tabla.
+  liga: { tipo: "liga", oculto: true, fondo: "superficie", kicker: "Campeonato", titulo: "Tabla de posiciones", campeonato: null, nota: null, equipos: [] }
 });
