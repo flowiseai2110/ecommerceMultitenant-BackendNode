@@ -1,4 +1,5 @@
 import { FORMATO_ACTUAL } from "./migrar.js";
+import { layoutDeNegocio } from "./secciones.schema.js";
 
 // Copia de una plantilla para guardarla como estructura de la tienda (R3).
 // La tienda edita esta copia; las mejoras posteriores de la plantilla no le
@@ -63,7 +64,7 @@ export function copiarPlantilla(plantilla, { estructuraAnterior = null, hero = n
     plantillaVersion: plantilla.version,
     radio: plantilla.radio,
     encabezados: plantilla.encabezados,
-    layout: clonar(plantilla.layout),
+    layout: layoutDeNegocio(clonar(plantilla.layout), plantilla.tipoNegocio),
     home: { secciones: plantilla.secciones.map((s) => copiarSeccion(s, textosHero)) }
   };
 }

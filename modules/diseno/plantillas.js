@@ -38,8 +38,10 @@ function congelar(obj) {
 }
 
 // `tipoNegocio`: el de las tiendas que pueden usarla (docs/specs/diseno-por-rubro).
-function plantilla({ layout, ...resto }) {
-  return { version: 1, tipoNegocio: "productos", ...resto, layout: { ...layout, producto: PRODUCTO_DEFAULT } };
+// El layout es el de su rubro (layout-por-rubro RU8): solo productos lleva la
+// tarjeta y el detalle de producto.
+function plantilla({ layout, tipoNegocio = "productos", ...resto }) {
+  return { version: 1, tipoNegocio, ...resto, layout: tipoNegocio === "productos" ? { ...layout, producto: PRODUCTO_DEFAULT } : layout };
 }
 
 // Servicios de ejemplo de un hospedaje: se copian ocultos (R3.5) hasta que el
@@ -238,7 +240,7 @@ export const PLANTILLAS = congelar([
     descripcion: "Portada con buscador de fechas, habitaciones con precio, servicios, reseñas, ubicación y políticas.",
     radio: "suave",
     encabezados: "editorial",
-    layout: { header: { logo: "izquierda" }, productCard: { cta: "boton", imagen: "cuadrada" } },
+    layout: { header: { logo: "izquierda" } },
     secciones: [
       { id: "hero", tipo: "hero", variante: "imagen-completa", buscador: true, titulo: "Tu descanso empieza aquí", subtitulo: "Habitaciones cómodas en el mejor lugar de la ciudad.", textoBoton: "Ver habitaciones" },
       { id: "habitaciones", tipo: "habitaciones", variante: "grilla", fondo: "superficie", titulo: "Nuestras habitaciones", subtitulo: "Elige la tuya y envía tu solicitud: confirmamos la disponibilidad." },
@@ -263,7 +265,7 @@ export const PLANTILLAS = congelar([
     radio: "redondeado",
     encabezados: "editorial",
     // Galería en mosaico: en un alquiler vacacional las fotos venden la casa.
-    layout: { header: { logo: "centro" }, productCard: { cta: "boton", imagen: "vertical" }, habitacion: { galeria: "mosaico", servicios: true, politicas: true, mapa: true, otras: true } },
+    layout: { header: { logo: "centro" }, habitacion: { galeria: "mosaico", servicios: true, politicas: true, mapa: true, otras: true } },
     secciones: [
       { id: "hero", tipo: "hero", variante: "dividido", buscador: true, titulo: "Una casa para ti solo", subtitulo: "Desconéctate en un lugar pensado para descansar.", textoBoton: "Ver disponibilidad" },
       { id: "historia", tipo: "imagen-texto", fondo: "superficie", espacio: "amplio", imagen: "banner", posicionImagen: "derecha", kicker: "El lugar", titulo: "Describe tu casa en pocas palabras", texto: "Cuántas personas entran, qué tiene alrededor y por qué la gente vuelve. Escríbelo como se lo contarías a un amigo.", textoBoton: null },
@@ -288,7 +290,7 @@ export const PLANTILLAS = congelar([
     descripcion: "Buscador de fecha y personas, tours con precio desde y duración, por qué viajar con ustedes, reseñas y preguntas.",
     radio: "suave",
     encabezados: "impacto",
-    layout: { header: { logo: "izquierda" }, productCard: { cta: "boton", imagen: "cuadrada" } },
+    layout: { header: { logo: "izquierda" } },
     secciones: [
       { id: "hero", tipo: "hero", variante: "imagen-completa", buscador: true, titulo: "Vive el destino con guías locales", subtitulo: "Tours de día completo y caminatas, con recojo en tu hotel.", textoBoton: "Buscar tours" },
       { id: "tours", tipo: "tours", variante: "grilla", fondo: "superficie", titulo: "Los más reservados", subtitulo: "Elige tu tour y la fecha: confirmamos la salida." },
@@ -318,7 +320,7 @@ export const PLANTILLAS = congelar([
     descripcion: "Para pocos tours de autor: portada inmersiva, quiénes son, los tours en carrusel, reseñas y dónde encontrarlos.",
     radio: "redondeado",
     encabezados: "editorial",
-    layout: { header: { logo: "centro" }, productCard: { cta: "boton", imagen: "vertical" }, tour: { galeria: "mosaico", itinerario: true, incluye: true, otros: true } },
+    layout: { header: { logo: "centro" }, tour: { galeria: "mosaico", itinerario: true, incluye: true, otros: true } },
     secciones: [
       { id: "hero", tipo: "hero", variante: "imagen-completa", buscador: false, titulo: "Viajes que se recuerdan", subtitulo: "Rutas pensadas por quienes las caminan desde hace años.", textoBoton: "Ver tours" },
       { id: "historia", tipo: "imagen-texto", fondo: "superficie", espacio: "amplio", imagen: "banner", posicionImagen: "izquierda", kicker: "Quiénes somos", titulo: "Cuenta quién guía tus tours", texto: "Desde cuándo operan, quiénes son los guías y qué hace distintos a sus recorridos. Dos o tres frases bastan.", textoBoton: "Ver tours" },
@@ -348,7 +350,7 @@ export const PLANTILLAS = congelar([
     descripcion: "Para varios eventos: buscador por fecha, cartelera con fecha y precio desde, cómo funciona la compra y preguntas.",
     radio: "suave",
     encabezados: "impacto",
-    layout: { header: { logo: "izquierda" }, productCard: { cta: "boton", imagen: "cuadrada" } },
+    layout: { header: { logo: "izquierda" } },
     secciones: [
       { id: "hero", tipo: "hero", variante: "imagen-completa", buscador: true, titulo: "Lo que se viene", subtitulo: "Conciertos, obras y fiestas. Compra tus entradas en línea y entra con tu QR.", textoBoton: "Ver eventos" },
       { id: "eventos", tipo: "eventos", variante: "grilla", fondo: "superficie", titulo: "Próximos eventos", subtitulo: "Elige la fecha, compra en línea y recibe tu entrada al instante." },
@@ -378,7 +380,7 @@ export const PLANTILLAS = congelar([
     radio: "redondeado",
     encabezados: "impacto",
     // Galería en mosaico: las fotos de ediciones pasadas venden el evento.
-    layout: { header: { logo: "centro" }, productCard: { cta: "boton", imagen: "vertical" }, evento: { galeria: "mosaico", mapa: true, otros: false } },
+    layout: { header: { logo: "centro" }, evento: { galeria: "mosaico", mapa: true, otros: false } },
     secciones: [
       { id: "hero", tipo: "hero", variante: "dividido", buscador: false, titulo: "Una noche para recordar", subtitulo: "Escribe aquí la fecha, el lugar y lo que hace único a tu evento.", textoBoton: "Comprar entradas" },
       { id: "eventos", tipo: "eventos", variante: "agenda", fondo: "superficie", titulo: "Fechas y entradas" },
@@ -410,7 +412,7 @@ export const PLANTILLAS = congelar([
     descripcion: "Para un local de eventos: los salones con aforo y precio desde, cómo separar la fecha, galería y preguntas.",
     radio: "redondeado",
     encabezados: "editorial",
-    layout: { header: { logo: "izquierda" }, productCard: { cta: "boton", imagen: "cuadrada" } },
+    layout: { header: { logo: "izquierda" } },
     secciones: [
       { id: "hero", tipo: "hero", variante: "imagen-completa", titulo: "Tu fiesta, en el lugar perfecto", subtitulo: "Mira las fechas libres, cotiza al instante y separa tu fecha en línea.", textoBoton: "Ver salones" },
       { id: "salones", tipo: "salones", variante: "grilla", fondo: "superficie", titulo: "Nuestros salones", subtitulo: "Elige el salón, mira las fechas libres y cotiza tu evento al instante." },

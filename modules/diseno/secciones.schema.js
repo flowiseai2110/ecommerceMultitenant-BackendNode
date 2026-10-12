@@ -383,14 +383,36 @@ export const eventoSchema = z.object({
   otros: z.boolean().default(true)
 });
 
-export const layoutSchema = z.object({
-  header: z.object({ logo: z.enum(["izquierda", "centro"]) }),
-  productCard: z.object({ cta: z.enum(["slide-up", "boton"]), imagen: z.enum(["cuadrada", "vertical"]) }),
-  producto: productoSchema.default({}),
-  habitacion: habitacionSchema.default({}),
-  tour: tourSchema.default({}),
-  evento: eventoSchema.default({})
+const headerSchema = z.object({ logo: z.enum(["izquierda", "centro"]) });
+const productCardSchema = z.object({ cta: z.enum(["slide-up", "boton"]), imagen: z.enum(["cuadrada", "vertical"]) });
+
+// Layout de cada tipo de negocio (docs/specs/layout-por-rubro RU8): el header es
+// común y cada rubro suma lo suyo. Una tienda de productos no guarda opciones de
+// la ficha de habitación ni un hotel las de la tarjeta de producto. Las claves de
+// otro rubro se descartan (layoutDeNegocio) y las del rubro toman sus defaults.
+export const LAYOUT_POR_NEGOCIO = Object.freeze({
+  productos: z.object({ header: headerSchema, productCard: productCardSchema, producto: productoSchema.default({}) }),
+  hotel: z.object({ header: headerSchema, habitacion: habitacionSchema.default({}) }),
+  tours: z.object({ header: headerSchema, tour: tourSchema.default({}) }),
+  eventos: z.object({ header: headerSchema, evento: eventoSchema.default({}) }),
+  // El salón todavía no tiene opciones de ficha.
+  locales: z.object({ header: headerSchema })
 });
+
+/** Esquema del layout de un tipo de negocio (uno desconocido usa el de productos). */
+export const layoutSchemaDe = (tipoNegocio) => LAYOUT_POR_NEGOCIO[tipoNegocio] ?? LAYOUT_POR_NEGOCIO.productos;
+
+/**
+ * Layout con solo lo del tipo de negocio y sus defaults. Se aplica al leer
+ * (storefront y admin), al guardar y al copiar una plantilla: las estructuras
+ * guardadas antes de RU8 traen las opciones de todos los rubros.
+ * @throws {z.ZodError} si lo del rubro no es válido
+ */
+export const layoutDeNegocio = (layout, tipoNegocio) => layoutSchemaDe(tipoNegocio).parse(layout ?? {});
+
+// Al validar el body no se conoce el rubro de la tienda: aquí solo se exige el
+// header; lo del rubro lo valida validarEstructuraDeTienda con layoutDeNegocio.
+export const layoutSchema = z.object({ header: headerSchema }).passthrough();
 
 // La estructura se migra al formato actual ANTES de validarla (R1.4): un
 // admin con datos viejos en memoria no recibe un 400 por un cambio de forma.

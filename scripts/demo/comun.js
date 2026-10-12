@@ -277,7 +277,6 @@ export async function armarHome({ tienda, datosTienda, plantillaId, usuario }) {
   if (!datosTienda.home?.length) return;
   const { estructura: base } = await aplicarPlantilla(tienda.id, plantillaId, { email: usuario });
   const estructura = estructuraSchema.parse({ ...base, home: { secciones: datosTienda.home } });
-  await validarEstructuraDeTienda(tienda.id, estructura);
-  await upsertClave(tienda.id, "estructura", estructura, usuario);
+  await upsertClave(tienda.id, "estructura", await validarEstructuraDeTienda(tienda.id, estructura), usuario);
   console.log(`  ✓ home: plantilla ${plantillaId} con ${estructura.home.secciones.length} secciones (se puede deshacer desde Diseño)`);
 }

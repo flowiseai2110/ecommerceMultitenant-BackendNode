@@ -7,7 +7,7 @@ import { TIPOGRAFIAS } from "./tipografias.js";
 import { PRESETS_SECCION } from "./presets.js";
 import { copiarPlantilla } from "./copia.js";
 import { FORMATO_ACTUAL } from "./migrar.js";
-import { fotosAjenas, prefijoFotosDiseno, seccionesAjenas, TIPOS_POR_NEGOCIO } from "./secciones.schema.js";
+import { fotosAjenas, layoutDeNegocio, prefijoFotosDiseno, seccionesAjenas, TIPOS_POR_NEGOCIO } from "./secciones.schema.js";
 import { publicBaseUrl } from "../../services/storage.service.js";
 import { urlTienda } from "../resenas/resenas.service.js";
 
@@ -17,20 +17,38 @@ async function negocioDeTienda(tiendaId) {
   return tipoNegocioDe(plantillaPorDefecto(tienda?.tipoNegocio));
 }
 
+/** Errores de zod del layout con la ruta del body (estructura.layout.…), como los del schema. */
+function erroresDeLayout(error) {
+  return Object.fromEntries(error.issues.map((i) => [["estructura", "layout", ...i.path].join("."), [i.message]]));
+}
+
 /**
  * Rechaza (400) una estructura con secciones que no corresponden al tipo de
- * negocio de la tienda (docs/specs/diseno-por-rubro H3). Los errores llevan
- * la misma ruta que los del schema, así el admin marca la tarjeta culpable.
+ * negocio de la tienda (docs/specs/diseno-por-rubro H3) o con opciones de su
+ * layout inválidas. Los errores llevan la misma ruta que los del schema, así
+ * el admin marca la tarjeta culpable.
+ *
+ * Devuelve la estructura a guardar, con solo el layout de su rubro
+ * (layout-por-rubro RU8): las opciones de otro rubro se descartan.
  */
 export async function validarEstructuraDeTienda(tiendaId, estructura) {
-  if (!estructura) return;
+  if (!estructura) return estructura;
+  const negocio = await negocioDeTienda(tiendaId);
   const body = {
-    ...seccionesAjenas(estructura.home.secciones, await negocioDeTienda(tiendaId)),
+    ...seccionesAjenas(estructura.home.secciones, negocio),
     ...fotosAjenas(estructura.home.secciones, prefijoFotosDiseno(publicBaseUrl(), tiendaId))
   };
+  let layout = estructura.layout;
+  try {
+    layout = layoutDeNegocio(estructura.layout, negocio);
+  } catch (error) {
+    if (!error?.issues) throw error;
+    Object.assign(body, erroresDeLayout(error));
+  }
   if (Object.keys(body).length > 0) {
     throw new ValidationError("Errores de validación", { message: Object.values(body)[0][0], body });
   }
+  return { ...estructura, layout };
 }
 
 /**
@@ -38,8 +56,8 @@ export async function validarEstructuraDeTienda(tiendaId, estructura) {
  * botón "Ver en mi tienda" (R7.4).
  */
 export async function getDisenoAdmin(tiendaId) {
-  const tienda = await prisma.tiendas.findUnique({ where: { id: tiendaId }, select: { slug: true } });
-  const diseno = disenoAdmin(await getDiseno(tiendaId));
+  const tienda = await prisma.tiendas.findUnique({ where: { id: tiendaId }, select: { slug: true, tipoNegocio: true } });
+  const diseno = disenoAdmin(await getDiseno(tiendaId), tienda?.tipoNegocio);
   return { ...diseno, urlTienda: tienda ? urlTienda(tienda.slug, "") : null };
 }
 
@@ -86,7 +104,7 @@ export async function aplicarPlantilla(tiendaId, plantillaId, user) {
     upsertClave(tiendaId, "estructura", estructura, usuario)
   ]);
 
-  return disenoAdmin(await getDiseno(tiendaId));
+  return disenoAdmin(await getDiseno(tiendaId), tipoNegocioDe(plantilla));
 }
 
 /** Vuelve a la estructura previa a aplicar o restaurar una plantilla (R3.6). */
@@ -105,5 +123,5 @@ export async function deshacerEstructura(tiendaId, user) {
     borrarClaves(tiendaId, ["estructura_anterior"])
   ]);
 
-  return disenoAdmin(await getDiseno(tiendaId));
+  return disenoAdmin(await getDiseno(tiendaId), await negocioDeTienda(tiendaId));
 }

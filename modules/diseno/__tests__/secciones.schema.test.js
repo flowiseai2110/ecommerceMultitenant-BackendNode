@@ -1,4 +1,4 @@
-import { estructuraSchema, temaSchema, seccionesSchema, MAX_SECCIONES } from "../secciones.schema.js";
+import { estructuraSchema, temaSchema, seccionesSchema, MAX_SECCIONES, layoutDeNegocio } from "../secciones.schema.js";
 import { copiarPlantilla } from "../copia.js";
 import { buscarPlantilla } from "../plantillas.js";
 import { PRESETS_SECCION } from "../presets.js";
@@ -19,11 +19,12 @@ function errores(schema, valor) {
 }
 
 describe("estructuraSchema (R4.3)", () => {
-  it("acepta la clásica y completa los defaults del detalle de producto", () => {
+  it("acepta la clásica, y el layout de productos completa los defaults del detalle de producto", () => {
     const e = estructura();
     delete e.layout.producto;
-    const r = estructuraSchema.parse(e);
-    expect(r.layout.producto).toEqual({
+    expect(estructuraSchema.safeParse(e).success).toBe(true);
+    // Lo propio del rubro lo completa (y valida) layoutDeNegocio (layout-por-rubro RU8).
+    expect(layoutDeNegocio(e.layout, "productos").producto).toEqual({
       galeria: "lado", envio: { mostrar: true, texto: null }, devoluciones: { mostrar: true, texto: null },
       relacionados: true, resenas: true, beneficios: []
     });

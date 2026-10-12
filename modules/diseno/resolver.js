@@ -3,7 +3,7 @@ import { buscarPaleta, PALETA_DEFAULT } from "./paletas.js";
 import { buscarTipografia, TIPOGRAFIA_DEFAULT } from "./tipografias.js";
 import { copiarPlantilla } from "./copia.js";
 import { migrarEstructura } from "./migrar.js";
-import { eventoSchema, habitacionSchema, productoSchema, tourSchema } from "./secciones.schema.js";
+import { layoutDeNegocio } from "./secciones.schema.js";
 
 /**
  * Tema tal como lo recibe el storefront (R6.1): estructura completa, paleta y
@@ -35,15 +35,9 @@ export function resolverTema({ tema, estructura, hero, tipoNegocio } = {}, ahora
   return {
     estructura: {
       ...base,
-      // Una estructura guardada antes de que existieran `producto`,
-      // `habitacion`, `tour` o `evento` toma los defaults.
-      layout: {
-        ...base.layout,
-        producto: productoSchema.parse(base.layout?.producto ?? {}),
-        habitacion: habitacionSchema.parse(base.layout?.habitacion ?? {}),
-        tour: tourSchema.parse(base.layout?.tour ?? {}),
-        evento: eventoSchema.parse(base.layout?.evento ?? {})
-      },
+      // Solo el layout de su tipo de negocio, con sus defaults (layout-por-rubro RU8):
+      // una estructura vieja trae las opciones de todos los rubros.
+      layout: layoutDeNegocio(base.layout, tipoNegocioDe(porDefecto)),
       home: { secciones }
     },
     paleta: buscarPaleta(tema?.paleta) ?? buscarPaleta(PALETA_DEFAULT),

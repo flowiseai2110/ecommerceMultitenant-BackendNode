@@ -198,9 +198,11 @@ router.put(
   invalidateTiendasListCache,
   async (req, res, next) => {
     try {
-      // Solo secciones del tipo de negocio de la tienda (diseno-por-rubro H3).
-      await validarEstructuraDeTienda(req.params.id, req.body.estructura);
-      const diseno = disenoAdmin(await saveDiseno(req.params.id, req.body, req.user));
+      // Solo secciones y layout del tipo de negocio de la tienda (diseno-por-rubro H3,
+      // layout-por-rubro RU8): se guarda la estructura ya normalizada a su rubro.
+      const estructura = await validarEstructuraDeTienda(req.params.id, req.body.estructura);
+      const body = req.body.estructura ? { ...req.body, estructura } : req.body;
+      const diseno = disenoAdmin(await saveDiseno(req.params.id, body, req.user));
       return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_UPDATED", data: diseno });
     } catch (error) {
       next(error);

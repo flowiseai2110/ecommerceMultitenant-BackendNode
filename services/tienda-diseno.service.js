@@ -2,6 +2,7 @@ import { prisma } from "../config/prisma.js";
 import { ValidationError } from "../utils/errors.js";
 import { prefijoWidgets, urlsDeWidgetsAjenas } from "../modules/campanas/campanas.schema.js";
 import { migrarEstructura } from "../modules/diseno/migrar.js";
+import { layoutDeNegocio } from "../modules/diseno/secciones.schema.js";
 import { publicBaseUrl } from "./storage.service.js";
 
 // Personalización visual del storefront que el dueño edita desde el admin
@@ -79,7 +80,20 @@ export function borrarClaves(tiendaId, claves) {
  * Diseño para el admin: la estructura migrada al formato actual (R1.4) y,
  * en vez de la estructura anterior, solo si se puede deshacer (R3.6).
  */
-export function disenoAdmin({ estructura_anterior, ...diseno }) {
-  const estructura = diseno.estructura ? migrarEstructura(diseno.estructura) : null;
+export function disenoAdmin({ estructura_anterior, ...diseno }, tipoNegocio = null) {
+  const migrada = diseno.estructura ? migrarEstructura(diseno.estructura) : null;
+  // Con el tipo de negocio, solo el layout de su rubro (layout-por-rubro RU8): el
+  // editor no recibe opciones de otro rubro de una estructura guardada antes.
+  const estructura = migrada && tipoNegocio ? { ...migrada, layout: layoutDeNegocioSeguro(migrada.layout, tipoNegocio) } : migrada;
   return { ...diseno, estructura, puedeDeshacer: Boolean(estructura_anterior) };
+}
+
+// Una estructura vieja con datos inválidos para el rubro se entrega como está:
+// el editor la corrige y el PUT la valida.
+function layoutDeNegocioSeguro(layout, tipoNegocio) {
+  try {
+    return layoutDeNegocio(layout, tipoNegocio);
+  } catch {
+    return layout;
+  }
 }

@@ -1,7 +1,7 @@
 import { copiarPlantilla } from "../copia.js";
 import { buscarPlantilla, PLANTILLAS, plantillaPorDefecto, tipoNegocioDe } from "../plantillas.js";
 import { resolverTema } from "../resolver.js";
-import { estructuraSchema, seccionesAjenas, tiposPermitidos, TIPOS_POR_NEGOCIO, TIPOS_SECCION } from "../secciones.schema.js";
+import { estructuraSchema, layoutDeNegocio, LAYOUT_POR_NEGOCIO, seccionesAjenas, tiposPermitidos, TIPOS_POR_NEGOCIO, TIPOS_SECCION } from "../secciones.schema.js";
 import { PRESETS_SECCION } from "../presets.js";
 
 // docs/specs/diseno-por-rubro, fase 1 (hospedaje).
@@ -119,11 +119,51 @@ describe("opciones de la ficha de habitación (fase 1b)", () => {
       .toEqual({ galeria: "carrusel", servicios: true, politicas: true, mapa: true, otras: true });
   });
 
-  it("Casa única usa la galería en mosaico y el schema rechaza una galería desconocida", () => {
+  it("Casa única usa la galería en mosaico y el layout del hotel rechaza una galería desconocida", () => {
     const e = copiarPlantilla(buscarPlantilla("hotel-casa"));
     expect(e.layout.habitacion.galeria).toBe("mosaico");
     e.layout.habitacion.galeria = "slider";
-    expect(estructuraSchema.safeParse(e).success).toBe(false);
+    expect(() => layoutDeNegocio(e.layout, "hotel")).toThrow();
+  });
+});
+
+describe("layout por rubro (layout-por-rubro RU8)", () => {
+  const VIEJO = {
+    header: { logo: "centro" },
+    productCard: { cta: "boton", imagen: "vertical" },
+    producto: { galeria: "arriba" },
+    habitacion: { galeria: "mosaico" },
+    tour: { galeria: "mosaico" },
+    evento: { galeria: "mosaico" }
+  };
+  const claves = (o) => Object.keys(o).sort();
+
+  it("cada tipo de negocio tiene su layout", () => {
+    expect(claves(LAYOUT_POR_NEGOCIO)).toEqual(claves(TIPOS_POR_NEGOCIO));
+  });
+
+  it("una estructura vieja queda con el header y solo lo de su rubro, con defaults", () => {
+    expect(claves(layoutDeNegocio(VIEJO, "productos"))).toEqual(["header", "productCard", "producto"]);
+    expect(claves(layoutDeNegocio(VIEJO, "hotel"))).toEqual(["habitacion", "header"]);
+    expect(claves(layoutDeNegocio(VIEJO, "tours"))).toEqual(["header", "tour"]);
+    expect(claves(layoutDeNegocio(VIEJO, "eventos"))).toEqual(["evento", "header"]);
+    expect(claves(layoutDeNegocio(VIEJO, "locales"))).toEqual(["header"]);
+    expect(layoutDeNegocio(VIEJO, "hotel").habitacion).toMatchObject({ galeria: "mosaico", servicios: true });
+    expect(layoutDeNegocio(VIEJO, "desconocido")).toHaveProperty("productCard");
+  });
+
+  it("las plantillas de reservas no traen la tarjeta ni el detalle de producto", () => {
+    for (const p of PLANTILLAS.filter((p) => p.tipoNegocio !== "productos")) {
+      const e = copiarPlantilla(p);
+      expect(e.layout).not.toHaveProperty("productCard");
+      expect(e.layout).not.toHaveProperty("producto");
+      expect(claves(e.layout)).toEqual(claves(layoutDeNegocio(e.layout, p.tipoNegocio)));
+    }
+  });
+
+  it("el storefront recibe solo el layout del rubro de la tienda", () => {
+    const tema = resolverTema({ tipoNegocio: "tours", estructura: { ...copiarPlantilla(buscarPlantilla("tours-operador")), layout: VIEJO } }, new Date());
+    expect(claves(tema.estructura.layout)).toEqual(["header", "tour"]);
   });
 });
 
