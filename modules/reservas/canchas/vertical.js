@@ -2,6 +2,29 @@ import { obtenerConfig } from "../reservas.config.service.js";
 import { cierresDeProducto } from "../cierres.service.js";
 import { instanteLima, sumarDias } from "../tiempo.js";
 import { cotizarCancha, textoDuracion } from "./cotizar.js";
+import { extrasDeTienda } from "../hotel/tarifas.service.js";
+import { lineasExtras, montoACuenta } from "../hotel/cotizar.js";
+
+const redondear = (n) => Math.round(n * 100) / 100;
+
+/**
+ * Extras del complejo (pelota, chalecos…; plantillas-por-rubro E5): el mismo
+ * catálogo de extras de la tienda, cobrados por reserva y por la cantidad elegida.
+ */
+function sumarExtras(c, catalogo, elegidos, config) {
+  const porReserva = catalogo.map(x => ({ ...x, cobro: "estadia" }));
+  const extras = lineasExtras({ catalogo: porReserva, elegidos, noches: 1, personas: 1, esHoras: true });
+  if (!extras.lineas.length && !extras.errores.length) return { ...c, extras: [] };
+  const total = redondear(c.total + extras.lineas.reduce((s, l) => s + l.total, 0));
+  const montoAPagar = montoACuenta(total, config);
+  return {
+    ...c,
+    lineas: [...c.lineas, ...extras.lineas],
+    errores: [...c.errores, ...extras.errores],
+    total, montoAPagar, saldoDestino: redondear(total - montoAPagar),
+    extras: extras.snapshot
+  };
+}
 import { cargarCanchaParaReserva } from "./canchas.service.js";
 import { actualizarOcupacion, liberar, ocupacionesVigentes, ocupar } from "./ocupaciones.js";
 
@@ -37,7 +60,8 @@ export const verticalCanchas = {
       ocupacionesVigentes(tiendaId, [producto.id], instanteLima(datos.fecha), instanteLima(sumarDias(datos.fecha, 1)), { ahora }),
       cierresDeProducto(tiendaId, producto.id, datos.fecha, datos.fecha)
     ]);
-    const c = cotizarCancha({ cancha, config, fecha: datos.fecha, hora: datos.hora, duracionMin: datos.duracionMin, ocupadas, cierres, ahora });
+    const base = cotizarCancha({ cancha, config, fecha: datos.fecha, hora: datos.hora, duracionMin: datos.duracionMin, ocupadas, cierres, ahora });
+    const c = datos.extras?.length ? sumarExtras(base, await extrasDeTienda(tiendaId, datos.lang), datos.extras, config) : base;
     return {
       producto, c,
       detalle: {
@@ -45,7 +69,8 @@ export const verticalCanchas = {
         cancha: {
           nombre: cancha.nombre, formato: cancha.formato, techada: cancha.techada, jugadoresMax: cancha.jugadoresMax,
           duracionMin: c.duracionMin, tramos: c.tramos
-        }
+        },
+        ...(c.extras?.length ? { extras: c.extras } : {})
       },
       log: `${cancha.formato} ${textoDuracion(c.duracionMin)}, inicio ${c.inicio.toISOString()}`
     };

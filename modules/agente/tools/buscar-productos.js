@@ -50,7 +50,8 @@ const MAX_VARIANTES_RESULTADO = 24;
 
 /**
  * Valores por los que se puede filtrar en esta tienda: sus categorías activas,
- * los colores que realmente usan sus productos activos y las opciones de
+ * los colores y las marcas que realmente usan sus productos activos (las marcas
+ * solo existen en rubros con la capacidad `marcas`) y las opciones de
  * variante que la tienda definió (Talla, Tamaño, Sabor...: cada negocio las
  * nombra a su manera, ver catalogo/producto-opciones.js). El color no entra en
  * `opciones`: tiene su propio filtro con la paleta fija.
@@ -58,6 +59,7 @@ const MAX_VARIANTES_RESULTADO = 24;
  * @returns {Promise<{
  *   categorias: Array<{id:string, nombre:string, categoriaPadreId:string|null}>,
  *   colores: string[],
+ *   marcas: Array<{id:string, nombre:string}>,
  *   opciones: Array<{clave:string, valores:string[]}>,
  *   tienda: { rubro: string|null, ubigeo: string|null, envioGratisMinimo: number|null }
  * }>}
@@ -66,7 +68,7 @@ export async function obtenerFacetas(tiendaId) {
   const cached = cacheFacetas.get(tiendaId);
   if (cached) return cached;
 
-  const [tienda, categorias, filasColores, filasOpciones] = await Promise.all([
+  const [tienda, categorias, filasColores, marcas, filasOpciones] = await Promise.all([
     // Rubro: glosario de jerga (glosario.js). Ubigeo: desempata distritos
     // con el mismo nombre al cotizar envío (distritos.js).
     prisma.tiendas.findUnique({
@@ -83,6 +85,14 @@ export async function obtenerFacetas(tiendaId) {
       FROM productos
       WHERE tienda_id = ${tiendaId}::uuid AND activo = true
       ORDER BY color
+    `,
+    prisma.$queryRaw`
+      SELECT m.id, m.nombre
+      FROM marcas m
+      WHERE m.tienda_id = ${tiendaId}::uuid AND m.activo = true
+        AND EXISTS (SELECT 1 FROM productos p WHERE p.marca_id = m.id AND p.activo = true)
+      ORDER BY m.nombre
+      LIMIT ${MAX_VALORES_FACETA}
     `,
     prisma.$queryRaw`
       SELECT kv.key AS clave, array_agg(DISTINCT kv.value) AS valores
@@ -109,6 +119,7 @@ export async function obtenerFacetas(tiendaId) {
   const facetas = {
     categorias,
     colores: filasColores.map(f => f.color),
+    marcas,
     opciones,
     tienda: {
       rubro: tienda?.rubro ?? null,
@@ -125,9 +136,9 @@ export async function obtenerFacetas(tiendaId) {
  * por tienda: los `enum` de `categoria` y `color` son sus valores reales, así el
  * modelo elige de una lista en vez de adivinar nombres.
  * El `tiendaId` NO está aquí a propósito: lo pone el backend, no el modelo.
- * @param {{ categorias: Array<{nombre:string}>, colores: string[], opciones?: Array<{clave:string, valores:string[]}> }} facetas
+ * @param {{ categorias: Array<{nombre:string}>, colores: string[], marcas?: Array<{nombre:string}>, opciones?: Array<{clave:string, valores:string[]}> }} facetas
  */
-export function buildBuscarProductosToolDef({ categorias, colores, opciones = [] }) {
+export function buildBuscarProductosToolDef({ categorias, colores, marcas = [], opciones = [] }) {
   const nombres = [...new Set(categorias.map(c => c.nombre))];
 
   const properties = {
@@ -169,6 +180,17 @@ export function buildBuscarProductosToolDef({ categorias, colores, opciones = []
     };
   }
 
+  if (marcas.length > 0) {
+    properties.marca = {
+      type: "string",
+      enum: marcas.map(m => m.nombre),
+      description:
+        "Marca que pide el cliente, elegida de las marcas que tiene la tienda. Úsala solo " +
+        "si el cliente nombra una marca ('unas Nike', 'algo de Samsung'). Solo devuelve " +
+        "productos de esa marca."
+    };
+  }
+
   if (opciones.length > 0) {
     properties.opciones = {
       type: "object",
@@ -193,7 +215,7 @@ export function buildBuscarProductosToolDef({ categorias, colores, opciones = []
       "Busca productos en el catálogo de ESTA tienda por nombre, descripción y categoría. " +
       "Úsala siempre que el cliente pregunte por un producto, categoría, precio o " +
       "disponibilidad. Devuelve hasta 4 productos ordenados por relevancia, con su " +
-      "categoría, colores, descripción corta y, si tiene variantes, las que hay en stock " +
+      "categoría, marca, colores, descripción corta y, si tiene variantes, las que hay en stock " +
       "(ej: 'Negro / M'). " + filtraColor +
       "Solo puedes mencionar o recomendar productos que esta herramienta devuelva; " +
       "si no hay resultados, dilo con honestidad y no inventes.",
@@ -231,8 +253,8 @@ function idsDeCategoria(nombre, categorias) {
  *
  * @param {object} params
  * @param {string} params.tiendaId - Inyectado server-side (req.tiendaId). Obligatorio.
- * @param {object} params.input - Input del modelo ({ query, precioMax?, soloConStock?, categoria?, color? }).
- * @param {object} params.facetas - Categorías y colores de la tienda (de obtenerFacetas).
+ * @param {object} params.input - Input del modelo ({ query, precioMax?, soloConStock?, categoria?, color?, marca? }).
+ * @param {object} params.facetas - Categorías, colores y marcas de la tienda (de obtenerFacetas).
  * @returns {Promise<{ productos: Array }>} Productos listos para tarjeta (modelo + frontend).
  */
 export async function ejecutarBuscarProductos({ tiendaId, input, facetas }) {
@@ -265,12 +287,16 @@ export async function ejecutarBuscarProductos({ tiendaId, input, facetas }) {
       SELECT 1 FROM producto_variantes pv WHERE pv.producto_id = p.id AND pv.activo = true AND pv.stock > 0
     ))`);
   }
-  // Una categoría o color que no es de esta tienda se ignora (se busca sin ese filtro).
+  // Una categoría, color o marca que no es de esta tienda se ignora (se busca sin ese filtro).
   if (typeof input?.categoria === "string") {
     const idsCategoria = idsDeCategoria(input.categoria, facetas.categorias);
     if (idsCategoria.length > 0) {
       filtros.push(Prisma.sql`p.categoria_id = ANY(${idsCategoria}::uuid[])`);
     }
+  }
+  const idMarca = idDeMarca(input?.marca, facetas.marcas ?? []);
+  if (idMarca) {
+    filtros.push(Prisma.sql`p.marca_id = ${idMarca}::uuid`);
   }
   const color = typeof input?.color === "string" ? input.color.trim().toLowerCase() : "";
   const colorValido = facetas.colores.includes(color);
@@ -343,12 +369,13 @@ export async function ejecutarBuscarProductos({ tiendaId, input, facetas }) {
     )
     SELECT p.id, p.nombre, p.slug, p.precio_base AS "precioBase",
            p.precio_oferta AS "precioOferta", p.stock,
-           p.descripcion_corta AS "descripcionCorta", cat.nombre AS categoria, p.colores,
+           p.descripcion_corta AS "descripcionCorta", cat.nombre AS categoria, marca.nombre AS marca, p.colores,
            img.url AS "imagenUrl", img.texto_alternativo AS "imagenAlt",
            var.total::int AS "totalVariantes", var.disponibles AS "variantesDisponibles"
     FROM s
     JOIN productos p ON p.id = s.id
     LEFT JOIN categorias cat ON cat.id = p.categoria_id
+    LEFT JOIN marcas marca ON marca.id = p.marca_id
     -- Si el cliente pidió un color y el producto tiene fotos por color
     -- (opción principal Color), la tarjeta muestra esa foto; si no, la principal.
     LEFT JOIN LATERAL (
@@ -375,6 +402,18 @@ export async function ejecutarBuscarProductos({ tiendaId, input, facetas }) {
       variantesDisponibles: (p.variantesDisponibles ?? []).slice(0, MAX_VARIANTES_RESULTADO)
     }))
   };
+}
+
+/**
+ * Id de la marca que pidió el modelo, o null si no es de esta tienda.
+ * @param {unknown} nombre - input.marca del modelo.
+ * @param {Array<{id:string, nombre:string}>} marcas - facetas.marcas.
+ * @returns {string | null}
+ */
+export function idDeMarca(nombre, marcas) {
+  if (typeof nombre !== "string" || !nombre.trim()) return null;
+  const buscado = nombre.trim().toLowerCase();
+  return marcas.find(m => m.nombre.toLowerCase() === buscado)?.id ?? null;
 }
 
 /**

@@ -205,6 +205,8 @@ export async function responderTurno({
               id: p.id,
               nombre: p.nombre,
               categoria: p.categoria,
+              // Solo si tiene: en rubros sin marcas sería un null por producto en cada turno.
+              ...(p.marca ? { marca: p.marca } : {}),
               colores: p.colores,
               descripcionCorta: p.descripcionCorta,
               ...indicadores.get(p.id),

@@ -7,6 +7,7 @@ export const locales = {
   planDePagos: true,
   transmisiones: false,
   alquilerPorHoras: false,
+  marcas: false,
   diseno: {
     plantillaPorDefecto: "locales-salones",
     secciones: Object.freeze([...SECCIONES_COMUNES, ...SECCIONES_RESERVAS, "salones"])

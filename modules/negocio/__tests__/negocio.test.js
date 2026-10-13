@@ -11,7 +11,7 @@ jest.unstable_mockModule("../../../config/prisma.js", () => ({
 
 const { CONTRATO, faltantesDelContrato } = await import("../contrato.js");
 const { ESTRATEGIAS, estrategiaDe, tiendaDe, invalidarRubrosCache } = await import("../registro.js");
-const { prepararProductoDelRubro } = await import("../negocio.middleware.js");
+const { prepararProductoDelRubro, requiereCapacidad } = await import("../negocio.middleware.js");
 const { createProductoSchema } = await import("../../catalogo/productos.schema.js");
 const { TIPOS_NEGOCIO } = await import("../../tenants/tiendas.schema.js");
 
@@ -43,6 +43,7 @@ describe("contrato", () => {
     expect(con("planDePagos")).toEqual(["locales"]);
     expect(con("transmisiones")).toEqual(["eventos"]);
     expect(con("alquilerPorHoras")).toEqual(["canchas"]);
+    expect(con("marcas")).toEqual(["productos"]);
     expect(Object.keys(ESTRATEGIAS).filter((t) => ESTRATEGIAS[t].agente)).toEqual(["hotel", "tours", "eventos", "locales"]);
   });
 
@@ -146,6 +147,30 @@ describe("prepararProductoDelRubro (middleware)", () => {
     await tiendaDe(TIENDA);
     await tiendaDe(TIENDA);
     expect(findUnique).toHaveBeenCalledTimes(1);
+  });
+
+  it("marca: productos la guarda; otro rubro la rechaza o la quita si viene vacía", async () => {
+    const MARCA = "33333333-3333-4333-8333-333333333333";
+    findUnique.mockResolvedValue({ id: TIENDA, tipoNegocio: "productos" });
+    expect((await correr("editar", { marcaId: MARCA })).body).toEqual({ marcaId: MARCA });
+
+    invalidarRubrosCache();
+    findUnique.mockResolvedValue({ id: TIENDA, tipoNegocio: "tours" });
+    const { err } = await correr("editar", { marcaId: MARCA });
+    expect(err.details.body.marcaId).toEqual(["Este tipo de negocio no maneja marcas"]);
+    const { err: sinError, body } = await correr("editar", { nombre: "X", marcaId: null });
+    expect(sinError).toBeUndefined();
+    expect(body).toEqual({ nombre: "X" });
+  });
+
+  it("requiereCapacidad: corta la ruta si el rubro no la tiene", async () => {
+    const pasar = (tipo) => new Promise((resolve) => {
+      invalidarRubrosCache();
+      findUnique.mockResolvedValue({ id: TIENDA, tipoNegocio: tipo });
+      requiereCapacidad("marcas")({ tiendaId: TIENDA }, {}, resolve);
+    });
+    expect(await pasar("productos")).toBeUndefined();
+    expect((await pasar("hotel")).statusCode ?? (await pasar("hotel")).status).toBe(400);
   });
 
   it("tienda inexistente: 404", async () => {

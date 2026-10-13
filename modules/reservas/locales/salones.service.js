@@ -42,6 +42,7 @@ function serializarFicha(s) {
     productoId: s.productoId,
     metros: s.metros,
     aforoMaximo: s.aforoMaximo,
+    aforoSentados: s.aforoSentados ?? null,
     preparacionMin: s.preparacionMin,
     porHoras: s.porHoras,
     precioHora: num(s.precioHora),
@@ -116,6 +117,7 @@ function serializarSalonStore(p, { detalle = false } = {}) {
     rating: { promedio: p.ratingPromedio, cantidad: p.ratingCantidad },
     destacado: p.destacado,
     aforoMaximo: s.aforoMaximo,
+    aforoSentados: s.aforoSentados ?? null,
     metros: s.metros,
     servicios: s.servicios,
     porHoras: s.porHoras,
@@ -267,6 +269,7 @@ export async function guardarFichaSalon(tiendaId, productoId, data, user, ahora 
   const ficha = {
     metros: data.metros,
     aforoMaximo: data.aforoMaximo,
+    aforoSentados: data.aforoSentados != null ? Math.min(data.aforoSentados, data.aforoMaximo) : null,
     preparacionMin: data.preparacionMin,
     porHoras: data.porHoras,
     precioHora: data.porHoras ? data.precioHora : null,

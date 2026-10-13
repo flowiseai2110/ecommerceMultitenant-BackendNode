@@ -22,6 +22,21 @@ export const EstadoPago = Object.freeze({
 });
 
 /**
+ * Error de un proveedor al cobrar (rechazo, red, timeout). pasarela.service lo
+ * traduce a 422 con `userMessage` para el comprador.
+ */
+export class ProveedorPagoError extends Error {
+  constructor(message, { status = 502, code = null, userMessage = null, raw = null } = {}) {
+    super(message);
+    this.name = "ProveedorPagoError";
+    this.status = status;
+    this.code = code;
+    this.userMessage = userMessage;
+    this.raw = raw;
+  }
+}
+
+/**
  * Clase base. Los proveedores concretos la extienden e implementan los métodos.
  * Los no implementados lanzan para hacer explícito qué falta soportar.
  */
@@ -29,6 +44,14 @@ export class PaymentProvider {
   /** Identificador corto del proveedor (ej. "culqi"). */
   get nombre() {
     throw new Error("PaymentProvider.nombre no implementado");
+  }
+
+  /**
+   * Si el proveedor necesita las credenciales de la tienda (tienda_pasarela_config).
+   * El simulador de pruebas no las necesita (docs/specs/pago-automatico R2.2).
+   */
+  get requiereCredenciales() {
+    return true;
   }
 
   /**

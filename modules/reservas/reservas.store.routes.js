@@ -15,12 +15,24 @@ import { disponibilidadTienda } from "./hotel/disponibilidad.service.js";
 import { listarToursStore, obtenerTourStore } from "./tours/tours.service.js";
 import { listarEventosStore, obtenerEventoStore } from "./eventos/eventos.service.js";
 import { listarSalonesStore, obtenerSalonStore } from "./locales/salones.service.js";
-import { calendarioStore, crearCotizacion, obtenerCotizacionStore } from "./locales/locales.service.js";
+import { calendarioStore, crearCotizacion, disponibilidadSalones, obtenerCotizacionStore } from "./locales/locales.service.js";
 import { aceptarContrato, subirCapturaCuota } from "./locales/cuotas.service.js";
 import { agendaStore as agendaCanchasStore, listarCanchasStore, obtenerCanchaStore } from "./canchas/canchas.service.js";
 import { clientIp } from "../../kernel/http/client-ip.js";
 import { verificarTokenReserva } from "./reservas.token.js";
 import { uploadCaptura } from "./reservas.capturas.js";
+import { pagarReserva } from "./reservas.pago.js";
+import { dividirPago, obtenerParte, pagarParte, partesDeReserva } from "./canchas/partes.js";
+import { registrarCheckin, solicitarCambioFechas } from "./hotel/estadia-cliente.js";
+import { pagarReservaSchema } from "../pagos/pasarela/pasarela.schema.js";
+import { z } from "zod";
+
+const disponibilidadDiaSchema = z.object({
+  tiendaId: z.string().uuid("tiendaId inválido"),
+  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida")
+});
+
+const dividirPagoSchema = z.object({ partes: z.coerce.number().int().min(2, "Divide entre 2 o más").max(22, "Hasta 22 jugadores") });
 import {
   cancelarPorCliente, cotizar, crearSolicitud, notificarSolicitud, obtenerSeguimiento, subirCapturaCliente, urlSeguimiento
 } from "./reservas.service.js";
@@ -52,6 +64,14 @@ const cotizacionesLimiter = crearLimitador({
   max: config.reservas.cotizacionesMax,
   code: "TOO_MANY_QUOTES",
   message: "Hiciste muchas cotizaciones en poco tiempo. Espera unos minutos e intenta de nuevo."
+});
+
+// Pago en línea: mismo tope que el cargo del checkout (procesar cargos es sensible).
+const pagoLimiter = crearLimitador({
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.checkoutMax,
+  code: "TOO_MANY_PAYMENTS",
+  message: "Demasiados intentos de pago en poco tiempo, intenta más tarde"
 });
 
 const ok = (res, code, data, status = 200) => apiResponse(res, { status, type: "SUCCESS", code, data });
@@ -166,6 +186,14 @@ router.get("/locales/salones", validate({ query: tiendaQuerySchema }), scopeQuer
   try {
     res.set("Cache-Control", "public, max-age=60");
     return ok(res, "SALONES_LIST", await listarSalonesStore(req.validatedQuery.tiendaId));
+  } catch (error) { next(error); }
+});
+
+// GET /locales/disponibilidad?tiendaId=&fecha= — estado de cada salón ese día (plantillas-por-rubro E9)
+router.get("/locales/disponibilidad", validate({ query: disponibilidadDiaSchema }), scopeQueryToTienda, async (req, res, next) => {
+  try {
+    res.set("Cache-Control", "public, max-age=30");
+    return ok(res, "SALONES_DISPONIBILIDAD", await disponibilidadSalones(req.validatedQuery.tiendaId, req.validatedQuery.fecha));
   } catch (error) { next(error); }
 });
 
@@ -284,6 +312,83 @@ router.post("/seguimiento/:token/captura", solicitudesLimiter, validate({ params
       return ok(res, "RESERVA_CAPTURA_SUBIDA", data);
     } catch (error) { next(error); }
   });
+
+// POST /seguimiento/:token/pago — pago automático con la pasarela (docs/specs/pago-automatico R3):
+// { tokenId, metodo, cuotaId? }. Devuelve { pago, reserva }; un rechazo responde 422.
+router.post("/seguimiento/:token/pago", pagoLimiter, validate({ params: tokenParamSchema, body: pagarReservaSchema }), async (req, res, next) => {
+  try {
+    const { pedidoId, tiendaId } = await reservaDelToken(req);
+    res.set("Cache-Control", "private, no-store");
+    return ok(res, "RESERVA_PAGO", await pagarReserva(tiendaId, pedidoId, req.body), 201);
+  } catch (error) { next(error); }
+});
+
+// Hotel antes de llegar (plantillas-por-rubro E8)
+const personaCheckin = z.object({
+  nombres: z.string().trim().min(1).max(100), apellidos: z.string().trim().min(1).max(100),
+  docTipo: z.enum(["DNI", "CE", "PASAPORTE"]), docNumero: z.string().trim().min(6).max(20)
+});
+const checkinSchema = z.object({
+  acompanantes: z.array(personaCheckin).max(20).default([]),
+  horaLlegada: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora inválida"),
+  comentarios: z.string().trim().max(500).nullish().transform(v => v || null)
+});
+const cambioFechasSchema = z.object({
+  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
+  noches: z.coerce.number().int().min(1).max(60),
+  comentario: z.string().trim().max(500).nullish().transform(v => v || null)
+});
+
+// POST /seguimiento/:token/checkin — datos de los acompañantes y hora de llegada
+router.post("/seguimiento/:token/checkin", solicitudesLimiter, validate({ params: tokenParamSchema, body: checkinSchema }), async (req, res, next) => {
+  try {
+    const { pedidoId, tiendaId } = await reservaDelToken(req);
+    return ok(res, "RESERVA_CHECKIN", await registrarCheckin(tiendaId, pedidoId, req.body));
+  } catch (error) { next(error); }
+});
+
+// POST /seguimiento/:token/cambio-fechas — pide otras fechas (el hotel decide)
+router.post("/seguimiento/:token/cambio-fechas", solicitudesLimiter, validate({ params: tokenParamSchema, body: cambioFechasSchema }), async (req, res, next) => {
+  try {
+    const { pedidoId, tiendaId } = await reservaDelToken(req);
+    return ok(res, "RESERVA_CAMBIO_SOLICITADO", await solicitarCambioFechas(tiendaId, pedidoId, req.body));
+  } catch (error) { next(error); }
+});
+
+// Pago dividido de canchas (plantillas-por-rubro E7)
+// POST /seguimiento/:token/dividir { partes } — divide el total entre N jugadores
+router.post("/seguimiento/:token/dividir", solicitudesLimiter, validate({ params: tokenParamSchema, body: dividirPagoSchema }), async (req, res, next) => {
+  try {
+    const { pedidoId, tiendaId } = await reservaDelToken(req);
+    await dividirPago(tiendaId, pedidoId, req.body.partes);
+    return ok(res, "RESERVA_DIVIDIDA", await partesDeReserva(tiendaId, pedidoId));
+  } catch (error) { next(error); }
+});
+
+// GET /seguimiento/:token/partes — las partes con sus links para compartir
+router.get("/seguimiento/:token/partes", validate({ params: tokenParamSchema }), async (req, res, next) => {
+  try {
+    const { pedidoId, tiendaId } = await reservaDelToken(req);
+    res.set("Cache-Control", "private, no-store");
+    return ok(res, "RESERVA_PARTES", await partesDeReserva(tiendaId, pedidoId));
+  } catch (error) { next(error); }
+});
+
+// GET /partes/:token — lo que ve un jugador con su link de pago
+router.get("/partes/:token", validate({ params: tokenParamSchema }), async (req, res, next) => {
+  try {
+    res.set("Cache-Control", "private, no-store");
+    return ok(res, "RESERVA_PARTE", await obtenerParte(req.params.token));
+  } catch (error) { next(error); }
+});
+
+// POST /partes/:token/pago { tokenId, metodo } — el jugador paga su parte
+router.post("/partes/:token/pago", pagoLimiter, validate({ params: tokenParamSchema, body: pagarReservaSchema }), async (req, res, next) => {
+  try {
+    res.set("Cache-Control", "private, no-store");
+    return ok(res, "RESERVA_PARTE_PAGO", await pagarParte(req.params.token, req.body), 201);
+  } catch (error) { next(error); }
+});
 
 // POST /seguimiento/:token/contrato — el cliente acepta el contrato que leyó (versión + hash, R8.3)
 router.post("/seguimiento/:token/contrato", validate({ params: tokenParamSchema, body: aceptarContratoSchema }), async (req, res, next) => {

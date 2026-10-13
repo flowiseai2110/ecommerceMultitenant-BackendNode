@@ -14,6 +14,7 @@
  */
 
 import { serializeVideoStore, serializeVideoAdmin } from "./video.js";
+import { serializeMarcaStore } from "./marcas.serializer.js";
 
 /**
  * Imagen de producto tal como la ve el store.
@@ -93,6 +94,9 @@ export function serializeProductoCardStore(row) {
     id: row.id,
     tiendaId: row.tiendaId,
     categoriaId: row.categoriaId,
+    marcaId: row.marcaId ?? null,
+    // Solo rubros con la capacidad `marcas`; en los demás siempre null.
+    marca: serializeMarcaStore(row.marca),
     nombre: row.nombre,
     slug: row.slug,
     descripcionCorta: row.descripcionCorta,
@@ -121,6 +125,9 @@ export function serializeProductoDetailStore(row) {
     id: row.id,
     tiendaId: row.tiendaId,
     categoriaId: row.categoriaId,
+    marcaId: row.marcaId ?? null,
+    // Solo rubros con la capacidad `marcas`; en los demás siempre null.
+    marca: serializeMarcaStore(row.marca),
     nombre: row.nombre,
     slug: row.slug,
     descripcion: row.descripcion,
@@ -158,6 +165,9 @@ export function serializeProductoAdminList(row) {
     id: row.id,
     tiendaId: row.tiendaId,
     categoriaId: row.categoriaId,
+    marcaId: row.marcaId ?? null,
+    // Solo rubros con la capacidad `marcas`; en los demás siempre null.
+    marca: serializeMarcaStore(row.marca),
     nombre: row.nombre,
     slug: row.slug,
     descripcionCorta: row.descripcionCorta,
@@ -188,6 +198,9 @@ export function serializeProductoAdmin(row) {
     id: row.id,
     tiendaId: row.tiendaId,
     categoriaId: row.categoriaId,
+    marcaId: row.marcaId ?? null,
+    // Solo rubros con la capacidad `marcas`; en los demás siempre null.
+    marca: serializeMarcaStore(row.marca),
     nombre: row.nombre,
     slug: row.slug,
     descripcion: row.descripcion,

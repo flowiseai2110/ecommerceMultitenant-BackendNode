@@ -56,6 +56,10 @@ class GenericService {
     //   los filtros del cliente. Ej. el storefront nunca lista los productos de
     //   un evento privado.
     this.baseWhere = options.baseWhere || null;
+    // - customFilters: filtros que no son una columna, ej. { opcion: (valor) =>
+    //   where | null } (variantes con Talla M). Opt-in por módulo; el where que
+    //   devuelve se suma con AND.
+    this.customFilters = options.customFilters || {};
   }
 
   /**
@@ -318,6 +322,12 @@ class GenericService {
 
     for (const [key, value] of Object.entries(filters)) {
       if (value === undefined || value === null || value === "") {
+        continue;
+      }
+
+      if (this.customFilters[key]) {
+        const extra = this.customFilters[key](value);
+        if (extra) where.AND = [...(where.AND ?? []), extra];
         continue;
       }
 

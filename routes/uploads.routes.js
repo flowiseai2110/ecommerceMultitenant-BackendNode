@@ -40,7 +40,7 @@ const upload = multer({
  *
  * Body (multipart/form-data):
  * - file: File (imagen)
- * - folder: string ("productos" | "categorias" | "logos" | "banners" | "otros" | "widgets")
+ * - folder: string ("productos" | "categorias" | "marcas" | "logos" | "banners" | "otros" | "widgets")
  *   widgets: solo PNG/WebP ≤ 1 MB, se guarda como WebP de 512 px (spec campanas-widgets)
  * - tiendaId: string (requerido)
  *

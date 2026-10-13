@@ -7,6 +7,7 @@ export const eventos = {
   // Transmisión en vivo de la función (docs/specs/transmision-eventos).
   transmisiones: true,
   alquilerPorHoras: false,
+  marcas: false,
   diseno: {
     plantillaPorDefecto: "eventos-cartelera",
     secciones: Object.freeze([...SECCIONES_COMUNES, ...SECCIONES_RESERVAS, "eventos"])

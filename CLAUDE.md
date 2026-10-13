@@ -132,7 +132,7 @@ Para errores:
 |--------|-----------------|
 | Tiendas | `tiendas`, `tienda_configuraciones` |
 | Usuarios | `usuario_tiendas`, `invitaciones` |
-| Catálogo | `categorias`, `productos`, `producto_variantes`, `producto_imagenes`, `producto_atributos` |
+| Catálogo | `categorias`, `marcas` (solo rubros con la capacidad `marcas`), `productos`, `producto_variantes`, `producto_imagenes`, `producto_atributos` |
 | Clientes | `clientes` |
 | Pedidos | `pedidos`, `pedido_detalles`, `pedido_historial_estados` |
 | Configuración | `metodos_pago`, `metodos_envio` |

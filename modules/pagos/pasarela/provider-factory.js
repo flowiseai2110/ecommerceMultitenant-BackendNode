@@ -1,11 +1,15 @@
+import config from "../../../config/index.js";
 import CulqiProvider from "./culqi.provider.js";
+import SimuladoProvider from "./simulado.provider.js";
 
 /**
  * Registro de proveedores de pago soportados. Agregar un PSP nuevo es registrar
  * su instancia aquí; el resto del sistema lo consume vía getProvider().
+ * El simulador solo existe con PAGOS_SIMULADOR=true fuera de producción.
  */
 const PROVEEDORES = {
-  culqi: new CulqiProvider()
+  culqi: new CulqiProvider(),
+  ...(config.pagos.simulador.activo ? { simulado: new SimuladoProvider({ url: config.pagos.simulador.url }) } : {})
 };
 
 /** Lista de proveedores soportados (para validaciones/schemas). */
@@ -25,4 +29,14 @@ export function getProvider(nombre) {
   return provider;
 }
 
-export default { getProvider, PROVEEDORES_SOPORTADOS };
+/**
+ * Proveedor que usa la plataforma para el pago automático (docs/specs/pago-automatico R2.1).
+ * null si el configurado no está disponible (p. ej. "simulado" sin el simulador activo).
+ * @returns {string|null}
+ */
+export function proveedorPlataforma() {
+  const nombre = config.pagos.proveedor;
+  return PROVEEDORES[nombre] ? nombre : null;
+}
+
+export default { getProvider, proveedorPlataforma, PROVEEDORES_SOPORTADOS };

@@ -1,4 +1,5 @@
 import { estadoEfectivo, etiquetaEstado } from "./estados.js";
+import { serializarEntrada } from "./eventos/entradas.js";
 import { textoEn, traducirTour } from "../traducciones/traducciones.service.js";
 import { fechaLima } from "./tiempo.js";
 import { resumenPlan } from "./locales/plan-pagos.js";
@@ -49,7 +50,7 @@ const entradasDe = (pedido) => (pedido.itemsEvento ?? []).map(i => ({
 
 function fichaTour(r) {
   const t = traducirTour(r.producto?.tour ?? {}, r.producto?.traducciones, r.idiomaHuesped === "en" ? "en" : "es");
-  return { duracion: t.duracion ?? null, puntoEncuentro: t.puntoEncuentro ?? null, recojo: t.recojo ?? null };
+  return { duracion: t.duracion ?? null, puntoEncuentro: t.puntoEncuentro ?? null, mapaUrl: r.producto?.tour?.mapaUrl ?? null, recojo: t.recojo ?? null };
 }
 
 const serializarCuota = (c) => ({
@@ -154,6 +155,13 @@ function base(pedido, ahora) {
       apartadoHasta: estado === "por_pagar" ? r.apartadoHasta : null
     } : null,
     entradas,
+    // Hotel (plantillas-por-rubro E8): check-in en línea y cambio de fechas pedido.
+    checkin: r.checkinOnline ?? null,
+    cambioSolicitado: r.cambioSolicitado ?? null,
+    // Entradas con QR por persona: solo con la compra confirmada (plantillas-por-rubro E6).
+    entradasEmitidas: esEvento && ["confirmada", "completada"].includes(estado)
+      ? (pedido.entradasEvento ?? []).filter(e => !e.anulada).map(serializarEntrada)
+      : [],
     local: esLocal ? bloqueLocal(pedido, estado, ahora) : null,
     // Cancha: formato, duración y tramos día/noche (foto de la reserva) y hasta cuándo se aparta sin pagar.
     cancha: esCancha ? {
@@ -163,7 +171,11 @@ function base(pedido, ahora) {
       jugadoresMax: r.cancha?.jugadoresMax ?? null,
       duracionMin: r.cancha?.duracionMin ?? null,
       tramos: r.cancha?.tramos ?? [],
-      apartadoHasta: ["solicitada", "aceptada"].includes(estado) ? r.apartadoHasta : null
+      apartadoHasta: ["solicitada", "aceptada"].includes(estado) ? r.apartadoHasta : null,
+      // Pago dividido (plantillas-por-rubro E7): cuántas partes y cuántas pagadas; los links, en GET /partes.
+      pagoDividido: (pedido.partesPago ?? []).length
+        ? { partes: pedido.partesPago.length, pagadas: pedido.partesPago.filter(p => p.estado === "pagada").length }
+        : null
     } : null,
     personas: esCancha ? 0 : esTour ? pasajeros.reduce((s, p) => s + p.cantidad, 0)
       : esEvento ? entradas.reduce((s, e) => s + e.cantidad, 0)
@@ -289,6 +301,9 @@ export function serializeReservaAdmin(pedido, { urlsCaptura = new Map(), ahora =
       nacimiento: r.titularNacimiento ? r.titularNacimiento.toISOString().slice(0, 10) : null
     },
     acompanantes: r.acompanantes ?? [],
+    // Hotel (plantillas-por-rubro E8): lo que el huésped mandó antes de llegar.
+    checkin: r.checkinOnline ?? null,
+    cambioSolicitado: r.cambioSolicitado ?? null,
     comentarios: r.comentarios,
     contacto: { whatsapp: pedido.clienteWhatsapp, email: pedido.clienteEmail },
     factura: pedido.comprobante === "factura"

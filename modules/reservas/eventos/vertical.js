@@ -1,5 +1,6 @@
 import { cotizarEvento } from "./cotizar.js";
 import { apartarEntradas, cargarFuncionParaCompra } from "./eventos.service.js";
+import { anularEntradas, emitirEntradas } from "./entradas.js";
 
 /** Compra de entradas (Strategy de reservas, modules/negocio/registro.js). */
 export const verticalEventos = {
@@ -21,6 +22,14 @@ export const verticalEventos = {
     OR: [{ estado: "pago_en_revision" }, { estado: "por_pagar", reserva: { apartadoHasta: { gt: ahora }, inicio: { gt: ahora } } }]
   }),
   /** Dentro de la transacción: bloquea los tipos, revalida el cupo y registra las entradas. */
-  enTransaccion: (tx, { tiendaId, pedidoId, c, estadoInicial, ahora }) =>
-    apartarEntradas(tx, { tiendaId, pedidoId, items: c.items, confirmar: estadoInicial === "confirmada", ahora })
+  async enTransaccion(tx, { tiendaId, pedidoId, c, estadoInicial, ahora }) {
+    await apartarEntradas(tx, { tiendaId, pedidoId, items: c.items, confirmar: estadoInicial === "confirmada", ahora });
+    // Entrada libre: confirmada en el acto, con sus entradas QR.
+    if (estadoInicial === "confirmada") await emitirEntradas(tx, { tiendaId, pedidoId });
+  },
+  /** Entradas con QR (plantillas-por-rubro E6): se emiten al confirmar y se anulan al cancelar. */
+  async alCambiarEstado(tx, { pedido, nuevo }) {
+    if (nuevo === "confirmada") await emitirEntradas(tx, { tiendaId: pedido.tiendaId, pedidoId: pedido.id });
+    if (nuevo === "cancelada") await anularEntradas(tx, pedido.id);
+  }
 };

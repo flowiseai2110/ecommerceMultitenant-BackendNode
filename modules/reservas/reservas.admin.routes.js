@@ -12,6 +12,8 @@ import {
 import { disponibilidadTienda } from "./hotel/disponibilidad.service.js";
 import { guardarFichaTour, listarToursAdmin, obtenerFichaTourAdmin } from "./tours/tours.service.js";
 import { asistentesFuncion, guardarFichaEvento, listarEventosAdmin, obtenerFichaEventoAdmin } from "./eventos/eventos.service.js";
+import { resumenIngreso, validarEntrada } from "./eventos/entradas.js";
+import { validarEntradaSchema } from "./reservas.schema.js";
 import { guardarFichaSalon, listarSalonesAdmin, obtenerFichaSalonAdmin } from "./locales/salones.service.js";
 import { calendarioAdmin, crearBloqueo, crearCotizacion, eliminarBloqueo, listarCotizacionesAdmin } from "./locales/locales.service.js";
 import { editarPlan, rechazarCuota, verificarCuota } from "./locales/cuotas.service.js";
@@ -165,7 +167,20 @@ router.get("/eventos", ...lectura, validate({ query: tiendaQuerySchema }), async
   try { return ok(res, "EVENTOS_ADMIN", await listarEventosAdmin(req.tiendaId)); } catch (error) { next(error); }
 });
 
-// Lista de asistentes de una función (control de ingreso; reemplaza a las entradas con QR).
+// Control de ingreso con QR (plantillas-por-rubro E6): valida el código y marca la entrada usada.
+// 404 si no existe; 409 YA_USADA | ANULADA | OTRA_FUNCION con los datos de la entrada.
+router.post("/eventos/entradas/validar", ...operacion, validate({ body: validarEntradaSchema }), async (req, res, next) => {
+  try {
+    return ok(res, "ENTRADA_VALIDADA", await validarEntrada(req.tiendaId, req.body.codigo, req.user, { funcionId: req.body.funcionId ?? null }));
+  } catch (error) { next(error); }
+});
+
+router.get("/eventos/funciones/:funcionId/ingreso", ...lectura, validate({ params: funcionParamSchema, query: tiendaQuerySchema }),
+  async (req, res, next) => {
+    try { return ok(res, "EVENTO_INGRESO", await resumenIngreso(req.tiendaId, req.params.funcionId)); } catch (error) { next(error); }
+  });
+
+// Lista de asistentes de una función (control de ingreso a mano, junto con el QR).
 router.get("/eventos/funciones/:funcionId/asistentes", ...lectura, validate({ params: funcionParamSchema, query: tiendaQuerySchema }),
   async (req, res, next) => {
     try { return ok(res, "EVENTO_ASISTENTES", await asistentesFuncion(req.tiendaId, req.params.funcionId)); } catch (error) { next(error); }

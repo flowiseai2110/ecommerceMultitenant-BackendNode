@@ -98,6 +98,7 @@ jest.unstable_mockModule("../hotel/habitaciones.service.js", () => habSvc);
 
 // Alquiler de locales (alquiler-locales L1.15): servicios simulados.
 const localesSvc = {
+  disponibilidadSalones: jest.fn(async () => []),
   calendarioStore: jest.fn(async () => ({ fechas: [] })),
   calendarioAdmin: jest.fn(async () => ({ fechas: [], ocupaciones: [] })),
   crearBloqueo: jest.fn(async () => ({ id: "b1" })),
@@ -127,6 +128,16 @@ const canchasSvc = {
   cargarCanchaParaReserva: jest.fn()
 };
 jest.unstable_mockModule("../canchas/canchas.service.js", () => canchasSvc);
+// Pago automático (docs/specs/pago-automatico): su lógica se prueba en modules/pagos/__tests__.
+const pagoSvc = { pagarReserva: jest.fn(async () => ({ pago: { estado: "pagado" }, reserva: { id: "r" } })) };
+jest.unstable_mockModule("../reservas.pago.js", () => pagoSvc);
+const partesSvc = {
+  dividirPago: jest.fn(async () => ({})), partesDeReserva: jest.fn(async () => []),
+  obtenerParte: jest.fn(async () => ({})), pagarParte: jest.fn(async () => ({}))
+};
+jest.unstable_mockModule("../canchas/partes.js", () => partesSvc);
+const estadiaSvc = { registrarCheckin: jest.fn(async () => ({})), solicitarCambioFechas: jest.fn(async () => ({})) };
+jest.unstable_mockModule("../hotel/estadia-cliente.js", () => estadiaSvc);
 const CUOTA = "88888888-8888-4888-8888-888888888888";
 
 const { default: storeRoutes } = await import("../reservas.store.routes.js");
@@ -244,6 +255,21 @@ describe("seguimiento con token", () => {
     const r = await request("POST", `/store/reservas/seguimiento/${token}/cancelar`);
     expect(r.status).toBe(200);
     expect(svc.cancelarPorCliente).toHaveBeenCalledWith(TIENDA, PEDIDO);
+  });
+
+  it("paga en línea con el token de la pasarela (pago-automatico R3.1)", async () => {
+    const token = await firmarTokenReserva({ pedidoId: PEDIDO, tiendaId: TIENDA });
+    const r = await request("POST", `/store/reservas/seguimiento/${token}/pago`, { body: { tokenId: "tkn_sim_1", metodo: "tarjeta" } });
+    expect(r.status).toBe(201);
+    expect(pagoSvc.pagarReserva).toHaveBeenCalledWith(TIENDA, PEDIDO, { tokenId: "tkn_sim_1", metodo: "tarjeta" });
+  });
+
+  it("rechaza un método de pago que no es de la pasarela", async () => {
+    const token = await firmarTokenReserva({ pedidoId: PEDIDO, tiendaId: TIENDA });
+    pagoSvc.pagarReserva.mockClear();
+    const r = await request("POST", `/store/reservas/seguimiento/${token}/pago`, { body: { tokenId: "tkn_sim_1", metodo: "transferencia" } });
+    expect(r.status).toBe(400);
+    expect(pagoSvc.pagarReserva).not.toHaveBeenCalled();
   });
 });
 

@@ -10,7 +10,7 @@ import { ValidationError } from "../../utils/errors.js";
  * - prepararProducto(datos, { modo }): recibe el body ya validado por Zod
  *   ("crear" | "editar") y devuelve los datos a guardar, o lanza ValidationError.
  * - Datos del rubro (negocio/<rubro>/datos.js): recibeReservas, planDePagos,
- *   transmisiones y alquilerPorHoras (capacidades), diseno { plantillaPorDefecto,
+ *   transmisiones, alquilerPorHoras y marcas (capacidades), diseno { plantillaPorDefecto,
  *   secciones, temaPorDefecto? }, configReservas (defaults) y textoAviso (string o null).
  * - agente: perfil del asesor de ventas, o null (usa el de productos).
  * - dashboard: widgets del dashboard del admin, arreglo no vacío de funciones
@@ -23,7 +23,7 @@ import { ValidationError } from "../../utils/errors.js";
  */
 export const CONTRATO = ["prepararProducto"];
 export const CONTRATO_RESERVAS = { funciones: ["cotizar"], textos: ["tipoPedido", "este"] };
-export const CAPACIDADES = ["recibeReservas", "planDePagos", "transmisiones", "alquilerPorHoras"];
+export const CAPACIDADES = ["recibeReservas", "planDePagos", "transmisiones", "alquilerPorHoras", "marcas"];
 
 /** Lo que le falta a los datos de un rubro (negocio/<rubro>/datos.js). */
 export function faltantesDeDatos(d) {

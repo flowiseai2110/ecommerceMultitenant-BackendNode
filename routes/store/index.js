@@ -4,6 +4,7 @@ import { cache } from "../../utils/cache.js";
 import { cacheRespuesta } from "../../utils/store-cache.js";
 import tiendasRoutes from "../../modules/tenants/tiendas.store.routes.js";
 import categoriasRoutes from "../../modules/catalogo/categorias.store.routes.js";
+import marcasRoutes from "../../modules/catalogo/marcas.store.routes.js";
 import productosRoutes from "../../modules/catalogo/productos.store.routes.js";
 import metodosPagoRoutes from "../../modules/pagos/metodos-pago.store.routes.js";
 import pasarelaRoutes from "../../modules/pagos/pasarela.store.routes.js";
@@ -38,6 +39,7 @@ router.use(resolveTienda);
 // Filtrar siempre por ?tiendaId= para scope multi-tenant
 router.use("/tiendas", cache(300), tiendasRoutes);
 router.use("/categorias", cache(300), cacheRespuesta("categorias"), categoriasRoutes);
+router.use("/marcas", cache(60), cacheRespuesta("marcas"), marcasRoutes);
 router.use("/productos", cache(60), productosRoutes);
 router.use("/metodos-pago", cache(300), cacheRespuesta("metodos-pago"), metodosPagoRoutes);
 router.use("/pagos", pasarelaRoutes);        // sin caché — crea cargos en la pasarela

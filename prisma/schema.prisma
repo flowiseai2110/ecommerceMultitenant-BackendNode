@@ -127,6 +127,9 @@ model tiendas {
   // false = régimen que solo emite boletas (ej. Nuevo RUS): el checkout no ofrece factura
   emiteFactura    Boolean @default(true) @map("emite_factura")
 
+  // Cobro (docs/specs/pago-automatico R1): manual (captura + verificación) | automatico (pasarela)
+  modoPago        String  @default("manual") @map("modo_pago") @db.VarChar(15)
+
   // Ubicación
   ubigeo String? @db.VarChar(8)
 
@@ -368,6 +371,34 @@ model categorias {
 }
 
 // ============================================
+// MÓDULO: MARCAS (solo rubros con la capacidad `marcas`, ver modules/negocio)
+// ============================================
+
+// Catálogo de marcas de la tienda: el producto elige una de la lista, así
+// "Nike" y "nike " no quedan como dos marcas (slug único por tienda).
+// Ver docs/sql/productos_marcas.sql.
+model marcas {
+  id       String  @id @default(uuid()) @db.Uuid
+  tiendaId String  @map("tienda_id") @db.Uuid
+  nombre   String  @db.VarChar(100)
+  slug     String  @db.VarChar(100)
+  logoUrl  String? @map("logo_url") @db.VarChar(500)
+  orden    Int     @default(0)
+  activo   Boolean @default(true)
+
+  // Auditoría
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  productos productos[]
+
+  @@unique([tiendaId, slug], name: "uq_marcas_tienda_slug")
+  @@index([tiendaId, activo], name: "idx_marcas_tienda_activo")
+}
+
+// ============================================
 // MÓDULO: PRODUCTOS
 // ============================================
 
@@ -375,6 +406,8 @@ model productos {
   id               String   @id @default(uuid()) @db.Uuid
   tiendaId         String   @map("tienda_id") @db.Uuid
   categoriaId      String?  @map("categoria_id") @db.Uuid
+  // Solo rubros con la capacidad `marcas` (productos); la marca es de la misma tienda (validarMarca).
+  marcaId          String?  @map("marca_id") @db.Uuid
   nombre           String   @db.VarChar(200)
   slug             String   @db.VarChar(200)
   descripcion      String?  @db.Text
@@ -409,6 +442,8 @@ model productos {
   usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
 
   // Relaciones
+  // Borrar la marca deja sus productos sin marca, no los borra.
+  marca     marcas?  @relation(fields: [marcaId], references: [id], onDelete: SetNull)
   variantes producto_variantes[]
   imagenes  producto_imagenes[]
   resenas   resenas[]
@@ -423,6 +458,7 @@ model productos {
 
   @@index([tiendaId, activo], name: "idx_productos_tienda_activo")
   @@index([tiendaId, categoriaId], name: "idx_productos_tienda_categoria")
+  @@index([tiendaId, marcaId], name: "idx_productos_tienda_marca")
   @@index([tiendaId, slug], name: "idx_productos_tienda_slug")
   @@index([tiendaId, destacado], name: "idx_productos_tienda_destacado")
   @@index([tiendaId, ratingScore(sort: Desc)], name: "idx_productos_tienda_rating")
@@ -611,6 +647,8 @@ model pedidos {
   // Recepción (docs/specs/recepcion R3.5): estadías del mostrador de esta reserva web.
   estadiasRecepcion hotel_estadias[]
   itemsEvento      evento_compra_items[]
+  entradasEvento   evento_entradas[]
+  partesPago       reserva_partes[]
   // Alquiler de locales (docs/specs/alquiler-locales)
   cuotas           reserva_cuotas[]
   cambios          reserva_cambios[]
@@ -813,6 +851,8 @@ model pagos {
   metadata         Json?   @db.JsonB
   // Alquiler de locales: cuota del plan de pagos que paga (un solo pago válido por cuota, CE-11).
   cuotaId          String? @map("cuota_id") @db.Uuid
+  // Canchas: parte del pago dividido que paga un jugador (plantillas-por-rubro E7).
+  parteId          String? @map("parte_id") @db.Uuid
 
   // Auditoría
   fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
@@ -823,6 +863,7 @@ model pagos {
   // Relaciones
   pedido  pedidos         @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
   cuota   reserva_cuotas? @relation(fields: [cuotaId], references: [id], onDelete: SetNull)
+  parte   reserva_partes? @relation(fields: [parteId], references: [id], onDelete: SetNull)
   eventos pago_eventos[]
 
   @@unique([proveedor, proveedorCargoId], name: "uq_pago_proveedor_cargo")
@@ -1399,6 +1440,10 @@ model reservas {
   titularNacionalidad String    @map("titular_nacionalidad") @db.VarChar(2) // ISO 3166
   titularNacimiento   DateTime? @map("titular_nacimiento") @db.Date
   acompanantes        Json?     @db.JsonB
+  // Hotel (plantillas-por-rubro E8): check-in en línea { horaLlegada, comentarios, completadoEn }
+  checkinOnline       Json?     @map("checkin_online") @db.JsonB
+  // y la solicitud de cambio de fechas { fecha, noches, total, diferencia, disponible, motivo, comentario, solicitadoEn }
+  cambioSolicitado    Json?     @map("cambio_solicitado") @db.JsonB
   comentarios         String?   @db.Text
   aceptaDatos         Boolean   @map("acepta_datos")
 
@@ -1439,6 +1484,10 @@ model tours {
   queLlevar      String[] @default([]) @map("que_llevar")
   requisitos     String?  @db.Text
   puntoEncuentro String?  @map("punto_encuentro") @db.Text
+  // Link de Google Maps del punto de encuentro (plantillas-por-rubro, E5)
+  mapaUrl        String?  @map("mapa_url") @db.VarChar(500)
+  // facil | moderado | exigente (plantillas-por-rubro, E5; CHECK en docs/sql/plantillas_datos.sql)
+  dificultad     String?  @db.VarChar(15)
   recojo         String?  @db.Text // "Recojo en hoteles de Miraflores" (texto)
   edadMinima     Int?     @map("edad_minima")
   maxPasajeros   Int?     @map("max_pasajeros") // por solicitud (no es cupo de la salida)
@@ -1543,6 +1592,46 @@ model evento_compra_items {
   @@index([pedidoId], name: "idx_evento_items_pedido")
 }
 
+// Pago dividido de una cancha (docs/specs/plantillas-por-rubro E7): cada jugador paga
+// su parte por link con la pasarela. DDL: docs/sql/pago_dividido.sql
+model reserva_partes {
+  id            String    @id @default(uuid()) @db.Uuid
+  tiendaId      String    @map("tienda_id") @db.Uuid
+  pedidoId      String    @map("pedido_id") @db.Uuid
+  numero        Int
+  monto         Decimal   @db.Decimal(10, 2)
+  estado        String    @default("pendiente") @db.VarChar(15) // pendiente | pagada
+  pagadaEn      DateTime? @map("pagada_en") @db.Timestamptz
+  fechaRegistro DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+
+  pedido pedidos @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  pagos  pagos[]
+
+  @@index([pedidoId], name: "idx_reserva_partes_pedido")
+}
+
+// Entrada con QR por persona (docs/specs/plantillas-por-rubro E6): se emite al
+// confirmar la compra y se marca usada en la puerta. DDL: docs/sql/entradas_qr.sql
+model evento_entradas {
+  id            String    @id @default(uuid()) @db.Uuid
+  tiendaId      String    @map("tienda_id") @db.Uuid
+  pedidoId      String    @map("pedido_id") @db.Uuid
+  funcionId     String?   @map("funcion_id") @db.Uuid
+  tipoEntradaId String    @map("tipo_entrada_id") @db.Uuid
+  tipoNombre    String    @map("tipo_nombre") @db.VarChar(80)
+  numero        Int // 1..N dentro de la compra
+  codigo        String    @unique @db.VarChar(12)
+  usadaEn       DateTime? @map("usada_en") @db.Timestamptz
+  usadaPor      String?   @map("usada_por") @db.VarChar(100)
+  anulada       Boolean   @default(false)
+  fechaRegistro DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+
+  pedido pedidos @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@index([pedidoId], name: "idx_evento_entradas_pedido")
+  @@index([tiendaId, funcionId], name: "idx_evento_entradas_funcion")
+}
+
 // ============================================
 // MÓDULO: ALQUILER DE LOCALES (docs/specs/alquiler-locales)
 // Un salón es un `productos` + su ficha 1:1 en `local_salones`, con turnos y
@@ -1556,6 +1645,8 @@ model local_salones {
   tiendaId       String   @map("tienda_id") @db.Uuid
   metros         Int?
   aforoMaximo    Int      @map("aforo_maximo") // el de la licencia / ITSE (R2.2)
+  // Personas sentadas (banquete); el máximo de la licencia es de pie (cóctel). null = no se informa (plantillas-por-rubro, E5)
+  aforoSentados  Int?     @map("aforo_sentados")
   preparacionMin Int      @default(60) @map("preparacion_min") // antes y después de cada reserva (R2.4)
   porHoras       Boolean  @default(false) @map("por_horas")
   precioHora     Decimal? @map("precio_hora") @db.Decimal(10, 2)

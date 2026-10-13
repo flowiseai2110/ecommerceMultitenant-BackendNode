@@ -125,6 +125,24 @@ export async function calendarioStore(tiendaId, slug, { desde, hasta }, ahora = 
   return { productoId: producto.id, fechas };
 }
 
+/**
+ * Store (plantillas-por-rubro E9): cómo está cada salón un día, para el listado
+ * ("Libre: noche", "Ocupado"). Un salón que falla no tumba el listado.
+ */
+export async function disponibilidadSalones(tiendaId, fecha, ahora = new Date()) {
+  const salones = await prisma.productos.findMany({ where: { tiendaId, activo: true, salon: { isNot: null } }, select: { id: true } });
+  const filas = await Promise.all(salones.map(async ({ id }) => {
+    try {
+      const { fechas } = await calendarioDe(tiendaId, id, fecha, fecha, ahora);
+      const dia = fechas.find(f => f.fecha === fecha) ?? fechas[0];
+      return { productoId: id, estado: dia?.estado ?? "cerrada", turnosLibres: (dia?.turnos ?? []).filter(t => t.libre).map(t => t.nombre) };
+    } catch {
+      return null;
+    }
+  }));
+  return filas.filter(Boolean);
+}
+
 /** Admin: el calendario más las reservas, apartados, bloqueos y cierres del rango. */
 export async function calendarioAdmin(tiendaId, { productoId, desde, hasta }, ahora = new Date()) {
   const { fechas, cierres } = await calendarioDe(tiendaId, productoId, desde, hasta, ahora);

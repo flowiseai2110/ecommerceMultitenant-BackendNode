@@ -19,7 +19,7 @@ export { Prisma };
 //   - producto_variantes / producto_imagenes / pedido_detalles / historial
 //     (hijos sin tienda_id; se scopan por relación en la capa de servicio)
 const TENANT_SCOPED_MODELS = new Set([
-  "categorias", "productos", "producto_atributos",
+  "categorias", "marcas", "productos", "producto_atributos",
   "clientes", "pedidos", "metodos_pago", "metodos_envio", "cupones",
   "pagos", "tienda_pasarela_config", "resenas",
   "agente_conversaciones", "agente_mensajes", "libro_reclamaciones",

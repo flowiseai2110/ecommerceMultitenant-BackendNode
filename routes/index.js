@@ -5,6 +5,8 @@ import imagesRoutes from "./images.routes.js";
 import adminRoutes from "./admin/index.js";
 import storeRoutes from "./store/index.js";
 import webhooksRoutes from "../modules/pagos/pasarela.webhook.routes.js";
+import simuladorPagosRoutes from "../modules/pagos/simulador/simulador.routes.js";
+import config from "../config/index.js";
 import streamWebhooksRoutes from "../modules/transmisiones/transmisiones.webhook.routes.js";
 import appTransmitirRoutes from "../modules/transmisiones/transmisiones.app.routes.js";
 import transmisionAccionRoutes from "../modules/transmisiones/transmisiones.accion.routes.js";
@@ -57,6 +59,12 @@ router.use("/images", imagesRoutes);
 // Webhooks del proveedor de video (firma sobre req.rawBody). Antes que /:proveedor de pagos.
 router.use("/webhooks/stream", streamWebhooksRoutes);
 router.use("/webhooks", webhooksRoutes);
+
+// Simulador de pasarela para probar el pago automático (docs/specs/pago-automatico R6).
+// Solo con PAGOS_SIMULADOR=true y nunca en producción (config.pagos.simulador.activo).
+if (config.pagos.simulador.activo) {
+  router.use("/simulador-pagos", simuladorPagosRoutes);
+}
 
 // App Transmitir (docs/specs/transmision-eventos, R11): QR + token de sesión propio.
 router.use("/app-transmitir", appTransmitirRoutes);

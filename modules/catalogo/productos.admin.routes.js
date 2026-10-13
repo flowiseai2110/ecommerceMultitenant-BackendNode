@@ -14,6 +14,7 @@ import {
 import { makeUploadImagenForProducto } from "../../controllers/producto-imagenes.controller.js";
 import { invalidateProductoDetailCache } from "./productos.cache.js";
 import { prepararProductoDelRubro } from "../negocio/negocio.middleware.js";
+import { errorDeCampo } from "../negocio/contrato.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import { sincronizarVariantesSchema } from "./producto-opciones.js";
 import { sincronizarVariantes, opcionesUsadasPorTienda } from "./producto-opciones.service.js";
@@ -68,12 +69,31 @@ function fusionarVideo(modo) {
   };
 }
 
+// La marca elegida debe ser de la misma tienda: sin esto un editor podría colgar
+// sus productos de la marca de otra tienda con solo conocer su UUID. Va después de
+// prepararProductoDelRubro, que ya descartó la marca en rubros sin la capacidad.
+async function validarMarca(req, res, next) {
+  try {
+    const { marcaId } = req.body;
+    if (marcaId) {
+      const marca = await prisma.marcas.findUnique({ where: { id: marcaId }, select: { tiendaId: true } });
+      if (marca?.tiendaId !== req.tiendaId) throw errorDeCampo("marcaId", "La marca no existe en esta tienda");
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
+const MARCA_SELECT = { select: { id: true, nombre: true, slug: true, logoUrl: true } };
+
 // Crear instancias de las capas
 const productosRepository = new GenericRepository(prisma.productos, "Producto");
 const productosService = new GenericService(productosRepository, {
   enableAudit: true,
   // findById trae variantes e imágenes completas
   include: {
+    marca: MARCA_SELECT,
     variantes: {
       where: { activo: true },
       select: { id: true, nombre: true, sku: true, precio: true, stock: true, atributos: true, activo: true }
@@ -86,11 +106,12 @@ const productosService = new GenericService(productosRepository, {
   searchFields: ["nombre", "descripcion", "descripcionCorta", "slug", "sku"],
   // Read-policy admin: scope obligatorio + whitelist de filtros/orden.
   requireTiendaId: true,
-  allowedFilters: ["activo", "categoriaId", "destacado", "esServicio"],
+  allowedFilters: ["activo", "categoriaId", "marcaId", "destacado", "esServicio"],
   allowedOrderBy: ["precioBase", "nombre", "fechaRegistro", "stock"],
   includePresets: {
     // ?include=full para detalle completo desde listado
     full: {
+      marca: MARCA_SELECT,
       variantes: {
         where: { activo: true },
         select: { id: true, nombre: true, sku: true, precio: true, stock: true, atributos: true, activo: true }
@@ -106,6 +127,8 @@ const productosService = new GenericService(productosRepository, {
     id: true,
     tiendaId: true,
     categoriaId: true,
+    marcaId: true,
+    marca: MARCA_SELECT,
     nombre: true,
     slug: true,
     descripcionCorta: true,
@@ -198,6 +221,7 @@ router.post(
   requireTiendaAccess("editor"),
   validate({ body: createProductoSchema }),
   prepararProductoDelRubro("crear"),
+  validarMarca,
   fusionarVideo("crear"),
   productosController.create
 );
@@ -210,6 +234,7 @@ router.put(
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateProductoSchema }),
   prepararProductoDelRubro("editar"),
+  validarMarca,
   fusionarVideo("editar"),
   invalidateProductoCacheOnSuccess,
   productosController.update

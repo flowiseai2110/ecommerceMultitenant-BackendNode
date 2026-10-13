@@ -160,6 +160,19 @@ export const config = {
     // Clave maestra (32 bytes en base64/hex) para cifrar credenciales de pasarela
     // por tienda en reposo (AES-256-GCM). Ver utils/crypto.js.
     encryptionKey: process.env.PAGOS_ENCRYPTION_KEY,
+    // Proveedor que usa la plataforma para el pago automático (docs/specs/pago-automatico R2).
+    // La tienda no lo elige: solo dice "manual" o "automatico".
+    proveedor: process.env.PAGOS_PROVEEDOR || "culqi",
+    // Simulador de pasarela para pruebas (R6). Nunca en producción.
+    simulador: {
+      activo: process.env.PAGOS_SIMULADOR === "true" && process.env.NODE_ENV !== "production",
+      // Dónde llama el proveedor "simulado" (el mismo servidor, por HTTP, como a una pasarela real).
+      url: process.env.PAGOS_SIMULADOR_URL || `http://localhost:${process.env.PORT || 3000}/api/v1/simulador-pagos`,
+      // A dónde avisa el simulador cuando un cargo pendiente se resuelve.
+      webhookUrl: process.env.PAGOS_SIMULADOR_WEBHOOK_URL || `http://localhost:${process.env.PORT || 3000}/api/v1/webhooks/simulado`,
+      // Cuánto tarda un cargo pendiente en pagarse (ms).
+      demoraPendienteMs: parseInt(process.env.PAGOS_SIMULADOR_DEMORA_MS) || 5000
+    },
     // Culqi — pasarela principal (tarjetas + Yape). Cada tienda usa sus propias
     // llaves; acá solo va lo global del proveedor.
     culqi: {

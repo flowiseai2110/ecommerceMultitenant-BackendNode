@@ -7,6 +7,7 @@ export const canchas = {
   transmisiones: false,
   // Horario del complejo y tarifa día/noche (R2): la vitrina arma la grilla de horas.
   alquilerPorHoras: true,
+  marcas: false,
   diseno: {
     plantillaPorDefecto: "canchas-complejo",
     secciones: Object.freeze([

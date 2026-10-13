@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { facetasOpciones, whereOpciones } from "./filtro-opciones.js";
 import GenericController from "../../controllers/generic.controller.js";
 import GenericService from "../../services/generic.service.js";
 import GenericRepository from "../../repositories/generic.repository.js";
@@ -25,6 +26,8 @@ const productosListSelect = {
   id: true,
   tiendaId: true,
   categoriaId: true,
+  marcaId: true,
+  marca: { select: { id: true, nombre: true, slug: true, logoUrl: true } },
   nombre: true,
   slug: true,
   descripcionCorta: true,
@@ -61,7 +64,7 @@ const productosService = new GenericService(productosRepository, {
   listSelect: productosListSelect,
   // Read-policy store: sin tiendaId (subdominio o ?tiendaId=) no se lista nada.
   requireTiendaId: true,
-  allowedFilters: ["activo", "categoriaId", "destacado", "esServicio"],
+  allowedFilters: ["activo", "categoriaId", "marcaId", "destacado", "esServicio"],
   // El producto de un evento privado (cumpleaños, boda) no se lista ni se busca
   // (docs/specs/transmision-eventos, R1.4). Tampoco uno sin precio todavía (productos.vitrina.js).
   baseWhere: {
@@ -70,8 +73,10 @@ const productosService = new GenericService(productosRepository, {
       CON_PRECIO_WHERE
     ]
   },
-  // El storefront permite marcar varias categorias a la vez (?categoriaId=a,b)
-  multiValueFilters: ["categoriaId"],
+  // El storefront permite marcar varias categorias o marcas a la vez (?categoriaId=a,b&marcaId=c,d)
+  multiValueFilters: ["categoriaId", "marcaId"],
+  // ?opcion=Talla:M,Color:Negro (plantillas-por-rubro E9): variantes con stock que cumplan.
+  customFilters: { opcion: whereOpciones },
   allowedOrderBy: ["precioBase", "nombre", "fechaRegistro", "stock", "ratingScore"],
   // "Mejor valorados" (?orderBy=ratingScore:desc): ratingScore es un promedio
   // bayesiano (ver resenas.service). A igual puntaje gana el de más reseñas, e
@@ -99,6 +104,20 @@ const router = Router();
 // o por ?tiendaId=&activo=true&categoriaId= como fallback en dev/dominio genérico)
 router.get("/", validate({ query: paginationSchema }), scopeQueryToTienda, productosController.findAll);
 
+// GET /opciones?tiendaId=&categoriaId=a,b - Facetas de talla, color… para el panel de filtros (plantillas-por-rubro E9).
+// Debe ir ANTES de /:id.
+router.get("/opciones", validate({ query: paginationSchema }), scopeQueryToTienda, async (req, res, next) => {
+  try {
+    const q = req.validatedQuery || req.query;
+    const categorias = String(q.categoriaId ?? "").split(",").map(s => s.trim()).filter(Boolean);
+    const data = await facetasOpciones(q.tiendaId, categorias);
+    res.set("Cache-Control", "public, max-age=60");
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PRODUCTOS_OPCIONES", data });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /home - Destacados + recientes en una sola llamada (público, para el home del storefront).
 // Sin count() — el home no pagina, solo necesita un top-N de cada lista.
 // Debe ir ANTES de /:id para que "home" no se intente validar como UUID.
@@ -125,8 +144,10 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
                p.precio_oferta AS "precioOferta", p.stock, p.activo, p.destacado,
                p.es_servicio AS "esServicio", p.etiquetas,
                p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
+               p.marca_id AS "marcaId", m.nombre AS "marcaNombre", m.slug AS "marcaSlug", m.logo_url AS "marcaLogoUrl",
                img.id AS "imagenId", img.url AS "imagenUrl", img.texto_alternativo AS "imagenAlt"
         FROM productos p
+        LEFT JOIN marcas m ON m.id = p.marca_id
         LEFT JOIN LATERAL (
           SELECT id, url, texto_alternativo
           FROM producto_imagenes
@@ -146,8 +167,10 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
                p.precio_oferta AS "precioOferta", p.stock, p.activo, p.destacado,
                p.es_servicio AS "esServicio", p.etiquetas,
                p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
+               p.marca_id AS "marcaId", m.nombre AS "marcaNombre", m.slug AS "marcaSlug", m.logo_url AS "marcaLogoUrl",
                img.id AS "imagenId", img.url AS "imagenUrl", img.texto_alternativo AS "imagenAlt"
         FROM productos p
+        LEFT JOIN marcas m ON m.id = p.marca_id
         LEFT JOIN LATERAL (
           SELECT id, url, texto_alternativo
           FROM producto_imagenes
@@ -169,6 +192,9 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
       // se rearma como array antes de pasar por el serializer de tarjeta.
       const producto = serializeProductoCardStore({
         ...row,
+        marca: row.marcaId
+          ? { id: row.marcaId, nombre: row.marcaNombre, slug: row.marcaSlug, logoUrl: row.marcaLogoUrl }
+          : null,
         imagenes: row.imagenId
           ? [{ id: row.imagenId, url: row.imagenUrl, textoAlternativo: row.imagenAlt }]
           : []
@@ -196,7 +222,10 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
     }
 
     const rows = await prisma.$queryRaw`
-      SELECT p.id, p.tienda_id AS "tiendaId", p.categoria_id AS "categoriaId", p.nombre, p.slug,
+      SELECT p.id, p.tienda_id AS "tiendaId", p.categoria_id AS "categoriaId", p.marca_id AS "marcaId",
+             CASE WHEN m.id IS NULL THEN NULL
+                  ELSE json_build_object('id', m.id, 'nombre', m.nombre, 'slug', m.slug, 'logoUrl', m.logo_url) END AS marca,
+             p.nombre, p.slug,
              p.descripcion, p.descripcion_corta AS "descripcionCorta", p.sku,
              p.precio_base AS "precioBase", p.precio_oferta AS "precioOferta",
              p.stock, p.activo, p.destacado, p.es_servicio AS "esServicio", p.etiquetas,
@@ -206,6 +235,7 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
              COALESCE(v.variantes, '[]'::json) AS variantes,
              COALESCE(i.imagenes, '[]'::json) AS imagenes
       FROM productos p
+      LEFT JOIN marcas m ON m.id = p.marca_id
       LEFT JOIN LATERAL (
         SELECT json_agg(json_build_object(
           'id', pv.id, 'nombre', pv.nombre, 'sku', pv.sku, 'precio', pv.precio,

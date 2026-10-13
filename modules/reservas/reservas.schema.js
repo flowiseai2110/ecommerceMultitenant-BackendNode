@@ -246,6 +246,8 @@ export const tourSchema = z.object({
   queLlevar: listaTextos(30, 200),
   requisitos: textoOpcional(1000),
   puntoEncuentro: textoOpcional(500),
+  mapaUrl: z.string().trim().url("El link del mapa no es válido").max(500).nullish().or(z.literal("")).transform(v => v || null),
+  dificultad: z.enum(["facil", "moderado", "exigente"]).nullish().or(z.literal("")).transform(v => v || null),
   recojo: textoOpcional(500),
   edadMinima: z.coerce.number().int().min(0).max(99).nullish().transform(v => v ?? null),
   maxPasajeros: z.coerce.number().int().min(1).max(200).nullish().transform(v => v ?? null),
@@ -507,11 +509,20 @@ const paqueteSchema = z.object({
   }
 });
 
+/** Admin: validar una entrada en la puerta (plantillas-por-rubro E6). */
+export const validarEntradaSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  codigo: z.string().trim().min(6, "Código inválido").max(40),
+  funcionId: uuid("funcionId").optional()
+});
+
 export const salonSchema = z.object({
   tiendaId: uuid("tiendaId"),
   metros: z.coerce.number().int().min(1).max(100000).nullish().transform(v => v ?? null),
   // El de la licencia de funcionamiento / ITSE (R2.2).
   aforoMaximo: z.coerce.number({ invalid_type_error: "Indica el aforo" }).int().min(1, "Indica el aforo").max(5000),
+  // Sentados (banquete): no puede pasar del aforo de la licencia.
+  aforoSentados: z.coerce.number().int().min(1).max(5000).nullish().transform(v => v ?? null),
   preparacionMin: z.coerce.number().int().min(0).max(480).optional().default(60),
   porHoras: z.boolean().optional().default(false),
   precioHora: monto.nullish().transform(v => v ?? null),

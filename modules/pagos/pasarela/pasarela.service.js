@@ -1,94 +1,99 @@
 import { prisma, Prisma } from "../../../config/prisma.js";
-import { NotFoundError, ValidationError, UnprocessableError, ConflictError } from "../../../utils/errors.js";
+import { ValidationError, UnprocessableError, ConflictError } from "../../../utils/errors.js";
 import { logger } from "../../../config/logger.js";
-import { getProvider } from "./provider-factory.js";
+import { getProvider, proveedorPlataforma } from "./provider-factory.js";
 import { EstadoPago } from "./payment-provider.js";
+import { destinoDePago, destinoPedido } from "./destinos.js";
 import PasarelaConfigService from "./pasarela-config.service.js";
 
 const configService = new PasarelaConfigService();
 
+/** Un cargo pendiente más reciente que esto bloquea un segundo intento (doble clic, dos pestañas). */
+const VENTANA_PAGO_EN_CURSO_MS = 2 * 60 * 1000;
+
 /**
  * Servicio de pagos con pasarela (PSP). Orquesta: credenciales por tienda +
- * proveedor + persistencia del pago + actualización del pedido.
+ * proveedor + persistencia del pago + lo que pasa al pagar, que decide el
+ * DESTINO del pago (pedido, reserva o cuota; ver destinos.js).
  *
  * Reglas de seguridad clave (ver pasarela-de-pagos/):
- * - El monto SIEMPRE sale del pedido en el servidor, nunca del cliente.
+ * - El monto SIEMPRE sale del destino en el servidor, nunca del cliente.
  * - El estado de verdad se confirma contra el proveedor (createCharge y, en el
- *   webhook, getChargeStatus). El frontend no puede marcar un pedido como pagado.
- * - Los webhooks se procesan con idempotencia (unique en pago_eventos).
+ *   webhook, getChargeStatus). El frontend no puede marcar nada como pagado.
+ * - Los webhooks se procesan con idempotencia (unique en pago_eventos) y un
+ *   pago solo pasa a "pagado" una vez: ahí corre `destino.alPagar`.
  */
 class PasarelaService {
   /**
-   * Crea un cargo para un pedido usando un token generado en el frontend.
+   * Cobra un pedido de comercio (R4). Se mantiene por compatibilidad con
+   * POST /store/pagos/cargo.
+   */
+  async crearCargo({ tiendaId, pedidoId, tokenId, metodo, proveedor, email, antifraud }) {
+    const destino = await destinoPedido(tiendaId, pedidoId);
+    return this.cobrar({ destino, tokenId, metodo, proveedor: proveedor ?? proveedorPlataforma(), email, antifraud });
+  }
+
+  /**
+   * Cobra un destino con un token generado en el frontend.
    * @param {object} params
-   * @param {string} params.tiendaId
-   * @param {string} params.pedidoId
-   * @param {string} params.tokenId - Token de Culqi (tkn_) generado por Culqi.js.
-   * @param {string} params.metodo - "tarjeta" | "yape".
-   * @param {string} [params.proveedor="culqi"]
-   * @param {string} [params.email] - Email del comprador (fallback al del pedido).
+   * @param {import("./destinos.js").DestinoPago} params.destino
+   * @param {string} params.tokenId
+   * @param {string} params.metodo - "tarjeta" | "yape"
+   * @param {string} params.proveedor
+   * @param {string} [params.email] - fallback al del destino
    * @param {object} [params.antifraud]
    * @returns {Promise<object>} pago (forma pública)
    */
-  async crearCargo({ tiendaId, pedidoId, tokenId, metodo, proveedor = "culqi", email, antifraud }) {
-    // 1. Cargar el pedido y validar pertenencia a la tienda + estado de pago.
-    const pedido = await prisma.pedidos.findUnique({
-      where: { id: pedidoId },
-      select: {
-        id: true, tiendaId: true, numeroPedido: true, total: true,
-        estadoPago: true, clienteEmail: true, clienteNombre: true
-      }
+  async cobrar({ destino, tokenId, metodo, proveedor, email, antifraud }) {
+    const { tiendaId, pedidoId, cuotaId, parteId = null } = destino;
+    const emailComprador = email || destino.email;
+    if (!emailComprador) throw new ValidationError("Se requiere un email para procesar el pago");
+    if (!(destino.monto > 0)) {
+      const message = "No hay nada que pagar";
+      throw new ConflictError(message, { message, motivo: "NADA_QUE_PAGAR" });
+    }
+
+    // Un cargo en curso para lo mismo: no cobrar dos veces.
+    const enCurso = await prisma.pagos.findFirst({
+      where: {
+        pedidoId, cuotaId: cuotaId ?? null, parteId, proveedor: { not: "manual" }, estado: EstadoPago.PENDIENTE,
+        fechaRegistro: { gt: new Date(Date.now() - VENTANA_PAGO_EN_CURSO_MS) }
+      },
+      select: { id: true }
     });
-
-    if (!pedido || pedido.tiendaId !== tiendaId) {
-      throw new NotFoundError("Pedido");
-    }
-    if (pedido.estadoPago === EstadoPago.PAGADO) {
-      throw new ConflictError("El pedido ya fue pagado");
+    if (enCurso) {
+      const message = "Ya hay un pago en proceso. Espera unos segundos y revisa el estado.";
+      throw new ConflictError(message, { message, motivo: "PAGO_EN_CURSO" });
     }
 
-    const emailComprador = email || pedido.clienteEmail;
-    if (!emailComprador) {
-      throw new ValidationError("Se requiere un email para procesar el pago");
-    }
-
-    // 2. Credenciales de la tienda (descifradas) + proveedor.
-    const credentials = await configService.getCredentials(tiendaId, proveedor);
     const provider = getProvider(proveedor);
+    const credentials = await this.#credenciales(tiendaId, proveedor);
 
-    // 3. Registrar el intento de pago en estado pendiente. El monto viene del
-    //    pedido (servidor), no del cliente.
-    const monto = Number(pedido.total);
+    // Intento de pago pendiente. El monto viene del destino (servidor).
     const pago = await prisma.pagos.create({
       data: {
-        tiendaId,
-        pedidoId,
-        proveedor,
-        metodo,
-        monto: pedido.total,
-        moneda: "PEN",
-        estado: EstadoPago.PENDIENTE,
-        fechaRegistro: new Date(),
-        usuarioRegistro: "storefront"
+        tiendaId, pedidoId, cuotaId: cuotaId ?? null, parteId, proveedor, metodo,
+        monto: destino.monto, moneda: "PEN", estado: EstadoPago.PENDIENTE,
+        ...(destino.concepto ? { metadata: { concepto: destino.concepto } } : {}),
+        fechaRegistro: new Date(), usuarioRegistro: "storefront"
       }
     });
 
-    // 4. Ejecutar el cargo contra el proveedor.
     let resultado;
     try {
       resultado = await provider.createCharge({
         credentials,
         tokenId,
-        amount: monto,
+        amount: destino.monto,
         currency: "PEN",
         email: emailComprador,
-        description: `Pedido ${pedido.numeroPedido}`,
+        description: destino.descripcion,
         antifraud,
-        metadata: { tiendaId, pedidoId, pagoId: pago.id }
+        metadata: { tiendaId, pedidoId, cuotaId: cuotaId ?? null, parteId, pagoId: pago.id }
       });
     } catch (error) {
-      // El cargo falló: dejar el pago en "fallido" con el motivo y traducir a un
-      // error 422 legible para el cliente (sin filtrar detalles internos).
+      // El cargo falló: el pago queda "fallido" con el motivo y el cliente
+      // recibe un 422 legible (sin detalles internos).
       await prisma.pagos.update({
         where: { id: pago.id },
         data: {
@@ -98,17 +103,18 @@ class PasarelaService {
           fechaActualizacion: new Date()
         }
       });
-      logger.warn(`Cargo fallido pedido ${pedido.numeroPedido} (${proveedor}): ${error.message}`);
-      throw new UnprocessableError(error.userMessage || error.message || "No se pudo procesar el pago");
+      logger.warn(`Cargo fallido ${destino.descripcion} (${proveedor}): ${error.message}`);
+      const message = error.userMessage || "No se pudo procesar el pago";
+      throw new UnprocessableError(message, { message, motivo: "PAGO_RECHAZADO", codigo: error.code ?? null });
     }
 
-    // 5. Persistir el resultado del cargo y sincronizar el pedido si quedó pagado.
-    return this.#aplicarResultado(pago.id, pedido, metodo, resultado);
+    await this.#sincronizar(pago, destino, metodo, resultado);
+    return this.#toPublic(await prisma.pagos.findUnique({ where: { id: pago.id } }));
   }
 
   /**
    * Procesa un webhook del proveedor. Idempotente: un evento reenviado no se
-   * reprocesa. Reconfirma el estado contra el proveedor antes de tocar el pedido.
+   * reprocesa. Reconfirma el estado contra el proveedor antes de tocar nada.
    * @param {object} params
    * @param {string} params.proveedor
    * @param {object} params.body - Cuerpo del webhook ya parseado.
@@ -144,16 +150,12 @@ class PasarelaService {
     }
 
     // 3. Reconfirmar el estado real contra el proveedor (fuente de verdad).
-    const credentials = await configService.getCredentials(pago.tiendaId, proveedor);
+    const credentials = await this.#credenciales(pago.tiendaId, proveedor);
     const estadoReal = await provider.getChargeStatus({ credentials, chargeId });
 
-    // 4. Actualizar pago + pedido y marcar el evento como procesado.
-    const pedido = await prisma.pedidos.findUnique({
-      where: { id: pago.pedidoId },
-      select: { id: true, tiendaId: true, numeroPedido: true, estadoPago: true }
-    });
-
-    await this.#sincronizar(pago, pedido, pago.metodo, {
+    // 4. Aplicar al destino del pago (pedido, reserva o cuota) y marcar el evento.
+    const destino = await destinoDePago(pago);
+    await this.#sincronizar(pago, destino, pago.metodo, {
       proveedorCargoId: chargeId,
       estado: estadoReal.estado,
       outcomeCode: estadoReal.outcomeCode,
@@ -163,45 +165,59 @@ class PasarelaService {
     return this.#marcarEvento(proveedor, proveedorEventoId, pago.id, "ok");
   }
 
-  /**
-   * Aplica el resultado de un createCharge: actualiza el pago con el id del cargo
-   * y su estado, y sincroniza el pedido. Devuelve el pago en forma pública.
-   */
-  async #aplicarResultado(pagoId, pedido, metodo, resultado) {
-    const pago = await prisma.pagos.findUnique({ where: { id: pagoId } });
-    await this.#sincronizar(pago, pedido, metodo, resultado);
-    const actualizado = await prisma.pagos.findUnique({ where: { id: pagoId } });
-    return this.#toPublic(actualizado);
+  /** Credenciales de la tienda solo si el proveedor las pide (el simulador no). */
+  async #credenciales(tiendaId, proveedor) {
+    return getProvider(proveedor).requiereCredenciales
+      ? configService.getCredentials(tiendaId, proveedor)
+      : { proveedor };
   }
 
   /**
-   * Actualiza el pago y, si quedó pagado, marca el pedido como pagado. Nunca
-   * "despaga" un pedido ya pagado (solo avanza a pagado).
+   * Guarda el resultado en el pago. Si con esto el pago PASA a pagado (y no
+   * lo estaba), corre `destino.alPagar` una sola vez: la respuesta del cargo y
+   * el webhook pueden llegar a la vez y solo uno gana el UPDATE condicionado.
    */
-  async #sincronizar(pago, pedido, metodo, resultado) {
-    await prisma.pagos.update({
-      where: { id: pago.id },
-      data: {
-        proveedorCargoId: resultado.proveedorCargoId ?? pago.proveedorCargoId,
-        estado: resultado.estado,
-        outcomeCode: resultado.outcomeCode ?? null,
-        outcomeMensaje: resultado.outcomeMensaje ?? null,
-        fechaActualizacion: new Date()
-      }
-    });
+  async #sincronizar(pago, destino, metodo, resultado) {
+    const cargoId = resultado.proveedorCargoId ?? pago.proveedorCargoId ?? null;
+    const datos = {
+      proveedorCargoId: cargoId,
+      outcomeCode: resultado.outcomeCode ?? null,
+      outcomeMensaje: resultado.outcomeMensaje ?? null,
+      fechaActualizacion: new Date()
+    };
 
-    if (resultado.estado === EstadoPago.PAGADO && pedido && pedido.estadoPago !== EstadoPago.PAGADO) {
-      await prisma.pedidos.update({
-        where: { id: pedido.id },
-        data: {
-          estadoPago: EstadoPago.PAGADO,
-          metodoPago: metodo,
-          referenciaPago: resultado.proveedorCargoId ?? null,
-          fechaActualizacion: new Date()
-        }
+    if (resultado.estado !== EstadoPago.PAGADO) {
+      // Nunca retrocede un pago ya pagado.
+      await prisma.pagos.updateMany({
+        where: { id: pago.id, estado: { not: EstadoPago.PAGADO } },
+        data: { ...datos, estado: resultado.estado }
       });
-      logger.info(`Pedido ${pedido.numeroPedido} marcado como pagado (${resultado.proveedorCargoId})`);
+      return;
     }
+
+    let gano;
+    try {
+      const { count } = await prisma.pagos.updateMany({
+        where: { id: pago.id, estado: { not: EstadoPago.PAGADO } },
+        data: { ...datos, estado: EstadoPago.PAGADO }
+      });
+      gano = count === 1;
+    } catch (error) {
+      // La cuota o la parte ya tiene un pago "pagado" (uq_pagos_cuota_pagado / uq_pagos_parte_pagado): se cobró dos veces.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        await prisma.pagos.update({
+          where: { id: pago.id },
+          data: { ...datos, estado: EstadoPago.PAGADO, cuotaId: null, parteId: null, outcomeMensaje: "Cobro duplicado: devolver" }
+        });
+        logger.error(`Cobro duplicado de la cuota ${pago.cuotaId ?? "-"} / parte ${pago.parteId ?? "-"} (pago ${pago.id}, cargo ${cargoId}): requiere devolución`);
+        return;
+      }
+      throw error;
+    }
+    if (!gano) return;
+
+    const pagado = { ...pago, ...datos, estado: EstadoPago.PAGADO };
+    await destino.alPagar({ pago: pagado, metodo, cargoId });
   }
 
   /** Marca un evento como procesado y lo enlaza al pago. */
@@ -218,6 +234,7 @@ class PasarelaService {
     return {
       id: pago.id,
       pedidoId: pago.pedidoId,
+      cuotaId: pago.cuotaId ?? null,
       proveedor: pago.proveedor,
       proveedorCargoId: pago.proveedorCargoId,
       metodo: pago.metodo,

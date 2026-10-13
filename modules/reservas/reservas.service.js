@@ -19,6 +19,7 @@ import {
 } from "./reservas.emails.js";
 import { instanteLima, fechaLima, sumarDias } from "./tiempo.js";
 import { estrategiaDe, verticalDePedido } from "../negocio/registro.js";
+import { exigirManual } from "../pagos/modo-pago.service.js";
 import { errorNoDisponible, filasCuotas, prepararAceptacion } from "./locales/locales.service.js";
 import { actualizarOcupacion, FechaNoDisponibleError, liberar, liberarHuerfanas, ocupar } from "./locales/ocupaciones.js";
 import { conPreparacion } from "./locales/franja.js";
@@ -50,7 +51,7 @@ const INCLUDE_RESERVA = {
         select: {
           id: true, nombre: true, slug: true, traducciones: true,
           imagenes: { select: { url: true, esPrincipal: true }, orderBy: { orden: "asc" }, take: 3 },
-          tour: { select: { duracion: true, puntoEncuentro: true, recojo: true } },
+          tour: { select: { duracion: true, puntoEncuentro: true, mapaUrl: true, recojo: true } },
           evento: { select: { lugar: true, direccion: true, mapaUrl: true, organizador: true } }
         }
       },
@@ -59,6 +60,10 @@ const INCLUDE_RESERVA = {
     }
   },
   itemsEvento: true,
+  // Entradas con QR (plantillas-por-rubro E6)
+  entradasEvento: { orderBy: { numero: "asc" } },
+  // Pago dividido de canchas (plantillas-por-rubro E7)
+  partesPago: { orderBy: { numero: "asc" } },
   // Locales: plan de pagos (alquiler-locales R7).
   cuotas: { orderBy: { numero: "asc" } },
   cambios: { orderBy: { fechaRegistro: "asc" } },
@@ -450,6 +455,8 @@ export async function cancelarPorCliente(tiendaId, pedidoId, ahora = new Date())
  * mientras está en revisión (por ejemplo, si se equivocó de imagen).
  */
 export async function subirCapturaCliente(tiendaId, pedidoId, { file, metodo, numeroOperacion }, ahora = new Date()) {
+  // Con pago automático no hay capturas (docs/specs/pago-automatico R3.7).
+  await exigirManual(tiendaId);
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
   exigirNoLocal(pedido);
   const r = pedido.reserva;

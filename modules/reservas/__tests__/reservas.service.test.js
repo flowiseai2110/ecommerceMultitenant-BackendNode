@@ -12,7 +12,10 @@ const PEDIDO = "77777777-7777-4777-8777-777777777777";
 const prisma = {
   tiendas: { findUnique: jest.fn() },
   pedidos: { findFirst: jest.fn(), findMany: jest.fn(), updateMany: jest.fn(), count: jest.fn(), create: jest.fn() },
-  reservas: { update: jest.fn() },
+  reservas: { update: jest.fn(), findUnique: jest.fn(async () => ({ funcionId: "fun-1" })) },
+  // Entradas con QR (plantillas-por-rubro E6): se emiten al confirmar y se anulan al cancelar.
+  evento_entradas: { count: jest.fn(async () => 0), createMany: jest.fn(async () => ({})), updateMany: jest.fn(async () => ({ count: 0 })) },
+  evento_compra_items: { findMany: jest.fn(async () => []) },
   pagos: { update: jest.fn(), create: jest.fn() },
   pedido_historial_estados: { create: jest.fn() },
   metodos_pago: { findMany: jest.fn(async () => []) },

@@ -36,6 +36,8 @@ function serializarFicha(t, lang = "es") {
     queLlevar: t.queLlevar,
     requisitos: t.requisitos,
     puntoEncuentro: t.puntoEncuentro,
+    mapaUrl: t.mapaUrl ?? null,
+    dificultad: t.dificultad ?? null,
     recojo: t.recojo,
     edadMinima: t.edadMinima,
     maxPasajeros: t.maxPasajeros
@@ -200,6 +202,8 @@ export async function guardarFichaTour(tiendaId, productoId, data, user) {
     queLlevar: data.queLlevar,
     requisitos: data.requisitos,
     puntoEncuentro: data.puntoEncuentro,
+    mapaUrl: data.mapaUrl,
+    dificultad: data.dificultad,
     recojo: data.recojo,
     edadMinima: data.edadMinima,
     maxPasajeros: data.maxPasajeros

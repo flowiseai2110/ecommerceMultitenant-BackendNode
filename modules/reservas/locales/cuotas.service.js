@@ -13,6 +13,7 @@ import { actualizarOcupacion } from "./ocupaciones.js";
 import { montoPagadoDe, planBloqueado, validarPlan } from "./plan-pagos.js";
 import { filasCuotas, generarContrato } from "./locales.service.js";
 import { etiquetaConcepto } from "./contrato.js";
+import { exigirManual } from "../../pagos/modo-pago.service.js";
 
 /**
  * Plan de pagos de una reserva de local (docs/specs/alquiler-locales R7, R8).
@@ -43,6 +44,27 @@ function cuotaDe(pedido, cuotaId) {
 
 const pagoPendienteDe = (pedido, cuotaId) => [...pedido.pagos].reverse()
   .find(p => p.cuotaId === cuotaId && p.proveedor === "manual" && p.estado === "pendiente");
+
+/**
+ * Lo que exige pagar una cuota, con captura o en línea (R7.3): reserva aceptada
+ * (o ya confirmada para las siguientes), contrato aceptado, cuota pendiente y,
+ * antes de confirmar, primero la separación.
+ * @param {"subir_captura"|"pago_pasarela"} accion
+ */
+function exigirCuotaPagable(pedido, cuotaId, accion, ahora) {
+  const estado = efectivoDe(pedido, ahora);
+  if (estado !== "confirmada") transicionar(estado, accion, "local");
+  if (!pedido.reserva.contrato?.aceptadoEn) throw conflicto("CONTRATO_NO_ACEPTADO", "Acepta el contrato antes de pagar");
+
+  const cuota = cuotaDe(pedido, cuotaId);
+  if (cuota.estado === "pagada") throw conflicto("CUOTA_YA_PAGADA", "Esta cuota ya está pagada");
+  if (cuota.estado === "anulada") throw conflicto("CUOTA_ANULADA", "Esta cuota ya no forma parte del plan");
+  const primera = pedido.cuotas.filter(c => c.estado !== "anulada").sort((a, b) => a.numero - b.numero)[0];
+  if (estado !== "confirmada" && cuota.id !== primera.id) {
+    throw conflicto("PRIMERO_SEPARACION", `Primero paga la ${etiquetaConcepto(primera.concepto).toLowerCase()} para separar la fecha`);
+  }
+  return { estado, cuota };
+}
 
 // ============================================
 // Store (con el token de seguimiento)
@@ -87,18 +109,9 @@ export async function aceptarContrato(tiendaId, pedidoId, { version, hash }, { i
  * subirla mientras está en revisión reemplaza la anterior.
  */
 export async function subirCapturaCuota(tiendaId, pedidoId, cuotaId, { file, metodo, numeroOperacion }, ahora = new Date()) {
+  await exigirManual(tiendaId);
   const pedido = await pedidoLocal(tiendaId, pedidoId);
-  const estado = efectivoDe(pedido, ahora);
-  if (estado !== "confirmada") transicionar(estado, "subir_captura", "local");
-  if (!pedido.reserva.contrato?.aceptadoEn) throw conflicto("CONTRATO_NO_ACEPTADO", "Acepta el contrato antes de pagar");
-
-  const cuota = cuotaDe(pedido, cuotaId);
-  if (cuota.estado === "pagada") throw conflicto("CUOTA_YA_PAGADA", "Esta cuota ya está pagada");
-  if (cuota.estado === "anulada") throw conflicto("CUOTA_ANULADA", "Esta cuota ya no forma parte del plan");
-  const primera = pedido.cuotas.filter(c => c.estado !== "anulada").sort((a, b) => a.numero - b.numero)[0];
-  if (estado !== "confirmada" && cuota.id !== primera.id) {
-    throw conflicto("PRIMERO_SEPARACION", `Primero paga la ${etiquetaConcepto(primera.concepto).toLowerCase()} para separar la fecha`);
-  }
+  const { estado, cuota } = exigirCuotaPagable(pedido, cuotaId, "subir_captura", ahora);
   if (!file && !numeroOperacion) {
     const message = "Adjunta la captura o escribe el número de operación";
     throw new ValidationError(message, { message, body: { captura: [message] } });
@@ -131,6 +144,62 @@ export async function subirCapturaCuota(tiendaId, pedidoId, cuotaId, { file, met
   const tienda = await prisma.tiendas.findUnique({ where: { id: tiendaId }, select: { email: true } });
   enviar(tienda?.email, pagoSubidoEmail(serializeReservaAdmin(await pedidoDeReserva(tiendaId, pedidoId))), pedido.clienteEmail);
   return obtenerSeguimiento(tiendaId, pedidoId, ahora);
+}
+
+/**
+ * Destino de pasarela de una cuota (docs/specs/pago-automatico R3.2, R3.4).
+ * @param {{ validar?: boolean, ahora?: Date }} [opciones] - validar=false en el webhook: el cargo ya se hizo
+ * @returns {Promise<import("../../pagos/pasarela/destinos.js").DestinoPago>}
+ */
+export async function destinoCuota(tiendaId, pedidoId, cuotaId, { validar = true, ahora = new Date() } = {}) {
+  const pedido = await pedidoLocal(tiendaId, pedidoId);
+  const cuota = validar ? exigirCuotaPagable(pedido, cuotaId, "pago_pasarela", ahora).cuota : cuotaDe(pedido, cuotaId);
+  return {
+    tiendaId,
+    pedidoId,
+    cuotaId,
+    monto: Number(cuota.monto),
+    email: pedido.clienteEmail,
+    descripcion: `Reserva ${pedido.numeroPedido} · ${etiquetaConcepto(cuota.concepto)}`,
+    alPagar: (datos) => confirmarCuotaPasarela(tiendaId, pedidoId, cuotaId, datos)
+  };
+}
+
+/**
+ * La pasarela confirmó el pago de una cuota: como verificarCuota, sin revisión.
+ * La primera confirma la reserva y bloquea la fecha. Idempotente.
+ */
+async function confirmarCuotaPasarela(tiendaId, pedidoId, cuotaId, { pago, metodo, cargoId }, ahora = new Date()) {
+  const pedido = await pedidoLocal(tiendaId, pedidoId);
+  const cuota = cuotaDe(pedido, cuotaId);
+  if (cuota.estado === "pagada") return;
+
+  const estado = efectivoDe(pedido, ahora);
+  const confirma = estado === "aceptada";
+  const montoPagado = montoPagadoDe(pedido.cuotas.map(c => (c.id === cuotaId ? { ...c, estado: "pagada" } : c)));
+  const datosPedido = { montoPagado, estadoPago: montoPagado >= Number(pedido.total) ? "pagado" : "parcial" };
+  const nota = `Cuota ${cuota.numero} pagada en línea · ${etiquetaConcepto(cuota.concepto)} · S/ ${Number(pago.monto).toFixed(2)} · ${metodo}`;
+
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.reserva_cuotas.updateMany({
+      where: { id: cuotaId, pedidoId, estado: { in: ["pendiente", "en_revision"] } },
+      data: { estado: "pagada", pagadaEn: ahora, fechaActualizacion: ahora }
+    });
+    if (count === 0) return;
+    if (confirma) {
+      await aplicarAccion(tx, pedido, "pago_pasarela", {
+        ahora, datosPedido: { ...datosPedido, fechaConfirmado: ahora, metodoPago: metodo, referenciaPago: cargoId }, nota
+      });
+      await actualizarOcupacion(tx, pedidoId, { tipo: "reserva", expiraEn: null });
+    } else {
+      // Cuota siguiente de una reserva confirmada, o la reserva cambió mientras pagaba (queda anotado para el negocio).
+      const aviso = estado === "confirmada" ? "" : ` · la reserva estaba ${estado}: revisar devolución`;
+      await tx.pedidos.update({ where: { id: pedidoId }, data: { ...datosPedido, fechaActualizacion: ahora } });
+      await tx.pedido_historial_estados.create({ data: { pedidoId, estado: pedido.estado, notas: nota + aviso } });
+    }
+  });
+
+  if (confirma) await correoCliente(tiendaId, pedidoId, confirmadaEmail);
 }
 
 // ============================================

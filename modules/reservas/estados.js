@@ -8,6 +8,9 @@ import { ConflictError } from "../../utils/errors.js";
  *   Si no hay nada que pagar por adelantado (cobro en destino), aceptar
  *   confirma: solicitada ─confirmar_sin_pago─▶ confirmada (hospedaje-completo A6).
  *
+ * Con pago automático (docs/specs/pago-automatico) la pasarela confirma sin
+ * revisión: aceptada | por_pagar ─pago_pasarela─▶ confirmada.
+ *
  * Eventos (cupo real, sin solicitud):
  *   por_pagar (cupo apartado) ─subir_captura─▶ pago_en_revision ─verificar─▶ confirmada
  *   Si no sube la captura antes de `apartado_hasta`, la compra vence y el cupo se libera.
@@ -45,7 +48,7 @@ export const TRANSICIONES = {
 };
 
 export const TRANSICIONES_EVENTO = {
-  por_pagar:        { subir_captura: "pago_en_revision", cancelar_cliente: "cancelada" },
+  por_pagar:        { subir_captura: "pago_en_revision", pago_pasarela: "confirmada", cancelar_cliente: "cancelada" },
   // Mientras está en revisión el cupo sigue apartado (no vence).
   pago_en_revision: { verificar: "confirmada", rechazar_pago: "por_pagar", subir_captura: "pago_en_revision", cancelar_negocio: "cancelada" },
   confirmada:       { cancelar_negocio: "cancelada" }

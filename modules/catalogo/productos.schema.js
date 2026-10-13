@@ -19,6 +19,8 @@ export const COLORES_PRODUCTO = [
 const productosBaseSchema = {
   tiendaId: z.string({ required_error: "El ID de tienda es requerido" }).uuid("ID de tienda inválido"),
   categoriaId: z.string().uuid("ID de categoría inválido").optional().nullable(),
+  // Solo rubros con la capacidad `marcas` (lo decide prepararProductoDelRubro con el rubro de la BD).
+  marcaId: z.string().uuid("ID de marca inválido").optional().nullable(),
   nombre: z.string({ required_error: "El nombre es requerido" }).min(1, "El nombre es requerido").max(200, "El nombre no puede exceder 200 caracteres"),
   slug: z.string({ required_error: "El slug es requerido" }).min(1, "El slug es requerido").max(200, "El slug no puede exceder 200 caracteres"),
   descripcion: z.string().optional().nullable(),
@@ -52,6 +54,7 @@ const productosBaseSchema = {
 export const createProductoSchema = z.object({
   tiendaId: productosBaseSchema.tiendaId,
   categoriaId: productosBaseSchema.categoriaId,
+  marcaId: productosBaseSchema.marcaId,
   nombre: productosBaseSchema.nombre,
   slug: productosBaseSchema.slug,
   descripcion: productosBaseSchema.descripcion,
@@ -75,6 +78,7 @@ export const createProductoSchema = z.object({
 // Schema para actualizar producto
 export const updateProductoSchema = z.object({
   categoriaId: productosBaseSchema.categoriaId,
+  marcaId: productosBaseSchema.marcaId,
   nombre: productosBaseSchema.nombre.optional(),
   slug: productosBaseSchema.slug.optional(),
   descripcion: productosBaseSchema.descripcion,
