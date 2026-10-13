@@ -18,6 +18,7 @@ import { apiResponse } from "../../utils/apiResponse.js";
 import { sincronizarVariantesSchema } from "./producto-opciones.js";
 import { sincronizarVariantes, opcionesUsadasPorTienda } from "./producto-opciones.service.js";
 import { serializeVarianteAdmin } from "./producto-variantes.serializer.js";
+import { metadataConVideo } from "./video.js";
 import {
   createProductoSchema,
   updateProductoSchema,
@@ -40,6 +41,31 @@ function invalidateProductoCacheOnSuccess(req, res, next) {
     }
   });
   next();
+}
+
+// El campo `video` del formulario (ya reconocido por videoLinkSchema) se guarda en
+// metadata.video. Al editar se parte de la metadata guardada para no pisar
+// metadata.opciones, que el formulario no manda (docs/specs/video-producto).
+function fusionarVideo(modo) {
+  return async (req, res, next) => {
+    try {
+      if (!("video" in req.body)) return next();
+      const { video, ...datos } = req.body;
+      if (modo === "crear" && !video) {
+        req.body = datos;
+        return next();
+      }
+      let base = datos.metadata;
+      if (base === undefined && modo === "editar") {
+        const actual = await prisma.productos.findUnique({ where: { id: req.params.id }, select: { metadata: true } });
+        base = actual?.metadata;
+      }
+      req.body = { ...datos, metadata: metadataConVideo(base, video) };
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 // Crear instancias de las capas
@@ -172,6 +198,7 @@ router.post(
   requireTiendaAccess("editor"),
   validate({ body: createProductoSchema }),
   prepararProductoDelRubro("crear"),
+  fusionarVideo("crear"),
   productosController.create
 );
 
@@ -183,6 +210,7 @@ router.put(
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateProductoSchema }),
   prepararProductoDelRubro("editar"),
+  fusionarVideo("editar"),
   invalidateProductoCacheOnSuccess,
   productosController.update
 );

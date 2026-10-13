@@ -39,9 +39,15 @@ export class StreamingProvider {
 
   /**
    * URL de reproducción firmada.
+   *
+   * Con `enVivo`, el reproductor arranca solo (en silencio: los navegadores no
+   * permiten autoplay con sonido) y se entrega `estadoUrl`, que el navegador
+   * consulta para saber si hay señal: `{ live: boolean, videoUID: string|null }`.
+   * El reproductor no salta solo a la señal nueva tras un corte; el front lo
+   * recarga cuando `live` vuelve a true o cambia `videoUID` (POC 2026-10-12).
    * @param {string} id - entrada (en vivo) o video (grabación)
-   * @param {{ expiraEn: Date }} opts
-   * @returns {Promise<{ iframeUrl: string, hlsUrl: string, expiraEn: Date }>}
+   * @param {{ expiraEn: Date, enVivo?: boolean }} opts
+   * @returns {Promise<{ iframeUrl: string, hlsUrl: string, estadoUrl: string|null, expiraEn: Date }>}
    */
   async urlReproduccion(id, opts) { throw new Error("urlReproduccion no implementado"); }
 

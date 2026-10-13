@@ -214,11 +214,17 @@ export default class CloudflareStreamProvider extends StreamingProvider {
     return res.text();
   }
 
-  async urlReproduccion(id, { expiraEn }) {
+  async urlReproduccion(id, { expiraEn, enVivo = false }) {
     const exp = new Date(Math.min(expiraEn.getTime(), Date.now() + MAX_TOKEN_MS));
     const token = await firmar(id, exp);
     const base = `${baseCliente()}/${token}`;
-    return { iframeUrl: `${base}/iframe`, hlsUrl: `${base}/manifest/video.m3u8`, expiraEn: exp };
+    return {
+      iframeUrl: enVivo ? `${base}/iframe?autoplay=true&muted=true` : `${base}/iframe`,
+      hlsUrl: `${base}/manifest/video.m3u8`,
+      // /lifecycle acepta el mismo token en la ruta y responde con CORS abierto.
+      estadoUrl: enVivo ? `${base}/lifecycle` : null,
+      expiraEn: exp
+    };
   }
 
   verificarWebhook({ tipo, headers, rawBody }) {

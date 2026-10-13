@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>POC reproductor</title>
+<style>
+  :root { --fondo: #f4f4f5; --texto: #18181b; --suave: #71717a; --borde: #e4e4e7; }
+  body { margin: 0; padding: 16px; font: 14px/1.4 system-ui, sans-serif; background: var(--fondo); color: var(--texto); }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p { margin: 0 0 12px; color: var(--suave); }
+  .caja { background: #fff; border: 1px solid var(--borde); border-radius: 8px; padding: 12px; max-width: 900px; }
+  .video { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 6px; overflow: hidden; }
+  .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  #log { margin-top: 16px; max-height: 300px; overflow: auto; font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>Prueba de concepto: reproductor oficial de Cloudflare</h1>
+<p>Solo el iframe de Cloudflare, igual que en el admin. Nada lo recarga ni lo controla: el registro de abajo
+solo anota lo que dice <code>/lifecycle</code>, para saber cuándo se cortó y volvió la señal.</p>
+
+<div class="caja">
+  <div class="video">
+    <iframe id="oficial" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
+  </div>
+</div>
+
+<div class="caja" id="log"></div>
+
+<script>
+const CONFIG = /*CONFIG*/null;
+const $ = (id) => document.getElementById(id);
+function log(msg) {
+  const h = new Date().toLocaleTimeString("es-PE", { hour12: false });
+  $("log").textContent = `${h}  ${msg}\n` + $("log").textContent;
+}
+
+// Igual que el admin hoy: evento-transmision.component.html usa vistaPreviaUrl = <base>/iframe.
+$("oficial").src = `${CONFIG.base}/iframe`;
+log(`Entrada ${CONFIG.inputUid}: reproductor cargado una sola vez`);
+
+// Solo observa: no toca el reproductor.
+let anterior = "";
+setInterval(async () => {
+  try {
+    const j = await (await fetch(`${CONFIG.base}/lifecycle`, { cache: "no-store" })).json();
+    const actual = `live=${j.live} video=${j.videoUID ?? "-"} status=${j.status ?? "-"}`;
+    if (actual !== anterior) { log(`señal: ${actual}`); anterior = actual; }
+  } catch (e) {
+    log(`no se pudo consultar /lifecycle: ${e.message}`);
+  }
+}, 3000);
+</script>
+</body>
+</html>

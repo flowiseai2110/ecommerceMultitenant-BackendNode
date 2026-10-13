@@ -62,5 +62,13 @@ describe("urlReproduccion", () => {
     expect(protectedHeader).toMatchObject({ alg: "RS256", kid: "kid-prueba" });
     expect(payload.sub).toBe("in-1");
     expect(payload.exp - Date.now() / 1000).toBeLessThanOrEqual(24 * 3600 + 1);
+    expect(r.estadoUrl).toBeNull();
+  });
+
+  it("en vivo: autoplay silenciado y estadoUrl (/lifecycle) con el mismo token", async () => {
+    const r = await cf.urlReproduccion("in-1", { expiraEn: new Date(Date.now() + 3600 * 1000), enVivo: true });
+    expect(r.iframeUrl).toMatch(/\/iframe\?autoplay=true&muted=true$/);
+    const token = r.iframeUrl.split("/")[3];
+    expect(r.estadoUrl).toBe(`https://customer-abc123.cloudflarestream.com/${token}/lifecycle`);
   });
 });

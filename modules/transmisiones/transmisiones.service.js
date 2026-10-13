@@ -206,7 +206,8 @@ async function serializarTransmision(t, funcion, tienda, ahora) {
       excedente: t.excedente
         ? { estado: t.excedente.estado, minutosAutorizados: t.excedente.minutosAutorizados, minutos: t.excedente.minutos, monto: Number(t.excedente.monto) }
         : null,
-      opcionesExtension: enCurso(t) && ["espera", "en_vivo"].includes(etapa) ? await opcionesExtension(t, ahora) : [],
+      // Aquí la función llega aparte: opcionesExtension la lee de t.funcion.
+      opcionesExtension: enCurso(t) && ["espera", "en_vivo"].includes(etapa) ? await opcionesExtension({ ...t, funcion }, ahora) : [],
       // Fase 4: grabación (R8.1)
       grabacion: await serializarGrabacion(t, funcion, ahora),
       // Fase 5 (Premium): retransmisión y resumen con IA.
@@ -217,10 +218,14 @@ async function serializarTransmision(t, funcion, tienda, ahora) {
         const c = (t.cargos ?? []).find(x => x.tipo === "premium");
         return c ? { monto: Number(c.monto), estado: c.estado } : null;
       })(),
-      // Para que el negocio vea la señal (prueba o en vivo) sin ser invitado.
-      vistaPreviaUrl: enCurso(t) && t.entradaId
-        ? (await provider().urlReproduccion(t.entradaId, { expiraEn: new Date(ahora.getTime() + 3 * 60 * MS_MIN) })).iframeUrl
-        : null
+      // Para que el negocio vea la señal (prueba o en vivo) sin ser invitado. Vale hasta media hora
+      // después del corte, como la de los invitados: el admin la reusa entre refrescos y el
+      // reproductor no se reinicia (un token corto cortaría el video a mitad de la transmisión).
+      ...(await (async () => {
+        if (!enCurso(t) || !t.entradaId) return { vistaPreviaUrl: null, vistaPreviaEstadoUrl: null };
+        const r = await provider().urlReproduccion(t.entradaId, { expiraEn: new Date(corteEn(t, funcion).getTime() + 30 * MS_MIN), enVivo: true });
+        return { vistaPreviaUrl: r.iframeUrl, vistaPreviaEstadoUrl: r.estadoUrl };
+      })())
     } : null
   };
 }
@@ -299,6 +304,8 @@ export async function activar(tiendaId, funcionId, data, user, ahora = new Date(
   if (funcion.fin) {
     duracionMin = Math.round((funcion.fin.getTime() - funcion.inicio.getTime()) / MS_MIN);
     if (duracionMin > 720) throw noProcesable("La función dura más de 12 horas. Ajusta su hora de fin", "DURACION");
+    // Mismo rango que el CHECK transmision_duracion (15-720 min): sin esto el insert falla con un 500.
+    if (duracionMin < 15) throw noProcesable("La función dura menos de 15 minutos. Ajusta su hora de fin para transmitirla", "DURACION");
   } else {
     if (!data.duracionMin) throw noProcesable("La función no tiene hora de fin: indica cuánto durará la transmisión", "DURACION_REQUERIDA");
     duracionMin = data.duracionMin;
@@ -798,8 +805,8 @@ export async function paginaInvitado(token, tiendaIdResuelta, ahora = new Date()
       video = { proveedor: provider().nombre, iframeUrl: partes[0], partes };
     } else if (esVideoPropio(t) && t.entradaId) {
       // Token de reproducción hasta media hora después del corte (máx. 24 h, lo limita el proveedor).
-      const { iframeUrl } = await provider().urlReproduccion(t.entradaId, { expiraEn: new Date(finEnVivo(t, funcion).getTime() + 30 * MS_MIN) });
-      video = { proveedor: provider().nombre, iframeUrl };
+      const { iframeUrl, estadoUrl } = await provider().urlReproduccion(t.entradaId, { expiraEn: new Date(finEnVivo(t, funcion).getTime() + 30 * MS_MIN), enVivo: true });
+      video = { proveedor: provider().nombre, iframeUrl, estadoUrl };
     }
   }
 

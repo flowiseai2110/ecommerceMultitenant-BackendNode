@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { videoLinkSchema } from "./video.js";
 
 /**
  * Schemas Zod de entrada para productos. El schema ES el contrato de entrada
@@ -41,7 +42,10 @@ const productosBaseSchema = {
   colores: z.array(z.enum(COLORES_PRODUCTO, { errorMap: () => ({ message: "Color inválido" }) }))
     .max(8, "Máximo 8 colores por producto")
     .optional(),
-  metadata: z.record(z.any()).optional().nullable()
+  metadata: z.record(z.any()).optional().nullable(),
+  // Link del video (docs/specs/video-producto). Sale reconocido o null; el
+  // middleware fusionarVideo lo guarda en metadata.video sin tocar lo demás.
+  video: videoLinkSchema.optional()
 };
 
 // Schema para crear producto
@@ -64,7 +68,8 @@ export const createProductoSchema = z.object({
   esServicio: productosBaseSchema.esServicio,
   etiquetas: productosBaseSchema.etiquetas,
   colores: productosBaseSchema.colores,
-  metadata: productosBaseSchema.metadata
+  metadata: productosBaseSchema.metadata,
+  video: productosBaseSchema.video
 });
 
 // Schema para actualizar producto
@@ -88,7 +93,8 @@ export const updateProductoSchema = z.object({
   esServicio: productosBaseSchema.esServicio,
   etiquetas: productosBaseSchema.etiquetas,
   colores: productosBaseSchema.colores,
-  metadata: productosBaseSchema.metadata
+  metadata: productosBaseSchema.metadata,
+  video: productosBaseSchema.video
 }).refine(
   (data) => Object.keys(data).length > 0,
   { message: "Debe proporcionar al menos un campo para actualizar" }

@@ -202,6 +202,7 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
              p.stock, p.activo, p.destacado, p.es_servicio AS "esServicio", p.etiquetas,
              p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
              p.metadata->'opciones' AS opciones,
+             p.metadata->'video' AS video,
              COALESCE(v.variantes, '[]'::json) AS variantes,
              COALESCE(i.imagenes, '[]'::json) AS imagenes
       FROM productos p

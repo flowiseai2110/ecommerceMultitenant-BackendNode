@@ -4,6 +4,7 @@ import { invalidateProductoDetailCache } from "../../catalogo/productos.cache.js
 import { obtenerConfig } from "../reservas.config.service.js";
 import { fechaLima } from "../tiempo.js";
 import { CLAVES_DIA, cruzaMedianoche, franjaDe, topeDe } from "./franja.js";
+import { serializeVideoStore } from "../../catalogo/video.js";
 
 /**
  * Salones de un local de eventos (docs/specs/alquiler-locales R2): un
@@ -95,7 +96,7 @@ const INCLUDE_FICHA = {
 
 const SELECT_PRODUCTO_STORE = {
   id: true, nombre: true, slug: true, descripcion: true, descripcionCorta: true, categoriaId: true,
-  ratingPromedio: true, ratingCantidad: true, destacado: true,
+  ratingPromedio: true, ratingCantidad: true, destacado: true, metadata: true,
   imagenes: { select: { url: true, textoAlternativo: true, esPrincipal: true, orden: true }, orderBy: { orden: "asc" } },
   salon: { include: { turnos: { where: { activo: true }, orderBy: ORDEN }, paquetes: { where: { activo: true }, orderBy: ORDEN } } }
 };
@@ -110,7 +111,7 @@ function serializarSalonStore(p, { detalle = false } = {}) {
     // Categoría de la tienda: la vitrina filtra por ella en /categorias/:slug (layout-por-rubro 3.4).
     categoriaId: p.categoriaId ?? null,
     descripcionCorta: p.descripcionCorta,
-    ...(detalle ? { descripcion: p.descripcion } : {}),
+    ...(detalle ? { descripcion: p.descripcion, video: serializeVideoStore(p.metadata?.video) } : {}),
     imagenes: imagenes.map(i => ({ url: i.url, alt: i.textoAlternativo ?? p.nombre })),
     rating: { promedio: p.ratingPromedio, cantidad: p.ratingCantidad },
     destacado: p.destacado,

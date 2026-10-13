@@ -13,6 +13,8 @@
  * @see docs/ARQUITECTURA.md — "Contratos en las fronteras (sin TS)".
  */
 
+import { serializeVideoStore, serializeVideoAdmin } from "./video.js";
+
 /**
  * Imagen de producto tal como la ve el store.
  * `orden`, `esPrincipal` y `valorOpcion` solo vienen en el detalle; en las tarjetas de
@@ -133,6 +135,7 @@ export function serializeProductoDetailStore(row) {
     etiquetas: row.etiquetas,
     ...serializeRatingStore(row),
     opciones: serializeOpcionesStore(row.opciones),
+    video: serializeVideoStore(row.video),
     variantes: Array.isArray(row.variantes) ? row.variantes.map(serializeVarianteStore) : [],
     imagenes: Array.isArray(row.imagenes) ? row.imagenes.map(serializeImagenStore) : []
   };
@@ -202,6 +205,7 @@ export function serializeProductoAdmin(row) {
     etiquetas: row.etiquetas,
     colores: row.colores,
     metadata: row.metadata,
+    video: serializeVideoAdmin(row.metadata?.video),
     fechaRegistro: row.fechaRegistro,
     usuarioRegistro: row.usuarioRegistro,
     fechaActualizacion: row.fechaActualizacion,

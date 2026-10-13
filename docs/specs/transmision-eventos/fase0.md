@@ -69,8 +69,8 @@
 
 | Prueba | Resultado | Notas |
 |---|---|---|
-| Retraso HLS normal (RTMPS) | | |
-| Retraso con `preferLowLatency` | | |
+| Retraso HLS normal (RTMPS) | ≈ 20 s (2026-10-12) | Aceptado: nadie lo nota en una transmisión de una sola vía |
+| Retraso con `preferLowLatency` | Sin mejora visible (2026-10-12) | LL-HLS sigue en beta; se descartó y quedó apagado |
 | Retraso con SRT | | |
 | Calidad 1080p con datos móviles (Lima) | | |
 | Conexión de Larix Broadcaster por RTMPS | ✅ 2026-10-06 | `status.current.state = connected`, video `live-inprogress`. Ojo: la app es **Larix Broadcaster**; Larix Player no transmite |

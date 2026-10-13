@@ -21,7 +21,7 @@ Que un negocio con tipo de negocio **eventos** active **"Transmitir"** en una fu
 
 - una **página privada** del evento, en español claro, con la marca de la tienda;
 - **un enlace por invitado**, que se comparte por WhatsApp, sin crear cuenta ni instalar nada;
-- video de buena calidad (hasta 1080p), con unos **5 segundos de retraso**;
+- video de buena calidad (hasta 1080p), con unos **20 segundos de retraso** (HLS de Cloudflare; medido el 2026-10-12, aceptado: la transmisión es de una sola vía);
 - la **grabación** al terminar, si la contrató;
 - opcionalmente, **retransmisión a Facebook y YouTube** y un **resumen con IA** de la grabación.
 
@@ -56,7 +56,7 @@ Lo que nos diferencia:
 | **Para quién** | El cliente que solo quiere que la familia vea, al menor precio | El producto principal: privacidad real y buena calidad | Bodas, 15 años, corporativos |
 | **Cómo funciona** | La página del evento **incrusta un YouTube "no listado"** que el negocio transmite desde su canal | Video propio con Mux, **enlace por invitado** y tope de espectadores | Todo lo de Privado, más retransmisión y extras |
 | **Privacidad** | Baja: quien tiene el enlace de YouTube entra | Alta: enlace por invitado, video firmado y con vencimiento | Alta en la página propia; en Facebook y YouTube depende de esas plataformas |
-| **Calidad** | La de YouTube | Hasta 1080p, unos 5 s de retraso, se adapta a la conexión de cada invitado | Igual que Privado |
+| **Calidad** | La de YouTube | Hasta 1080p, unos 20 s de retraso, se adapta a la conexión de cada invitado | Igual que Privado |
 | **Grabación** | La de YouTube (en el canal del negocio) | Opcional: **30 días** en línea + descarga | Incluida: **90 días** en línea + descarga por **1 año** |
 | **Retransmisión a Facebook y YouTube** | — | — | ✅ se cobra **por hora y por destino** (ver [simulación](simulacion.md)) |
 | **Resumen con IA** (resumen, momentos clave, capítulos) | — | — | ✅ |

@@ -4,6 +4,7 @@ import { invalidateProductoDetailCache } from "../../catalogo/productos.cache.js
 import { textoDiasSalida } from "./cotizar.js";
 import { textosTour } from "./textos-tour.js";
 import { traducirFila, traducirTour } from "../../traducciones/traducciones.service.js";
+import { serializeVideoStore } from "../../catalogo/video.js";
 
 /**
  * Tours de la agencia: un `productos` (nombre, fotos, descripción, SEO,
@@ -58,7 +59,7 @@ const ORDEN_TIPOS = [{ orden: "asc" }, { precio: "desc" }];
 
 const SELECT_PRODUCTO_STORE = {
   id: true, nombre: true, slug: true, descripcion: true, descripcionCorta: true, traducciones: true, categoriaId: true,
-  ratingPromedio: true, ratingCantidad: true, destacado: true,
+  ratingPromedio: true, ratingCantidad: true, destacado: true, metadata: true,
   imagenes: { select: { url: true, textoAlternativo: true, esPrincipal: true, orden: true }, orderBy: { orden: "asc" } },
   tour: { include: { tiposPasajero: { where: { activo: true }, orderBy: ORDEN_TIPOS } } }
 };
@@ -76,7 +77,7 @@ function serializarTourStore(original, { detalle = false, lang = "es" } = {}) {
     // Categoría de la tienda: la vitrina filtra por ella en /categorias/:slug (layout-por-rubro 3.4).
     categoriaId: p.categoriaId ?? null,
     descripcionCorta: p.descripcionCorta,
-    ...(detalle ? { descripcion: p.descripcion } : {}),
+    ...(detalle ? { descripcion: p.descripcion, video: serializeVideoStore(p.metadata?.video) } : {}),
     imagenes: imagenes.map(i => ({ url: i.url, alt: i.textoAlternativo ?? p.nombre })),
     rating: { promedio: p.ratingPromedio, cantidad: p.ratingCantidad },
     destacado: p.destacado,

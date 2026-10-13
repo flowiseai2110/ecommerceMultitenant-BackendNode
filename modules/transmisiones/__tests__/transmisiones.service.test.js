@@ -40,7 +40,11 @@ const proveedor = {
   estadoEntrada: jest.fn(async () => ({ senal: "desconectada" })),
   borrarEntrada: jest.fn(async () => {}),
   borrarVideos: jest.fn(async () => 0),
-  urlReproduccion: jest.fn(async (id) => ({ iframeUrl: `https://cf.test/${id}/iframe`, expiraEn: new Date() })),
+  urlReproduccion: jest.fn(async (id, { enVivo } = {}) => ({
+    iframeUrl: `https://cf.test/${id}/iframe${enVivo ? "?autoplay=true&muted=true" : ""}`,
+    estadoUrl: enVivo ? `https://cf.test/${id}/lifecycle` : null,
+    expiraEn: new Date()
+  })),
   borrarSoloEntrada: jest.fn(async () => {}),
   listarVideos: jest.fn(async () => []),
   estadoVideo: jest.fn(async (id) => ({ id, estado: "lista", duracionSeg: 600, creadoEn: new Date() })),
@@ -340,7 +344,11 @@ describe("sesión única del invitado (R4.3)", () => {
     const antes = await svc.paginaInvitado(await token(), null, ahora);
     expect(antes).toMatchObject({ video: null, sesionUnica: true });
     const enVivo = await svc.paginaInvitado(await token(), null, new Date("2026-10-17T17:00:00-05:00"));
-    expect(enVivo.video).toEqual({ proveedor: "cloudflare", iframeUrl: "https://cf.test/in-1/iframe" });
+    expect(enVivo.video).toEqual({
+      proveedor: "cloudflare",
+      iframeUrl: "https://cf.test/in-1/iframe?autoplay=true&muted=true",
+      estadoUrl: "https://cf.test/in-1/lifecycle"
+    });
   });
 });
 
@@ -396,6 +404,20 @@ describe("App Transmitir (R11)", () => {
 // ============================================
 // Fase 3: extensión, excedente y reparto del consumo
 // ============================================
+
+describe("admin con la sala abierta", () => {
+  // Regresión 2026-10-12: activar durante el evento daba 500 porque la respuesta
+  // pedía las opciones de extensión con una transmisión sin su función.
+  it("trae opciones de extensión y la vista previa en vivo con su estado", async () => {
+    prisma.evento_funciones.findFirst.mockResolvedValue(funcion3h({ transmision: privadoBase({ habilitada: true }) }));
+    const r = await svc.obtenerPorFuncion(TIENDA, FUNCION, new Date("2026-10-17T17:00:00-05:00"));
+    expect(r.transmision.envivo.opcionesExtension.map(o => o.minutos)).toEqual([30, 60]);
+    expect(r.transmision.envivo).toMatchObject({
+      vistaPreviaUrl: "https://cf.test/in-1/iframe?autoplay=true&muted=true",
+      vistaPreviaEstadoUrl: "https://cf.test/in-1/lifecycle"
+    });
+  });
+});
 
 describe("extender (R7.5-R7.7)", () => {
   const enVivo = new Date("2026-10-17T18:50:00-05:00");
