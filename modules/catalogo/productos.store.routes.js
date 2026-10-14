@@ -20,6 +20,8 @@ import {
   getProductoDetail,
   setProductoDetail
 } from "./productos.cache.js";
+import { localizado, localizar } from "../traducciones/localizar.js";
+import { FUENTES } from "../traducciones/fuentes.js";
 
 // Proyección de campos para listados públicos
 const productosListSelect = {
@@ -31,6 +33,8 @@ const productosListSelect = {
   nombre: true,
   slug: true,
   descripcionCorta: true,
+  // Para el idioma del visitante (localizado); el serializer no la expone.
+  traducciones: true,
   sku: true,
   precioBase: true,
   precioOferta: true,
@@ -94,8 +98,9 @@ const productosService = new GenericService(productosRepository, {
 });
 // El serializer del store define el contrato de salida campo por campo: nunca
 // expone precioCosto, stockAlerta, metadata ni auditoría al público.
+// Nombre y descripción en el idioma del visitante (docs/specs/idiomas D5).
 const productosController = new GenericController(productosService, "Producto", {
-  serialize: serializeProductoCardStore
+  serialize: localizado(serializeProductoCardStore, FUENTES.productos)
 });
 
 const router = Router();
@@ -126,7 +131,7 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
     const { tiendaId, limit } = req.validatedQuery || req.query;
     const take = Math.min(limit || 8, 20);
 
-    const cacheKey = `${tiendaId}|${take}`;
+    const cacheKey = `${tiendaId}|${take}|${req.idioma.codigo}`;
     const cached = getProductosHome(cacheKey);
     if (cached) {
       return apiResponse(res, cached);
@@ -140,7 +145,7 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
     const rows = await prisma.$queryRaw`
       (
         SELECT 'destacados' AS grupo, p.id, p.tienda_id AS "tiendaId", p.nombre, p.slug,
-               p.descripcion_corta AS "descripcionCorta", p.sku, p.precio_base AS "precioBase",
+               p.descripcion_corta AS "descripcionCorta", p.traducciones, p.sku, p.precio_base AS "precioBase",
                p.precio_oferta AS "precioOferta", p.stock, p.activo, p.destacado,
                p.es_servicio AS "esServicio", p.etiquetas,
                p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
@@ -163,7 +168,7 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
       UNION ALL
       (
         SELECT 'recientes' AS grupo, p.id, p.tienda_id AS "tiendaId", p.nombre, p.slug,
-               p.descripcion_corta AS "descripcionCorta", p.sku, p.precio_base AS "precioBase",
+               p.descripcion_corta AS "descripcionCorta", p.traducciones, p.sku, p.precio_base AS "precioBase",
                p.precio_oferta AS "precioOferta", p.stock, p.activo, p.destacado,
                p.es_servicio AS "esServicio", p.etiquetas,
                p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
@@ -191,7 +196,7 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next)
       // La query aplana la imagen principal en columnas (imagenId/imagenUrl/...);
       // se rearma como array antes de pasar por el serializer de tarjeta.
       const producto = serializeProductoCardStore({
-        ...row,
+        ...localizar(FUENTES.productos, row, req.idioma),
         marca: row.marcaId
           ? { id: row.marcaId, nombre: row.marcaNombre, slug: row.marcaSlug, logoUrl: row.marcaLogoUrl }
           : null,
@@ -216,7 +221,7 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
   try {
     const { id } = req.params;
 
-    const cached = getProductoDetail(id);
+    const cached = getProductoDetail(id, req.idioma.codigo);
     if (cached) {
       return apiResponse(res, cached);
     }
@@ -226,7 +231,7 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
              CASE WHEN m.id IS NULL THEN NULL
                   ELSE json_build_object('id', m.id, 'nombre', m.nombre, 'slug', m.slug, 'logoUrl', m.logo_url) END AS marca,
              p.nombre, p.slug,
-             p.descripcion, p.descripcion_corta AS "descripcionCorta", p.sku,
+             p.descripcion, p.descripcion_corta AS "descripcionCorta", p.traducciones, p.sku,
              p.precio_base AS "precioBase", p.precio_oferta AS "precioOferta",
              p.stock, p.activo, p.destacado, p.es_servicio AS "esServicio", p.etiquetas,
              p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
@@ -260,10 +265,10 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
     if (!rows[0]) {
       throw new NotFoundError("Producto");
     }
-    const producto = serializeProductoDetailStore(rows[0]);
+    const producto = serializeProductoDetailStore(localizar(FUENTES.productos, rows[0], req.idioma));
 
     const responsePayload = { status: 200, type: "SUCCESS", code: "PRODUCTO_FOUND", data: producto };
-    setProductoDetail(id, responsePayload);
+    setProductoDetail(id, req.idioma.codigo, responsePayload);
 
     return apiResponse(res, responsePayload);
   } catch (error) {

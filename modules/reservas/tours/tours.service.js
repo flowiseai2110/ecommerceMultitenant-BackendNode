@@ -3,8 +3,11 @@ import { NotFoundError, ValidationError } from "../../../utils/errors.js";
 import { invalidateProductoDetailCache } from "../../catalogo/productos.cache.js";
 import { textoDiasSalida } from "./cotizar.js";
 import { textosTour } from "./textos-tour.js";
-import { traducirFila, traducirTour } from "../../traducciones/traducciones.service.js";
+import { localizar } from "../../traducciones/localizar.js";
+import { FUENTES } from "../../traducciones/fuentes.js";
 import { serializeVideoStore } from "../../catalogo/video.js";
+import { IDIOMA_BASE } from "../../idiomas/idioma.js";
+import { traductorPara } from "../../idiomas/textos.service.js";
 
 /**
  * Tours de la agencia: un `productos` (nombre, fotos, descripción, SEO,
@@ -22,12 +25,12 @@ const serializarTipo = (t) => ({
   orden: t.orden
 });
 
-function serializarFicha(t, lang = "es") {
+function serializarFicha(t, traductor) {
   return {
     duracion: t.duracion,
     duracionHoras: t.duracionHoras,
     diasSalida: [...t.diasSalida].sort((a, b) => a - b),
-    diasSalidaTexto: textoDiasSalida(t.diasSalida, lang),
+    diasSalidaTexto: textoDiasSalida(t.diasSalida, traductor),
     horasSalida: [...t.horasSalida].sort(),
     idiomas: t.idiomas,
     itinerario: Array.isArray(t.itinerario) ? t.itinerario : [],
@@ -48,13 +51,13 @@ function serializarFicha(t, lang = "es") {
  * Precio "desde" de la tarjeta: el tipo activo más barato con precio mayor a
  * cero. Un "Niño menor de 3 gratis" no debería anunciar el tour como "desde S/ 0".
  */
-function precioDesde(tipos, lang = "es") {
+function precioDesde(tipos, traductor) {
   const activos = tipos.filter(t => t.activo);
   if (!activos.length) return null;
   const pagados = activos.filter(t => Number(t.precio) > 0);
   const candidatos = pagados.length ? pagados : activos;
   const min = candidatos.reduce((a, b) => (Number(b.precio) < Number(a.precio) ? b : a));
-  return { precio: num(min.precio), etiqueta: textosTour(lang).desde(min.nombre) };
+  return { precio: num(min.precio), etiqueta: textosTour(traductor).desde(min.nombre) };
 }
 
 const ORDEN_TIPOS = [{ orden: "asc" }, { precio: "desc" }];
@@ -66,12 +69,12 @@ const SELECT_PRODUCTO_STORE = {
   tour: { include: { tiposPasajero: { where: { activo: true }, orderBy: ORDEN_TIPOS } } }
 };
 
-function serializarTourStore(original, { detalle = false, lang = "es" } = {}) {
-  // Inglés: nombre y descripciones del producto, y la ficha (itinerario, incluye, tipos de pasajero…).
-  const p = traducirFila(original, ["nombre", "descripcionCorta", "descripcion"], lang);
-  const t = traducirTour(original.tour, original.traducciones, lang);
+function serializarTourStore(original, { detalle = false, lang = IDIOMA_BASE, traductor } = {}) {
+  // En el idioma del visitante: nombre y descripciones del producto, y la ficha (itinerario, incluye, tipos de pasajero…).
+  const p = localizar(FUENTES.productos, original, lang);
+  const t = localizar(FUENTES.tours, original, lang).tour;
   const imagenes = detalle ? p.imagenes : p.imagenes.filter(i => i.esPrincipal).concat(p.imagenes.filter(i => !i.esPrincipal)).slice(0, 1);
-  const ficha = serializarFicha(t, lang);
+  const ficha = serializarFicha(t, traductor);
   return {
     id: p.id,
     nombre: p.nombre,
@@ -92,7 +95,7 @@ function serializarTourStore(original, { detalle = false, lang = "es" } = {}) {
       edadMinima: ficha.edadMinima
     }),
     tiposPasajero: t.tiposPasajero.map(serializarTipo),
-    desde: precioDesde(t.tiposPasajero, lang)
+    desde: precioDesde(t.tiposPasajero, traductor)
   };
 }
 
@@ -102,22 +105,24 @@ const publicable = (p) => p.tour.tiposPasajero.length > 0 && p.tour.horasSalida.
 // Store
 // ============================================
 
-export async function listarToursStore(tiendaId, lang = "es") {
+export async function listarToursStore(tiendaId, lang = IDIOMA_BASE) {
   const productos = await prisma.productos.findMany({
     where: { tiendaId, activo: true, tour: { isNot: null } },
     orderBy: [{ destacado: "desc" }, { precioBase: "asc" }],
     select: SELECT_PRODUCTO_STORE
   });
-  return productos.filter(publicable).map(p => serializarTourStore(p, { lang }));
+  // Contenido del dueño con `lang`; textos fijos (días, "por adulto") con su traductor (docs/specs/idiomas B5, B7).
+  const traductor = await traductorPara(tiendaId, lang);
+  return productos.filter(publicable).map(p => serializarTourStore(p, { lang, traductor }));
 }
 
-export async function obtenerTourStore(tiendaId, slug, lang = "es") {
+export async function obtenerTourStore(tiendaId, slug, lang = IDIOMA_BASE) {
   const p = await prisma.productos.findFirst({
     where: { tiendaId, slug, activo: true, tour: { isNot: null } },
     select: SELECT_PRODUCTO_STORE
   });
   if (!p || !publicable(p)) throw new NotFoundError("Tour", "Tour no encontrado");
-  return serializarTourStore(p, { detalle: true, lang });
+  return serializarTourStore(p, { detalle: true, lang, traductor: await traductorPara(tiendaId, lang) });
 }
 
 /**
@@ -125,14 +130,14 @@ export async function obtenerTourStore(tiendaId, slug, lang = "es") {
  * tipos (la cotización descarta los inactivos). En inglés, los tipos de
  * pasajero llegan traducidos: las líneas y la reserva los guardan así.
  */
-export async function cargarTourParaReserva(tiendaId, productoId, lang = "es") {
+export async function cargarTourParaReserva(tiendaId, productoId, lang = IDIOMA_BASE) {
   const producto = await prisma.productos.findFirst({
     where: { id: productoId, tiendaId, activo: true },
     select: { id: true, nombre: true, traducciones: true, tour: { include: { tiposPasajero: { orderBy: ORDEN_TIPOS } } } }
   });
   if (!producto?.tour) throw new NotFoundError("Tour", "Tour no encontrado");
   const { traducciones, ...resto } = producto;
-  const tour = traducirTour(producto.tour, traducciones, lang);
+  const tour = localizar(FUENTES.tours, producto, lang).tour;
   return { producto: resto, tour, tiposPasajero: tour.tiposPasajero };
 }
 

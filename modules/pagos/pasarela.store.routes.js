@@ -8,6 +8,7 @@ import PasarelaService from "./pasarela/pasarela.service.js";
 import { crearCargoSchema } from "./pasarela/pasarela.schema.js";
 import { configPublica, exigirAutomatico } from "./modo-pago.service.js";
 import { tiendaQuerySchema } from "../reservas/reservas.schema.js";
+import { clave } from "../idiomas/clave.js";
 
 const pasarelaService = new PasarelaService();
 
@@ -19,7 +20,7 @@ const pagoLimiter = crearLimitador({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.checkoutMax,
   code: "TOO_MANY_PAYMENTS",
-  message: "Demasiados intentos de pago en poco tiempo, intenta más tarde"
+  message: clave("Demasiados intentos de pago en poco tiempo, intenta más tarde")
 });
 
 // ============================================

@@ -9,6 +9,8 @@
 //
 // regla: cómo se calcula la fecha clave de cada año (ver calendario.js).
 // rubros: rubros de tienda (modules/tenants/rubros.js) donde se sugiere; "*" = todos.
+// efecto / diasEfecto / saludo: efecto festivo al entrar (docs/specs/efectos-festivos).
+// diasEfecto son desplazamientos desde la fecha clave: [-1, 0] = la víspera y el día.
 // Los textos son genéricos a propósito: no prometen envoltorio, descuentos
 // ni plazos de entrega que la tienda quizá no tenga.
 
@@ -58,6 +60,7 @@ export const CAMPANA_PRESETS = congelar([
     despuesDias: 44,
     rubros: "*",
     paleta: { primario: "#0e7490", neutro: "stone", fondos: TINTE },
+    efecto: "etiquetas", diasEfecto: [0], saludo: null,
     topBar: "Rebajas de verano: aprovecha antes de que se acaben",
     hero: { titulo: "Llegó el verano", subtitulo: "Precios que también se derriten: renuévate para la temporada.", textoBoton: "Ver ofertas" },
     cinta: ["Rebajas de verano", "Precios al sol", ENVIO, PAGO],
@@ -72,6 +75,7 @@ export const CAMPANA_PRESETS = congelar([
     prioridad: 2,
     rubros: "*",
     paleta: { primario: "#e11d48", neutro: "neutral", fondos: TINTE },
+    efecto: "corazones", diasEfecto: [0], saludo: "¡Feliz Día del Amor y la Amistad!",
     topBar: "Pide con tiempo y llega antes del 14 de febrero",
     hero: { titulo: "Regala algo que sí van a usar", subtitulo: "Para tu pareja o tu pata de siempre: detalles que dicen más que un mensaje.", textoBoton: "Ver regalos" },
     cinta: ["Día del Amor y la Amistad", "Regalos para tu persona favorita", ENVIO, PAGO],
@@ -85,6 +89,7 @@ export const CAMPANA_PRESETS = congelar([
     anticipacionDias: 14,
     rubros: ["general", "moda", "tecnologia", "hogar", "alimentos"],
     paleta: { primario: "#0284c7", neutro: "slate", fondos: TINTE },
+    efecto: "confeti", diasEfecto: [0], saludo: "¡Feliz Día del Niño!",
     topBar: "Se viene el Día del Niño: sorpréndelos este domingo",
     hero: { titulo: "Que se diviertan en grande", subtitulo: "Celebra el Día del Niño con regalos que los harán saltar de alegría.", textoBoton: "Ver regalos" },
     cinta: ["Día del Niño", "Regalos que sacan sonrisas", ENVIO, PAGO],
@@ -97,6 +102,7 @@ export const CAMPANA_PRESETS = congelar([
     anticipacionDias: 20,
     rubros: "*",
     paleta: { primario: "#db2777", neutro: "stone", fondos: TINTE },
+    efecto: "petalos", diasEfecto: [0], saludo: "¡Feliz Día de la Madre!",
     topBar: "Día de la Madre: pide con tiempo y llega a tiempo",
     hero: { titulo: "Para la que siempre está", subtitulo: "Este Día de la Madre, engríela con algo pensado para ella.", textoBoton: "Ver regalos para mamá" },
     cinta: ["Día de la Madre", "Regalos para engreírla", ENVIO, PAGO],
@@ -110,6 +116,7 @@ export const CAMPANA_PRESETS = congelar([
     anticipacionDias: 15,
     rubros: "*",
     paleta: { primario: "#1e3a8a", neutro: "slate", fondos: MARCO },
+    efecto: "estrellas", diasEfecto: [0], saludo: "¡Feliz Día del Padre!",
     topBar: "Día del Padre: el regalo que sí va a usar",
     hero: { titulo: "Papá también se engríe", subtitulo: "Ideas para el que todo lo arregla y nunca pide nada.", textoBoton: "Ver regalos para papá" },
     cinta: ["Día del Padre", "Regalos para el viejo", ENVIO, PAGO],
@@ -124,6 +131,7 @@ export const CAMPANA_PRESETS = congelar([
     despuesDias: 1,
     rubros: "*",
     paleta: { primario: "#d91023", neutro: "neutral", fondos: MARCO },
+    efecto: "rojoblanco", diasEfecto: [0, 1], saludo: "¡Felices Fiestas Patrias!",
     topBar: "Precios de fiesta por Fiestas Patrias",
     hero: { titulo: "¡Felices Fiestas Patrias!", subtitulo: "Celebra este 28 y aprovecha tu gratificación en lo que de verdad quieres.", textoBoton: "Ver ofertas" },
     cinta: ["Felices Fiestas Patrias", "Arriba Perú", ENVIO, PAGO],
@@ -137,6 +145,7 @@ export const CAMPANA_PRESETS = congelar([
     despuesDias: 7,
     rubros: ["general", "moda", "belleza", "hogar"],
     paleta: { primario: "#16a34a", neutro: "stone", fondos: TINTE },
+    efecto: "petalos", diasEfecto: [0], saludo: "¡Feliz primavera!",
     topBar: "Llegó la primavera: renueva lo tuyo",
     hero: { titulo: "Llegó la primavera", subtitulo: "Colores nuevos, energía nueva: dale vida a esta temporada.", textoBoton: "Ver novedades" },
     cinta: ["Primavera", "Día de la Juventud", "Novedades de temporada", ENVIO],
@@ -149,6 +158,7 @@ export const CAMPANA_PRESETS = congelar([
     anticipacionDias: 16,
     rubros: ["general", "moda", "alimentos", "mascotas", "hogar"],
     paleta: { primario: "#ea580c", neutro: "zinc", fondos: NOCHE },
+    efecto: "murcielagos", diasEfecto: [0], saludo: "¡Feliz Halloween!",
     topBar: "Halloween se acerca: prepárate para el 31",
     hero: { titulo: "Noche de Halloween", subtitulo: "Todo para asustar (o antojar) este 31 de octubre.", textoBoton: "Ver lo de Halloween" },
     cinta: ["Halloween", "Truco o trato", ENVIO, PAGO],
@@ -165,6 +175,7 @@ export const CAMPANA_PRESETS = congelar([
     prioridad: 2,
     rubros: "*",
     paleta: { primario: "#18181b", neutro: "zinc", fondos: MARCO },
+    efecto: "etiquetas", diasEfecto: [0], saludo: "¡Llegó el Black Friday!",
     topBar: "Black Friday: los mejores precios del año",
     hero: { titulo: "Black Friday", subtitulo: "Los mejores precios del año, solo por pocos días.", textoBoton: "Ver ofertas" },
     cinta: ["Black Friday", "Cyber Monday", "Solo por pocos días", PAGO],
@@ -178,6 +189,7 @@ export const CAMPANA_PRESETS = congelar([
     anticipacionDias: 40,
     rubros: "*",
     paleta: { primario: "#b91c1c", neutro: "stone", fondos: { ...MARCO, pagina: "tinte" } },
+    efecto: "nieve", diasEfecto: [-1, 0], saludo: "¡Feliz Navidad!",
     topBar: "Compra con tiempo y recibe antes de Nochebuena",
     hero: { titulo: "Esta Navidad, regala bonito", subtitulo: "Encuentra el regalo para toda la familia y recíbelo antes de Nochebuena.", textoBoton: "Ver regalos" },
     cinta: ["Feliz Navidad", "Regalos para toda la familia", ENVIO, PAGO],
@@ -186,6 +198,22 @@ export const CAMPANA_PRESETS = congelar([
       ...w(["arbol", "balanceo"], ["copo", "girar"], ["regalo", "latir"]),
       widget("estrella", "junto-logo", "girar", { tamano: "chico", enMovil: true })
     ]
+  },
+  {
+    // docs/specs/efectos-festivos. Termina el 1 ene: las rebajas de verano
+    // empiezan el 2, así que no se cruzan.
+    id: "anio-nuevo",
+    nombre: "Año Nuevo",
+    regla: { tipo: "fija", mes: 12, dia: 31 },
+    anticipacionDias: 5,
+    despuesDias: 1,
+    rubros: "*",
+    paleta: { primario: "#a16207", neutro: "stone", fondos: NOCHE },
+    efecto: "fuegos", diasEfecto: [0, 1], saludo: "¡Feliz Año Nuevo!",
+    topBar: "Cerramos el año juntos: gracias por elegirnos",
+    hero: { titulo: "¡Feliz Año Nuevo!", subtitulo: "Gracias por acompañarnos este año. Lo que viene, lo celebramos contigo.", textoBoton: "Ver novedades" },
+    cinta: ["Feliz Año Nuevo", "Gracias por este año", ENVIO, PAGO],
+    widgets: w(["estrella", "girar"], ["globo", "flotar"], ["estrella", "girar"])
   }
 ]);
 

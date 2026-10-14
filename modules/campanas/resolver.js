@@ -6,7 +6,7 @@
 // de Lima. Ver docs/specs/campanas-widgets (R3, R4.6, R6).
 
 import { CAMPANA_PRESETS, buscarPreset, sugeridoPara } from "./presets.js";
-import { aIsoLima, ventana, vigente } from "./calendario.js";
+import { aIsoLima, ventana, ventanaEfecto, vigente } from "./calendario.js";
 import { resolverTema } from "../diseno/resolver.js";
 
 const ANCLAS_ORDEN = ["hero-arriba-derecha", "hero-abajo-derecha", "hero-arriba-izquierda", "flotante-izquierda", "junto-logo"];
@@ -45,8 +45,25 @@ export function efectiva(c) {
     },
     cinta: c.cinta ?? base.cinta ?? null,
     oferta: c.oferta === false ? null : c.oferta ?? base.oferta ?? null,
-    widgets: c.widgets ?? base.widgets ?? []
+    widgets: c.widgets ?? base.widgets ?? [],
+    // Efecto festivo (docs/specs/efectos-festivos). Una propia empieza sin efecto (E1.4).
+    efecto: c.efecto ?? base.efecto ?? "ninguno",
+    efectoModo: c.efectoModo ?? "clave",
+    diasEfecto: base.diasEfecto ?? [0],
+    saludo: c.saludo ?? base.saludo ?? null
   };
+}
+
+/**
+ * Efecto que el storefront reproduce en `ahora` (E2.1, E2.3): `{ tipo, saludo }`
+ * si hoy cae en su ventana, o null. "ninguno" con saludo deja solo el saludo.
+ */
+export function efectoVigente(c, v, ahora) {
+  const saludo = c.saludo?.trim() || null;
+  if (c.efecto === "ninguno" && !saludo) return null;
+  const w = ventanaEfecto(c, v);
+  if (!w || ahora < w.inicio || ahora >= w.fin) return null;
+  return { tipo: c.efecto, saludo };
 }
 
 /**
@@ -86,7 +103,8 @@ export function resolverCampana(campanasTienda = [], widgetsTienda = [], ahora) 
     hero: c.hero,
     cinta: c.cinta,
     oferta: c.oferta,
-    widgets: mezclarWidgets(widgetsTienda, c.widgets)
+    widgets: mezclarWidgets(widgetsTienda, c.widgets),
+    efecto: efectoVigente(c, v, ahora)
   };
 }
 
@@ -117,7 +135,8 @@ export function calendarioAnual(campanasTienda = [], rubro, anio) {
 
   const presets = CAMPANA_PRESETS.map((preset) => {
     const propia = porPreset.get(preset.id);
-    const v = ventana(propia ? efectiva(propia) : preset, anio);
+    const ef = efectiva(propia ?? { id: null, presetId: preset.id });
+    const v = ventana(ef, anio);
     return {
       presetId: preset.id,
       campanaId: propia?.id ?? null,
@@ -127,7 +146,8 @@ export function calendarioAnual(campanasTienda = [], rubro, anio) {
       sugerida: sugeridoPara(preset, rubro),
       inicio: aIsoLima(v.inicio),
       fechaClave: aIsoLima(v.fechaClave),
-      fin: aIsoLima(v.fin)
+      fin: aIsoLima(v.fin),
+      ...datosEfecto(ef, v)
     };
   });
 
@@ -145,8 +165,21 @@ export function calendarioAnual(campanasTienda = [], rubro, anio) {
       sugerida: false,
       inicio: aIsoLima(v.inicio),
       fechaClave: aIsoLima(v.fechaClave),
-      fin: aIsoLima(v.fin)
+      fin: aIsoLima(v.fin),
+      ...datosEfecto(efectiva(c), v)
     }));
 
   return [...presets, ...propias].sort((a, b) => a.inicio.localeCompare(b.inicio));
+}
+
+/** Efecto de una campaña en el calendario del admin (E4.1): días en que se ve. */
+function datosEfecto(c, v) {
+  const w = c.efecto === "ninguno" ? null : ventanaEfecto(c, v);
+  return {
+    efecto: c.efecto,
+    efectoModo: c.efectoModo,
+    saludo: c.saludo?.trim() || null,
+    efectoInicio: w ? aIsoLima(w.inicio) : null,
+    efectoFin: w ? aIsoLima(w.fin) : null
+  };
 }

@@ -1,10 +1,14 @@
 import { estadoEfectivo, etiquetaEstado } from "./estados.js";
 import { serializarEntrada } from "./eventos/entradas.js";
-import { textoEn, traducirTour } from "../traducciones/traducciones.service.js";
+import { localizar } from "../traducciones/localizar.js";
+import { FUENTES } from "../traducciones/fuentes.js";
 import { fechaLima } from "./tiempo.js";
 import { resumenPlan } from "./locales/plan-pagos.js";
 import { etiquetaTipoEvento } from "./locales/cotizar.js";
 import { etiquetaConcepto } from "./locales/contrato.js";
+import { IDIOMA_BASE } from "../idiomas/idioma.js";
+import { clave } from "../idiomas/clave.js";
+import { TRADUCTOR_BASE } from "../idiomas/traductor.js";
 
 /**
  * Contrato de salida del mini booking. La reserva se construye campo por campo
@@ -18,10 +22,21 @@ import { etiquetaConcepto } from "./locales/contrato.js";
 const num = (v) => (v === null || v === undefined ? null : Number(v));
 
 export function etiquetaModalidad(modalidad, reserva) {
+  const { clave: k, params } = textoModalidad(modalidad, reserva);
+  return TRADUCTOR_BASE(k, params);
+}
+
+/**
+ * La misma etiqueta como clave del catálogo + valores, para que la tienda la
+ * traduzca en el idioma de la página: "3 noches" no es una clave, "{n} noches" sí
+ * (docs/specs/idiomas D7).
+ */
+export function textoModalidad(modalidad, reserva) {
   const horas = reserva?.horas ?? modalidad?.horas;
-  if ((modalidad?.tipo ?? (horas ? "horas" : "noche")) === "horas") return `${horas} horas`;
+  if ((modalidad?.tipo ?? (horas ? "horas" : "noche")) === "horas") return { clave: clave("{n} horas"), params: { n: horas } };
   const noches = reserva?.noches;
-  return noches ? `${noches} ${noches === 1 ? "noche" : "noches"}` : "Por noche";
+  if (!noches) return { clave: clave("Por noche"), params: {} };
+  return { clave: noches === 1 ? clave("{n} noche") : clave("{n} noches"), params: { n: noches } };
 }
 
 /** "44836469" → "•••••469": el titular reconoce su documento sin exponerlo entero. */
@@ -55,7 +70,7 @@ const entradasDe = (pedido) => (pedido.itemsEvento ?? []).map(i => ({
 }));
 
 function fichaTour(r) {
-  const t = traducirTour(r.producto?.tour ?? {}, r.producto?.traducciones, r.idiomaHuesped === "en" ? "en" : "es");
+  const t = localizar(FUENTES.tours, { tour: r.producto?.tour ?? {}, traducciones: r.producto?.traducciones }, r.idiomaHuesped).tour;
   return { duracion: t.duracion ?? null, puntoEncuentro: t.puntoEncuentro ?? null, mapaUrl: r.producto?.tour?.mapaUrl ?? null, recojo: t.recojo ?? null };
 }
 
@@ -128,7 +143,8 @@ function base(pedido, ahora) {
     modalidad: esTour || esEvento || esLocal || esCancha ? null : {
       id: r.modalidadId,
       tipo: r.modalidad?.tipo ?? (r.horas ? "horas" : "noche"),
-      etiqueta: etiquetaModalidad(r.modalidad, r)
+      etiqueta: etiquetaModalidad(r.modalidad, r),
+      texto: textoModalidad(r.modalidad, r)
     },
     inicio: r.inicio,
     fin: r.fin,
@@ -144,7 +160,7 @@ function base(pedido, ahora) {
     // Fase C: habitaciones del mismo tipo, plan de tarifa e idioma del huésped.
     habitaciones: r.habitaciones ?? 1,
     plan: r.plan ?? null,
-    idiomaHuesped: r.idiomaHuesped ?? "es",
+    idiomaHuesped: r.idiomaHuesped ?? IDIOMA_BASE,
     pasajeros,
     idioma: r.idioma ?? null,
     // Lo que el pasajero necesita para llegar a la salida (confirmación, R8.1);
@@ -255,12 +271,12 @@ export function serializeReservaStore(pedido, { tienda, config, metodosPago = []
       // Cómo se nombra el negocio ("el hostal", "la casa"): hospedaje-completo B1.
       alojamiento: config.tipoAlojamiento ?? "hotel"
     },
-    // El huésped que reservó en inglés ve las instrucciones en inglés (C3).
-    instrucciones: r.idiomaHuesped === "en" ? textoEn(config.instrucciones, config.traducciones?.en?.instrucciones) : config.instrucciones,
+    // En el idioma en que reservó (docs/specs/idiomas D11).
+    instrucciones: localizar(FUENTES.config, config, r.idiomaHuesped).instrucciones,
     // Con plan no reembolsable, la política que vale es la del plan (C5).
     politicaCancelacion: r.plan && !r.plan.reembolsable
       ? `Tarifa ${r.plan.nombre}: no se devuelve el pago si cancelas o no llegas.`
-      : r.idiomaHuesped === "en" ? textoEn(config.politicaCancelacion, config.traducciones?.en?.politicaCancelacion) : config.politicaCancelacion,
+      : localizar(FUENTES.config, config, r.idiomaHuesped).politicaCancelacion,
     comprobanteEn: config.comprobanteEn,
     puedeCancelar: ["solicitada", "aceptada", "por_pagar"].includes(dto.estado)
   };

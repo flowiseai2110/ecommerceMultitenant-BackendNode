@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TIPOS } from "./consumo-ia.service.js";
 
 export const consumoIaQuerySchema = z
   .object({
@@ -9,7 +10,8 @@ export const consumoIaQuerySchema = z
   .passthrough();
 
 export const consumoIaParamsSchema = z.object({
-  tipo: z.enum(["asesor", "asistente"], { required_error: "Tipo inválido" })
+  // Los tipos salen de TIPOS: uno nuevo (p. ej. traducciones) se puede ajustar sin tocar aquí.
+  tipo: z.enum(Object.keys(TIPOS), { required_error: "Tipo inválido" })
 });
 
 /**

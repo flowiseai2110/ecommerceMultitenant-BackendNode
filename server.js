@@ -18,6 +18,7 @@ import { performanceMiddleware, getRouteMetrics, resetRouteMetrics } from "./mid
 import { iniciarJobTransmisiones } from "./jobs/transmisiones.job.js";
 import { iniciarJobResenasReservas } from "./jobs/resenas-reservas.job.js";
 import { iniciarRecargaPlantillas } from "./modules/diseno/plantillas.repo.js";
+import { sincronizarClavesAlIniciar } from "./modules/idiomas/claves.service.js";
 
 // Soporte para serializar BigInt a JSON
 BigInt.prototype.toJSON = function() {
@@ -237,6 +238,8 @@ async function startServer() {
     iniciarJobResenasReservas();
     // Plantillas de diseño de la base sobre las del código (editor-diseno-en-vivo P2).
     iniciarRecargaPlantillas();
+    // Catálogo de textos fijos = el del código desplegado (docs/specs/idiomas D8). No bloquea el arranque.
+    sincronizarClavesAlIniciar();
   } catch (error) {
     logger.error("Error al iniciar el servidor:", error);
     process.exit(1);

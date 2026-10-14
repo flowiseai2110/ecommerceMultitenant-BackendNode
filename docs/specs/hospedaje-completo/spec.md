@@ -67,7 +67,7 @@ Un hostal o un hotel puede mostrar sus habitaciones y recibir solicitudes, pero:
 
 - Mezclar tipos de habitación en una solicitud (requiere varias reservas por pedido).
 - Cobro en dólares, channel manager, sincronización con Booking/Airbnb y asignación de habitación física.
-- Traducción a otros idiomas además del inglés.
+- Traducción a otros idiomas además del inglés: la generaliza [idiomas](../idiomas/spec.md).
 
 ## Datos
 

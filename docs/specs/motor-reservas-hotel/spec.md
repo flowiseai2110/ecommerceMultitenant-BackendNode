@@ -1,6 +1,6 @@
 # Spec: motor de reservas del hotel
 
-> Estado (2026-10-14): propuesta. Tareas: [tasks.md](tasks.md).
+> Estado (2026-10-14): M1 y M2 implementadas sin commit (falta correr `docs/sql/cupo_externo.sql` y probar en el navegador); M3 propuesta. Tareas: [tasks.md](tasks.md).
 > Base: [hotel-inventario](../hotel-inventario/spec.md) (cupo real, anulación, reprogramación), [reserva-directa-hotel](../reserva-directa-hotel/spec.md) (apartado y confirmación automática).
 > Repos: BackendNode, FrontendAdmin, FrontendStore.
 
@@ -46,7 +46,7 @@ Prototipo A (Diseño › "Prototipos Reservas Admin"). Es la pantalla de Reserva
 - **M1.3** Bandejas como chips con contador (Por responder, Pago por verificar, Próximas, las del rubro, Historial). Búsqueda y rango de fechas como hoy.
 - **M1.4** Fila: titular, servicio, fechas cortas y el plazo ("vence en 6 h" en Por responder y Pago por verificar, en naranja cuando faltan menos de 12 h; "en 7 días" en Próximas). Cada dato una vez: el código y el estado van en el detalle.
 - **M1.5** Al confirmar, rechazar o verificar, la lista y los contadores se actualizan y la ficha queda abierta: después de cada acción la ficha ofrece el WhatsApp con el mensaje listo, y saltar a la siguiente lo perdería.
-- **M1.6** Hotel: el detalle de una solicitud dice si hay cupo esas noches ("Hay cupo: 1 de 2 libres"), con el dato de M2.
+- ~~**M1.6** Hotel: el detalle de una solicitud dice si hay cupo esas noches.~~ Descartado (2026-10-14): un tipo con cupo cargado se reserva directo y no genera solicitudes ([reserva-directa-hotel](../reserva-directa-hotel/spec.md) RD1); sin cupo cargado no hay dato que mostrar. Aceptar ya avisa "Sin cupo para esas noches".
 
 ### M2. Cupo a la venta (hotel)
 
@@ -54,7 +54,7 @@ La pestaña Disponibilidad pasa a ser el lugar donde el dueño **fija** lo que v
 
 - **M2.1 Ocupadas fuera de la web.** Tabla `hotel_cupo_externo` (tienda, tipo, fecha de la noche, `ocupadas` ≥ 0, `origen` `manual | ical`, quién y cuándo). `ocupacion()` las suma a las de la web: libres = `unidades` − web − fuera de la web. Las estadías de Recepción ya cuentan aparte: esto no las toca.
 - **M2.2 Editar "libres" en la celda.** El dueño escribe cuántas quedan (lo que dice su Excel) y el sistema guarda la diferencia como ocupadas fuera de la web (`manual` = `unidades` − web − ical − libres). No se puede ofrecer más que `unidades` − web − ical: "Tienes 2 vendidas en la web; puedes ofrecer hasta 3".
-- **M2.3 Cambio por rango.** Tipo, desde, hasta y días de la semana (p. ej. vie y sáb) → "libres N" o "cerrar la venta" (`cierres_fecha` del tipo, que ya existe y la tienda ya respeta).
+- **M2.3 Cambio por rango.** Tipo, desde, hasta y días de la semana (p. ej. vie y sáb) → "libres N". **0 = no vender esas noches en la web** (un solo concepto: no se mezcla con `cierres_fecha`, que sigue en Configuración para cerrar todo el hotel). Las noches donde la web ya vendió más quedan con el máximo y se avisa.
 - **M2.4 Grilla.** Tipos × noches con libres/total, color por ocupación (verde, ámbar con 1 libre, rojo sin cupo, sobrevendido con −N) y "+N por responder" en las noches con solicitudes. Rango de 14 o 30 días, hoy resaltado.
 - **M2.5 Detalle de la noche.** Al tocar una celda: las reservas de la web de esa noche (con acceso a la ficha), lo marcado fuera de la web (manual o iCal) y el campo para corregir los libres.
 - **M2.6 Sin `unidades`** (tipo sin control de cupo): la fila invita a cargar el total; no se puede editar.

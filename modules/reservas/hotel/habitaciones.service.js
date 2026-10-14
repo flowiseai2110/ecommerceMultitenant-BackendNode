@@ -1,8 +1,11 @@
 import { prisma } from "../../../config/prisma.js";
 import { NotFoundError, ValidationError } from "../../../utils/errors.js";
 import { invalidateProductoDetailCache } from "../../catalogo/productos.cache.js";
-import { etiquetaModalidad } from "../reservas.serializer.js";
-import { traducirFila } from "../../traducciones/traducciones.service.js";
+import { etiquetaModalidad, textoModalidad } from "../reservas.serializer.js";
+import { localizar } from "../../traducciones/localizar.js";
+import { FUENTES } from "../../traducciones/fuentes.js";
+import { IDIOMA_BASE } from "../../idiomas/idioma.js";
+import { clave } from "../../idiomas/clave.js";
 
 /**
  * Habitaciones del hotel / hostal: un `productos` (nombre, fotos, descripción,
@@ -20,7 +23,9 @@ const serializarModalidad = (m) => ({
   precioVieSab: num(m.precioVieSab),
   activo: m.activo,
   orden: m.orden,
-  etiqueta: m.tipo === "horas" ? `${m.horas} horas` : "Noche"
+  etiqueta: m.tipo === "horas" ? `${m.horas} horas` : "Noche",
+  // La misma etiqueta como clave + valores, para que la tienda la traduzca (docs/specs/idiomas D7).
+  texto: m.tipo === "horas" ? textoModalidad(m) : { clave: clave("Noche"), params: {} }
 });
 
 function serializarFicha(t) {
@@ -38,7 +43,7 @@ function precioDesde(modalidades) {
   const activas = modalidades.filter(m => m.activo);
   if (!activas.length) return null;
   const min = activas.reduce((a, b) => (Number(b.precio) < Number(a.precio) ? b : a));
-  return { precio: num(min.precio), etiqueta: etiquetaModalidad(min) };
+  return { precio: num(min.precio), etiqueta: etiquetaModalidad(min), texto: textoModalidad(min) };
 }
 
 const SELECT_PRODUCTO_STORE = {
@@ -48,10 +53,10 @@ const SELECT_PRODUCTO_STORE = {
   hotelTipo: { include: { modalidades: { where: { activo: true }, orderBy: [{ orden: "asc" }, { precio: "asc" }] } } }
 };
 
-function serializarHabitacionStore(original, { detalle = false, lang = "es" } = {}) {
-  // Inglés (hospedaje-completo C3): nombre y descripciones del producto, camas y servicios de la ficha.
-  const p = traducirFila(original, ["nombre", "descripcionCorta", "descripcion"], lang);
-  const t = traducirFila(original.hotelTipo, ["camas", "amenities"], lang);
+function serializarHabitacionStore(original, { detalle = false, lang = IDIOMA_BASE } = {}) {
+  // En el idioma del visitante (docs/specs/idiomas D5): nombre y descripciones del producto, camas y servicios de la ficha.
+  const p = localizar(FUENTES.productos, original, lang);
+  const t = localizar(FUENTES.habitaciones, original.hotelTipo, lang);
   const imagenes = detalle ? p.imagenes : p.imagenes.filter(i => i.esPrincipal).concat(p.imagenes.filter(i => !i.esPrincipal)).slice(0, 1);
   return {
     id: p.id,
@@ -72,7 +77,7 @@ function serializarHabitacionStore(original, { detalle = false, lang = "es" } = 
 // Store
 // ============================================
 
-export async function listarHabitacionesStore(tiendaId, lang = "es") {
+export async function listarHabitacionesStore(tiendaId, lang = IDIOMA_BASE) {
   const productos = await prisma.productos.findMany({
     where: { tiendaId, activo: true, hotelTipo: { isNot: null } },
     orderBy: [{ destacado: "desc" }, { precioBase: "asc" }],
@@ -81,7 +86,7 @@ export async function listarHabitacionesStore(tiendaId, lang = "es") {
   return productos.filter(p => p.hotelTipo.modalidades.length).map(p => serializarHabitacionStore(p, { lang }));
 }
 
-export async function obtenerHabitacionStore(tiendaId, slug, lang = "es") {
+export async function obtenerHabitacionStore(tiendaId, slug, lang = IDIOMA_BASE) {
   const p = await prisma.productos.findFirst({
     where: { tiendaId, slug, activo: true, hotelTipo: { isNot: null } },
     select: SELECT_PRODUCTO_STORE

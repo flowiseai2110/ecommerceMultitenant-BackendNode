@@ -1,6 +1,8 @@
 import { cotizarHotel, montoACuenta, textoAviso } from "../hotel/cotizar.js";
 import { estadoEfectivo, transicionar } from "../estados.js";
 import { fechaLima, horaLima, instanteLima } from "../tiempo.js";
+import { readFileSync } from "node:fs";
+import { crearTraductor } from "../../idiomas/traductor.js";
 
 // Caso real (Hotel Verona, Los Olivos): Matrimonial, noche S/ 160 y fracción 6 h S/ 100.
 const tipo = { capacidadAdultos: 2, capacidadNinos: 0, capacidadMax: 2 };
@@ -301,11 +303,28 @@ describe("estadoEfectivo — habitación apartada (C1)", () => {
   });
 });
 
-describe("cotizarHotel — en inglés (C3)", () => {
-  it("las líneas y los errores salen en inglés", () => {
-    const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 3, adultos: 2, config, ahora, idioma: "en" });
+describe("cotizarHotel — en otro idioma (docs/specs/idiomas B7)", () => {
+  // El inglés real de la plataforma (modules/idiomas/plataforma/en.json).
+  const en = crearTraductor(JSON.parse(readFileSync(new URL("../../idiomas/plataforma/en.json", import.meta.url), "utf8")));
+
+  it("las líneas y los errores salen en el idioma del traductor", () => {
+    const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 3, adultos: 2, config, ahora, traductor: en });
     expect(c.lineas.map(l => l.descripcion)).toEqual(["1 night × S/ 160 × 1 room", "2 nights × S/ 180 × 1 room"]);
-    const err = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 1, adultos: 3, config, ahora, idioma: "en" });
+    const err = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 1, adultos: 3, config, ahora, traductor: en });
     expect(err.errores[0].mensaje).toBe("This room fits up to 2 adults");
+  });
+
+  it("la fecha corta sigue el formato de cada idioma", () => {
+    const cierres = [{ fechaDesde: "2026-09-24", fechaHasta: "2026-09-24" }];
+    const enIngles = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 1, adultos: 2, config, ahora, cierres, traductor: en });
+    expect(enIngles.errores.find(e => e.codigo === "FECHA_CERRADA").mensaje).toBe("We are not taking bookings for Sep 24. Please choose another date");
+    const enBase = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 1, adultos: 2, config, ahora, cierres });
+    expect(enBase.errores.find(e => e.codigo === "FECHA_CERRADA").mensaje).toBe("No se reciben reservas para el 24/09. Elige otra fecha");
+  });
+
+  it("un idioma sin traducción para un texto lo muestra en el idioma base", () => {
+    const quechuaAMedias = crearTraductor({ "{n} noche": "{n} tuta" });
+    const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 3, adultos: 2, config, ahora, traductor: quechuaAMedias });
+    expect(c.lineas.map(l => l.descripcion)).toEqual(["1 tuta × S/ 160 × 1 hab.", "2 noches × S/ 180 × 1 hab."]);
   });
 });

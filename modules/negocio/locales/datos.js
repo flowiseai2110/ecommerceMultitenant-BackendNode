@@ -2,6 +2,8 @@ import { SECCIONES_COMUNES, SECCIONES_RESERVAS } from "../secciones.js";
 
 /** Local de eventos (alquiler-locales): salones por turno, cotización y plan de pagos. */
 export const locales = {
+  // Textos fijos que muestra su tienda: los traduce el dueño (docs/specs/idiomas D8).
+  gruposTextos: Object.freeze(["comun", "reservas", "locales", "correos", "errores"]),
   recibeReservas: true,
   // Separación, cuotas, garantía, tramos de cancelación y contrato (R1.2, R7, R8, R10).
   planDePagos: true,

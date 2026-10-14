@@ -7,6 +7,9 @@ import { validarYBloquearStock, descontarStock, reponerStock } from "../inventar
 import { cotizarMetodoEnvio } from "../envios/cotizacion.service.js";
 import { nivelDeAcceso, serializarRastreo } from "./rastreo.js";
 import { datosFactura } from "../sunat/ruc.service.js";
+import { clave } from "../idiomas/clave.js";
+import { errorConClave } from "../idiomas/errores.js";
+import { IDIOMA_BASE } from "../idiomas/idioma.js";
 
 // Columnas del destino de entrega en `pedidos` (ver schema.prisma).
 const CAMPOS_DESTINO = [
@@ -122,7 +125,7 @@ class PedidosService {
    * `authUserId` viene del JWT verificado (nunca del body): si el comprador
    * inició sesión en el storefront, el pedido queda en su "Mis pedidos".
    */
-  async create(data, { authUserId = null } = {}) {
+  async create(data, { authUserId = null, idioma = IDIOMA_BASE } = {}) {
     const {
       tiendaId,
       cliente: clienteData,
@@ -173,9 +176,9 @@ class PedidosService {
           ubigeo: destino.ubigeoCode,
           subtotal: subtotal - descuentoMonto
         });
-        if (!cotizacion) throw new ValidationError("El método de envío ya no está disponible");
+        if (!cotizacion) throw errorConClave(ValidationError, clave("El método de envío ya no está disponible"));
         if (!cotizacion.disponible) {
-          throw new ValidationError(`${cotizacion.nombre} no llega a tu distrito. Elige otro método de envío.`);
+          throw errorConClave(ValidationError, clave("{metodo} no llega a tu distrito. Elige otro método de envío."), { metodo: cotizacion.nombre });
         }
         costoEnvio = cotizacion.modo === "fijo" ? cotizacion.costo : 0;
         metodoEnvioNombre = cotizacion.nombre;
@@ -186,11 +189,11 @@ class PedidosService {
       // 3.1 Comprobante: SUNAT exige identificar al adquiriente de una boleta
       // desde S/ 700, y la factura solo si el régimen de la tienda la permite.
       if (comprobante?.tipo === "boleta" && total >= MONTO_BOLETA_CON_DOCUMENTO && !comprobante.docNumero) {
-        throw new ValidationError(`Para boletas desde S/ ${MONTO_BOLETA_CON_DOCUMENTO} se requiere DNI o CE`);
+        throw errorConClave(ValidationError, clave("Para boletas desde S/ {monto} se requiere DNI o CE"), { monto: MONTO_BOLETA_CON_DOCUMENTO });
       }
       if (comprobante?.tipo === "factura") {
         const tienda = await tx.tiendas.findUnique({ where: { id: tiendaId }, select: { emiteFactura: true } });
-        if (!tienda?.emiteFactura) throw new ValidationError("Esta tienda solo emite boletas");
+        if (!tienda?.emiteFactura) throw errorConClave(ValidationError, clave("Esta tienda solo emite boletas"));
       }
 
       // 4. Validar cupón e incrementar uso si viene en el pedido
@@ -202,11 +205,11 @@ class PedidosService {
           where: { tiendaId, codigo: codigoNorm, activo: true }
         });
 
-        if (!cupon) throw new ValidationError("Cupón no válido");
-        if (cupon.fechaInicio && cupon.fechaInicio > now) throw new ValidationError("Cupón aún no vigente");
-        if (cupon.fechaFin && cupon.fechaFin < now) throw new ValidationError("Cupón expirado");
+        if (!cupon) throw errorConClave(ValidationError, clave("Cupón no válido"));
+        if (cupon.fechaInicio && cupon.fechaInicio > now) throw errorConClave(ValidationError, clave("Cupón aún no vigente"));
+        if (cupon.fechaFin && cupon.fechaFin < now) throw errorConClave(ValidationError, clave("Cupón expirado"));
         if (cupon.usoMaximo !== null && cupon.usoActual >= cupon.usoMaximo)
-          throw new ValidationError("Cupón agotado");
+          throw errorConClave(ValidationError, clave("Cupón agotado"));
 
         // Verificar límite por cliente (cliente ya fue creado/actualizado en paso 2)
         if (cupon.usoMaximoPorCliente !== null) {
@@ -214,7 +217,7 @@ class PedidosService {
             where: { tiendaId, clienteId: cliente.id, codigoCupon: codigoNorm }
           });
           if (usosCliente >= cupon.usoMaximoPorCliente) {
-            throw new ValidationError("Ya usaste este cupón el máximo de veces permitido");
+            throw errorConClave(ValidationError, clave("Ya usaste este cupón el máximo de veces permitido"));
           }
         }
 
@@ -237,6 +240,8 @@ class PedidosService {
           clienteWhatsapp: clienteData.whatsappNumero,
           clienteEmail: clienteData.email || null,
           authUserId,
+          // Idioma en que compró (docs/specs/idiomas D11).
+          idioma,
           numeroPedido,
           estado: "pendiente",
           subtotal,

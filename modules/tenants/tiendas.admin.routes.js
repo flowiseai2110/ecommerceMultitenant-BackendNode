@@ -16,6 +16,7 @@ import { aplicarPlantillaSchema } from "../diseno/secciones.schema.js";
 import { getPlantillasWhatsapp, savePlantillasWhatsapp } from "../../services/tienda-plantillas-whatsapp.service.js";
 import { logger } from "../../config/logger.js";
 import { validarCambioTipoNegocio } from "../reservas/reservas.config.service.js";
+import { validarIdiomasDeTienda } from "../idiomas/idiomas.service.js";
 import {
   createTiendaSchema,
   updateTiendaSchema,
@@ -34,6 +35,8 @@ import {
   setTiendasAdminList,
   invalidateTiendasCaches
 } from "./tiendas.cache.js";
+import { despublicadosAlCambiar, publicarCompletos } from "../idiomas/publicacion.service.js";
+import { invalidarIdiomasDeTienda } from "../idiomas/idiomas-tienda.js";
 
 // Crear instancias de las capas
 const tiendasRepository = new GenericRepository(prisma.tiendas, "Tiendas");
@@ -163,9 +166,19 @@ router.put(
     try {
       const { id } = req.params;
       await validarCambioTipoNegocio(id, req.body.tipoNegocio);
+      if (req.body.idiomas) {
+        req.body.idiomas = await validarIdiomasDeTienda(req.body.idiomas);
+        // Quitar un idioma lo despublica (docs/specs/idiomas, P5 refinada).
+        req.body.idiomasPublicados = await despublicadosAlCambiar(id, req.body.idiomas);
+      }
       // tiendas es la raíz del tenant: no tiene campo tiendaId propio.
       // requireTiendaAccess ya verificó el acceso, así que no se pasa tiendaId.
       const record = await tiendaService.update(id, req.body, req.user, null);
+      // Un idioma recién elegido que ya está completo (p. ej. inglés, con el de la plataforma) se publica.
+      if (req.body.idiomas) {
+        invalidarIdiomasDeTienda();
+        await publicarCompletos(id);
+      }
       return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDAS_UPDATED", data: record });
     } catch (error) {
       next(error);

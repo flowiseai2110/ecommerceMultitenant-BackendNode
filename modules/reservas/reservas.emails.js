@@ -1,27 +1,54 @@
 import config from "../../config/index.js";
 import { escapeHtml } from "../../services/email.service.js";
-import { vozAlojamiento } from "./hotel/alojamiento.js";
+import { clave } from "../idiomas/clave.js";
+import { rellenar, TRADUCTOR_BASE } from "../idiomas/traductor.js";
+import { fechaCortaLocal } from "./textos-fecha.js";
 
 /**
  * Correos del mini booking (spec "Avisos" en plan.md). Reciben la reserva ya
  * serializada (serializeReservaStore / serializeReservaAdmin). Nunca llevan
  * datos de pago en el correo de aceptación: se pagan desde el link, donde los
  * datos están siempre vigentes.
+ *
+ * Idioma (docs/specs/idiomas D11, B7): los correos al cliente reciben el
+ * traductor del idioma en que reservó (`traductorPara(tiendaId, r.idiomaHuesped)`)
+ * y salen del catálogo de textos fijos; lo que no está traducido, en el idioma
+ * base. Los correos al negocio van en el idioma base (el admin es en español).
+ *
+ * En el HTML se escapa la plantilla traducida (la escribe el dueño) y después
+ * se insertan los valores, ya escapados o con su <strong>.
  */
 
 const ADMIN_URL = config.frontendUrl || "http://localhost:4200";
 const e = escapeHtml;
-
-const formatoFechaHora = new Intl.DateTimeFormat("es-PE", {
-  timeZone: "America/Lima", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false
-});
-export const fechaHora = (v) => (v ? formatoFechaHora.format(new Date(v)) : "—");
 const soles = (n) => `S/ ${Number(n ?? 0).toFixed(2)}`;
+const b = (html) => `<strong>${html}</strong>`;
 
-function layout({ titulo, intro, cuerpo = "", pie }) {
+/** Texto HTML traducido: plantilla escapada + valores (`params`) ya listos para HTML. */
+const html = (t, k, params) => rellenar(e(t.plantilla(k)), params);
+
+const hora = new Intl.DateTimeFormat("es-PE", { timeZone: "America/Lima", hour: "2-digit", minute: "2-digit", hour12: false });
+const partesLima = new Intl.DateTimeFormat("en-US", { timeZone: "America/Lima", weekday: "short", year: "numeric", month: "2-digit", day: "2-digit" });
+const DIAS = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
+const DIAS_CORTOS = [
+  clave("lun|día corto"), clave("mar|día corto"), clave("mié|día corto"), clave("jue|día corto"),
+  clave("vie|día corto"), clave("sáb|día corto"), clave("dom|día corto")
+];
+
+/** "jue, 24/09, 14:00" en español, "Thu, Sep 24, 14:00" en inglés. */
+export function fechaHora(v, t = TRADUCTOR_BASE) {
+  if (!v) return "—";
+  const d = new Date(v);
+  const p = Object.fromEntries(partesLima.formatToParts(d).map((x) => [x.type, x.value]));
+  return t(clave("{dia}, {fecha}, {hora}|fecha y hora"), {
+    dia: t(DIAS_CORTOS[DIAS[p.weekday]]), fecha: fechaCortaLocal(t, `${p.year}-${p.month}-${p.day}`), hora: hora.format(d)
+  });
+}
+
+function layout({ titulo, intro, cuerpo = "", pie, lang = "es" }) {
   return `
 <!DOCTYPE html>
-<html lang="es">
+<html lang="${e(lang)}">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${titulo}</title></head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -44,7 +71,7 @@ function layout({ titulo, intro, cuerpo = "", pie }) {
 </html>`.trim();
 }
 
-const texto = (html) => `<p style="margin: 0 0 10px; font-size: 15px; line-height: 1.6; color: #4a4a4a;">${html}</p>`;
+const texto = (contenido) => `<p style="margin: 0 0 10px; font-size: 15px; line-height: 1.6; color: #4a4a4a;">${contenido}</p>`;
 
 const boton = (url, etiqueta) => `
   <p style="margin: 20px 0 0; text-align: center;">
@@ -61,155 +88,127 @@ const esTour = (r) => r.tipo === "tour";
 const esEvento = (r) => r.tipo === "evento";
 const esLocal = (r) => r.tipo === "local";
 const esCancha = (r) => r.tipo === "cancha";
-const hora = new Intl.DateTimeFormat("es-PE", { timeZone: "America/Lima", hour: "2-digit", minute: "2-digit", hour12: false });
 
-/** Cómo se nombra al negocio y al inicio del servicio en cada vertical. */
-const voz = (r) => (esEvento(r)
-  ? { Negocio: "El organizador", alNegocio: "al organizador", enNegocio: "en el lugar", inicio: "el inicio de la función", conf: "tu compra" }
-  : esLocal(r)
-  ? { Negocio: "El local", alNegocio: "al local", enNegocio: "en el local", inicio: "la fecha del evento", conf: "la fecha" }
-  : esCancha(r)
-  ? { Negocio: "La cancha", alNegocio: "a la cancha", enNegocio: "en la cancha", inicio: "la hora del partido", conf: "el horario" }
-  : esTour(r)
-  ? { Negocio: "La agencia", alNegocio: "a la agencia", enNegocio: "en destino", inicio: "la hora de salida", conf: "la disponibilidad de la salida" }
-  : { ...vozAlojamiento(r.negocio?.alojamiento), inicio: "la hora de ingreso", conf: "la disponibilidad" });
+// ── Cómo se nombra al negocio y al inicio del servicio en cada vertical ──
 
-// ── Inglés (docs/specs/hospedaje-completo C3) ──
-// Hotel y tours: el huésped que reservó en inglés recibe sus correos en inglés.
-// Los correos al negocio y los de entradas siguen en español.
-const enIngles = (r) => r.idiomaHuesped === "en" && !esEvento(r) && !esLocal(r) && !esCancha(r);
-const formatoEn = new Intl.DateTimeFormat("en-US", {
-  timeZone: "America/Lima", weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false
-});
-const fechaHoraEn = (v) => (v ? formatoEn.format(new Date(v)) : "—");
-const ALOJAMIENTO_EN = { hotel: "the hotel", hostal: "the hostel", casa: "the guesthouse", apart: "the apart-hotel", lodge: "the lodge", posada: "the inn" };
-const vozEn = (r) => {
-  const negocio = esTour(r) ? "the agency" : ALOJAMIENTO_EN[r.negocio?.alojamiento] ?? "the hotel";
-  return {
-    negocio, Negocio: negocio.charAt(0).toUpperCase() + negocio.slice(1),
-    enNegocio: esTour(r) ? "at the destination" : `at ${negocio}`,
-    inicio: esTour(r) ? "the departure time" : "your check-in time",
-    conf: esTour(r) ? "availability for the departure" : "availability"
-  };
+const VOZ = {
+  evento: { Negocio: clave("El organizador|voz"), alNegocio: clave("al organizador|voz"), enNegocio: clave("en el lugar|voz"), inicio: clave("el inicio de la función|voz"), conf: clave("tu compra|voz") },
+  local: { Negocio: clave("El local|voz"), alNegocio: clave("al local|voz"), enNegocio: clave("en el local|voz"), inicio: clave("la fecha del evento|voz"), conf: clave("la fecha|voz") },
+  cancha: { Negocio: clave("La cancha|voz"), alNegocio: clave("a la cancha|voz"), enNegocio: clave("en la cancha|voz"), inicio: clave("la hora del partido|voz"), conf: clave("el horario|voz") },
+  tour: { Negocio: clave("La agencia|voz"), alNegocio: clave("a la agencia|voz"), enNegocio: clave("en destino|voz"), inicio: clave("la hora de salida|voz"), conf: clave("la disponibilidad de la salida|voz") }
 };
-const plural = (n, uno, varios) => (n === 1 ? uno : varios);
-function textoPersonasEn(r) {
-  if (esTour(r)) return (r.pasajeros ?? []).map(p => `${p.cantidad} ${p.nombre}`).join(", ") || "—";
-  return `${r.adultos} ${plural(r.adultos, "adult", "adults")}${r.ninos ? `, ${r.ninos} ${plural(r.ninos, "child", "children")}` : ""}`;
-}
-const estadiaEn = (r) => (r.modalidad?.tipo === "horas" ? `${r.horas ?? ""} hours`.trim() : `${r.noches} ${plural(r.noches, "night", "nights")}`);
+// Hotel: según el tipo de alojamiento (hospedaje-completo B1). Un hostal no es "el hotel".
+const VOZ_ALOJAMIENTO = {
+  hotel: { Negocio: clave("El hotel|voz"), alNegocio: clave("al hotel|voz"), enNegocio: clave("en el hotel|voz") },
+  hostal: { Negocio: clave("El hostal|voz"), alNegocio: clave("al hostal|voz"), enNegocio: clave("en el hostal|voz") },
+  casa: { Negocio: clave("La casa|voz"), alNegocio: clave("a la casa|voz"), enNegocio: clave("en la casa|voz") },
+  apart: { Negocio: clave("El apart|voz"), alNegocio: clave("al apart|voz"), enNegocio: clave("en el apart|voz") },
+  lodge: { Negocio: clave("El lodge|voz"), alNegocio: clave("al lodge|voz"), enNegocio: clave("en el lodge|voz") },
+  posada: { Negocio: clave("La posada|voz"), alNegocio: clave("a la posada|voz"), enNegocio: clave("en la posada|voz") }
+};
+const VOZ_HOTEL = { inicio: clave("la hora de ingreso|voz"), conf: clave("la disponibilidad|voz") };
 
-function textoPersonas(r) {
-  if (esTour(r)) return (r.pasajeros ?? []).map(p => `${p.cantidad} ${p.nombre.toLowerCase()}`).join(", ") || "—";
-  if (esEvento(r)) return (r.entradas ?? []).map(e => `${e.nombre} × ${e.cantidad}`).join(", ") || "—";
-  return `${r.adultos} ${r.adultos === 1 ? "adulto" : "adultos"}${r.ninos ? `, ${r.ninos} ${r.ninos === 1 ? "niño" : "niños"}` : ""}`;
-}
-
-function resumenEn(r) {
-  const detalle = esTour(r)
-    ? fila("Tour", e(r.producto.nombre ?? "—")) +
-      fila("Departure", e(fechaHoraEn(r.inicio))) +
-      (r.tour?.puntoEncuentro ? fila("Meeting point", e(r.tour.puntoEncuentro)) : "") +
-      fila("Passengers", e(textoPersonasEn(r)))
-    : fila("Room", e(`${r.habitaciones > 1 ? `${r.habitaciones} × ` : ""}${r.producto.nombre ?? "—"}`)) +
-      fila("Stay", e(estadiaEn(r))) +
-      fila("Check-in", e(fechaHoraEn(r.inicio))) +
-      fila("Check-out", e(fechaHoraEn(r.fin))) +
-      fila("Guests", e(textoPersonasEn(r)));
-  return `
-  <table role="presentation" style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;">
-    ${fila("Booking code", `<strong>${e(r.codigo)}</strong>`)}
-    ${detalle}
-    ${fila("Total", `<strong>${soles(r.total)}</strong>`)}
-  </table>`;
+function voz(r, t) {
+  const claves = VOZ[r.tipo] ?? { ...(VOZ_ALOJAMIENTO[r.negocio?.alojamiento] ?? VOZ_ALOJAMIENTO.hotel), ...VOZ_HOTEL };
+  return Object.fromEntries(Object.entries(claves).map(([k, v]) => [k, e(t(v))]));
 }
 
-/** Resumen de la estadía o del tour, igual en todos los correos. */
-function resumen(r) {
-  if (enIngles(r)) return resumenEn(r);
+function textoPersonas(r, t) {
+  if (esTour(r)) return (r.pasajeros ?? []).map((p) => `${p.cantidad} ${p.nombre.toLowerCase()}`).join(", ") || "—";
+  if (esEvento(r)) return (r.entradas ?? []).map((x) => `${x.nombre} × ${x.cantidad}`).join(", ") || "—";
+  const plural = (n, uno, varios) => t(n === 1 ? uno : varios, { n });
+  const adultos = plural(r.adultos, clave("{n} adulto"), clave("{n} adultos"));
+  return r.ninos ? `${adultos}, ${plural(r.ninos, clave("{n} niño"), clave("{n} niños"))}` : adultos;
+}
+
+function estadia(r, t) {
+  if (r.modalidad?.tipo === "horas") return t(clave("{n} horas"), { n: r.horas ?? "" });
+  return t(r.noches === 1 ? clave("{n} noche") : clave("{n} noches"), { n: r.noches });
+}
+
+/** Resumen de la reserva, igual en todos los correos. */
+function resumen(r, t) {
+  const f = (v) => e(fechaHora(v, t));
+  const et = (k) => e(t(k));
   const l = r.local;
   const detalle = esLocal(r)
-    ? fila("Salón", e(l?.salon ?? r.producto.nombre ?? "—")) +
-      fila("Evento", e(`${l?.tipoEventoEtiqueta ?? "—"}${l?.agasajado ? ` · ${l.agasajado}` : ""}`)) +
-      fila("Fecha", e(`${fechaHora(r.inicio)}${l?.turno?.nombre ? ` · turno ${l.turno.nombre}` : ""} · hasta las ${l?.horaFin ?? hora.format(new Date(r.fin))}`)) +
-      fila("Invitados", e(String(l?.invitados ?? "—"))) +
-      (l?.paquete?.nombre ? fila("Paquete", e(l.paquete.nombre)) : "") +
-      (r.montoAPagar ? fila("Separación", soles(r.montoAPagar)) : "") +
-      (l?.garantia ? fila("Garantía", soles(l.garantia)) : "")
+    ? fila(et(clave("Salón")), e(l?.salon ?? r.producto.nombre ?? "—")) +
+      fila(et(clave("Evento")), e(`${l?.tipoEventoEtiqueta ?? "—"}${l?.agasajado ? ` · ${l.agasajado}` : ""}`)) +
+      fila(et(clave("Fecha")), `${f(r.inicio)}${l?.turno?.nombre ? ` · ${html(t, clave("turno {nombre}"), { nombre: e(l.turno.nombre) })}` : ""} · ${e(t(clave("hasta las {hora}"), { hora: l?.horaFin ?? hora.format(new Date(r.fin)) }))}`) +
+      fila(et(clave("Invitados")), e(String(l?.invitados ?? "—"))) +
+      (l?.paquete?.nombre ? fila(et(clave("Paquete")), e(l.paquete.nombre)) : "") +
+      (r.montoAPagar ? fila(et(clave("Separación")), soles(r.montoAPagar)) : "") +
+      (l?.garantia ? fila(et(clave("Garantía")), soles(l.garantia)) : "")
     : esEvento(r)
-    ? fila("Evento", e(r.producto.nombre ?? "—")) +
-      fila("Función", e(`${fechaHora(r.inicio)}${r.evento?.funcion ? ` · ${r.evento.funcion}` : ""}`)) +
-      (r.evento?.lugar ? fila("Lugar", e(r.evento.lugar)) : "") +
-      fila("Entradas", e(textoPersonas(r)))
+    ? fila(et(clave("Evento")), e(r.producto.nombre ?? "—")) +
+      fila(et(clave("Función")), `${f(r.inicio)}${r.evento?.funcion ? ` · ${e(r.evento.funcion)}` : ""}`) +
+      (r.evento?.lugar ? fila(et(clave("Lugar")), e(r.evento.lugar)) : "") +
+      fila(et(clave("Entradas")), e(textoPersonas(r, t)))
     : esCancha(r)
-    ? fila("Cancha", e(`${r.cancha?.nombre ?? r.producto.nombre ?? "—"}${r.cancha?.formato ? ` · ${r.cancha.formato}` : ""}`)) +
-      fila("Horario", e(`${fechaHora(r.inicio)} a ${hora.format(new Date(r.fin))}`)) +
-      (r.montoAPagar && r.montoAPagar < r.total ? fila("Adelanto", soles(r.montoAPagar)) + fila("Saldo en la cancha", soles(r.total - r.montoAPagar)) : "")
+    ? fila(et(clave("Cancha")), e(`${r.cancha?.nombre ?? r.producto.nombre ?? "—"}${r.cancha?.formato ? ` · ${r.cancha.formato}` : ""}`)) +
+      fila(et(clave("Horario")), e(t(clave("{inicio} a {fin}|horario"), { inicio: fechaHora(r.inicio, t), fin: hora.format(new Date(r.fin)) }))) +
+      (r.montoAPagar && r.montoAPagar < r.total
+        ? fila(et(clave("Adelanto")), soles(r.montoAPagar)) + fila(et(clave("Saldo en la cancha")), soles(r.total - r.montoAPagar))
+        : "")
     : esTour(r)
-    ? fila("Tour", e(r.producto.nombre ?? "—")) +
-      fila("Salida", e(fechaHora(r.inicio))) +
-      (r.tour?.puntoEncuentro ? fila("Punto de encuentro", e(r.tour.puntoEncuentro)) : "") +
-      fila("Pasajeros", e(textoPersonas(r)))
-    : fila("Habitación", e(r.producto.nombre ?? "—")) +
-      fila("Estadía", e(r.modalidad.etiqueta)) +
-      fila("Ingreso", e(fechaHora(r.inicio))) +
-      fila("Salida", e(fechaHora(r.fin))) +
-      fila("Personas", e(textoPersonas(r)));
+    ? fila(et(clave("Tour")), e(r.producto.nombre ?? "—")) +
+      fila(et(clave("Salida|tour")), f(r.inicio)) +
+      (r.tour?.puntoEncuentro ? fila(et(clave("Punto de encuentro")), e(r.tour.puntoEncuentro)) : "") +
+      fila(et(clave("Pasajeros")), e(textoPersonas(r, t)))
+    : fila(et(clave("Habitación")), e(`${r.habitaciones > 1 ? `${r.habitaciones} × ` : ""}${r.producto.nombre ?? "—"}`)) +
+      fila(et(clave("Estadía")), e(estadia(r, t))) +
+      fila(et(clave("Entrada|estadia")), f(r.inicio)) +
+      fila(et(clave("Salida")), f(r.fin)) +
+      fila(et(clave("Personas")), e(textoPersonas(r, t)));
   return `
   <table role="presentation" style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;">
-    ${fila("Código de reserva", `<strong>${e(r.codigo)}</strong>`)}
+    ${fila(et(clave("Código de reserva")), b(e(r.codigo)))}
     ${detalle}
-    ${fila("Total", `<strong>${soles(r.total)}</strong>`)}
+    ${fila(et(clave("Total")), b(soles(r.total)))}
   </table>`;
 }
 
 /** Al cliente, apenas envía la solicitud. */
-export function solicitudRecibidaEmail(r, url) {
-  if (enIngles(r)) {
-    const v = vozEn(r);
-    return {
-      subject: `We received your booking request ${r.codigo} — ${r.negocio.nombre}`,
-      html: layout({
-        titulo: "We received your booking request",
-        intro:
-          texto(`Hi ${e(r.titular.nombres)}, we sent your request to <strong>${e(r.negocio.nombre)}</strong>. ${v.Negocio} will confirm ${v.conf} and we will let you know by email.`) +
-          texto(`If it is not confirmed before ${v.inicio}, the request is cancelled automatically. You can follow its status with the button below.`),
-        cuerpo: resumen(r) + boton(url, "View my booking"),
-        pie: "This is a request: your booking is not confirmed yet."
-      })
-    };
-  }
+export function solicitudRecibidaEmail(r, url, t = TRADUCTOR_BASE) {
+  const v = voz(r, t);
   return {
-    subject: `Recibimos tu solicitud de reserva ${r.codigo} — ${r.negocio.nombre}`,
+    subject: t(clave("Recibimos tu solicitud de reserva {codigo} — {negocio}"), { codigo: r.codigo, negocio: r.negocio.nombre }),
     html: layout({
-      titulo: "Recibimos tu solicitud de reserva",
+      lang: r.idiomaHuesped,
+      titulo: e(t(clave("Recibimos tu solicitud de reserva"))),
       intro:
-        texto(`Hola ${e(r.titular.nombres)}, enviamos tu solicitud a <strong>${e(r.negocio.nombre)}</strong>. ${voz(r).Negocio} confirmará ${voz(r).conf} y te avisaremos por este medio.`) +
-        texto(`Si no la confirma antes de ${voz(r).inicio}, la solicitud se anula sola. Puedes seguir el estado desde el botón de abajo.`),
-      cuerpo: resumen(r) + boton(url, "Ver mi reserva"),
-      pie: "Todavía no tienes una reserva confirmada: esto es una solicitud."
+        texto(html(t, clave("Hola {nombre}, enviamos tu solicitud a {negocio}. {Negocio} confirmará {conf} y te avisaremos por este medio."),
+          { nombre: e(r.titular.nombres), negocio: b(e(r.negocio.nombre)), Negocio: v.Negocio, conf: v.conf })) +
+        texto(html(t, clave("Si no la confirma antes de {inicio}, la solicitud se anula sola. Puedes seguir el estado desde el botón de abajo."), { inicio: v.inicio })),
+      cuerpo: resumen(r, t) + boton(url, e(t(clave("Ver mi reserva")))),
+      pie: e(t(clave("Todavía no tienes una reserva confirmada: esto es una solicitud.")))
     })
   };
 }
 
 /** Al comprador de entradas: el cupo está apartado, falta pagar. */
-export function compraPendienteEmail(r, url) {
+export function compraPendienteEmail(r, url, t = TRADUCTOR_BASE) {
   const hasta = r.evento?.apartadoHasta ? hora.format(new Date(r.evento.apartadoHasta)) : null;
+  const params = { nombre: e(r.titular.nombres), evento: b(e(r.producto.nombre ?? "")), monto: b(soles(r.montoAPagar)), hora: b(hasta) };
   return {
-    subject: `Apartamos tus entradas ${r.codigo} — completa el pago`,
+    subject: t(clave("Apartamos tus entradas {codigo} — completa el pago"), { codigo: r.codigo }),
     html: layout({
-      titulo: "Apartamos tus entradas",
+      lang: r.idiomaHuesped,
+      titulo: e(t(clave("Apartamos tus entradas"))),
       intro:
-        texto(`Hola ${e(r.titular.nombres)}, tus entradas para <strong>${e(r.producto.nombre ?? "")}</strong> están apartadas. Para confirmarlas, paga <strong>${soles(r.montoAPagar)}</strong> y sube la captura desde el link${hasta ? ` antes de las <strong>${hasta}</strong>` : ""}.`) +
-        texto("Si no subes la captura a tiempo, las entradas vuelven a la venta."),
-      cuerpo: resumen(r) + boton(url, "Pagar y subir mi captura"),
-      pie: "Tu compra se confirma cuando el organizador verifica el pago."
+        texto(hasta
+          ? html(t, clave("Hola {nombre}, tus entradas para {evento} están apartadas. Para confirmarlas, paga {monto} y sube la captura desde el link antes de las {hora}."), params)
+          : html(t, clave("Hola {nombre}, tus entradas para {evento} están apartadas. Para confirmarlas, paga {monto} y sube la captura desde el link."), params)) +
+        texto(e(t(clave("Si no subes la captura a tiempo, las entradas vuelven a la venta.")))),
+      cuerpo: resumen(r, t) + boton(url, e(t(clave("Pagar y subir mi captura")))),
+      pie: e(t(clave("Tu compra se confirma cuando el organizador verifica el pago.")))
     })
   };
 }
 
-/** Al negocio: nueva solicitud. */
+/** Al negocio: nueva solicitud (en el idioma base). */
 export function nuevaSolicitudEmail(r) {
+  const t = TRADUCTOR_BASE;
   return {
     subject: esTour(r)
       ? `🧭 Nueva solicitud ${r.codigo}: ${r.producto.nombre} · ${r.personas} pax · salida ${fechaHora(r.inicio)}`
@@ -222,8 +221,8 @@ export function nuevaSolicitudEmail(r) {
       titulo: "Tienes una nueva solicitud de reserva",
       intro:
         texto(`<strong>${e(`${r.titular.nombres} ${r.titular.apellidos}`)}</strong> pide una reserva. WhatsApp: <strong>${e(r.contacto.whatsapp)}</strong>.`) +
-        texto(`Respóndela antes de ${voz(r).inicio}: si no, se anula sola.`),
-      cuerpo: resumen(r) + boton(`${ADMIN_URL}/reservas/${r.id}`, "Aceptar o rechazar"),
+        texto(`Respóndela antes de ${voz(r, t).inicio}: si no, se anula sola.`),
+      cuerpo: resumen(r, t) + boton(`${ADMIN_URL}/reservas/${r.id}`, "Aceptar o rechazar"),
       pie: "Recibiste este correo porque tu negocio recibe reservas desde su vitrina web."
     })
   };
@@ -244,123 +243,102 @@ export function nuevaReservaEmail(r) {
         texto(confirmada
           ? "La reserva quedó confirmada y se paga al llegar."
           : "Cuando suba la captura del pago, verifícala para confirmar la reserva."),
-      cuerpo: resumen(r) + boton(`${ADMIN_URL}/reservas/${r.id}`, "Ver la reserva"),
+      cuerpo: resumen(r, TRADUCTOR_BASE) + boton(`${ADMIN_URL}/reservas/${r.id}`, "Ver la reserva"),
       pie: "Recibiste este correo porque tu negocio recibe reservas desde su vitrina web."
     })
   };
 }
 
-/**
- * Al huésped, unas horas después de su estadía o tour (hospedaje-completo C6).
- * En el idioma en que reservó.
- */
 const NOMBRES_FUENTE = {
   google: "Google", booking: "Booking.com", tripadvisor: "Tripadvisor", airbnb: "Airbnb", facebook: "Facebook",
   getyourguide: "GetYourGuide", viator: "Viator"
 };
 
 /**
- * "¿Cómo te fue?" tras la estadía o el tour (C6). `externa` es la primera
- * reseña en otro sitio que configuró el negocio: se invita a dejarla también ahí.
+ * "¿Cómo te fue?" tras la estadía o el tour (hospedaje-completo C6), en el
+ * idioma en que reservó. `externa` es la primera reseña en otro sitio que
+ * configuró el negocio: se invita a dejarla también ahí.
  */
-export function pedirResenaEmail({ idioma, nombre, negocio, producto, tipo = "hotel", externa = null }, url) {
-  const en = idioma === "en";
+export function pedirResenaEmail({ nombre, negocio, producto, tipo = "hotel", externa = null, idioma }, url, t = TRADUCTOR_BASE) {
   const tour = tipo === "tour";
   const sitio = externa ? NOMBRES_FUENTE[externa.fuente] ?? externa.fuente : null;
   return {
-    subject: en ? `How was your ${tour ? "tour" : "stay"} with ${negocio}?` : `¿Cómo te fue con ${negocio}?`,
+    subject: t(tour ? clave("¿Cómo te fue con {negocio}?|tour") : clave("¿Cómo te fue con {negocio}?|estadía"), { negocio }),
     html: layout({
-      titulo: en ? "How was it?" : "¿Cómo te fue?",
-      intro: texto(en
-        ? `Hi ${e(nombre)}, thank you for choosing <strong>${e(negocio)}</strong>. Your review takes a minute and helps other travelers decide.`
-        : `Hola ${e(nombre)}, gracias por elegir <strong>${e(negocio)}</strong>. Tu reseña toma un minuto y ayuda a otros viajeros a decidir.`)
-        + (producto ? texto(`${en ? (tour ? "Your tour" : "Your room") : "Tu reserva"}: <strong>${e(producto)}</strong>`) : ""),
-      cuerpo: boton(url, en ? "Write my review" : "Dejar mi reseña")
-        + (externa ? texto(en
-          ? `Do you also have a minute for <a href="${e(externa.url)}" style="color: #2563eb;">${e(sitio)}</a>? It helps us a lot.`
-          : `¿Tienes un minuto más? Tu reseña en <a href="${e(externa.url)}" style="color: #2563eb;">${e(sitio)}</a> nos ayuda mucho.`) : ""),
-      pie: en ? "One review per booking. The link is personal." : "Una reseña por reserva. El link es personal."
+      lang: idioma,
+      titulo: e(t(clave("¿Cómo te fue?"))),
+      intro: texto(html(t, clave("Hola {nombre}, gracias por elegir {negocio}. Tu reseña toma un minuto y ayuda a otros viajeros a decidir."),
+        { nombre: e(nombre), negocio: b(e(negocio)) }))
+        + (producto ? texto(`${e(t(tour ? clave("Tu reserva|tour") : clave("Tu reserva|estadía")))}: ${b(e(producto))}`) : ""),
+      cuerpo: boton(url, e(t(clave("Dejar mi reseña"))))
+        + (externa ? texto(html(t, clave("¿Tienes un minuto más? Tu reseña en {sitio} nos ayuda mucho."),
+          { sitio: `<a href="${e(externa.url)}" style="color: #2563eb;">${e(sitio)}</a>` })) : ""),
+      pie: e(t(clave("Una reseña por reserva. El link es personal.")))
     })
   };
 }
 
 /** Al cliente: aceptada, toca pagar. */
-export function aceptadaEmail(r, url) {
-  if (enIngles(r)) {
-    const v = vozEn(r);
-    return {
-      subject: `Your booking ${r.codigo} was accepted: complete the payment`,
-      html: layout({
-        titulo: "Your request was accepted!",
-        intro:
-          texto(`Hi ${e(r.titular.nombres)}, <strong>${e(r.negocio.nombre)}</strong> has availability. To confirm, pay <strong>${soles(r.montoAPagar)}</strong> before ${v.inicio} and upload the payment screenshot from the link.`) +
-          (r.ajuste ? texto(`${v.Negocio} adjusted the total: <em>${e(r.ajuste.motivo)}</em>.`) : "") +
-          (r.saldoDestino > 0 ? texto(`The balance of <strong>${soles(r.saldoDestino)}</strong> is paid ${v.enNegocio}.`) : ""),
-        cuerpo: resumen(r) + boton(url, "Pay and upload my screenshot"),
-        pie: `If you don't pay before ${v.inicio}, the booking is cancelled.`
-      })
-    };
-  }
-  const v = voz(r);
-  const ajuste = r.ajuste ? texto(`${v.Negocio} ajustó el total: <em>${e(r.ajuste.motivo)}</em>.`) : "";
-  const saldo = r.saldoDestino > 0 ? texto(`El saldo de <strong>${soles(r.saldoDestino)}</strong> se paga ${v.enNegocio}.`) : "";
+export function aceptadaEmail(r, url, t = TRADUCTOR_BASE) {
+  const v = voz(r, t);
+  const ajuste = r.ajuste ? texto(html(t, clave("{Negocio} ajustó el total: {motivo}."), { Negocio: v.Negocio, motivo: `<em>${e(r.ajuste.motivo)}</em>` })) : "";
+  const saldo = r.saldoDestino > 0 ? texto(html(t, clave("El saldo de {monto} se paga {enNegocio}."), { monto: b(soles(r.saldoDestino)), enNegocio: v.enNegocio })) : "";
+  const nombre = e(r.titular.nombres);
+  const negocio = b(e(r.negocio.nombre));
+  const monto = b(soles(r.montoAPagar));
   // Canchas (alquiler-canchas R5): el horario queda apartado unos minutos mientras se paga el adelanto.
   if (esCancha(r)) {
     const hasta = r.cancha?.apartadoHasta ? hora.format(new Date(r.cancha.apartadoHasta)) : null;
     return {
-      subject: `Separamos tu horario ${r.codigo}: paga el adelanto`,
+      subject: t(clave("Separamos tu horario {codigo}: paga el adelanto"), { codigo: r.codigo }),
       html: layout({
-        titulo: "Separamos tu horario",
+        lang: r.idiomaHuesped,
+        titulo: e(t(clave("Separamos tu horario"))),
         intro:
-          texto(`Hola ${e(r.titular.nombres)}, tu horario en <strong>${e(r.negocio.nombre)}</strong> está apartado${hasta ? ` hasta las <strong>${hasta}</strong>` : ""}. Para confirmarlo, paga el adelanto de <strong>${soles(r.montoAPagar)}</strong> y sube la captura desde el link.`) +
+          texto(hasta
+            ? html(t, clave("Hola {nombre}, tu horario en {negocio} está apartado hasta las {hora}. Para confirmarlo, paga el adelanto de {monto} y sube la captura desde el link."), { nombre, negocio, monto, hora: b(hasta) })
+            : html(t, clave("Hola {nombre}, tu horario en {negocio} está apartado. Para confirmarlo, paga el adelanto de {monto} y sube la captura desde el link."), { nombre, negocio, monto })) +
           ajuste + saldo,
-        cuerpo: resumen(r) + boton(url, "Pagar y subir mi captura"),
-        pie: "Si no subes la captura a tiempo, el horario se libera para otro equipo."
+        cuerpo: resumen(r, t) + boton(url, e(t(clave("Pagar y subir mi captura")))),
+        pie: e(t(clave("Si no subes la captura a tiempo, el horario se libera para otro equipo.")))
       })
     };
   }
+  // Locales (alquiler-locales R8.3, R7): contrato primero, luego la separación; el resto en cuotas.
+  const intro = esLocal(r)
+    ? texto(r.local?.apartadoHasta
+      ? html(t, clave("Hola {nombre}, {negocio} aceptó tu solicitud. Para separar la fecha, lee y acepta el contrato, y paga la separación de {monto} antes del {fecha}."), { nombre, negocio, monto, fecha: e(fechaHora(r.local.apartadoHasta, t)) })
+      : html(t, clave("Hola {nombre}, {negocio} aceptó tu solicitud. Para separar la fecha, lee y acepta el contrato, y paga la separación de {monto}."), { nombre, negocio, monto })) +
+      texto(e(t(clave("El resto se paga en cuotas según el plan de pagos que verás en el link.")))) + ajuste
+    : texto(html(t, clave("Hola {nombre}, {negocio} tiene disponibilidad. Para confirmar, paga {monto} antes de {inicio} y sube la captura desde el link."), { nombre, negocio, monto, inicio: v.inicio })) +
+      ajuste + saldo;
   return {
-    subject: `Tu reserva ${r.codigo} fue aceptada: completa el pago`,
+    subject: t(clave("Tu reserva {codigo} fue aceptada: completa el pago"), { codigo: r.codigo }),
     html: layout({
-      titulo: "¡Tu solicitud fue aceptada!",
-      intro: esLocal(r)
-        // Locales (alquiler-locales R8.3, R7): contrato primero, luego la separación; el resto en cuotas.
-        ? texto(`Hola ${e(r.titular.nombres)}, <strong>${e(r.negocio.nombre)}</strong> aceptó tu solicitud. Para separar la fecha, lee y acepta el contrato, y paga la separación de <strong>${soles(r.montoAPagar)}</strong>${r.local?.apartadoHasta ? ` antes del ${e(fechaHora(r.local.apartadoHasta))}` : ""}.`) +
-          texto(`El resto se paga en cuotas según el plan de pagos que verás en el link.`) + ajuste
-        : texto(`Hola ${e(r.titular.nombres)}, <strong>${e(r.negocio.nombre)}</strong> tiene disponibilidad. Para confirmar, paga <strong>${soles(r.montoAPagar)}</strong> antes de ${v.inicio} y sube la captura desde el link.`) +
-          ajuste + saldo,
-      cuerpo: resumen(r) + boton(url, esLocal(r) ? "Ver contrato y pagar" : "Pagar y subir mi captura"),
-      pie: esLocal(r) ? "Si no pagas la separación a tiempo, la fecha se libera." : `Si no pagas antes de ${v.inicio}, la reserva se anula.`
+      lang: r.idiomaHuesped,
+      titulo: e(t(clave("¡Tu solicitud fue aceptada!"))),
+      intro,
+      cuerpo: resumen(r, t) + boton(url, e(t(esLocal(r) ? clave("Ver contrato y pagar") : clave("Pagar y subir mi captura")))),
+      pie: esLocal(r)
+        ? e(t(clave("Si no pagas la separación a tiempo, la fecha se libera.")))
+        : html(t, clave("Si no pagas antes de {inicio}, la reserva se anula."), { inicio: v.inicio })
     })
   };
 }
 
 /** Al cliente: rechazada. */
-export function rechazadaEmail(r, url) {
-  if (enIngles(r)) {
-    return {
-      subject: `Your request ${r.codigo} could not be accepted — ${r.negocio.nombre}`,
-      html: layout({
-        titulo: "Your request could not be accepted",
-        intro:
-          texto(`Hi ${e(r.titular.nombres)}, <strong>${e(r.negocio.nombre)}</strong> has no availability for your request.`) +
-          (r.motivoRechazo ? texto(`Reason: <em>${e(r.motivoRechazo)}</em>`) : "") +
-          texto(`You can choose another date or message ${vozEn(r).negocio} on WhatsApp.`),
-        cuerpo: resumen(r) + boton(url, "View details"),
-        pie: "You have not been charged."
-      })
-    };
-  }
+export function rechazadaEmail(r, url, t = TRADUCTOR_BASE) {
   return {
-    subject: `Tu solicitud ${r.codigo} no pudo ser aceptada — ${r.negocio.nombre}`,
+    subject: t(clave("Tu solicitud {codigo} no pudo ser aceptada — {negocio}"), { codigo: r.codigo, negocio: r.negocio.nombre }),
     html: layout({
-      titulo: "Tu solicitud no pudo ser aceptada",
+      lang: r.idiomaHuesped,
+      titulo: e(t(clave("Tu solicitud no pudo ser aceptada"))),
       intro:
-        texto(`Hola ${e(r.titular.nombres)}, <strong>${e(r.negocio.nombre)}</strong> no tiene disponibilidad para tu solicitud.`) +
-        (r.motivoRechazo ? texto(`Motivo: <em>${e(r.motivoRechazo)}</em>`) : "") +
-        texto(`Puedes elegir otra fecha o escribirle ${voz(r).alNegocio} por WhatsApp.`),
-      cuerpo: resumen(r) + boton(url, "Ver detalles"),
-      pie: "No se realizó ningún cobro."
+        texto(html(t, clave("Hola {nombre}, {negocio} no tiene disponibilidad para tu solicitud."), { nombre: e(r.titular.nombres), negocio: b(e(r.negocio.nombre)) })) +
+        (r.motivoRechazo ? texto(html(t, clave("Motivo: {motivo}"), { motivo: `<em>${e(r.motivoRechazo)}</em>` })) : "") +
+        texto(html(t, clave("Puedes elegir otra fecha o escribirle {alNegocio} por WhatsApp."), { alNegocio: voz(r, t).alNegocio })),
+      cuerpo: resumen(r, t) + boton(url, e(t(clave("Ver detalles")))),
+      pie: e(t(clave("No se realizó ningún cobro.")))
     })
   };
 }
@@ -374,57 +352,51 @@ export function pagoSubidoEmail(r) {
       intro:
         texto(`<strong>${e(`${r.titular.nombres} ${r.titular.apellidos}`)}</strong> pagó <strong>${soles(r.montoAPagar)}</strong> y subió la captura.`) +
         texto("Verifica en tu app del banco que el dinero llegó y confirma la reserva."),
-      cuerpo: resumen(r) + boton(`${ADMIN_URL}/reservas/${r.id}`, "Verificar el pago"),
+      cuerpo: resumen(r, TRADUCTOR_BASE) + boton(`${ADMIN_URL}/reservas/${r.id}`, "Verificar el pago"),
       pie: "Recibiste este correo porque tu negocio recibe reservas desde su vitrina web."
     })
   };
 }
 
 /** Al cliente: confirmada (spec R8). */
-export function confirmadaEmail(r, url) {
+export function confirmadaEmail(r, url, t = TRADUCTOR_BASE) {
+  const v = voz(r, t);
   const enHotel = r.comprobanteEn === "en_el_servicio";
-  if (enIngles(r)) {
-    const v = vozEn(r);
-    return {
-      subject: `✅ Booking confirmed ${r.codigo} — ${r.negocio.nombre}`,
-      html: layout({
-        titulo: "Your booking is confirmed!",
-        intro:
-          texto(`Hi ${e(r.titular.nombres)}, we look forward to welcoming you at <strong>${e(r.negocio.nombre)}</strong>${r.negocio.direccion ? ` (${e(r.negocio.direccion)})` : ""}.`) +
-          (r.montoPagado > 0
-            ? texto(`Paid: <strong>${soles(r.montoPagado)}</strong>.${r.saldoDestino > 0 ? ` Balance to pay ${v.enNegocio}: <strong>${soles(r.saldoDestino)}</strong>.` : ""}`)
-            : texto(`You pay <strong>${soles(r.saldoDestino || r.total)}</strong> ${v.enNegocio}.`)) +
-          (r.exoneradoIgv ? texto("Please show your passport and Andean Migration Card (TAM) at check-in to keep the IGV tax exemption.") : "") +
-          (r.tour?.recojo ? texto(`<strong>Pick-up:</strong> ${e(r.tour.recojo)}`) : "") +
-          (r.instrucciones ? texto(`<strong>Important:</strong> ${e(r.instrucciones)}`) : ""),
-        cuerpo: resumen(r) + boton(url, "View my confirmation"),
-        pie: esTour(r) ? "Show this confirmation or your booking code at the departure." : "Show this confirmation or your booking code when you arrive."
-      })
-    };
-  }
   const evento = esEvento(r);
   const lugar = evento ? r.evento?.lugar ?? r.producto.nombre : r.negocio.nombre;
   const direccion = evento ? r.evento?.direccion : r.negocio.direccion;
+  const pagado = esLocal(r)
+    // Locales: lo pagado y lo que falta según el plan de pagos (R7.5).
+    ? html(t, clave("Pagado: {pagado}. Saldo: {saldo}."), { pagado: b(soles(r.local?.resumen?.pagado)), saldo: b(soles(r.local?.resumen?.saldo)) }) +
+      (r.local?.resumen?.proximaCuota
+        ? ` ${html(t, clave("Próxima cuota: {monto} hasta el {fecha}."), { monto: soles(r.local.resumen.proximaCuota.monto), fecha: e(r.local.resumen.proximaCuota.venceEn.split("-").reverse().join("/")) })}`
+        : "")
+    : r.montoPagado > 0
+      ? html(t, enHotel ? clave("Pagado a cuenta: {monto}.") : clave("Pagado: {monto}."), { monto: b(soles(r.montoPagado)) }) +
+        (r.saldoDestino > 0 ? ` ${html(t, clave("Saldo a pagar {enNegocio}: {monto}."), { enNegocio: v.enNegocio, monto: b(soles(r.saldoDestino)) })}` : "")
+      // Cobro en destino: nada pagado todavía, todo se paga al llegar.
+      : html(t, clave("Pagas {monto} {enNegocio}."), { monto: b(soles(r.saldoDestino || r.total)), enNegocio: v.enNegocio });
   return {
-    subject: evento ? `✅ Entradas confirmadas ${r.codigo} — ${r.producto.nombre}` : `✅ Reserva confirmada ${r.codigo} — ${r.negocio.nombre}`,
+    subject: evento
+      ? t(clave("✅ Entradas confirmadas {codigo} — {evento}"), { codigo: r.codigo, evento: r.producto.nombre })
+      : t(clave("✅ Reserva confirmada {codigo} — {negocio}"), { codigo: r.codigo, negocio: r.negocio.nombre }),
     html: layout({
-      titulo: evento ? "¡Tus entradas están confirmadas!" : "¡Tu reserva está confirmada!",
+      lang: r.idiomaHuesped,
+      titulo: e(t(evento ? clave("¡Tus entradas están confirmadas!") : clave("¡Tu reserva está confirmada!"))),
       intro:
-        texto(`Hola ${e(r.titular.nombres)}, te esperamos en <strong>${e(lugar)}</strong>${direccion ? ` (${e(direccion)})` : ""}.`) +
-        // Locales: lo pagado y lo que falta según el plan de pagos (R7.5).
-        (esLocal(r)
-          ? texto(`Pagado: <strong>${soles(r.local?.resumen?.pagado)}</strong>. Saldo: <strong>${soles(r.local?.resumen?.saldo)}</strong>.${r.local?.resumen?.proximaCuota ? ` Próxima cuota: ${soles(r.local.resumen.proximaCuota.monto)} hasta el ${e(r.local.resumen.proximaCuota.venceEn.split("-").reverse().join("/"))}.` : ""}`)
-        // Cobro en destino: nada pagado todavía, todo se paga al llegar.
-        : r.montoPagado > 0
-          ? texto(`${enHotel ? "Pagado a cuenta" : "Pagado"}: <strong>${soles(r.montoPagado)}</strong>.${r.saldoDestino > 0 ? ` Saldo a pagar ${voz(r).enNegocio}: <strong>${soles(r.saldoDestino)}</strong>.` : ""}`)
-          : texto(`Pagas <strong>${soles(r.saldoDestino || r.total)}</strong> ${voz(r).enNegocio}.`)) +
-        (enHotel && !esTour(r) && !evento ? texto(`Los consumos durante tu estadía se pagan ${voz(r).enNegocio}. Tu boleta o factura se entrega al finalizar tu estadía.`) : "") +
-        (r.modalidad?.tipo === "horas" ? texto(`Tu estadía es de ${e(fechaHora(r.inicio))} a ${e(fechaHora(r.fin))}. Si llegas más tarde, la hora de salida no cambia.`) : "") +
-        (r.tour?.recojo ? texto(`<strong>Recojo:</strong> ${e(r.tour.recojo)}`) : "") +
-        (r.instrucciones ? texto(`<strong>Importante:</strong> ${e(r.instrucciones)}`) : ""),
-      cuerpo: resumen(r) + boton(url, "Ver mi confirmación"),
-      pie: esEvento(r) ? "Presenta esta confirmación o tu código de compra y tu documento en el ingreso."
-        : esTour(r) ? "Presenta esta confirmación o tu código de reserva en la salida." : "Presenta esta confirmación o tu código de reserva al llegar."
+        texto(direccion
+          ? html(t, clave("Hola {nombre}, te esperamos en {lugar} ({direccion})."), { nombre: e(r.titular.nombres), lugar: b(e(lugar)), direccion: e(direccion) })
+          : html(t, clave("Hola {nombre}, te esperamos en {lugar}."), { nombre: e(r.titular.nombres), lugar: b(e(lugar)) })) +
+        texto(pagado) +
+        (r.exoneradoIgv ? texto(e(t(clave("Muestra tu pasaporte y la Tarjeta Andina de Migración (TAM) al llegar para mantener la exoneración del IGV.")))) : "") +
+        (enHotel && !esTour(r) && !evento ? texto(html(t, clave("Los consumos durante tu estadía se pagan {enNegocio}. Tu boleta o factura se entrega al finalizar tu estadía."), { enNegocio: v.enNegocio })) : "") +
+        (r.modalidad?.tipo === "horas" ? texto(html(t, clave("Tu estadía es de {inicio} a {fin}. Si llegas más tarde, la hora de salida no cambia."), { inicio: e(fechaHora(r.inicio, t)), fin: e(fechaHora(r.fin, t)) })) : "") +
+        (r.tour?.recojo ? texto(`${b(e(t(clave("Recojo"))))}: ${e(r.tour.recojo)}`) : "") +
+        (r.instrucciones ? texto(`${b(e(t(clave("Importante"))))}: ${e(r.instrucciones)}`) : ""),
+      cuerpo: resumen(r, t) + boton(url, e(t(clave("Ver mi confirmación")))),
+      pie: e(t(evento
+        ? clave("Presenta esta confirmación o tu código de compra y tu documento en el ingreso.")
+        : esTour(r) ? clave("Presenta esta confirmación o tu código de reserva en la salida.") : clave("Presenta esta confirmación o tu código de reserva al llegar.")))
     })
   };
 }

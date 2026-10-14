@@ -9,7 +9,9 @@ import { idParamSchema, paginationSchema } from "./tiendas.schema.js";
 import { getDiseno } from "../../services/tienda-diseno.service.js";
 import { disenoPublico } from "../campanas/resolver.js";
 import { getTiendasStore, setTiendasStore } from "./tiendas.cache.js";
-import { aplicarDisenoEn, textoEn } from "../traducciones/traducciones.service.js";
+import { localizar } from "../traducciones/localizar.js";
+import { FUENTES } from "../traducciones/fuentes.js";
+import { elegirIdioma, idiomasVisibles } from "../idiomas/idiomas-tienda.js";
 import { getComunicadosPublicos } from "../comunicados/comunicados.service.js";
 
 const tiendasRepository = new GenericRepository(prisma.tiendas, "Tienda");
@@ -23,10 +25,10 @@ const router = Router();
 // GET / - Listar tiendas (público — para lookup por slug)
 router.get("/", validate({ query: paginationSchema }), async (req, res, next) => {
   try {
-    const { lang: _lang, ...query } = req.validatedQuery || req.query;
-    // Inglés (docs/specs/hospedaje-completo C3): descripción y textos del diseño.
-    const lang = req.query.lang === "en" ? "en" : "es";
-    const cacheKey = JSON.stringify({ ...query, lang });
+    const { lang, ...query } = req.validatedQuery || req.query;
+    // La tienda aún no se conoce (se busca por slug): el idioma se elige
+    // abajo con los suyos; la caché separa por el ?lang= pedido.
+    const cacheKey = JSON.stringify({ ...query, lang: lang ?? null });
 
     const cached = getTiendasStore(cacheKey);
     if (cached) {
@@ -47,11 +49,17 @@ router.get("/", validate({ query: paginationSchema }), async (req, res, next) =>
       data[0].diseno = disenoPublico(diseno, new Date(), data[0].tipoNegocio);
       // Comunicados vigentes, ya resueltos en hora de Lima (docs/specs/comunicados R2.1).
       data[0].comunicados = await getComunicadosPublicos(data[0].id);
-      if (lang === "en" && (data[0].idiomas ?? []).includes("en")) {
-        const tr = diseno.traducciones?.en;
-        data[0].diseno.tema.estructura = aplicarDisenoEn(data[0].diseno.tema.estructura, tr);
-        data[0].descripcion = textoEn(data[0].descripcion, tr?.["tienda.descripcion"]);
-      }
+      // Idiomas del selector y textos del diseño en el idioma pedido (docs/specs/idiomas D2, D5).
+      const visibles = await idiomasVisibles(data[0].id);
+      const idioma = await elegirIdioma(visibles, lang);
+      const local = localizar(FUENTES.diseno, {
+        estructura: data[0].diseno.tema.estructura, descripcion: data[0].descripcion, traducciones: diseno.traducciones
+      }, idioma);
+      data[0].diseno.tema.estructura = local.estructura;
+      data[0].descripcion = local.descripcion;
+      data[0].idiomas = visibles.map((i) => i.codigo);
+      // Para el selector: cada idioma con su nombre en su propia lengua y su formato.
+      data[0].idiomasDisponibles = visibles.map(({ codigo, nombre, locale, esBase }) => ({ codigo, nombre, locale, esBase }));
     }
 
     const responsePayload = { status: 200, type: "SUCCESS", code: "TIENDA_LIST", data, meta };

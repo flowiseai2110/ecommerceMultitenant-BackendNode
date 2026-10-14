@@ -1,5 +1,6 @@
 import MemoryCache from "../../utils/memory-cache.js";
 import { invalidarRubrosCache } from "../negocio/rubros.cache.js";
+import { invalidarIdiomasDeTienda } from "../idiomas/idiomas-tienda.js";
 
 /**
  * Cachés en memoria de tiendas. Se extraen aquí para que la ruta admin y la ruta
@@ -52,4 +53,6 @@ export function invalidateTiendasCaches() {
   storeCache.clear();
   // El rubro (tipo_negocio) que usan las reglas de modules/negocio.
   invalidarRubrosCache();
+  // Los idiomas que eligió (docs/specs/idiomas D2).
+  invalidarIdiomasDeTienda();
 }

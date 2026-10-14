@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { buscarPreset } from "./presets.js";
+import { EFECTOS, MODOS_EFECTO, MAX_SALUDO } from "./efectos.js";
 import { fechaCivilLima, parsearFecha, inicioDiaLima } from "./calendario.js";
 
 /**
@@ -105,7 +106,13 @@ export const campanaTiendaSchema = z
       .nullable()
       .optional(),
     // null = los del preset; [] = ninguno.
-    widgets: listaWidgetsSchema.nullable().optional()
+    widgets: listaWidgetsSchema.nullable().optional(),
+    // Efecto festivo (docs/specs/efectos-festivos E1.3). null = el del preset.
+    efecto: z.enum(EFECTOS).nullable().optional(),
+    // null = "clave": solo los días clave del efecto.
+    efectoModo: z.enum(MODOS_EFECTO).nullable().optional(),
+    // null = el del preset; "" = sin saludo.
+    saludo: z.string().trim().max(MAX_SALUDO, `El saludo admite hasta ${MAX_SALUDO} caracteres`).nullable().optional()
   })
   .superRefine((c, ctx) => {
     const issue = (path, message) => ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message });

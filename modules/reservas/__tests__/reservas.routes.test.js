@@ -77,6 +77,13 @@ const svc = {
 };
 jest.unstable_mockModule("../reservas.service.js", () => svc);
 
+// Cupo a la venta (motor-reservas-hotel M2).
+const cupoSvc = {
+  detalleNoche: jest.fn(async () => ({})),
+  fijarLibres: jest.fn(async () => ({ noches: 2, ajustadas: [] }))
+};
+jest.unstable_mockModule("../hotel/cupo.service.js", () => cupoSvc);
+
 const configSvc = {
   obtenerConfig: jest.fn(async () => ({ tipoNegocio: "hotel", cobro: "total" })),
   configPublica: jest.fn(c => c),
@@ -152,6 +159,8 @@ beforeAll(async () => {
   const app = express();
   app.use(express.json());
   app.use((req, res, next) => { const t = req.get("x-test-tienda"); if (t) req.tiendaId = t; next(); });
+  // Lo que deja resolverIdioma en /store (docs/specs/idiomas D2): aquí, el pedido tal cual.
+  app.use((req, res, next) => { req.idioma = { codigo: req.query.lang ?? req.body?.lang ?? "es" }; next(); });
   app.use("/store/reservas", storeRoutes);
   app.use("/admin/reservas", adminRoutes);
   app.use(errorHandler);
@@ -318,6 +327,29 @@ describe("admin: roles", () => {
     });
     expect(r.status).toBe(400);
     expect(habSvc.guardarFicha).not.toHaveBeenCalled();
+  });
+});
+
+describe("cupo a la venta (motor-reservas-hotel M2)", () => {
+  const body = { tiendaId: TIENDA, productoId: PRODUCTO, desde: "2026-10-16", hasta: "2026-10-17", dias: [5, 6], libres: 2 };
+
+  it("recepción (editor) fija los libres; el visor no", async () => {
+    expect((await request("PUT", "/admin/reservas/disponibilidad/libres", { user: "visor", body })).status).toBe(403);
+    const r = await request("PUT", "/admin/reservas/disponibilidad/libres", { user: "recepcion", body });
+    expect(r.status).toBe(200);
+    expect(cupoSvc.fijarLibres).toHaveBeenCalledWith(TIENDA,
+      { productoId: PRODUCTO, desde: "2026-10-16", hasta: "2026-10-17", dias: [5, 6], libres: 2 }, expect.anything());
+  });
+
+  it("libres negativos o un rango invertido responden 400", async () => {
+    expect((await request("PUT", "/admin/reservas/disponibilidad/libres", { user: "recepcion", body: { ...body, libres: -1 } })).status).toBe(400);
+    expect((await request("PUT", "/admin/reservas/disponibilidad/libres", { user: "recepcion", body: { ...body, hasta: "2026-10-15" } })).status).toBe(400);
+  });
+
+  it("el detalle de una noche lo ve cualquier miembro", async () => {
+    const r = await request("GET", `/admin/reservas/disponibilidad/noche?tiendaId=${TIENDA}&productoId=${PRODUCTO}&fecha=2026-10-16`, { user: "visor" });
+    expect(r.status).toBe(200);
+    expect(cupoSvc.detalleNoche).toHaveBeenCalledWith(TIENDA, PRODUCTO, "2026-10-16");
   });
 });
 

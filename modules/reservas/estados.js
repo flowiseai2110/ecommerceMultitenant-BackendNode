@@ -1,4 +1,5 @@
 import { ConflictError } from "../../utils/errors.js";
+import { clave } from "../idiomas/clave.js";
 
 /**
  * Máquinas de estados del mini booking (docs/specs/mini-booking).
@@ -105,18 +106,20 @@ export function estadoEfectivo({ estado, inicio, fin, apartadoHasta = null }, ah
   return estado;
 }
 
+// En el idioma base: el admin las muestra tal cual y la tienda las traduce con
+// `| t` en el idioma de la página (docs/specs/idiomas D7: son claves del catálogo).
 const ETIQUETAS = {
-  solicitada: "Solicitada",
-  aceptada: "Aceptada, esperando pago",
-  por_pagar: "Pendiente de pago",
-  pago_en_revision: "Pago en revisión",
-  confirmada: "Confirmada",
-  completada: "Completada",
-  rechazada: "Rechazada",
-  vencida: "Anulada",
-  cancelada: "Cancelada",
-  no_show: "No se presentó",
-  suspendida: "Suspendida, fecha por definir"
+  solicitada: clave("Solicitada"),
+  aceptada: clave("Aceptada, esperando pago"),
+  por_pagar: clave("Pendiente de pago"),
+  pago_en_revision: clave("Pago en revisión"),
+  confirmada: clave("Confirmada"),
+  completada: clave("Completada"),
+  rechazada: clave("Rechazada"),
+  vencida: clave("Anulada"),
+  cancelada: clave("Cancelada"),
+  no_show: clave("No se presentó"),
+  suspendida: clave("Suspendida, fecha por definir")
 };
 
 export const etiquetaEstado = (estado) => ETIQUETAS[estado] ?? estado;

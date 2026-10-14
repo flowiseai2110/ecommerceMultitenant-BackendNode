@@ -1,74 +1,97 @@
+import { clave } from "../../idiomas/clave.js";
+import { TRADUCTOR_BASE } from "../../idiomas/traductor.js";
+import { fechaCortaLocal } from "../textos-fecha.js";
+
 /**
- * Textos de la cotización de hotel en español e inglés (docs/specs/hospedaje-completo
- * C3): las líneas del precio y los errores de las reglas. El huésped que reserva en
- * inglés los ve en inglés y la reserva los guarda así (el negocio ve que reservó en inglés).
+ * Textos de la cotización de hotel: las líneas del precio y los errores de las
+ * reglas (docs/specs/idiomas B7). Salen del catálogo de textos fijos en el
+ * idioma de quien reserva; la reserva los guarda así (el negocio ve en qué
+ * idioma reservó). Sin traductor, en el idioma base.
+ *
+ * Los plurales son dos claves ("{n} noche" / "{n} noches"): cada idioma los
+ * traduce con su gramática. Los que en el idioma base se escriben igual llevan
+ * un contexto ("{n} hab.|una") para que otro idioma pueda distinguirlos.
  */
 
-const plural = (n, uno, varios) => (n === 1 ? uno : varios);
-const MESES_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-const es = {
-  fecha: null, // fechaCorta: 24/09
-  habitaciones: (n) => ` × ${n} hab.`,
-  estadiaHoras: (h) => `${h} horas`,
-  noches: (n) => `${n} ${plural(n, "noche", "noches")}`,
-  ninos: (pagan, edad, veces, esHoras) =>
-    `${pagan} ${plural(pagan, "niño mayor", "niños mayores")} de ${edad} años${esHoras ? "" : ` × ${veces} ${plural(veces, "noche", "noches")}`}`,
-  unidadExtra: { estadia: "", noche: "por noche", persona: "por persona", persona_noche: "por persona y noche" },
-  igv: "Exoneración de IGV (turista extranjero)",
+const K = {
+  habitacion: clave("{n} hab.|una"),
+  habitaciones: clave("{n} hab."),
+  estadiaHoras: clave("{n} horas"),
+  noche: clave("{n} noche"),
+  noches: clave("{n} noches"),
+  ninoMayor: clave("{n} niño mayor de {edad} años"),
+  ninosMayores: clave("{n} niños mayores de {edad} años"),
+  unidad: {
+    noche: clave("por noche"),
+    persona: clave("por persona"),
+    persona_noche: clave("por persona y noche")
+  },
+  igv: clave("Exoneración de IGV (turista extranjero)"),
   err: {
-    extraInvalido: "Uno de los extras ya no está disponible",
-    modalidadInactiva: "Esta modalidad ya no está disponible",
-    nochesInvalidas: (max) => `Elige entre 1 y ${max} noches`,
-    habitacionesInvalidas: (max) => `Elige entre 1 y ${max} habitaciones`,
-    adultosInvalidos: "Debe haber al menos un adulto",
-    enHabitaciones: (h) => (h > 1 ? ` en ${h} habitaciones` : ""),
-    capAdultos: (max, en) => `Esta habitación admite hasta ${max} ${plural(max, "adulto", "adultos")}${en}`,
-    sinNinos: "Esta habitación no admite niños",
-    capNinos: (max, en) => `Esta habitación admite hasta ${max} ${plural(max, "niño", "niños")}${en}`,
-    capTotal: (max, en) => `Esta habitación admite hasta ${max} personas en total${en}`,
-    sinHabitaciones: "No quedan habitaciones de este tipo para esas fechas. Elige otras fechas",
-    quedanHabitaciones: (n) => `Solo ${n === 1 ? "queda 1 habitación" : `quedan ${n} habitaciones`} de este tipo para esas fechas`,
-    fechaPasada: "Elige una fecha y hora futuras",
-    anticipacion: (h) => `Las reservas se piden con al menos ${h} ${plural(h, "hora", "horas")} de anticipación`,
-    fechaLejana: "Solo se puede reservar con hasta un año de anticipación",
-    minNoches: (temporada, n) => `Para llegar en ${temporada} la estadía mínima es de ${n} noches`,
-    edades: "Indica la edad de cada niño",
-    cerrada: (f) => `No se reciben reservas para el ${f}. Elige otra fecha`
+    extraInvalido: clave("Uno de los extras ya no está disponible"),
+    modalidadInactiva: clave("Esta modalidad ya no está disponible"),
+    nochesInvalidas: clave("Elige entre 1 y {max} noches"),
+    habitacionesInvalidas: clave("Elige entre 1 y {max} habitaciones"),
+    adultosInvalidos: clave("Debe haber al menos un adulto"),
+    enHabitaciones: clave("en {n} habitaciones"),
+    capAdulto: clave("Esta habitación admite hasta {n} adulto{en}"),
+    capAdultos: clave("Esta habitación admite hasta {n} adultos{en}"),
+    sinNinos: clave("Esta habitación no admite niños"),
+    capNino: clave("Esta habitación admite hasta {n} niño{en}"),
+    capNinos: clave("Esta habitación admite hasta {n} niños{en}"),
+    capTotal: clave("Esta habitación admite hasta {n} personas en total{en}"),
+    sinHabitaciones: clave("No quedan habitaciones de este tipo para esas fechas. Elige otras fechas"),
+    quedaHabitacion: clave("Solo queda 1 habitación de este tipo para esas fechas"),
+    quedanHabitaciones: clave("Solo quedan {n} habitaciones de este tipo para esas fechas"),
+    fechaPasada: clave("Elige una fecha y hora futuras"),
+    anticipacionHora: clave("Las reservas se piden con al menos {n} hora de anticipación"),
+    anticipacionHoras: clave("Las reservas se piden con al menos {n} horas de anticipación"),
+    fechaLejana: clave("Solo se puede reservar con hasta un año de anticipación"),
+    minNoches: clave("Para llegar en {temporada} la estadía mínima es de {n} noches"),
+    edades: clave("Indica la edad de cada niño"),
+    cerrada: clave("No se reciben reservas para el {fecha}. Elige otra fecha")
   }
 };
 
-const en = {
-  // "Sep 24": 24/09 se lee al revés en inglés de EE. UU.
-  fecha: (f) => `${MESES_EN[Number(f.slice(5, 7)) - 1]} ${Number(f.slice(8, 10))}`,
-  habitaciones: (n) => ` × ${n} ${plural(n, "room", "rooms")}`,
-  estadiaHoras: (h) => `${h} hours`,
-  noches: (n) => `${n} ${plural(n, "night", "nights")}`,
-  ninos: (pagan, edad, veces, esHoras) =>
-    `${pagan} ${plural(pagan, "child", "children")} over ${edad}${esHoras ? "" : ` × ${veces} ${plural(veces, "night", "nights")}`}`,
-  unidadExtra: { estadia: "", noche: "per night", persona: "per person", persona_noche: "per person per night" },
-  igv: "IGV tax exemption (foreign tourist)",
-  err: {
-    extraInvalido: "One of the extras is no longer available",
-    modalidadInactiva: "This rate is no longer available",
-    nochesInvalidas: (max) => `Choose between 1 and ${max} nights`,
-    habitacionesInvalidas: (max) => `Choose between 1 and ${max} rooms`,
-    adultosInvalidos: "At least one adult is required",
-    enHabitaciones: (h) => (h > 1 ? ` in ${h} rooms` : ""),
-    capAdultos: (max, en2) => `This room fits up to ${max} ${plural(max, "adult", "adults")}${en2}`,
-    sinNinos: "This room does not accept children",
-    capNinos: (max, en2) => `This room fits up to ${max} ${plural(max, "child", "children")}${en2}`,
-    capTotal: (max, en2) => `This room fits up to ${max} guests in total${en2}`,
-    sinHabitaciones: "No rooms of this type left for those dates. Please choose other dates",
-    quedanHabitaciones: (n) => `Only ${n} ${plural(n, "room", "rooms")} of this type left for those dates`,
-    fechaPasada: "Choose a future date and time",
-    anticipacion: (h) => `Bookings must be made at least ${h} ${plural(h, "hour", "hours")} in advance`,
-    fechaLejana: "Bookings can be made up to one year in advance",
-    minNoches: (temporada, n) => `Arriving during ${temporada} requires a minimum stay of ${n} nights`,
-    edades: "Tell us the age of each child",
-    cerrada: (f) => `We are not taking bookings for ${f}. Please choose another date`
-  }
-};
-
-/** @param {string|null|undefined} idioma */
-export const textosCotizar = (idioma) => (idioma === "en" ? en : es);
+/**
+ * @param {(clave: string, params?: object) => string} [t] - traductor del idioma de quien reserva (idiomas/textos.service.js)
+ */
+export function textosCotizar(t = TRADUCTOR_BASE) {
+  const plural = (n, uno, varios, params = {}) => t(n === 1 ? uno : varios, { n, ...params });
+  return {
+    // 24/09 en español; cada idioma ordena día y mes a su modo ("Sep 24").
+    fecha: (f) => fechaCortaLocal(t, f),
+    habitaciones: (n) => ` × ${plural(n, K.habitacion, K.habitaciones)}`,
+    estadiaHoras: (h) => t(K.estadiaHoras, { n: h }),
+    noches: (n) => plural(n, K.noche, K.noches),
+    ninos: (pagan, edad, veces, esHoras) =>
+      `${plural(pagan, K.ninoMayor, K.ninosMayores, { edad })}${esHoras ? "" : ` × ${plural(veces, K.noche, K.noches)}`}`,
+    unidadExtra: {
+      estadia: "",
+      noche: t(K.unidad.noche),
+      persona: t(K.unidad.persona),
+      persona_noche: t(K.unidad.persona_noche)
+    },
+    igv: t(K.igv),
+    err: {
+      extraInvalido: t(K.err.extraInvalido),
+      modalidadInactiva: t(K.err.modalidadInactiva),
+      nochesInvalidas: (max) => t(K.err.nochesInvalidas, { max }),
+      habitacionesInvalidas: (max) => t(K.err.habitacionesInvalidas, { max }),
+      adultosInvalidos: t(K.err.adultosInvalidos),
+      enHabitaciones: (h) => (h > 1 ? ` ${t(K.err.enHabitaciones, { n: h })}` : ""),
+      capAdultos: (max, en) => plural(max, K.err.capAdulto, K.err.capAdultos, { en }),
+      sinNinos: t(K.err.sinNinos),
+      capNinos: (max, en) => plural(max, K.err.capNino, K.err.capNinos, { en }),
+      capTotal: (max, en) => t(K.err.capTotal, { n: max, en }),
+      sinHabitaciones: t(K.err.sinHabitaciones),
+      quedanHabitaciones: (n) => plural(n, K.err.quedaHabitacion, K.err.quedanHabitaciones),
+      fechaPasada: t(K.err.fechaPasada),
+      anticipacion: (h) => plural(h, K.err.anticipacionHora, K.err.anticipacionHoras),
+      fechaLejana: t(K.err.fechaLejana),
+      minNoches: (temporada, n) => t(K.err.minNoches, { temporada, n }),
+      edades: t(K.err.edades),
+      cerrada: (fecha) => t(K.err.cerrada, { fecha })
+    }
+  };
+}

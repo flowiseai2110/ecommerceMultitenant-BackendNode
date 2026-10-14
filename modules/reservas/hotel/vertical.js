@@ -6,6 +6,7 @@ import { cotizarHotel } from "./cotizar.js";
 import { cargarHabitacionParaReserva } from "./habitaciones.service.js";
 import { extrasDeTienda, planDeTienda, temporadasParaEstadia } from "./tarifas.service.js";
 import { bloquearTipo, cupoEstadia } from "./disponibilidad.service.js";
+import { traductorPara } from "../../idiomas/textos.service.js";
 
 /**
  * Reservas de hotel / hostal (Strategy de reservas, modules/negocio/registro.js):
@@ -83,8 +84,8 @@ async function cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora })
     temporadas, extrasCatalogo, extrasElegidos: datos.extras ?? [], edadesNinos: datos.edadesNinos ?? [],
     nacionalidad: datos.titular?.nacionalidad ?? datos.nacionalidad ?? null,
     habitaciones: datos.habitaciones ?? 1, cupo, plan,
-    // El huésped que reserva en inglés ve las líneas y los errores en inglés (C3).
-    idioma: datos.lang,
+    // Líneas y errores en el idioma de quien reserva (docs/specs/idiomas B7).
+    traductor: await traductorPara(datos.tiendaId, datos.lang),
     // Adelanto o total, si la tienda deja elegir (C8).
     pago: datos.pago
   });

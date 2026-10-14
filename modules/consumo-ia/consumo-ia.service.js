@@ -1,6 +1,6 @@
 /**
- * Consumo mensual de IA por tienda: asesor de ventas (storefront) y asistente
- * "Guía" (panel admin).
+ * Consumo mensual de IA por tienda: asesor de ventas (storefront), asistente
+ * "Guía" (panel admin) y "Traducir con IA" (docs/specs/idiomas D3).
  *
  * Unidad de cara al emprendedor: CONSULTAS (1 mensaje = 1 consulta). Los tokens
  * se acumulan solo para que la plataforma conozca su costo real.
@@ -44,6 +44,15 @@ export const TIPOS = {
       campoPlan: "limiteConsultasAsistenteDia",
       sinPlan: () => config.consumoIa.limiteAsistenteDiaSinPlan
     }
+  },
+  // Cada pulsación de "Traducir con IA" en Traducciones (traduce todo lo que falta
+  // de un idioma). Los planes aún no tienen tope propio: sin tope salvo que lo
+  // fije el dueño o CONSUMO_IA_LIMITE_TRADUCCIONES_SIN_PLAN.
+  traducciones: {
+    recurso: "traducciones_ia",
+    nombre: "Traducción con IA",
+    campoPlan: "limiteTraduccionesIaMes",
+    sinPlan: () => config.consumoIa.limiteTraduccionesSinPlan
   }
 };
 

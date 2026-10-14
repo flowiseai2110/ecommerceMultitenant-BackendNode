@@ -75,8 +75,10 @@ const pagoLimiter = crearLimitador({
 });
 
 const ok = (res, code, data, status = 200) => apiResponse(res, { status, type: "SUCCESS", code, data });
-/** Idioma de la vitrina (hospedaje-completo C3): ?lang=en en la URL o en el body. */
-const langDe = (req) => (req.query.lang === "en" || req.body?.lang === "en" ? "en" : "es");
+/** Código del idioma de la petición, ya resuelto por resolverIdioma (docs/specs/idiomas D2). */
+const langDe = (req) => req.idioma.codigo;
+/** Cotizar y reservar: el `lang` del body pasa a ser el idioma resuelto (no el que mandó el cliente). */
+const conIdioma = (req, _res, next) => { req.body.lang = langDe(req); next(); };
 
 /** Resuelve el token y verifica que sea de la tienda del subdominio (si hay). */
 async function reservaDelToken(req) {
@@ -117,7 +119,7 @@ router.get("/tarifas", validate({ query: tiendaQuerySchema }), scopeQueryToTiend
   try {
     const { tiendaId } = req.validatedQuery;
     res.set("Cache-Control", "public, max-age=60");
-    const lang = req.query.lang === "en" ? "en" : "es";
+    const lang = langDe(req);
     const [extras, temporadas, planes] = await Promise.all([extrasPublicos(tiendaId, lang), temporadasPublicas(tiendaId, new Date(), lang), planesPublicos(tiendaId, lang)]);
     return ok(res, "TARIFAS_HOTEL", { extras, temporadas, planes });
   } catch (error) { next(error); }
@@ -269,14 +271,14 @@ router.get("/cierres", validate({ query: cierresQuerySchema }), scopeQueryToTien
 });
 
 // POST /cotizar — total, desglose, salida calculada, aviso y errores (sin crear nada)
-router.post("/cotizar", scopeBodyToTienda, validate({ body: cotizarSchema }), async (req, res, next) => {
+router.post("/cotizar", scopeBodyToTienda, validate({ body: cotizarSchema }), conIdioma, async (req, res, next) => {
   try {
     return ok(res, "RESERVA_COTIZACION", await cotizar(req.body));
   } catch (error) { next(error); }
 });
 
 // POST / — enviar la solicitud de reserva
-router.post("/", solicitudesLimiter, optionalAuth, scopeBodyToTienda, validate({ body: crearSolicitudSchema }),
+router.post("/", solicitudesLimiter, optionalAuth, scopeBodyToTienda, validate({ body: crearSolicitudSchema }), conIdioma,
   async (req, res, next) => {
     try {
       // Honeypot: al bot se le responde como si se hubiera creado, para que no aprenda a evitarlo.

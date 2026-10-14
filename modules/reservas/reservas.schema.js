@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { codigoIdiomaSchema } from "../idiomas/idioma.js";
 import { documentoValido, TIPOS_DOCUMENTO } from "../libro-reclamaciones/libro.schema.js";
 import { esRucValido } from "../sunat/ruc.service.js";
 import { MAX_NOCHES } from "./hotel/cotizar.js";
@@ -71,7 +72,7 @@ const estadiaBase = {
   // Fase C: varias habitaciones del mismo tipo, plan de tarifa e idioma del huésped.
   habitaciones: z.coerce.number().int().min(1).max(10).optional().default(1),
   planId: uuid("planId").nullish().transform(v => v || null),
-  lang: z.enum(["es", "en"]).optional(),
+  lang: codigoIdiomaSchema.optional(), // docs/specs/idiomas: un código desconocido cae al base
   // Tours
   pasajeros: z.array(z.object({
     tipoId: uuid("tipoId"),
@@ -687,6 +688,24 @@ export const disponibilidadQuerySchema = z.object({
   hasta: fecha
 }).refine(d => d.desde <= d.hasta, { path: ["hasta"], message: "Rango inválido" })
   .refine(d => (Date.parse(d.hasta) - Date.parse(d.desde)) / 86_400_000 <= 62, { path: ["hasta"], message: "Máximo 62 días" });
+
+// Cupo a la venta (motor-reservas-hotel M2).
+export const nocheQuerySchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  productoId: uuid("productoId"),
+  fecha
+});
+
+export const fijarLibresSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  productoId: uuid("productoId"),
+  desde: fecha,
+  hasta: fecha,
+  // 0 = domingo … 6 = sábado; vacío = todas las noches del rango.
+  dias: z.array(z.number().int().min(0).max(6)).max(7).optional(),
+  libres: z.number({ required_error: "libres es requerido" }).int().min(0).max(999)
+}).refine(d => d.desde <= d.hasta, { path: ["hasta"], message: "Rango inválido" })
+  .refine(d => (Date.parse(d.hasta) - Date.parse(d.desde)) / 86_400_000 <= 366, { path: ["hasta"], message: "Máximo un año" });
 
 export const extraSchema = z.object({
   tiendaId: uuid("tiendaId"),

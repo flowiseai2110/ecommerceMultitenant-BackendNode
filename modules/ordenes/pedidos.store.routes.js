@@ -7,6 +7,7 @@ import { scopeBodyToTienda, optionalAuth } from "../../kernel/tenant/index.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import PedidosService from "./pedidos.service.js";
 import { createPedidoSchema } from "./pedidos.schema.js";
+import { clave } from "../idiomas/clave.js";
 
 const pedidosService = new PedidosService();
 
@@ -20,7 +21,7 @@ const checkoutLimiter = crearLimitador({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.checkoutMax,
   code: "TOO_MANY_ORDERS",
-  message: "Has creado demasiados pedidos en poco tiempo, intenta más tarde"
+  message: clave("Has creado demasiados pedidos en poco tiempo, intenta más tarde")
 });
 
 // ============================================
@@ -38,7 +39,8 @@ router.post(
   validate({ body: createPedidoSchema }),
   async (req, res, next) => {
     try {
-      const data = await pedidosService.create(req.body, { authUserId: req.user?.id ?? null });
+      // idioma: el de la vitrina, ya resuelto (docs/specs/idiomas D11); el admin lo muestra.
+      const data = await pedidosService.create(req.body, { authUserId: req.user?.id ?? null, idioma: req.idioma?.codigo });
 
       // Fire-and-forget: la respuesta del checkout no espera al email
       pedidosService.notifyNewOrder(data);
@@ -68,7 +70,7 @@ const limiteRastreoIp = crearLimitador({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.rastreoMax,
   code: "TOO_MANY_REQUESTS",
-  message: "Demasiadas consultas de seguimiento, intenta más tarde"
+  message: clave("Demasiadas consultas de seguimiento, intenta más tarde")
 });
 
 // Por pedido y no por IP: así la fuerza bruta sobre los 10.000 códigos no se
@@ -81,7 +83,7 @@ const limiteVerificacion = crearLimitador({
   skipSuccessfulRequests: true,
   keyGenerator: (req) => `${req.validatedQuery.tiendaId}:${req.params.numeroPedido.toUpperCase()}`,
   code: "TOO_MANY_REQUESTS",
-  message: "Demasiados intentos de verificación para este pedido, intenta en unos minutos"
+  message: clave("Demasiados intentos de verificación para este pedido, intenta en unos minutos")
 });
 
 router.get(

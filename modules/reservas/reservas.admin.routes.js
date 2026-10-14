@@ -10,6 +10,7 @@ import {
   actualizarPlan, crearPlan, eliminarPlan, listarPlanes
 } from "./hotel/tarifas.service.js";
 import { disponibilidadTienda } from "./hotel/disponibilidad.service.js";
+import { detalleNoche, fijarLibres } from "./hotel/cupo.service.js";
 import { guardarFichaTour, listarToursAdmin, obtenerFichaTourAdmin } from "./tours/tours.service.js";
 import { asistentesFuncion, guardarFichaEvento, listarEventosAdmin, obtenerFichaEventoAdmin } from "./eventos/eventos.service.js";
 import { resumenIngreso, validarEntrada } from "./eventos/entradas.js";
@@ -30,7 +31,7 @@ import {
   listarAdminQuerySchema, motivoSchema, productoParamSchema, rechazarPagoSchema, rechazarSchema, tiendaQuerySchema, tourSchema,
   eventoSchema, funcionParamSchema, temporadaSchema, extraSchema, planSchema, disponibilidadQuerySchema, salonSchema,
   calendarioAdminQuerySchema, bloqueoSchema, cotizacionAdminSchema, listarCotizacionesQuerySchema, cuotaAdminParamSchema, planPagosSchema,
-  canchaSchema, agendaCanchasAdminQuerySchema, bloqueoCanchaSchema
+  canchaSchema, agendaCanchasAdminQuerySchema, bloqueoCanchaSchema, nocheQuerySchema, fijarLibresSchema
 } from "./reservas.schema.js";
 
 /**
@@ -114,12 +115,29 @@ crud("extras", "EXTRA", {
   listar: listarExtras, crear: crearExtra, actualizar: actualizarExtra, eliminar: eliminarExtra
 }, extraSchema);
 
-// ---------- Disponibilidad (C1): tipos × noches, ocupadas y libres ----------
+// ---------- Disponibilidad (C1) y cupo a la venta (motor-reservas-hotel M2) ----------
 
 router.get("/disponibilidad", ...lectura, validate({ query: disponibilidadQuerySchema }), async (req, res, next) => {
   try {
     const { desde, hasta } = req.validatedQuery;
-    return ok(res, "DISPONIBILIDAD", await disponibilidadTienda(req.tiendaId, desde, hasta, { conNombre: true }));
+    return ok(res, "DISPONIBILIDAD", await disponibilidadTienda(req.tiendaId, desde, hasta, { detalle: true }));
+  } catch (error) { next(error); }
+});
+
+// GET /disponibilidad/noche?productoId=&fecha= — qué ocupa un tipo esa noche (M2.5)
+router.get("/disponibilidad/noche", ...lectura, validate({ query: nocheQuerySchema }), async (req, res, next) => {
+  try {
+    const { productoId, fecha } = req.validatedQuery;
+    return ok(res, "DISPONIBILIDAD_NOCHE", await detalleNoche(req.tiendaId, productoId, fecha));
+  } catch (error) { next(error); }
+});
+
+// PUT /disponibilidad/libres — el dueño fija cuántas quedan a la venta (M2.2, M2.3).
+// Editor+: la recepcionista lo pasa desde el PMS o el Excel del hotel.
+router.put("/disponibilidad/libres", ...operacion, validate({ body: fijarLibresSchema }), async (req, res, next) => {
+  try {
+    const { tiendaId, ...data } = req.body;
+    return ok(res, "LIBRES_FIJADOS", await fijarLibres(req.tiendaId, data, req.user));
   } catch (error) { next(error); }
 });
 

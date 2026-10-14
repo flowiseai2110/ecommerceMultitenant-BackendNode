@@ -1,5 +1,8 @@
 import { apiResponse } from "../utils/apiResponse.js";
 
+/** Lo que un serializer puede necesitar de la petición (docs/specs/idiomas D5). */
+const contextoDe = (req) => ({ idioma: req.idioma });
+
 /**
  * Controlador genérico que maneja las peticiones HTTP
  * Delega la lógica de negocio al servicio correspondiente
@@ -20,6 +23,8 @@ class GenericController {
    *   distintos (ej. lista compacta vs. detalle con relaciones).
    *   Si no se provee ninguno, la salida es idéntica a antes (retrocompatible).
    *   Ver docs/ARQUITECTURA.md.
+   *   Los tres reciben un segundo argumento `ctx` = { idioma } (req.idioma en
+   *   las rutas de la tienda; docs/specs/idiomas D5). Quien no lo usa lo ignora.
    */
   constructor(service, resourceName = "Registro", options = {}) {
     this.service = service;
@@ -50,7 +55,7 @@ class GenericController {
         status: 200,
         type: "SUCCESS",
         code: `${this.resourceName.toUpperCase()}_LIST`,
-        data: this.serializeList ? data.map(this.serializeList) : data,
+        data: this.serializeList ? data.map((row) => this.serializeList(row, contextoDe(req))) : data,
         meta
       });
     } catch (error) {
@@ -70,7 +75,7 @@ class GenericController {
         status: 200,
         type: "SUCCESS",
         code: `${this.resourceName.toUpperCase()}_FOUND`,
-        data: this.serializeItem ? this.serializeItem(record) : record
+        data: this.serializeItem ? this.serializeItem(record, contextoDe(req)) : record
       });
     } catch (error) {
       next(error);

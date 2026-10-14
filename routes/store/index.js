@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { resolveTienda } from "../../middlewares/resolve-tienda.middleware.js";
+import { resolverIdioma } from "../../modules/idiomas/idiomas-tienda.js";
 import { cache } from "../../utils/cache.js";
 import { cacheRespuesta } from "../../utils/store-cache.js";
 import tiendasRoutes from "../../modules/tenants/tiendas.store.routes.js";
@@ -20,6 +21,7 @@ import sunatRoutes from "../../modules/sunat/ruc.store.routes.js";
 import libroRoutes from "../../modules/libro-reclamaciones/libro.store.routes.js";
 import reservasRoutes from "../../modules/reservas/reservas.store.routes.js";
 import transmisionesRoutes from "../../modules/transmisiones/transmisiones.store.routes.js";
+import textosRoutes from "../../modules/idiomas/textos.store.routes.js";
 
 const router = Router();
 
@@ -34,10 +36,13 @@ function ttlHastaExpirar(body) {
 // explícito en query/params. Deja req.tienda / req.tiendaId disponibles
 // "best effort" — no bloquea si no logra resolver (ver middleware para detalle).
 router.use(resolveTienda);
+// req.idioma: el ?lang= pedido si la tienda lo ofrece; si no, el base (docs/specs/idiomas D2).
+router.use(resolverIdioma);
 
 // Rutas públicas del storefront — no requieren autenticación
 // Filtrar siempre por ?tiendaId= para scope multi-tenant
 router.use("/tiendas", cache(300), tiendasRoutes);
+router.use("/textos", textosRoutes);              // textos fijos en el idioma pedido (docs/specs/idiomas D7); fija su propia caché
 router.use("/categorias", cache(300), cacheRespuesta("categorias"), categoriasRoutes);
 router.use("/marcas", cache(60), cacheRespuesta("marcas"), marcasRoutes);
 router.use("/productos", cache(60), productosRoutes);

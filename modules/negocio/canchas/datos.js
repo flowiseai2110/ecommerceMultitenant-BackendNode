@@ -2,6 +2,8 @@ import { SECCIONES_COMUNES, SECCIONES_RESERVAS } from "../secciones.js";
 
 /** Complejo de canchas sintéticas (alquiler-canchas): turnos por hora con tarifa de día y de noche. */
 export const canchas = {
+  // Textos fijos que muestra su tienda: los traduce el dueño (docs/specs/idiomas D8).
+  gruposTextos: Object.freeze(["comun", "reservas", "canchas", "correos", "errores"]),
   recibeReservas: true,
   planDePagos: false,
   transmisiones: false,

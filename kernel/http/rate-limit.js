@@ -30,7 +30,8 @@ export function crearLimitador({ windowMs, max, code, message, keyGenerator = cl
     windowMs,
     max,
     keyGenerator,
-    message: { status: 429, type: "ERROR", code, data: { message } },
+    // `clave`: la tienda lo traduce si el mensaje está en el catálogo (docs/specs/idiomas D6).
+    message: { status: 429, type: "ERROR", code, data: { message, clave: message } },
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req, res) => esPruebaDeCarga(req) || Boolean(skip?.(req, res)),

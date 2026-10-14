@@ -2,6 +2,8 @@ import { SECCIONES_COMUNES, SECCIONES_RESERVAS } from "../secciones.js";
 
 /** Agencia de tours: salidas por fecha. */
 export const tours = {
+  // Textos fijos que muestra su tienda: los traduce el dueño (docs/specs/idiomas D8).
+  gruposTextos: Object.freeze(["comun", "reservas", "tours", "correos", "errores"]),
   recibeReservas: true,
   planDePagos: false,
   transmisiones: false,

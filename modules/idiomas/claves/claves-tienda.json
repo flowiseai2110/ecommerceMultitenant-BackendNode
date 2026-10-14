@@ -1,0 +1,3582 @@
+[
+  {
+    "clave": "¡Cancha reservada, {nombre}!",
+    "grupo": "canchas"
+  },
+  {
+    "clave": "a la cancha|voz",
+    "grupo": "canchas"
+  },
+  {
+    "clave": "en la cancha|voz",
+    "grupo": "canchas"
+  },
+  {
+    "clave": "la cancha|voz",
+    "grupo": "canchas"
+  },
+  {
+    "clave": "La cancha|voz",
+    "grupo": "canchas"
+  },
+  {
+    "clave": "la hora del partido|voz",
+    "grupo": "canchas"
+  },
+  {
+    "clave": "Tu turno",
+    "grupo": "canchas"
+  },
+  {
+    "clave": "¿Cómo quieres recibir la respuesta?",
+    "grupo": "comun"
+  },
+  {
+    "clave": "¿Qué pasó?",
+    "grupo": "comun"
+  },
+  {
+    "clave": "¿Qué solución esperas?",
+    "grupo": "comun"
+  },
+  {
+    "clave": "¿Quisiste decir",
+    "grupo": "comun"
+  },
+  {
+    "clave": "(opcional)",
+    "grupo": "comun"
+  },
+  {
+    "clave": "{d} de {mes}|día y mes",
+    "grupo": "comun"
+  },
+  {
+    "clave": "{d1} – {d2} {mes}|rango de fechas en un mes",
+    "grupo": "comun"
+  },
+  {
+    "clave": "{d1} {mes1} – {d2} {mes2}|rango de fechas entre meses",
+    "grupo": "comun"
+  },
+  {
+    "clave": "{dia}, {d} {mes}|día con fecha",
+    "grupo": "comun"
+  },
+  {
+    "clave": "{dia}, {d} de {mes}|fecha larga",
+    "grupo": "comun"
+  },
+  {
+    "clave": "{dia}, {dd} {mes}, {hora}|fecha y hora corta",
+    "grupo": "comun"
+  },
+  {
+    "clave": "{mes} {anio}|mes y año",
+    "grupo": "comun"
+  },
+  {
+    "clave": "{pct} % para confirmar, el resto al llegar",
+    "grupo": "comun"
+  },
+  {
+    "clave": "{tienda} vuelve en unos minutos",
+    "grupo": "comun"
+  },
+  {
+    "clave": "abr.|mes corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "abril|mes",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Abrir en Google Maps",
+    "grupo": "comun"
+  },
+  {
+    "clave": "ago.|mes corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "agosto|mes",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Alemana",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Antes de salir",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Apellidos",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Argentina",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Australiana",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Aviso de la tienda",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Avisos",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ayuda",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Boliviana",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Brasileña",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Británica",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Buscar",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Buscar en {tienda}...",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Calle, número, distrito",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Canadiense",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Cancelación",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Carné de extranjería",
+    "grupo": "comun"
+  },
+  {
+    "clave": "CE",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Celular",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Celular de Yape",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Celular inválido",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Cerrar",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Chilena",
+    "grupo": "comun"
+  },
+  {
+    "clave": "China",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Código de aprobación",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Colombiana",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Cómo pagas",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Completa los datos del pago.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Compra verificada",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Contactar por WhatsApp",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Contacto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Continuar",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Coreana",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Correo",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Cuéntanos con detalle: qué compraste o qué pasó, cuándo y cómo.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "CVV",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Datos de tu padre, madre o apoderado:",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Debes aceptar la declaración para registrar la hoja",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Declaro que los datos son verdaderos y autorizo su uso solo para atender esta hoja (Ley 29733 de Protección de Datos Personales).",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Demasiados intentos de pago. Espera unos minutos.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Describe el producto o servicio",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Descripción",
+    "grupo": "comun"
+  },
+  {
+    "clave": "desde las {hora}",
+    "grupo": "comun"
+  },
+  {
+    "clave": "dic.|mes corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "diciembre|mes",
+    "grupo": "comun"
+  },
+  {
+    "clave": "DNI",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Do|inicial del día",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Documento",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Documento del apoderado inválido",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Documento inválido (6 a 12 letras o números)",
+    "grupo": "comun"
+  },
+  {
+    "clave": "dom|día corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Domicilio",
+    "grupo": "comun"
+  },
+  {
+    "clave": "domingo|día",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ecuatoriana",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ej: 987 654 321",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ej: cambio del producto, devolución del dinero, una disculpa…",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ej: PED-0012",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ej: Zapatillas urbanas talla 38",
+    "grupo": "comun"
+  },
+  {
+    "clave": "El código está en tu app de Yape, en el menú \"Código de aprobación\".",
+    "grupo": "comun"
+  },
+  {
+    "clave": "El DNI debe tener 8 dígitos",
+    "grupo": "comun"
+  },
+  {
+    "clave": "El total, para confirmar",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Elige si es un reclamo o una queja",
+    "grupo": "comun"
+  },
+  {
+    "clave": "ene.|mes corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "enero|mes",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Entendido",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Escríbenos por WhatsApp",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Española",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Está tardando un poco más de lo normal. No cierres esta página.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Esta tienda no está recibiendo reclamos en este momento.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Estadounidense",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Estamos teniendo un problema técnico. Tus reservas y pagos están a salvo: no se perdió nada.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "feb.|mes corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "febrero|mes",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Filtros",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Francesa",
+    "grupo": "comun"
+  },
+  {
+    "clave": "hasta las {hora}",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Hoja de reclamación virtual",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Importante",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Indica qué solución esperas (mínimo 10 caracteres)",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Informativo",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ingresa el nombre del padre, madre o apoderado",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ingresa tu dirección",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ingresa tus apellidos",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ingresa tus nombres",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ingresa un correo válido: ahí te llegará la constancia",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Iniciar sesión",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Inicio",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Intentar de nuevo",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Italiana",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Japonesa",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ju|inicial del día",
+    "grupo": "comun"
+  },
+  {
+    "clave": "jue|día corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "jueves|día",
+    "grupo": "comun"
+  },
+  {
+    "clave": "jul.|mes corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "julio|mes",
+    "grupo": "comun"
+  },
+  {
+    "clave": "jun.|mes corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "junio|mes",
+    "grupo": "comun"
+  },
+  {
+    "clave": "la tienda",
+    "grupo": "comun"
+  },
+  {
+    "clave": "La tienda",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Libro de Reclamaciones",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Lu|inicial del día",
+    "grupo": "comun"
+  },
+  {
+    "clave": "lun|día corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "lunes|día",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ma|inicial del día",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Mapa",
+    "grupo": "comun"
+  },
+  {
+    "clave": "mar.|mes corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "mar|día corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "martes|día",
+    "grupo": "comun"
+  },
+  {
+    "clave": "marzo|mes",
+    "grupo": "comun"
+  },
+  {
+    "clave": "may.|mes corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "mayo|mes",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Menú",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Métodos de pago",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Mexicana",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Mi cuenta",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Mi|inicial del día",
+    "grupo": "comun"
+  },
+  {
+    "clave": "mié|día corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "miércoles|día",
+    "grupo": "comun"
+  },
+  {
+    "clave": "MM/AA",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Modo de prueba: no se cobra de verdad.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Monto inválido",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Monto reclamado",
+    "grupo": "comun"
+  },
+  {
+    "clave": "N° de pedido",
+    "grupo": "comun"
+  },
+  {
+    "clave": "No encontramos resultados para \"{q}\"",
+    "grupo": "comun"
+  },
+  {
+    "clave": "No es sobre un pedido",
+    "grupo": "comun"
+  },
+  {
+    "clave": "No hay avisos por ahora.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "No hay conexión. Revisa tu internet e intenta de nuevo.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "No pudimos registrar tu hoja. Intenta de nuevo en unos minutos.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "No pudimos validar los datos del pago.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "No se pudo abrir el pago.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "No se pudo abrir el pago. Revisa tu conexión.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "No se pudo procesar el pago.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "No se pudo procesar el pago. Intenta de nuevo.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Nombre completo",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Nombres",
+    "grupo": "comun"
+  },
+  {
+    "clave": "nov.|mes corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "noviembre|mes",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Número",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Número de tarjeta",
+    "grupo": "comun"
+  },
+  {
+    "clave": "oct.|mes corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "octubre|mes",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ocultar aviso",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Pagar {monto}",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Pagas {enNegocio}",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Página no encontrada",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Pago",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Pago seguro",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Pago seguro: la tienda no ve ni guarda los datos de tu tarjeta.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Pagos verificados",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Pedido",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Peruana",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Procesando…",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Proveedor",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Qué contrataste",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Recibimos tu hoja",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Registraste varias hojas en poco tiempo. Espera unos minutos e intenta de nuevo.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Reserva verificada",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Revisa los campos marcados.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Sá|inicial del día",
+    "grupo": "comun"
+  },
+  {
+    "clave": "sáb|día corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "sábado|día",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Secciones",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Servicios",
+    "grupo": "comun"
+  },
+  {
+    "clave": "set.|mes corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "setiembre|mes",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Sitio seguro",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Sitio web",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Soy menor de edad",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Tarjeta",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Tarjeta aprobada: 4111 1111 1111 1111 · rechazada: 4000 0000 0000 0002 · en proceso: 4000 0000 0000 0119. Yape: código 123456.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Te enviaremos la constancia a tu correo.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Tipo de bien",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Tipo de documento",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Tipo de hoja",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Todos los derechos reservados.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Total",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Tu pago está en proceso. Te avisaremos apenas se confirme; no vuelvas a pagar.",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Tu reclamo o queja",
+    "grupo": "comun"
+  },
+  {
+    "clave": "tucorreo@gmail.com",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Tus datos",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ubicación",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Urgente",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Vence (MM/AA)",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Venezolana",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ver en {red}",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ver más",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ver video",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Ver video en {red}",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Vi|inicial del día",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Video",
+    "grupo": "comun"
+  },
+  {
+    "clave": "vie|día corto",
+    "grupo": "comun"
+  },
+  {
+    "clave": "viernes|día",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Volver a la tienda",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Volver al inicio",
+    "grupo": "comun"
+  },
+  {
+    "clave": "Yape",
+    "grupo": "comun"
+  },
+  {
+    "clave": "¡Compra confirmada, {nombre}!",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "al organizador|voz",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "Antes de ir",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "Apartar mis entradas y pagar",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "Compra de entradas",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "Comprar entradas",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "Confirmar registro",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "Datos del comprador",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "el inicio de la función|voz",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "el organizador|voz",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "El organizador|voz",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "en el lugar|voz",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "Eventos",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "Pagas en la puerta",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "Todos los eventos",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "Tus entradas",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "Ver eventos",
+    "grupo": "eventos"
+  },
+  {
+    "clave": "¡Te esperamos, {nombre}!",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "¿Necesitas otras fechas?",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "{n} año",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "{n} años",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "{n} habitación",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "{n} habitaciones",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "{n} habitaciones para {p} huéspedes",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "{n} huésped",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "{n} huéspedes",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "{n} sin lugar para esa búsqueda",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "{Negocio} te entrega la factura al finalizar tu estadía, incluyendo tus consumos.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "+ {n} fotos",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "0 a 17 años",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "18 años o más",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "a la casa|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "a la posada|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Acompañante {n}",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Adelanta los datos de quienes se hospedan y llega directo a tu habitación.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Adelanta tus datos y llega directo a tu habitación.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Adultos",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "al apart|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "al hostal|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "al hotel|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "al lodge|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Antes de llegar",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Aún no pagas nada. {Negocio} confirma la disponibilidad y luego te pide el pago.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Aún no pagas nada. {Negocio} confirma la disponibilidad y pagas al llegar.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Buscar habitación",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "cama",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Cama",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Camarote",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Camas separadas",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Cambiar búsqueda",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Cambiar datos",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Check-in en línea",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Comentario (opcional)",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Completa cada acompañante con un documento válido.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Completar",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Con la política de cancelación de siempre",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Consultando…",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Consultar y pedir el cambio",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Dónde queda",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Edad",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Edad de cada niño",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Edad del niño {n}",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "el apart|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "El apart|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "el hostal|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "El hostal|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "el hotel|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "El hotel|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "el lodge|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "El lodge|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Elegir",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Elegir fechas",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Elige la fecha de salida",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "en el apart|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "en el hostal|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "en el hotel|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "en el lodge|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "en la casa|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "en la posada|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Entrada|estadia",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Enviar check-in",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Esta habitación no está disponible.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Extras",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Fechas de la estadía",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "hasta {n} años no pagan",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Hay disponibilidad; el hotel te confirmará el cambio.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Hora de ingreso",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Horarios",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Huésped principal",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Huéspedes",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Huéspedes y habitaciones",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Impuestos incluidos",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Impuestos y cargos",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Incluidos",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "la casa|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "La casa|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "la hora de ingreso|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "la posada|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "La posada|voz",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Listo",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Listo · llegada {hora}",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "llegada",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Los días tachados no tienen disponibilidad",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Más",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Más adultos",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Más habitaciones",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Más niños",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Matrimonial|tipo de cama",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Máx. {n} adultos por habitación · mín. {m}",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Menos",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Menos adultos",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "menos del mínimo de noches|día del calendario",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Menos habitaciones",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Menos niños",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "mínimo {n} noches",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Modalidad de estadía",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "N° de documento",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Niños",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "No pudimos cargar la habitación. Revisa tu conexión e intenta de nuevo.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "No se devuelve el pago si cancelas o no llegas",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "No tenemos lugar para esa búsqueda. Prueba otras fechas o escríbenos y te ayudamos.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Noches",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Nueva llegada",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Otras habitaciones",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Pagas al enviar la solicitud y {negocio} confirma al verificar tu pago.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Para",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Para tu llegada",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Pediste el {fecha} por {noches} noche(s): total {total}.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "persona",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "personas",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Política de cancelación",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Por ahora no hay disponibilidad ({motivo}); el hotel te escribirá.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "por estadía",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "por noche",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Por noche",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "por persona",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "por persona y noche",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Pronto publicaremos nuestras habitaciones.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Queda 1",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Queda 1 habitación",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Quedan {n}",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Quedan {n} habitaciones",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Reembolsable",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Reservar",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "sin disponibilidad|día del calendario",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "solo adultos",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Tarifa flexible",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Tarifa no reembolsable: no se devuelve el pago si cancelas o no llegas.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Te guardamos la habitación mientras pagas en línea y tu reserva se confirma al instante.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Todas las habitaciones",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "total · {n} noches",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "total · 1 noche",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Tu estadía",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Tu reserva queda confirmada al enviarla. Pagas al llegar.",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Turistas extranjeros: {total} (sin IGV, con pasaporte y tarjeta andina)",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Ver disponibilidad",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Ver habitaciones",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "Ver todas",
+    "grupo": "hotel"
+  },
+  {
+    "clave": "¡El {fecha} es tuyo!",
+    "grupo": "locales"
+  },
+  {
+    "clave": "al local|voz",
+    "grupo": "locales"
+  },
+  {
+    "clave": "Cotizar",
+    "grupo": "locales"
+  },
+  {
+    "clave": "el local|voz",
+    "grupo": "locales"
+  },
+  {
+    "clave": "El local|voz",
+    "grupo": "locales"
+  },
+  {
+    "clave": "en el local|voz",
+    "grupo": "locales"
+  },
+  {
+    "clave": "la fecha del evento|voz",
+    "grupo": "locales"
+  },
+  {
+    "clave": "Para el día del evento",
+    "grupo": "locales"
+  },
+  {
+    "clave": "Responsable del evento",
+    "grupo": "locales"
+  },
+  {
+    "clave": "Todos los salones",
+    "grupo": "locales"
+  },
+  {
+    "clave": "Tu evento",
+    "grupo": "locales"
+  },
+  {
+    "clave": "¡Gracias! Tu opinión se publicará cuando la tienda la revise.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "¡Gracias! Tu opinión ya está publicada.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "¿Cómo prefieres recibir tu pedido?",
+    "grupo": "productos"
+  },
+  {
+    "clave": "¿Cómo quieres pagar?",
+    "grupo": "productos"
+  },
+  {
+    "clave": "¿Difícil de ubicar? Marca el punto exacto",
+    "grupo": "productos"
+  },
+  {
+    "clave": "¿Dónde recibes tu pedido?",
+    "grupo": "productos"
+  },
+  {
+    "clave": "¿Estás seguro de que deseas vaciar el carrito?",
+    "grupo": "productos"
+  },
+  {
+    "clave": "¿Guardamos este pedido en tu cuenta?",
+    "grupo": "productos"
+  },
+  {
+    "clave": "¿Qué sigue?",
+    "grupo": "productos"
+  },
+  {
+    "clave": "¿Tienes un código de descuento?",
+    "grupo": "productos"
+  },
+  {
+    "clave": "¿Tuviste un problema con la tienda o con la atención?",
+    "grupo": "productos"
+  },
+  {
+    "clave": "¿Un problema con este pedido? Libro de Reclamaciones",
+    "grupo": "productos"
+  },
+  {
+    "clave": ". El costo de envío se confirma por WhatsApp.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "· Compra verificada",
+    "grupo": "productos"
+  },
+  {
+    "clave": "· DNI opcional",
+    "grupo": "productos"
+  },
+  {
+    "clave": "(por verificar en SUNAT)",
+    "grupo": "productos"
+  },
+  {
+    "clave": "{min}-{max} días hábiles",
+    "grupo": "productos"
+  },
+  {
+    "clave": "{n} día hábil",
+    "grupo": "productos"
+  },
+  {
+    "clave": "{n} días hábiles",
+    "grupo": "productos"
+  },
+  {
+    "clave": "{n} por calificar",
+    "grupo": "productos"
+  },
+  {
+    "clave": "{n} producto",
+    "grupo": "productos"
+  },
+  {
+    "clave": "{n} producto encontrado",
+    "grupo": "productos"
+  },
+  {
+    "clave": "{n} producto(s) en tu carrito",
+    "grupo": "productos"
+  },
+  {
+    "clave": "{n} productos",
+    "grupo": "productos"
+  },
+  {
+    "clave": "{n} productos encontrados",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Activa el GPS o mueve el mapa hasta tu puerta.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Agrega productos para continuar con tu compra",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Agregar al carrito",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Agregar DNI a la boleta",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ampliar mapa",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ayuda al repartidor a ubicarte sin llamarte.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Billetera digital",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Boleta",
+    "grupo": "productos"
+  },
+  {
+    "clave": "buscando…",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Buscar mi agencia Shalom",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Buscar mi agencia u agente Olva",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Buscar otro pedido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Calculando envío…",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Califica tus compras",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Carné de extranjería inválido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Carrito",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Carrito de Compras",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Categoría no encontrada",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Categorias",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Categorías",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Cerrar aviso",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Cerrar filtros",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Cerrar mapa ampliado",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Cerrar sesión",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Código de descuento",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Completa tus datos para registrar tu pedido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Comprando como",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Comprar",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Comprobante",
+    "grupo": "productos"
+  },
+  {
+    "clave": "con los datos de arriba",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Confirmar ubicación",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Continuar con el pago",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Coordina la entrega con el vendedor",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Coordina la entrega y el pago con el vendedor",
+    "grupo": "productos"
+  },
+  {
+    "clave": "coordina por WhatsApp el local y el horario para recoger tu pedido. (Selección de local — funcionalidad pendiente.)",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Costo a confirmar por WhatsApp",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Costo de envío a confirmar por WhatsApp",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Costo según tu distrito",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Cupón no encontrado o expirado",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Cupón no válido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Datos de la agencia",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Datos del Cliente",
+    "grupo": "productos"
+  },
+  {
+    "clave": "de confirmar el total con el vendedor.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Dejamos tu paquete en la agencia que elijas. El envío ya está incluido en el total.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Demasiados intentos para este pedido. Intenta de nuevo en unos minutos.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Descripcion",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Descuento",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Descuento ({codigo})",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Desde {monto} según la agencia",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Desde S/ {monto}",
+    "grupo": "productos"
+  },
+  {
+    "clave": "después",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Destacados",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Dirección exacta",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Disponibilidad",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Distribución de calificaciones",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Editar",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ej: Juan Perez",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ej: PED-2025-0001",
+    "grupo": "productos"
+  },
+  {
+    "clave": "El costo de envío se confirma por WhatsApp. Te recomendamos pagar",
+    "grupo": "productos"
+  },
+  {
+    "clave": "El flete lo pagas al recoger, según la tarifa de la agencia.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "El nombre es obligatorio",
+    "grupo": "productos"
+  },
+  {
+    "clave": "El precio del envío se confirma por WhatsApp.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Elegiste un agente, no una oficina propia del courier. Los agentes tienen límite de tamaño y horario variable. Confirma con ellos antes de comprar.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Elige {opciones} para continuar",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Elige departamento, provincia y distrito.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Elige la agencia",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Elige tu distrito para ver las opciones de envío y su costo.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Elige tu distrito y marca tu dirección. Te confirmamos el costo del envío por WhatsApp antes de que pagues.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Elige una opción",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Elige una opción para continuar",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Eliminar producto",
+    "grupo": "productos"
+  },
+  {
+    "clave": "En oferta",
+    "grupo": "productos"
+  },
+  {
+    "clave": "En preparación",
+    "grupo": "productos"
+  },
+  {
+    "clave": "En revisión",
+    "grupo": "productos"
+  },
+  {
+    "clave": "En stock",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Envía tu comprobante por WhatsApp con el botón de abajo",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Envía tu pedido por WhatsApp con el botón de abajo",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Enviar por WhatsApp directamente",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Enviaste muchas opiniones seguidas. Intenta en unos minutos.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Envio",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Envío",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Envío a {distrito}. Escribe la dirección exacta para el repartidor.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Envío a domicilio",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Envio y entrega",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Escanéalo desde la app de tu celular",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Esta combinación está agotada. Prueba con otra.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Este pedido no pertenece a tu cuenta.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Este producto aún no tiene opiniones.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Este producto no está en tu pedido.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Factura",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Frente al parque, portón verde",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Hasta S/ {monto}",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Hiciste muchas consultas seguidas. Intenta de nuevo en unos minutos.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Historial",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Incluye calle, número y, si aplica, piso o departamento.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ingresa tu número de pedido para ver el estado",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Inicia sesión con la cuenta con la que compraste para ver el detalle del pedido.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Inicia sesión para autocompletar tus datos y ver tus pedidos después. Es opcional.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Limpiar",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Limpiar filtros",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Limpiar rango",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Limpiar todo",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Los dígitos no coinciden con el WhatsApp del pedido.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Marca tu ubicación",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Marcas",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Más de S/ {monto}",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Mas recientes",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Más recientes",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Max",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Mayor precio",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Mejor valorados",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Menor precio",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Menos de S/ {monto}",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Método de pago",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Min",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Monto a pagar",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Mueve el mapa hasta que el pin quede en tu puerta.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "No disponible",
+    "grupo": "productos"
+  },
+  {
+    "clave": "No encontramos este pedido o producto.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "No encontramos ningún pedido con ese número. Verifica e intenta de nuevo.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "No hay productos",
+    "grupo": "productos"
+  },
+  {
+    "clave": "No hay suficiente stock disponible",
+    "grupo": "productos"
+  },
+  {
+    "clave": "No publicada",
+    "grupo": "productos"
+  },
+  {
+    "clave": "No pudimos cargar las opiniones en este momento.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "No pudimos guardar tu opinión. Intenta de nuevo.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "No pudimos obtener tu ubicación. Revisa el permiso o mueve el mapa hasta tu puerta.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "No se encontraron productos",
+    "grupo": "productos"
+  },
+  {
+    "clave": "No se pudo registrar el pedido. Intenta nuevamente.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Nombre",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Nombre A-Z",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Nombre del producto...",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Nombre Z-A",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Nro. cuenta",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Numero de Pedido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Opiniones de clientes",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ordenar por",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ordenar:",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Paga con {metodo}",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Paga tu pedido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Pagarás con tarjeta de forma segura después de confirmar el pedido.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Pagas al confirmar el pedido y el pago se confirma al instante.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Pagas al recibir tu pedido. No necesitas pagar nada ahora.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Pagas al recoger",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Pagas aprox. {monto} al recoger",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Pagas el envío al recoger",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Pagas en efectivo al recibir o recoger tu pedido.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Pago contra entrega",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Pago en línea",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Pago y comprobante",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Para ver productos, montos y entrega, ingresa los últimos 4 dígitos del WhatsApp con el que hiciste el pedido.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Pedido {numero}",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Pega aquí el nombre y la dirección de la agencia",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Pega el nombre y la dirección completa de la agencia (mínimo 20 caracteres).",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Podrás calificar este producto cuando tu pedido sea entregado.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Politica de devoluciones",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Por calcular",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Por confirmar",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Por coordinar",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Precio",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Producto agregado al carrito",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Producto no encontrado",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Productos",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Productos con descuento",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Productos de {categoria}",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Productos recomendados",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Productos Relacionados",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Puedes intentar nuevamente o enviar tu pedido por WhatsApp.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "QR de pago",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Quedan solo {n} unidades",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Quitar cupón",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Rastrear mi pedido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Rastrear pedido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Realiza el pago de",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Recoge tu pedido en la tienda, sin costo de envío.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Recojo en {courier}",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Recojo en agencia",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Recojo en tienda",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Recojo en tienda:",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Referencia",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Respuesta de {tienda}",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Resumen del Pedido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Revisar pedido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Se abre en otra pestaña",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Seguir comprando",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Si inicias sesión ahora, este pedido queda en",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Solo productos disponibles",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Solo pueden opinar clientes que recibieron su pedido.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Subtotal",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Subtotal ({n} productos)",
+    "grupo": "productos"
+  },
+  {
+    "clave": "SUNAT exige identificar al comprador en boletas desde S/ {monto}.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "También puedes confirmar sin cuenta y rastrear tu pedido con su número.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "También te puede gustar",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Tarjeta de crédito/débito",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Tarjeta o Yape, en línea",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Telefono",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Telefono / WhatsApp",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Tienda",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Tipo de comprobante",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Tipo de cuenta",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Todas",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Todas las opiniones son de compras verificadas.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Todos los productos",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Transferencia bancaria",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Tu carrito esta vacio",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Tu carrito está vacío",
+    "grupo": "productos"
+  },
+  {
+    "clave": "tu distrito",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Tu pedido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Tu Pedido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Tu pedido se entrega por",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Tu sesión venció. Vuelve a iniciar sesión para calificar.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ubicación marcada en el mapa",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Últimos 4 dígitos de tu WhatsApp",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Usar mi ubicación actual",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Vaciar carrito",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ver {n} resultado",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ver {n} resultados",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ver carrito",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ver datos de pago ({metodo}) — para después de coordinar el envío",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ver detalle",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ver detalle del pedido ({n})",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ver estado de mi pedido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ver opiniones",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ver productos",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ver resultados",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Ver todos los productos",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Verifica bien los datos del destinatario antes de pagar.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Vista cuadrícula",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Vista en cuadricula",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Vista en lista",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Vista lista",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Volver a editar pedido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Volver a tu pedido",
+    "grupo": "productos"
+  },
+  {
+    "clave": "Volver al carrito",
+    "grupo": "productos"
+  },
+  {
+    "clave": "y la próxima vez tus datos se completan solos. Solo se puede antes de confirmar.",
+    "grupo": "productos"
+  },
+  {
+    "clave": "¡Copiado!",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "¡Hay disponibilidad!",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "¡Solicitud enviada!",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "¿Cómo pagaste?",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "¿Te equivocaste de captura? Sube otra",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{n} adulto",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{n} adultos",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{n} niño",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{n} niños",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{n} noche",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{n} noches",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{n} persona",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{n} personas",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{n} reseñas",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{Negocio} ajustó el total: {motivo}.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{negocio} confirmará si hay disponibilidad. Te avisaremos por correo y aquí mismo.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{Negocio} está verificando el pago y te confirmará en breve.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{negocio} no puede aceptar esta solicitud",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{Negocio} registró que no te presentaste a esta reserva.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "{Negocio} te enviará la factura al confirmar el pago.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "1 reseña",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "1. Paga {monto}",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "2. Sube tu captura",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Acepto que {negocio} use mis datos solo para gestionar esta reserva (Ley 29733).",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Adelanto {pct} % ahora",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Agrega a tu estadía",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Agregado",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Agregar al calendario",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Agregar un comentario",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Aimara|idioma del guía",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "aimara|idioma del guía en una frase",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Ajuste",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Al llegar presenta tu pasaporte y la tarjeta andina de migración para mantener la exoneración del IGV.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Alemán|idioma del guía",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "alemán|idioma del guía en una frase",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Anulada",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Avisar {alNegocio} por WhatsApp",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Banco",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Cambiar fecha u horario",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Cambiar fechas",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Cancelación:",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Cancelada",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Cancelar reserva",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Cancelar solicitud",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Celular (WhatsApp)",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Código de reserva",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Comentarios para {negocio}",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Cómo llegar",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Cómo pagar",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Completa este dato",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Completada",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Confirmación de compra",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Confirmación de reserva",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Confirmación enviada a {correo}",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Confirmada",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Confirmar reserva",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Continuar al pago",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Copiar",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Cuándo",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Cuenta",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Datos y pago",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Debes aceptar para enviar la solicitud",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Descargar comprobante",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Desde",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Detalle de tu compra",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Detalle de tu solicitud",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Ej.: llegamos en auto, ¿hay cochera?",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "El resto, en cuotas",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Elige una hora",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Encuentro",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Enviando…",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Enviando… un momento",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Enviar captura",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Enviar solicitud",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Enviaste varias solicitudes en poco tiempo. Espera unos minutos e intenta de nuevo.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Escribe tus comentarios",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Escríbele {alNegocio} por WhatsApp para coordinar el pago.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Escribir {alNegocio} por WhatsApp",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Escribir por WhatsApp",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Español|idioma del guía",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "español|idioma del guía en una frase",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Esta reserva fue cancelada.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Estadía",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Evita la fila al llegar.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Exigente",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Fácil",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Fecha",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Fecha de nacimiento",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Francés|idioma del guía",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "francés|idioma del guía en una frase",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Gestionar la reserva",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Gratis",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Habitación",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Habitaciones",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Hasta {n} persona",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Hasta {n} personas",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Hora estimada de llegada",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Idioma",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Importante:",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Imprimir / Guardar PDF",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Imprimir contrato y reserva",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Incluye",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Indica tu hora estimada de llegada",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Inglés|idioma del guía",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "inglés|idioma del guía en una frase",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Ingresa tu fecha de nacimiento",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Ingresa tu número de WhatsApp",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Ingresa un correo válido",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Ingreso",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Italiano|idioma del guía",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "italiano|idioma del guía en una frase",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "La reserva cambió de estado. Actualiza la página.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "La solicitud se anuló porque no se completó antes de {inicio}. Escríbele {alNegocio} o elige otra fecha.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Libre",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Llegada",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Los consumos durante tu estadía se pagan {enNegocio}. Tu boleta o factura se entrega al finalizar tu estadía.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Luego verás los datos para pagar. {Negocio} confirma al verificar tu pago.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Más {x}",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Menos {x}",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Mes anterior",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Mes siguiente",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Moderado",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "N° de operación (opcional)",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Nacionalidad",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Necesito factura",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "niños de {edades} años",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "No encontramos esta reserva.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "No encontramos la reserva o lo que quieres reservar.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "No pudimos cargar tu reserva. Revisa tu conexión e intenta de nuevo.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "No pudimos preparar tu solicitud.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "No se presentó",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "noche|unidad de precio",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Ocultar el detalle",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "opcional",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Paga {monto}",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Paga el saldo ahora",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Pagado",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Pagado {pagado} · saldo {saldo}",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Pagado a cuenta",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Pagar el saldo",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Pagas {ahora} al confirmar · {despues} al llegar",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Pagas {monto} al confirmar · {saldo} en destino",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Pagas ahora",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Pagas al llegar",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Pagas con tarjeta o Yape en el siguiente paso y tu reserva se confirma al instante.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Pagas todo al llegar: {total}",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Pago en revisión",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Pago total ahora",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Para confirmar tu reserva, paga {monto} y sube la captura antes de {inicio}.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Para confirmar, paga {monto} aquí abajo con tarjeta o Yape. La confirmación es inmediata.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Para tus extras",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Pasajeros",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Pasaporte",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Personas",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Política de cancelación:",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Políticas de reserva",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Portugués|idioma del guía",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "portugués|idioma del guía en una frase",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Preguntas frecuentes",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Quechua|idioma del guía",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "quechua|idioma del guía en una frase",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Rechazada",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Recibimos tu captura.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Recibimos tu solicitud. Te escribiremos por correo.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Recojo",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Reserva {codigo}",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Revisa el link del correo que te enviamos.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Saldo",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Saldo {enNegocio}",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Saldo {saldo} al llegar",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Saldo al llegar",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Salida",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Salida: {fecha}",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Salida|tour",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Si llegas después de las {desde}, igual sales a las {hasta}.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Si no la confirma antes de {inicio}, se anula sola.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Solicitada",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Solicitar reserva",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Subiendo…",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Tarifa",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Te queda {saldo} por pagar. Págalo aquí y evita la fila al llegar.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Titular",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Todavía no pagas nada: {negocio} confirmará la disponibilidad y te avisaremos por correo.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Tour",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Tu captura anterior no se pudo validar: {motivo}. Sube una nueva.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Tu llegada",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Tu reserva",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Tu reserva queda confirmada al instante. Pagas {total} al llegar.",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Ver el detalle",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Ver en el mapa",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Ver las {n} fotos",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "Volver",
+    "grupo": "reservas"
+  },
+  {
+    "clave": "¡Listo, {nombre}!",
+    "grupo": "tours"
+  },
+  {
+    "clave": "(sin salida)",
+    "grupo": "tours"
+  },
+  {
+    "clave": "{n} no salen ese día o no tienen cupo para {p}",
+    "grupo": "tours"
+  },
+  {
+    "clave": "a la agencia|voz",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Aún no pagas nada. La agencia confirma la salida y luego te pide el pago.",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Buscar tour",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Buscar tours",
+    "grupo": "tours"
+  },
+  {
+    "clave": "desde {n} años",
+    "grupo": "tours"
+  },
+  {
+    "clave": "desde {precio}",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Destacado",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Día {n}",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Dificultad",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Dificultad: {nivel}",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Duración",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Ej.: vamos con un niño de 2 años, ¿hay recojo en mi hotel?",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Elegir fecha",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Elige tu tour y la fecha, y envía tu solicitud: la agencia confirma la salida.",
+    "grupo": "tours"
+  },
+  {
+    "clave": "en destino|voz",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Este tour no está disponible.",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Este tour no tiene salidas disponibles por ahora. Escríbele a la agencia.",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Fechas de salida",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Guiado en {idiomas}",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Hasta 4 h",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Hora de salida",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Itinerario",
+    "grupo": "tours"
+  },
+  {
+    "clave": "La agencia te entrega la factura el día del tour.",
+    "grupo": "tours"
+  },
+  {
+    "clave": "la agencia|voz",
+    "grupo": "tours"
+  },
+  {
+    "clave": "La agencia|voz",
+    "grupo": "tours"
+  },
+  {
+    "clave": "la hora de salida|voz",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Mira el tour",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Ningún tour sale ese día para esa cantidad de personas. Prueba otra fecha o escríbenos.",
+    "grupo": "tours"
+  },
+  {
+    "clave": "No incluye",
+    "grupo": "tours"
+  },
+  {
+    "clave": "No pudimos calcular el total. Intenta de nuevo.",
+    "grupo": "tours"
+  },
+  {
+    "clave": "No pudimos cargar el tour. Revisa tu conexión e intenta de nuevo.",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Nuestros tours",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Otros tours",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Pagas al enviar la solicitud y la agencia confirma al verificar tu pago.",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Pagas el día del tour",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Personas|tour",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Pronto publicaremos nuestros tours.",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Punto de encuentro:",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Qué llevar:",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Recojo:",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Requisitos:",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Sale {dias}",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Salen el {fecha}",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Solicitud de reserva",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Todos los tours",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Tours",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Un día",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Varios días",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Ver todos",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Ver tours",
+    "grupo": "tours"
+  },
+  {
+    "clave": "Viajero principal",
+    "grupo": "tours"
+  }
+]

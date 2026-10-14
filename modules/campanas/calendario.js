@@ -78,6 +78,23 @@ export function ventana(campana, anio) {
 }
 
 /**
+ * Ventana [inicio, fin) del efecto festivo dentro de la ventana `v` de su
+ * campaña (docs/specs/efectos-festivos E2.2). En modo "campana" es la misma
+ * ventana; en "clave", los `diasEfecto` (desplazamientos desde la fecha
+ * clave) recortados a la campaña. Null si quedan fuera de ella.
+ */
+export function ventanaEfecto(campana, v) {
+  if (!v) return null;
+  if (campana.efectoModo === "campana") return { inicio: v.inicio, fin: v.fin };
+
+  const dias = campana.diasEfecto?.length ? campana.diasEfecto : [0];
+  const clave = fechaCivilLima(v.fechaClave);
+  const inicio = new Date(Math.max(inicioDiaLima(clave, Math.min(...dias)), v.inicio));
+  const fin = new Date(Math.min(inicioDiaLima(clave, Math.max(...dias) + 1), v.fin));
+  return inicio < fin ? { inicio, fin } : null;
+}
+
+/**
  * Campaña vigente en `ahora` (o null). Si se cruzan varias, gana la de
  * mayor `prioridad` (default 1) y, a igual prioridad, la de ventana más
  * corta: la más específica (R1.3). Se revisan el año anterior y el

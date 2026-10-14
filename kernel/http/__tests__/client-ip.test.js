@@ -95,7 +95,7 @@ describe("crearLimitador por IP real", () => {
     for (let i = 0; i < MAX; i++) await get("/limitado", { "X-Forwarded-For": "201.5.5.5" });
     const res = await get("/limitado", { "X-Forwarded-For": "201.5.5.5" });
     expect(res.status).toBe(429);
-    expect(await res.json()).toEqual({ status: 429, type: "ERROR", code: "TOO_MANY_REQUESTS", data: { message: "x" } });
+    expect(await res.json()).toEqual({ status: 429, type: "ERROR", code: "TOO_MANY_REQUESTS", data: { message: "x", clave: "x" } });
   });
 });
 

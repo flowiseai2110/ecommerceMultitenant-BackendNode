@@ -5,6 +5,7 @@ import { sendTransactionalEmail } from "../../services/email.service.js";
 import { firmarTokenResena } from "../resenas/resenas.token.js";
 import { urlTienda } from "../resenas/resenas.service.js";
 import { pedirResenaEmail } from "./reservas.emails.js";
+import { traductorPara } from "../idiomas/textos.service.js";
 
 /**
  * "¿Cómo fue tu estadía?" (docs/specs/hospedaje-completo C6): unas horas
@@ -52,10 +53,11 @@ export async function cicloResenasReservas(ahora = new Date()) {
     try {
       const token = await firmarTokenResena({ pedidoId: r.pedidoId, tiendaId: r.tiendaId });
       const url = urlTienda(r.pedido.tienda.slug, `resenar/${token}`);
+      // En el idioma en que reservó (docs/specs/idiomas D11).
       const correo = pedirResenaEmail({
         idioma: r.idiomaHuesped, nombre: r.titularNombres, negocio: r.pedido.tienda.nombre, producto: r.producto?.nombre ?? null,
         tipo: r.tipo, externa: externaDe.get(r.tiendaId) ?? null
-      }, url);
+      }, url, await traductorPara(r.tiendaId, r.idiomaHuesped));
       await sendTransactionalEmail({ to: r.pedido.clienteEmail, ...correo, replyTo: r.pedido.tienda.email || undefined });
       enviados++;
     } catch (error) {

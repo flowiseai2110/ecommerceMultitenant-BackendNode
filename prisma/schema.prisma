@@ -106,8 +106,12 @@ model tiendas {
   id                String   @id @default(uuid()) @db.Uuid
   nombre            String   @db.VarChar(100)
   slug              String   @unique @db.VarChar(100)
-  // Idiomas de la vitrina (hospedaje-completo C3): {es} o {es,en}.
+  // Idiomas que la tienda eligió ofrecer (códigos de `idiomas`; docs/specs/idiomas).
+  // Se publica (y aparece en el selector) al llegar al 100 % de sus textos fijos.
   idiomas           String[] @default(["es"])
+  // Idiomas ya publicados (P5 refinada): siguen visibles aunque un deploy agregue
+  // textos nuevos; quitar un idioma de `idiomas` lo despublica. Sin el base.
+  idiomasPublicados String[] @default([]) @map("idiomas_publicados")
   descripcion       String?  @db.Text
   planId            String?  @map("plan_id") @db.Uuid
   logoUrl           String?  @map("logo_url") @db.VarChar(500)
@@ -165,6 +169,7 @@ model tiendas {
   hotelTemporadas      hotel_temporadas[]
   hotelExtras          hotel_extras[]
   hotelPlanes          hotel_planes[]
+  textos               tienda_textos[]
 }
 
 // ============================================
@@ -220,6 +225,91 @@ model tienda_configuraciones {
   usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
 
   @@unique([tiendaId, clave], name: "uq_tienda_clave")
+}
+
+// ── Idiomas de la tienda (docs/specs/idiomas) ─────────────────────────────
+
+// Idiomas que ofrece la plataforma; los da de alta su administrador. La PK es
+// el código (BCP 47: es, qu, ay, en, agr, es-PE) y no un uuid porque así se
+// guarda en todas partes: tiendas.idiomas, pedidos.idioma, las claves de los
+// JSONB `traducciones`. El español (IDIOMA_BASE) es una fila más.
+model idiomas {
+  codigo  String  @id @db.VarChar(10)
+  nombre  String  @db.VarChar(60) // en la propia lengua: Runasimi, Aymar aru
+  pais    String  @db.VarChar(2) // ISO 3166: solo agrupa la lista en el admin
+  locale  String  @db.VarChar(10) // formato de números (Intl): es-PE, en-US
+  ia      Boolean @default(false) // el admin ofrece "Traducir con IA"
+  avisoIa Boolean @default(false) @map("aviso_ia") // "revisa con un hablante"
+  activo  Boolean @default(true)
+  orden   Int     @default(0)
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  textosPlataforma textos_plataforma[]
+  textosTienda     tienda_textos[]
+}
+
+// Catálogo de textos fijos (botones, títulos, correos, errores). La clave es
+// el texto en español tal como está en el código ('Agregar al carrito',
+// 'Salida|tour'). Lo carga el seeder desde claves-tienda.json y las claves
+// del servidor; una clave que desaparece del código queda obsoleta, no se borra.
+model textos_claves {
+  clave    String  @id @db.Text
+  grupo    String  @db.VarChar(20) // comun | productos | hotel | tours | ... | correos | errores
+  obsoleta Boolean @default(false)
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  textosPlataforma textos_plataforma[]
+  textosTienda     tienda_textos[]
+}
+
+// Traducción de un texto fijo que ofrece la plataforma (opcional; p. ej. el
+// inglés que antes estaba en textos.en.ts). La tienda puede reemplazarla.
+model textos_plataforma {
+  idioma String @db.VarChar(10)
+  clave  String @db.Text
+  texto  String @db.Text
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  idiomaRel idiomas       @relation(fields: [idioma], references: [codigo])
+  claveRel  textos_claves @relation(fields: [clave], references: [clave], onDelete: Cascade)
+
+  @@id([idioma, clave])
+  @@index([clave], name: "idx_textos_plataforma_clave")
+}
+
+// Traducción de un texto fijo hecha por la tienda (a mano o con "Traducir con
+// IA"). Gana sobre la de la plataforma.
+model tienda_textos {
+  tiendaId String @map("tienda_id") @db.Uuid
+  idioma   String @db.VarChar(10)
+  clave    String @db.Text
+  texto    String @db.Text
+  origen   String @default("manual") @db.VarChar(10) // manual | ia
+
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  tienda    tiendas       @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+  idiomaRel idiomas       @relation(fields: [idioma], references: [codigo])
+  claveRel  textos_claves @relation(fields: [clave], references: [clave], onDelete: Cascade)
+
+  @@id([tiendaId, idioma, clave])
+  @@index([idioma], name: "idx_tienda_textos_idioma")
+  @@index([clave], name: "idx_tienda_textos_clave")
 }
 
 // Plantillas de diseño de la plataforma creadas o editadas desde el editor
@@ -620,7 +710,8 @@ model pedidos {
   direccionFiscal      String?   @map("direccion_fiscal") @db.Text
   notas                String?   @db.Text
   origen               String    @default("web") @db.VarChar(20)
-  codigoCupon          String?   @map("codigo_cupon") @db.VarChar(50)
+  idioma               String    @default("es") @db.VarChar(10) // idioma en que compró: correos al cliente (docs/specs/idiomas)
+  codigoCupon         String?   @map("codigo_cupon") @db.VarChar(50)
   fechaConfirmado      DateTime? @map("fecha_confirmado") @db.Timestamptz
   fechaEntregado       DateTime? @map("fecha_entregado") @db.Timestamptz
   // Mini booking (docs/specs/mini-booking): compra | hotel | tour | evento | local.
@@ -1440,7 +1531,7 @@ model reservas {
   // Fase C
   habitaciones   Int       @default(1) // cuántas habitaciones del mismo tipo
   plan           Json?     @db.JsonB // { id, nombre, ajustePct, reembolsable } (snapshot)
-  idiomaHuesped  String    @default("es") @map("idioma_huesped") @db.VarChar(2) // idioma en que reservó (correos)
+  idiomaHuesped  String    @default("es") @map("idioma_huesped") @db.VarChar(10) // idioma en que reservó (correos; docs/specs/idiomas)
   resenaPedidaEn DateTime? @map("resena_pedida_en") @db.Timestamptz // correo "¿Cómo fue tu estadía?" enviado
   // Alquiler de locales: inicio/fin = horario del evento SIN preparación.
   turnoId                String?   @map("turno_id") @db.Uuid

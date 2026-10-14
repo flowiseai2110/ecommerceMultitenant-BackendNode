@@ -3,6 +3,7 @@ import { NotFoundError } from "../../utils/errors.js";
 import { getDiseno } from "../../services/tienda-diseno.service.js";
 import { calendarioAnual, disenoPublico } from "./resolver.js";
 import { CAMPANA_PRESETS } from "./presets.js";
+import { EFECTOS } from "./efectos.js";
 import { inicioDiaLima, parsearFecha } from "./calendario.js";
 
 /**
@@ -15,7 +16,7 @@ export async function getCalendario(tiendaId, anio) {
   if (!tienda) throw new NotFoundError("Tienda no encontrada");
 
   const { campanas } = await getDiseno(tiendaId);
-  return { anio, rubro: tienda.rubro ?? null, presets: CAMPANA_PRESETS, campanas: calendarioAnual(campanas, tienda.rubro, anio) };
+  return { anio, rubro: tienda.rubro ?? null, presets: CAMPANA_PRESETS, efectos: EFECTOS, campanas: calendarioAnual(campanas, tienda.rubro, anio) };
 }
 
 /**

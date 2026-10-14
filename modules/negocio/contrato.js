@@ -1,4 +1,5 @@
 import { ValidationError } from "../../utils/errors.js";
+import { GRUPOS_TEXTOS } from "../idiomas/grupos.js";
 
 /**
  * Contrato de lo que todo rubro implementa (docs/specs/perfil-negocio).
@@ -11,7 +12,8 @@ import { ValidationError } from "../../utils/errors.js";
  *   ("crear" | "editar") y devuelve los datos a guardar, o lanza ValidationError.
  * - Datos del rubro (negocio/<rubro>/datos.js): recibeReservas, planDePagos,
  *   transmisiones, alquilerPorHoras y marcas (capacidades), diseno { plantillaPorDefecto,
- *   secciones, temaPorDefecto? }, configReservas (defaults) y textoAviso (string o null).
+ *   secciones, temaPorDefecto? }, configReservas (defaults), textoAviso (string o null) y
+ *   gruposTextos (grupos del catálogo de textos fijos que muestra su tienda; docs/specs/idiomas D8).
  * - agente: perfil del asesor de ventas, o null (usa el de productos).
  * - dashboard: widgets del dashboard del admin, arreglo no vacío de funciones
  *   `(ctx) => Promise<Widget | null>` (docs/specs/dashboard-por-rubro).
@@ -32,6 +34,8 @@ export function faltantesDeDatos(d) {
   if (!Array.isArray(d?.diseno?.secciones) || !d.diseno.secciones.length) faltan.push("diseno.secciones");
   if (typeof d?.configReservas !== "object" || d.configReservas === null) faltan.push("configReservas");
   if (d?.textoAviso !== null && typeof d?.textoAviso !== "string") faltan.push("textoAviso");
+  const g = d?.gruposTextos;
+  if (!Array.isArray(g) || !g.includes("comun") || !g.every((x) => GRUPOS_TEXTOS.includes(x))) faltan.push("gruposTextos");
   return faltan;
 }
 

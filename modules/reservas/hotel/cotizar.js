@@ -80,7 +80,7 @@ const montoCorto = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
  * Líneas de precio. Las noches se agrupan por precio (y temporada) para que
  * el detalle sea corto: "3 noches × S/ 160 × 1 hab.", sin listar cada día.
  */
-export function lineasPrecio({ modalidad, fechas, temporadas = [], habitaciones = 1, t = textosCotizar("es") }) {
+export function lineasPrecio({ modalidad, fechas, temporadas = [], habitaciones = 1, t = textosCotizar() }) {
   const factor = habitaciones;
   const sufijo = t.habitaciones(habitaciones);
 
@@ -118,7 +118,7 @@ export function lineasPrecio({ modalidad, fechas, temporadas = [], habitaciones 
  * Cargo por niño (B4): los mayores a `ninosGratisHasta` pagan `cargoNinoNoche`
  * por noche (un bloque por horas cuenta como una).
  */
-export function lineaNinos({ edadesNinos, noches, esHoras, config, t = textosCotizar("es") }) {
+export function lineaNinos({ edadesNinos, noches, esHoras, config, t = textosCotizar() }) {
   if (config.ninosGratisHasta == null || !config.cargoNinoNoche) return null;
   const pagan = edadesNinos.filter(e => e > config.ninosGratisHasta).length;
   if (!pagan) return null;
@@ -146,7 +146,7 @@ export function cantidadExtra(cobro, { noches, personas, esHoras, cantidad = 1 }
  * @param {Array} catalogo - hotel_extras activos de la tienda
  * @param {Array<{ extraId: string, cantidad?: number, dato?: string|null }>} elegidos
  */
-export function lineasExtras({ catalogo, elegidos, noches, personas, esHoras, t = textosCotizar("es") }) {
+export function lineasExtras({ catalogo, elegidos, noches, personas, esHoras, t = textosCotizar() }) {
   const lineas = [];
   const snapshot = [];
   const errores = [];
@@ -208,7 +208,7 @@ const error = (codigo, mensaje, campo = null) => ({ codigo, mensaje, campo });
  */
 export function validarSolicitud({
   tipo, modalidad, fecha, inicio, fechas, noches, adultos, ninos, edadesNinos = [], temporadas = [], cierres, config, ahora,
-  habitaciones = 1, cupo = null, t = textosCotizar("es")
+  habitaciones = 1, cupo = null, t = textosCotizar()
 }) {
   const errores = [];
   const e = t.err;
@@ -275,7 +275,7 @@ export function validarSolicitud({
 
   const cerrada = fechas.find(f => cierres.some(c => c.fechaDesde <= f && f <= c.fechaHasta));
   if (cerrada) {
-    errores.push(error("FECHA_CERRADA", e.cerrada((t.fecha ?? fechaCorta)(cerrada)), "fecha"));
+    errores.push(error("FECHA_CERRADA", e.cerrada(t.fecha(cerrada)), "fecha"));
   }
 
   return errores;
@@ -298,9 +298,10 @@ export function validarSolicitud({
 export function cotizarHotel({
   tipo, modalidad, fecha, hora, noches = null, adultos, ninos = 0, cierres = [], config, ahora = new Date(),
   temporadas = [], edadesNinos = [], extrasCatalogo = [], extrasElegidos = [], nacionalidad = null,
-  habitaciones = 1, cupo = null, plan = null, idioma = "es", pago = null
+  habitaciones = 1, cupo = null, plan = null, traductor, pago = null
 }) {
-  const t = textosCotizar(idioma);
+  // Líneas y errores en el idioma de quien reserva (docs/specs/idiomas B7); sin traductor, el base.
+  const t = textosCotizar(traductor);
   const { inicio, fin, fechas } = ventanaEstadia({
     modalidad, fecha, hora, noches, horaCheckin: config.horaCheckin, horaCheckout: config.horaCheckout
   });

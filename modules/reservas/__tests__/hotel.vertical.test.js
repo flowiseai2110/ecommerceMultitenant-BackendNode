@@ -25,7 +25,8 @@ describe("verticalHotel.enTransaccion", () => {
     const tx = {
       $queryRaw: jest.fn(async () => []),
       reservas: { findMany: jest.fn(async () => []) },
-      hotel_estadias: { findMany: jest.fn(async () => []) }
+      hotel_estadias: { findMany: jest.fn(async () => []) },
+      hotel_cupo_externo: { findMany: jest.fn(async () => []) }
     };
     await verticalHotel.enTransaccion(tx, { tiendaId: "t", pedidoId: "nuevo", c: { habitaciones: 1 }, estadoInicial: "confirmada", ahora: new Date("2026-10-13T12:00:00Z"), inventario });
     expect(tx.reservas.findMany.mock.calls[0][0].where.pedidoId).toEqual({ not: "nuevo" });

@@ -26,6 +26,8 @@ import { indicadoresPrecio, contienePrecio } from "./precios.js";
 import { calcularEnvioToolDef, ejecutarCalcularEnvio } from "./tools/calcular-envio.js";
 import { estadoPedidoToolDef, ejecutarEstadoPedido } from "./tools/estado-pedido.js";
 import { estrategiaDe } from "../negocio/registro.js";
+import { idiomasVisibles } from "../idiomas/idiomas-tienda.js";
+import { bloqueIdiomas } from "./idiomas.js";
 
 
 // Si el texto del modelo trae un monto (inventado: no recibe precios).
@@ -65,7 +67,7 @@ function buildSystemPrompt(tiendaNombre) {
   const nombre = tiendaNombre || "la tienda";
   return [
     `Eres el asesor de ventas de "${nombre}". Ayudas a encontrar productos y a decidir`,
-    "la compra, con trato cercano y honesto (español LATAM).",
+    "la compra, con trato cercano y honesto (español LATAM, salvo que el cliente escriba en otro idioma).",
     "",
     "Reglas:",
     "- Usa buscar_productos cuando el cliente pregunte por productos, precio o disponibilidad.",
@@ -155,7 +157,9 @@ export async function responderTurno({
   // El perfil es parte de la estrategia del rubro (estrategia.agente); null = asesor de productos.
   const perfil = estrategiaDe({ id: tiendaId, tipoNegocio }).agente ?? null;
 
-  const system = perfil ? perfil.system(tiendaNombre) : buildSystemPrompt(tiendaNombre);
+  // Los idiomas de la tienda (si no se pueden leer, el asesor igual responde en el del cliente).
+  const idiomas = await idiomasVisibles(tiendaId).catch(() => []);
+  const system = (perfil ? perfil.system(tiendaNombre) : buildSystemPrompt(tiendaNombre)) + bloqueIdiomas(idiomas);
   const facetas = perfil ? null : await obtenerFacetas(tiendaId);
   const tools = perfil
     ? perfil.tools

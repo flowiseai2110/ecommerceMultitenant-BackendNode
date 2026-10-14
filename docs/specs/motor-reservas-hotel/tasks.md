@@ -11,12 +11,12 @@ Spec: [spec.md](spec.md). Una pieza a la vez: se cierra y se prueba antes de la 
 - [ ] 1.6 Probar en el navegador: hotel, tours y canchas; escritorio y celular. (Admin compila y 99 tests en verde, 2026-10-14; falta verlo.)
 
 ## M2 — Cupo a la venta
-- [ ] 2.0 Schema `hotel_cupo_externo` + `docs/sql/cupo_externo.sql`.
-- [ ] 2.1 `ocupacion()` suma lo de fuera de la web; tests (con reservas web, con iCal, sobreventa).
-- [ ] 2.2 Endpoints: grilla con "+N por responder", detalle de la noche, fijar libres (celda y rango).
-- [ ] 2.3 Admin: grilla editable, detalle de la noche, cambio por rango.
-- [ ] 2.4 M1.6: "Hay cupo" en el detalle de una solicitud de hotel.
-- [ ] 2.5 Probar: fijar libres, reservar en la tienda, ver que no deja pasar del cupo.
+- [x] 2.0 Schema `hotel_cupo_externo` + `docs/sql/cupo_externo.sql` (DDL de `prisma migrate diff` + CHECK de origen y ocupadas > 0 + RLS). **Falta correrlo en Supabase.**
+- [x] 2.1 `ocupacion()` suma lo de fuera de la web (opción `externas: false` para la grilla); `externasPorTipo`, `solicitudesPorNoche`; `calcularManual` pura. Tests: `hotel.cupo.test.js`.
+- [x] 2.2 `GET /disponibilidad` (con `detalle`: en sistema, fuera de la web, por responder, saldo, tipos sin cupo), `GET /disponibilidad/noche`, `PUT /disponibilidad/libres` (editor+, en transacción con el tipo bloqueado). Backend: 1255 tests en verde.
+- [x] 2.3 Admin: celdas que abren la noche (reservas web, por responder, mostrador, iCal y "Libres para la web"), "Cambiar varias noches" (tipo, rango, días, libres), sobrevendida en rojo, punto en las noches con ventas de fuera, "+N" por responder. Admin compila, 99 tests.
+- [-] 2.4 M1.6 descartado: con cupo cargado no hay solicitudes (RD1).
+- [ ] 2.5 Probar (después del SQL): fijar libres, reservar en la tienda, ver que no deja pasar del cupo; rango con vie/sáb; noche sobrevendida.
 
 ## M3 — iCal
 - [ ] 3.1 Exportar `.ics` por tipo.

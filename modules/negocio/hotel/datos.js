@@ -2,6 +2,8 @@ import { SECCIONES_COMUNES, SECCIONES_RESERVAS } from "../secciones.js";
 
 /** Hotel / hostal: se reserva por tipo de habitación (noche o por horas). */
 export const hotel = {
+  // Textos fijos que muestra su tienda: los traduce el dueño (docs/specs/idiomas D8).
+  gruposTextos: Object.freeze(["comun", "reservas", "hotel", "correos", "errores"]),
   recibeReservas: true,
   planDePagos: false,
   transmisiones: false,

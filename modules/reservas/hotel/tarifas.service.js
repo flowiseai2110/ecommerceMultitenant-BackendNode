@@ -1,7 +1,9 @@
 import { prisma } from "../../../config/prisma.js";
 import { NotFoundError, ValidationError } from "../../../utils/errors.js";
 import { fechaLima } from "../tiempo.js";
-import { traducirFila } from "../../traducciones/traducciones.service.js";
+import { localizar } from "../../traducciones/localizar.js";
+import { FUENTES } from "../../traducciones/fuentes.js";
+import { IDIOMA_BASE } from "../../idiomas/idioma.js";
 
 /**
  * Tarifas del hotel (docs/specs/hospedaje-completo B2, B3):
@@ -45,7 +47,7 @@ async function validarProductos(tiendaId, productoIds) {
  * todas las habitaciones y las que la incluyen), con fechas "YYYY-MM-DD" como
  * las compara la cotización.
  */
-export async function temporadasParaEstadia(tiendaId, productoId, desde, hasta, lang = "es") {
+export async function temporadasParaEstadia(tiendaId, productoId, desde, hasta, lang = IDIOMA_BASE) {
   const filas = await prisma.hotel_temporadas.findMany({
     where: {
       tiendaId, activo: true,
@@ -56,18 +58,18 @@ export async function temporadasParaEstadia(tiendaId, productoId, desde, hasta, 
     select: { nombre: true, desde: true, hasta: true, ajustePct: true, minNoches: true, traducciones: true }
   });
   return filas.map(f => {
-    const { traducciones, ...t } = traducirFila(f, ["nombre"], lang);
+    const { traducciones, ...t } = localizar(FUENTES.temporadas, f, lang);
     return { ...t, desde: aIso(t.desde), hasta: aIso(t.hasta) };
   });
 }
 
 /** Vitrina: temporadas activas que todavía no terminan (para avisar el mínimo de noches). */
-export async function temporadasPublicas(tiendaId, ahora = new Date(), lang = "es") {
+export async function temporadasPublicas(tiendaId, ahora = new Date(), lang = IDIOMA_BASE) {
   const filas = await prisma.hotel_temporadas.findMany({
     where: { tiendaId, activo: true, hasta: { gte: aFecha(fechaLima(ahora)) } },
     orderBy: { desde: "asc" }
   });
-  return filas.map(f => traducirFila(f, ["nombre"], lang))
+  return filas.map(f => localizar(FUENTES.temporadas, f, lang))
     .map(t => ({ nombre: t.nombre, desde: aIso(t.desde), hasta: aIso(t.hasta), minNoches: t.minNoches, productoIds: t.productoIds }));
 }
 
@@ -125,15 +127,15 @@ export async function listarPlanes(tiendaId) {
 }
 
 /** Vitrina: solo los activos. */
-export async function planesPublicos(tiendaId, lang = "es") {
+export async function planesPublicos(tiendaId, lang = IDIOMA_BASE) {
   const filas = await prisma.hotel_planes.findMany({ where: { tiendaId, activo: true }, orderBy: [{ orden: "asc" }, { nombre: "asc" }] });
-  return filas.map(f => serializarPlan(traducirFila(f, ["nombre", "descripcion"], lang))).map(({ activo, orden, ...p }) => p);
+  return filas.map(f => serializarPlan(localizar(FUENTES.planes, f, lang))).map(({ activo, orden, ...p }) => p);
 }
 
 /** Plan activo de la tienda (para la cotización); null si no existe o se pausó. */
-export async function planDeTienda(tiendaId, id, lang = "es") {
+export async function planDeTienda(tiendaId, id, lang = IDIOMA_BASE) {
   const p = await prisma.hotel_planes.findFirst({ where: { id, tiendaId, activo: true } });
-  return p ? serializarPlan(traducirFila(p, ["nombre", "descripcion"], lang)) : null;
+  return p ? serializarPlan(localizar(FUENTES.planes, p, lang)) : null;
 }
 
 const datosPlan = (d) => ({
@@ -175,13 +177,13 @@ const serializarExtra = (x) => ({
 });
 
 /** Catálogo para la cotización (se filtra por activo ahí, para avisar si uno se desactivó). */
-export async function extrasDeTienda(tiendaId, lang = "es") {
+export async function extrasDeTienda(tiendaId, lang = IDIOMA_BASE) {
   const filas = await prisma.hotel_extras.findMany({ where: { tiendaId }, orderBy: [{ orden: "asc" }, { nombre: "asc" }] });
-  return filas.map(f => serializarExtra(traducirFila(f, ["nombre", "descripcion", "datoPedido"], lang)));
+  return filas.map(f => serializarExtra(localizar(FUENTES.extras, f, lang)));
 }
 
 /** Vitrina: solo los activos. */
-export async function extrasPublicos(tiendaId, lang = "es") {
+export async function extrasPublicos(tiendaId, lang = IDIOMA_BASE) {
   return (await extrasDeTienda(tiendaId, lang)).filter(x => x.activo).map(({ activo, orden, ...x }) => x);
 }
 

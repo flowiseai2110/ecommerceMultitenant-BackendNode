@@ -98,7 +98,7 @@ export async function detalleNoche(tiendaId, productoId, fecha, ahora = new Date
         }
       },
       orderBy: { fechaServicio: "asc" },
-      include: { reserva: { include: INCLUDE_RESERVA.reserva.include }, pagos: true, detalles: true }
+      include: { reserva: { include: INCLUDE_RESERVA.reserva.include }, pagos: true, detalles: true, cuotas: INCLUDE_RESERVA.cuotas }
     }),
     prisma.hotel_estadias.findMany({
       where: {

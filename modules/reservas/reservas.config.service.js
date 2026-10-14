@@ -1,10 +1,12 @@
 import { prisma } from "../../config/prisma.js";
 import { ConflictError, NotFoundError } from "../../utils/errors.js";
 import { vozAlojamiento } from "./hotel/alojamiento.js";
-import { textoEn } from "../traducciones/traducciones.service.js";
+import { localizar } from "../traducciones/localizar.js";
+import { FUENTES } from "../traducciones/fuentes.js";
 import { PLANTILLA_BASE } from "./locales/contrato.js";
 import { DATOS, datosDe } from "../negocio/datos.js";
 import { formularioDe } from "./formulario.js";
+import { IDIOMA_BASE } from "../idiomas/idioma.js";
 
 /**
  * Configuración de reservas de la tienda (spec R1.3). Sin fila en
@@ -148,9 +150,9 @@ export async function obtenerConfig(tiendaId) {
 }
 
 /** Lo que ve el cliente en la vitrina (sin datos internos). */
-export function configPublica(config, lang = "es") {
-  // Inglés (C3): instrucciones y política de cancelación.
-  const tr = lang === "en" ? config.traducciones?.en ?? {} : {};
+export function configPublica(config, lang = IDIOMA_BASE) {
+  // Instrucciones y política de cancelación en el idioma del visitante (docs/specs/idiomas D5).
+  const local = localizar(FUENTES.config, config, lang);
   return {
     tipoNegocio: config.tipoNegocio,
     modoConfirmacion: config.modoConfirmacion,
@@ -160,8 +162,8 @@ export function configPublica(config, lang = "es") {
     formulario: config.formulario,
     anticipacionMinHoras: config.anticipacionMinHoras,
     avisoProximoHoras: config.avisoProximoHoras,
-    instrucciones: textoEn(config.instrucciones, tr.instrucciones),
-    politicaCancelacion: textoEn(config.politicaCancelacion, tr.politicaCancelacion),
+    instrucciones: local.instrucciones,
+    politicaCancelacion: local.politicaCancelacion,
     horaCheckin: config.horaCheckin,
     horaCheckout: config.horaCheckout,
     comprobanteEn: config.comprobanteEn,

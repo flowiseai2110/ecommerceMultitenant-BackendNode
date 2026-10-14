@@ -36,19 +36,28 @@ export function setProductosHome(key, payload) {
 }
 
 /**
+ * El detalle se guarda por idioma bajo el id del producto ({ es: …, qu: … }):
+ * así invalidar un producto limpia todos sus idiomas (docs/specs/idiomas).
  * @param {string} id - ID del producto.
- * @returns {*} Payload cacheado del detalle o undefined/null si no hay.
+ * @param {string} idioma - código del idioma de la petición.
+ * @returns {*} Payload cacheado del detalle o undefined si no hay.
  */
-export function getProductoDetail(id) {
-  return detailCache.get(id);
+export function getProductoDetail(id, idioma) {
+  return detailCache.get(id)?.[idioma];
 }
 
 /**
  * @param {string} id - ID del producto.
+ * @param {string} idioma - código del idioma de la petición.
  * @param {*} payload - Respuesta del detalle a cachear.
  */
-export function setProductoDetail(id, payload) {
-  detailCache.set(id, payload, DETAIL_TTL_MS);
+export function setProductoDetail(id, idioma, payload) {
+  detailCache.set(id, { ...(detailCache.get(id) ?? {}), [idioma]: payload }, DETAIL_TTL_MS);
+}
+
+/** Limpia el home de todas las tiendas (p. ej. al guardar una traducción de un producto). */
+export function invalidateProductosHome() {
+  homeCache.clear();
 }
 
 /**

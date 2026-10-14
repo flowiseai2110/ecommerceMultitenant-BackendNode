@@ -6,6 +6,7 @@ import { bloquearTipo, cupoEstadia, ocupacion } from "./disponibilidad.service.j
 import { calcularEntrada, calcularExtension, estadoHabitacion, numerosNuevos, primeraNoche } from "./recepcion.js";
 import { exigirTurno, turnoAbierto } from "./caja.service.js";
 import { listarHabitacionesStore } from "./habitaciones.service.js";
+import { IDIOMA_BASE } from "../../idiomas/idioma.js";
 
 /**
  * Recepción (docs/specs/recepcion, fases 1 a 3): habitaciones físicas, tablero,
@@ -631,7 +632,7 @@ export async function marcarLimpia(tiendaId, habitacionId, user, ahora = new Dat
  * con sus tarifas y si hay una habitación libre en este momento (activa,
  * limpia y sin estadía). Sin cantidades: solo sí o no.
  */
-export async function ahoraPublico(tiendaId, lang = "es") {
+export async function ahoraPublico(tiendaId, lang = IDIOMA_BASE) {
   const [tipos, habitaciones, ocupadas] = await Promise.all([
     listarHabitacionesStore(tiendaId, lang),
     prisma.hotel_habitaciones.findMany({ where: { tiendaId, estado: "activa" }, select: { id: true, productoId: true, limpieza: true } }),

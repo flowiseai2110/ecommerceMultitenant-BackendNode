@@ -2,6 +2,8 @@ import { SECCIONES_COMUNES } from "../secciones.js";
 
 /** Tienda de productos: catálogo con carrito, envíos y pago contra entrega. */
 export const productos = {
+  // Textos fijos que muestra su tienda: los traduce el dueño (docs/specs/idiomas D8).
+  gruposTextos: Object.freeze(["comun", "productos", "correos", "errores"]),
   recibeReservas: false,
   planDePagos: false,
   transmisiones: false,

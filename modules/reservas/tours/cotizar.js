@@ -1,4 +1,4 @@
-import { diaSemana, fechaCorta, horasEntre, horaLima, instanteLima, sumarDias, sumarHoras } from "../tiempo.js";
+import { diaSemana, horasEntre, horaLima, instanteLima, sumarDias, sumarHoras } from "../tiempo.js";
 import { MAX_DIAS_ADELANTE, montoACuenta, textoAviso } from "../hotel/cotizar.js";
 import { diasSalidaTexto, textosTour } from "./textos-tour.js";
 
@@ -19,8 +19,8 @@ const redondear = (n) => Math.round(n * 100) / 100;
 /** Día del calendario en la convención del tour: 1 = lunes … 7 = domingo. */
 export const diaTour = (fecha) => diaSemana(fecha) || 7;
 
-/** "lunes, miércoles y viernes" / "todos los días" (en inglés con lang "en"). */
-export const textoDiasSalida = (dias, lang = "es") => diasSalidaTexto(dias, lang);
+/** "lunes, miércoles y viernes" / "todos los días", en el idioma del traductor. */
+export const textoDiasSalida = (dias, traductor) => diasSalidaTexto(dias, traductor);
 
 /**
  * Ventana del tour. Sin duración en horas, se asume que termina ese mismo día
@@ -62,9 +62,9 @@ export function lineasPasajeros({ tiposPasajero, pasajeros }) {
 const error = (codigo, mensaje, campo = null) => ({ codigo, mensaje, campo });
 
 /** Reglas de la solicitud de tour (spec R3.2, R5, R10). */
-export function validarSolicitudTour({ tour, fecha, hora, idioma, inicio, personas, desconocidos, cierres, config, ahora, lang = "es" }) {
+export function validarSolicitudTour({ tour, fecha, hora, idioma, inicio, personas, desconocidos, cierres, config, ahora, traductor }) {
   const errores = [];
-  const t = textosTour(lang);
+  const t = textosTour(traductor);
   const e = t.err;
 
   if (!hora) {
@@ -74,7 +74,7 @@ export function validarSolicitudTour({ tour, fecha, hora, idioma, inicio, person
   }
 
   if (!tour.diasSalida.includes(diaTour(fecha))) {
-    errores.push(error("DIA_SIN_SALIDA", e.diaSinSalida(textoDiasSalida(tour.diasSalida, lang)), "fecha"));
+    errores.push(error("DIA_SIN_SALIDA", e.diaSinSalida(textoDiasSalida(tour.diasSalida, traductor)), "fecha"));
   }
 
   if (idioma && !tour.idiomas.includes(idioma)) {
@@ -104,7 +104,7 @@ export function validarSolicitudTour({ tour, fecha, hora, idioma, inicio, person
   }
 
   if (cierres.some(c => c.fechaDesde <= fecha && fecha <= c.fechaHasta)) {
-    errores.push(error("FECHA_CERRADA", e.cerrada((t.fecha ?? fechaCorta)(fecha)), "fecha"));
+    errores.push(error("FECHA_CERRADA", e.cerrada(t.fecha(fecha)), "fecha"));
   }
 
   return errores;
@@ -122,13 +122,13 @@ export function validarSolicitudTour({ tour, fecha, hora, idioma, inicio, person
  * @param {Array<{ fechaDesde: string, fechaHasta: string }>} p.cierres - ya filtrados para este tour
  * @param {object} p.config - configuración de reservas resuelta
  * @param {Date} [p.ahora]
- * @param {"es"|"en"} [p.lang] - idioma de la vitrina (no el del guía, que es `idioma`)
+ * @param {Function} [p.traductor] - textos en el idioma de la vitrina (docs/specs/idiomas B7); el del guía es `idioma`
  */
-export function cotizarTour({ tour, tiposPasajero, pasajeros = [], fecha, hora, idioma = null, cierres = [], config, ahora = new Date(), lang = "es" }) {
+export function cotizarTour({ tour, tiposPasajero, pasajeros = [], fecha, hora, idioma = null, cierres = [], config, ahora = new Date(), traductor }) {
   // Sin hora válida la ventana se calcula con la primera salida: los errores ya lo explican.
   const { inicio, fin } = ventanaTour({ fecha, hora: hora || tour.horasSalida[0] || "00:00", duracionHoras: tour.duracionHoras });
   const { lineas, snapshot, personas, desconocidos } = lineasPasajeros({ tiposPasajero, pasajeros });
-  const errores = validarSolicitudTour({ tour, fecha, hora, idioma, inicio, personas, desconocidos, cierres, config, ahora, lang });
+  const errores = validarSolicitudTour({ tour, fecha, hora, idioma, inicio, personas, desconocidos, cierres, config, ahora, traductor });
 
   const total = redondear(lineas.reduce((s, l) => s + l.total, 0));
   const aPagar = montoACuenta(total, config);

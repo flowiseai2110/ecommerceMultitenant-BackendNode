@@ -1,4 +1,5 @@
 import { prisma, Prisma } from "../../config/prisma.js";
+import { IDIOMA_BASE } from "../idiomas/idioma.js";
 import { logger } from "../../config/logger.js";
 import { ConflictError, NotFoundError, ValidationError } from "../../utils/errors.js";
 import { sendTransactionalEmail } from "../../services/email.service.js";
@@ -24,6 +25,7 @@ import { exigirManual, modoEfectivo } from "../pagos/modo-pago.service.js";
 import { errorNoDisponible, filasCuotas, prepararAceptacion } from "./locales/locales.service.js";
 import { actualizarOcupacion, FechaNoDisponibleError, liberar, liberarHuerfanas, ocupar } from "./locales/ocupaciones.js";
 import { conPreparacion } from "./locales/franja.js";
+import { traductorPara } from "../idiomas/textos.service.js";
 
 /**
  * Mini booking — reservas de hotel / hostal, de tours, compras de entradas
@@ -45,7 +47,7 @@ const SELECT_TIENDA = {
   logoUrl: true, activo: true, tipoNegocio: true
 };
 
-const INCLUDE_RESERVA = {
+export const INCLUDE_RESERVA = {
   reserva: {
     include: {
       producto: {
@@ -309,8 +311,8 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
   if (inventario && estadoInicial === "aceptada") detalle.apartadoHasta = nuevoApartado(c.inicio, await minutosApartado(tienda.id, config), ahora);
   // Locales: la solicitud aparta la fecha durante el plazo de respuesta (R6.4).
   if (vertical.apartadoInicial) detalle.apartadoHasta = vertical.apartadoInicial(estadoInicial, c, config, ahora);
-  // Idioma en que reservó el huésped: los correos le llegan en ese idioma (C3).
-  detalle.idiomaHuesped = datos.lang === "en" ? "en" : "es";
+  // Idioma en que reservó el huésped (lo resuelve la ruta): los correos le llegan en ese idioma (docs/specs/idiomas D11).
+  detalle.idiomaHuesped = datos.lang ?? IDIOMA_BASE;
   // Fuera de la transacción: es una consulta de red (ver pedidos.service).
   const factura = datos.factura ? await datosFactura(datos.factura.ruc) : null;
   const nombreCompleto = `${datos.titular.nombres} ${datos.titular.apellidos}`;
@@ -433,20 +435,26 @@ async function resultadoSolicitud(tienda, pedidoId, nueva, config = null) {
 }
 
 /** Avisos de una solicitud nueva: al cliente y al negocio (R5.5). Nunca lanza. */
-export function notificarSolicitud({ pedido, tienda, config, token }) {
-  const dtoCliente = serializeReservaStore(pedido, { tienda, config });
-  // Compra de entradas: el organizador no tiene nada que responder; se le avisa al subir la captura.
-  if (pedido.tipo === "evento") {
-    const correo = pedido.estado === "confirmada" ? confirmadaEmail : compraPendienteEmail;
-    enviar(pedido.clienteEmail, correo(dtoCliente, urlSeguimiento(tienda.slug, token)), tienda.email);
-    return;
+export async function notificarSolicitud({ pedido, tienda, config, token }) {
+  try {
+    const dtoCliente = serializeReservaStore(pedido, { tienda, config });
+    // Al cliente, en el idioma en que reservó (docs/specs/idiomas D11); al negocio, en el base.
+    const t = await traductorPara(tienda.id, dtoCliente.idiomaHuesped);
+    // Compra de entradas: el organizador no tiene nada que responder; se le avisa al subir la captura.
+    if (pedido.tipo === "evento") {
+      const correo = pedido.estado === "confirmada" ? confirmadaEmail : compraPendienteEmail;
+      enviar(pedido.clienteEmail, correo(dtoCliente, urlSeguimiento(tienda.slug, token), t), tienda.email);
+      return;
+    }
+    // Con confirmación inmediata (pago directo) no hay solicitud que responder:
+    // la reserva nace aceptada (por pagar) o confirmada (se paga al llegar).
+    const dtoNegocio = serializeReservaAdmin(pedido);
+    const alCliente = { solicitada: solicitudRecibidaEmail, aceptada: aceptadaEmail, confirmada: confirmadaEmail }[pedido.estado] ?? solicitudRecibidaEmail;
+    enviar(pedido.clienteEmail, alCliente(dtoCliente, urlSeguimiento(tienda.slug, token), t), tienda.email);
+    enviar(tienda.email, (pedido.estado === "solicitada" ? nuevaSolicitudEmail : nuevaReservaEmail)(dtoNegocio), pedido.clienteEmail);
+  } catch (error) {
+    logger.warn(`📭 Reservas: no se avisó la solicitud ${pedido?.numeroPedido}: ${error.message}`);
   }
-  // Con confirmación inmediata (pago directo) no hay solicitud que responder:
-  // la reserva nace aceptada (por pagar) o confirmada (se paga al llegar).
-  const dtoNegocio = serializeReservaAdmin(pedido);
-  const alCliente = { solicitada: solicitudRecibidaEmail, aceptada: aceptadaEmail, confirmada: confirmadaEmail }[pedido.estado] ?? solicitudRecibidaEmail;
-  enviar(pedido.clienteEmail, alCliente(dtoCliente, urlSeguimiento(tienda.slug, token)), tienda.email);
-  enviar(tienda.email, (pedido.estado === "solicitada" ? nuevaSolicitudEmail : nuevaReservaEmail)(dtoNegocio), pedido.clienteEmail);
 }
 
 /** Página de seguimiento (estado, pago, confirmación). */
@@ -649,7 +657,9 @@ export async function correoCliente(tiendaId, pedidoId, plantilla) {
   const [pedido, config] = await Promise.all([pedidoDeReserva(tiendaId, pedidoId), obtenerConfig(tiendaId)]);
   const token = await firmarTokenReserva({ pedidoId, tiendaId });
   const dto = serializeReservaStore(pedido, { tienda, config });
-  enviar(pedido.clienteEmail, plantilla(dto, urlSeguimiento(tienda.slug, token)), tienda.email);
+  // En el idioma en que reservó (docs/specs/idiomas D11).
+  const t = await traductorPara(tiendaId, dto.idiomaHuesped);
+  enviar(pedido.clienteEmail, plantilla(dto, urlSeguimiento(tienda.slug, token), t), tienda.email);
 }
 
 /** Correo al cliente según el estado actual de la reserva. */

@@ -2,6 +2,8 @@ import { SECCIONES_COMUNES, SECCIONES_RESERVAS } from "../secciones.js";
 
 /** Eventos: funciones con venta de entradas y transmisión en vivo. */
 export const eventos = {
+  // Textos fijos que muestra su tienda: los traduce el dueño (docs/specs/idiomas D8).
+  gruposTextos: Object.freeze(["comun", "reservas", "eventos", "correos", "errores"]),
   recibeReservas: true,
   planDePagos: false,
   // Transmisión en vivo de la función (docs/specs/transmision-eventos).

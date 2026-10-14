@@ -1,64 +1,68 @@
+import { clave } from "../../idiomas/clave.js";
+import { TRADUCTOR_BASE } from "../../idiomas/traductor.js";
+import { fechaCortaLocal } from "../textos-fecha.js";
+
 /**
- * Textos de la cotización de tours en español e inglés (docs/specs/hospedaje-completo
- * C3, extendido a tours): días de salida, precio "desde" y errores de las reglas.
- * El pasajero que reserva en inglés los ve en inglés.
+ * Textos de la cotización de tours: días de salida, precio "desde" y errores
+ * de las reglas (docs/specs/idiomas B7). Salen del catálogo de textos fijos en
+ * el idioma de quien reserva; sin traductor, en el idioma base.
  */
 
-const plural = (n, uno, varios) => (n === 1 ? uno : varios);
-const MESES_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-/** Lista "a, b y c" / "a, b and c". */
-const enumerar = (nombres, y) => (nombres.length === 1 ? nombres[0] : `${nombres.slice(0, -1).join(", ")} ${y} ${nombres.at(-1)}`);
-
-const es = {
-  dias: ["", "lunes", "martes", "miércoles", "jueves", "viernes", "sábados", "domingos"],
-  todosLosDias: "todos los días",
-  y: "y",
-  fecha: null, // fechaCorta: 24/09
-  desde: (tipo) => `por ${tipo.toLowerCase()}`,
+const K = {
+  // Índice = día ISO (1 = lunes … 7 = domingo).
+  dias: [null,
+    clave("lunes|días de salida"), clave("martes|días de salida"), clave("miércoles|días de salida"), clave("jueves|días de salida"),
+    clave("viernes|días de salida"), clave("sábados|días de salida"), clave("domingos|días de salida")],
+  todosLosDias: clave("todos los días"),
+  lista: clave("{lista} y {ultimo}"),
+  desde: clave("por {tipo}|precio desde"),
   err: {
-    horaRequerida: "Elige la hora de salida",
-    horaInvalida: (horas) => `Este tour sale a las ${horas}`,
-    diaSinSalida: (dias) => `Este tour sale ${dias === "todos los días" ? dias : `los ${dias}`}. Elige otra fecha`,
-    idioma: "Este tour no se ofrece en ese idioma",
-    tipoInvalido: "Uno de los tipos de pasajero ya no está disponible. Actualiza la página",
-    sinPasajeros: "Indica cuántas personas van",
-    maxPasajeros: (max) => `Puedes solicitar hasta ${max} ${plural(max, "persona", "personas")} por reserva. Para grupos más grandes, escribe a la agencia`,
-    fechaPasada: "Esa salida ya pasó. Elige una fecha futura",
-    anticipacion: (h) => `Los tours se reservan con al menos ${h} ${plural(h, "hora", "horas")} de anticipación`,
-    fechaLejana: "Solo se puede reservar con hasta un año de anticipación",
-    cerrada: (f) => `No hay salida el ${f}. Elige otra fecha`
+    horaRequerida: clave("Elige la hora de salida"),
+    horaInvalida: clave("Este tour sale a las {horas}"),
+    saleTodosLosDias: clave("Este tour sale todos los días. Elige otra fecha"),
+    diaSinSalida: clave("Este tour sale los {dias}. Elige otra fecha"),
+    idioma: clave("Este tour no se ofrece en ese idioma"),
+    tipoInvalido: clave("Uno de los tipos de pasajero ya no está disponible. Actualiza la página"),
+    sinPasajeros: clave("Indica cuántas personas van"),
+    maxPersona: clave("Puedes solicitar hasta {n} persona por reserva. Para grupos más grandes, escribe a la agencia"),
+    maxPersonas: clave("Puedes solicitar hasta {n} personas por reserva. Para grupos más grandes, escribe a la agencia"),
+    fechaPasada: clave("Esa salida ya pasó. Elige una fecha futura"),
+    anticipacionHora: clave("Los tours se reservan con al menos {n} hora de anticipación"),
+    anticipacionHoras: clave("Los tours se reservan con al menos {n} horas de anticipación"),
+    fechaLejana: clave("Solo se puede reservar con hasta un año de anticipación"),
+    cerrada: clave("No hay salida el {fecha}. Elige otra fecha")
   }
 };
-
-const en = {
-  dias: ["", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays", "Sundays"],
-  todosLosDias: "every day",
-  y: "and",
-  fecha: (f) => `${MESES_EN[Number(f.slice(5, 7)) - 1]} ${Number(f.slice(8, 10))}`,
-  desde: (tipo) => `per ${tipo.toLowerCase()}`,
-  err: {
-    horaRequerida: "Choose a departure time",
-    horaInvalida: (horas) => `This tour departs at ${horas}`,
-    diaSinSalida: (dias) => `This tour departs ${dias === "every day" ? dias : `on ${dias}`}. Please choose another date`,
-    idioma: "This tour is not offered in that language",
-    tipoInvalido: "One of the traveler types is no longer available. Please refresh the page",
-    sinPasajeros: "Tell us how many people are going",
-    maxPasajeros: (max) => `You can request up to ${max} ${plural(max, "person", "people")} per booking. For larger groups, please contact the agency`,
-    fechaPasada: "That departure has already passed. Please choose a future date",
-    anticipacion: (h) => `Tours must be booked at least ${h} ${plural(h, "hour", "hours")} in advance`,
-    fechaLejana: "Bookings can be made up to one year in advance",
-    cerrada: (f) => `There is no departure on ${f}. Please choose another date`
-  }
-};
-
-/** @param {string|null|undefined} lang */
-export const textosTour = (lang) => (lang === "en" ? en : es);
 
 /** "lunes, miércoles y viernes" / "Mondays, Wednesdays and Fridays" / "todos los días". */
-export function diasSalidaTexto(dias, lang = "es") {
-  const t = textosTour(lang);
+export function diasSalidaTexto(dias, t = TRADUCTOR_BASE) {
   const orden = [...new Set(dias)].sort((a, b) => a - b);
-  if (orden.length === 7) return t.todosLosDias;
-  return enumerar(orden.map(d => t.dias[d]), t.y);
+  if (orden.length === 7) return t(K.todosLosDias);
+  const nombres = orden.map((d) => t(K.dias[d]));
+  return nombres.length === 1 ? nombres[0] : t(K.lista, { lista: nombres.slice(0, -1).join(", "), ultimo: nombres.at(-1) });
+}
+
+/**
+ * @param {(clave: string, params?: object) => string} [t] - traductor del idioma de quien reserva (idiomas/textos.service.js)
+ */
+export function textosTour(t = TRADUCTOR_BASE) {
+  const plural = (n, uno, varios) => t(n === 1 ? uno : varios, { n });
+  return {
+    fecha: (f) => fechaCortaLocal(t, f),
+    desde: (tipo) => t(K.desde, { tipo: tipo.toLowerCase() }),
+    err: {
+      horaRequerida: t(K.err.horaRequerida),
+      horaInvalida: (horas) => t(K.err.horaInvalida, { horas }),
+      // `dias` sale de diasSalidaTexto con el mismo traductor.
+      diaSinSalida: (dias) => (dias === t(K.todosLosDias) ? t(K.err.saleTodosLosDias) : t(K.err.diaSinSalida, { dias })),
+      idioma: t(K.err.idioma),
+      tipoInvalido: t(K.err.tipoInvalido),
+      sinPasajeros: t(K.err.sinPasajeros),
+      maxPasajeros: (max) => plural(max, K.err.maxPersona, K.err.maxPersonas),
+      fechaPasada: t(K.err.fechaPasada),
+      anticipacion: (h) => plural(h, K.err.anticipacionHora, K.err.anticipacionHoras),
+      fechaLejana: t(K.err.fechaLejana),
+      cerrada: (fecha) => t(K.err.cerrada, { fecha })
+    }
+  };
 }

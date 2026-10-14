@@ -312,12 +312,11 @@ export const config = {
 
   // Asistente "Guía" del panel admin. Ver modules/asistente/. Reusa la API key del
   // agente; las explicaciones paso a paso necesitan más tokens que el asesor.
-  // Traducción del contenido de la tienda al inglés (docs/specs/hospedaje-completo C3).
+  // "Traducir con IA" del contenido de la tienda (docs/specs/idiomas D3). Solo
+  // lo dispara el dueño desde el admin: nunca al guardar.
   traducciones: {
     apiKey: process.env.TRADUCCIONES_IA_API_KEY || process.env.AGENTE_IA_API_KEY,
-    modelo: process.env.TRADUCCIONES_IA_MODELO || "claude-opus-5-5",
-    // Espera tras el último guardado antes de traducir (agrupa varios cambios seguidos).
-    demoraMs: parseInt(process.env.TRADUCCIONES_DEMORA_MS) || 8000
+    modelo: process.env.TRADUCCIONES_IA_MODELO || "claude-opus-5-5"
   },
   asistente: {
     apiKey: process.env.ASISTENTE_IA_API_KEY || process.env.AGENTE_IA_API_KEY,
@@ -335,7 +334,9 @@ export const config = {
     limiteAsesorSinPlan: parseInt(process.env.CONSUMO_IA_LIMITE_ASESOR_SIN_PLAN) || 100,
     limiteAsistenteSinPlan: parseInt(process.env.CONSUMO_IA_LIMITE_ASISTENTE_SIN_PLAN) || 50,
     // Tope DIARIO de la Guía sin plan (con plan: planes.limite_consultas_asistente_dia).
-    limiteAsistenteDiaSinPlan: parseInt(process.env.CONSUMO_IA_LIMITE_ASISTENTE_DIA_SIN_PLAN) || 40
+    limiteAsistenteDiaSinPlan: parseInt(process.env.CONSUMO_IA_LIMITE_ASISTENTE_DIA_SIN_PLAN) || 40,
+    // "Traducir con IA" (docs/specs/idiomas): sin tope por defecto (null); el dueño puede fijarse uno.
+    limiteTraduccionesSinPlan: parseInt(process.env.CONSUMO_IA_LIMITE_TRADUCCIONES_SIN_PLAN) || null
   },
 
   // Imágenes por defecto por folder

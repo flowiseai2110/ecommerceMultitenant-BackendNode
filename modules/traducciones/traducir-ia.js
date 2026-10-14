@@ -1,11 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
 import config from "../../config/index.js";
+import { sumarUso } from "../consumo-ia/consumo-ia.service.js";
 
 /**
- * Traducción con IA del contenido de la tienda, español de Perú → inglés
- * (docs/specs/hospedaje-completo C3). Recibe textos con una clave y devuelve
- * la traducción por clave; los textos sin traducción en la respuesta quedan
- * pendientes para el siguiente intento.
+ * Traducción con IA del contenido de la tienda, del idioma base al idioma que
+ * elija el dueño (docs/specs/idiomas D3). Recibe textos con una clave y
+ * devuelve la traducción por clave; los textos sin traducción en la respuesta
+ * quedan pendientes para el siguiente intento.
  */
 
 const LOTE = 40;
@@ -19,12 +20,13 @@ function cliente() {
 
 export const iaDisponible = () => Boolean(config.traducciones.apiKey);
 
-const SISTEMA = [
-  "You translate the website content of a small hospitality business in Peru (hotel, hostel, tour agency or event venue) from Spanish to English for international travelers.",
-  "Translate naturally, the way a native English-speaking hotel website would say it. Keep it as short as the original.",
+const sistema = (origen, destino) => [
+  `You translate the website content of a small business in Peru from ${origen.nombre} (language code "${origen.codigo}") to ${destino.nombre} (language code "${destino.codigo}") for the people who will buy from it.`,
+  `Translate naturally, the way a native ${destino.nombre} speaker would say it on a website. Keep it as short as the original. If the language has an official alphabet, use it.`,
   "Keep proper names, brand names, street names, districts and local places in their original form (Barranco, Miraflores, Puente de los Suspiros).",
   "Keep prices, numbers, times, emojis and line breaks exactly as they are. Currency stays as S/.",
-  "If a text is already in English or is only a name or a number, return it unchanged.",
+  "Keep placeholders in curly braces exactly as they are, untranslated (for example {n}, {nombre}, {Negocio}): the website fills them in.",
+  "If a text is only a name or a number, return it unchanged.",
   "Return one translation for every key you receive, with the same key."
 ].join(" ");
 
@@ -48,19 +50,21 @@ const FORMATO = {
   }
 };
 
-async function traducirLote(textos, contexto) {
+async function traducirLote(textos, origen, destino, contexto, uso) {
   const entrada = Object.entries(textos).map(([clave, texto]) => ({ clave, texto }));
   const respuesta = await cliente().messages.create({
     model: config.traducciones.modelo,
     max_tokens: 16000,
     // Traducir textos cortos no necesita razonar mucho.
     output_config: { effort: "low", format: FORMATO },
-    system: SISTEMA,
+    system: sistema(origen, destino),
     messages: [{
       role: "user",
       content: `${contexto ? `Business: ${contexto}\n\n` : ""}Translate the "texto" of each item:\n${JSON.stringify(entrada)}`
     }]
   });
+  // Los tokens se cobran aunque la respuesta no sirva (consumo-ia: costo real por tienda).
+  sumarUso(uso, respuesta.usage);
   if (respuesta.stop_reason === "refusal" || respuesta.stop_reason === "max_tokens") return {};
   const bloque = respuesta.content.find(b => b.type === "text");
   if (!bloque) return {};
@@ -70,17 +74,20 @@ async function traducirLote(textos, contexto) {
 }
 
 /**
- * @param {Record<string, string>} textos - clave → texto en español
- * @param {string} [contexto] - nombre y tipo del negocio, para el tono
- * @returns {Promise<Record<string, string>>} clave → texto en inglés
+ * @param {Record<string, string>} textos - clave → texto en el idioma base
+ * @param {{ origen: import("../idiomas/idioma.js").Idioma, destino: import("../idiomas/idioma.js").Idioma, contexto?: string }} opciones
+ *   origen: el idioma base; destino: al que se traduce; contexto: nombre y tipo del negocio, para el tono
+ * @returns {Promise<{ traducciones: Record<string, string>, uso: { entrada: number, salida: number } }>}
+ *   clave → texto traducido, y los tokens usados (para consumo-ia)
  */
-export async function traducirTextos(textos, contexto = "") {
-  if (!cliente()) return {};
+export async function traducirTextos(textos, { origen, destino, contexto = "" }) {
+  const uso = { entrada: 0, salida: 0 };
+  if (!cliente()) return { traducciones: {}, uso };
   const claves = Object.keys(textos);
-  const resultado = {};
+  const traducciones = {};
   for (let i = 0; i < claves.length; i += LOTE) {
     const lote = Object.fromEntries(claves.slice(i, i + LOTE).map(k => [k, textos[k]]));
-    Object.assign(resultado, await traducirLote(lote, contexto));
+    Object.assign(traducciones, await traducirLote(lote, origen, destino, contexto, uso));
   }
-  return resultado;
+  return { traducciones, uso };
 }

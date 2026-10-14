@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { RUBROS } from "./rubros.js";
+import { IDIOMA_BASE, codigoIdiomaSchema } from "../idiomas/idioma.js";
 
 /** Vertical de la tienda (docs/specs/mini-booking). Solo cambia sin pedidos ni reservas. */
 export const TIPOS_NEGOCIO = ["productos", "hotel", "tours", "eventos", "locales", "canchas"];
@@ -82,9 +83,10 @@ export const updateTiendaSchema = z.object({
   envioGratisMinimo: tiendasBaseSchema.envioGratisMinimo,
   metaPixelId: tiendasBaseSchema.metaPixelId,
   googleAnalyticsId: tiendasBaseSchema.googleAnalyticsId,
-  // Idiomas de la vitrina (docs/specs/hospedaje-completo C3): el español siempre está.
-  idiomas: z.array(z.enum(["es", "en"])).min(1).max(2)
-    .refine((l) => l.includes("es"), "El español siempre está activo")
+  // Idiomas de la tienda (docs/specs/idiomas): aquí solo el formato y el base;
+  // que existan y estén activos lo verifica validarIdiomasDeTienda (están en la BD).
+  idiomas: z.array(codigoIdiomaSchema).min(1).max(20)
+    .refine((l) => l.includes(IDIOMA_BASE), "El idioma base siempre está activo")
     .transform((l) => [...new Set(l)])
     .optional()
 }).refine(
