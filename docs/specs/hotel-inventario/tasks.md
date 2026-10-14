@@ -32,6 +32,7 @@ Antes de la fase 1: confirmar las 3 decisiones marcadas "Por confirmar" en la sp
 - [x] 1.7 (revisado 2026-10-11) Hoteles sin categorías: menú sin "Categorías", formulario del tipo sin categoría y con "Código" (= SKU) y nombre de 100; la tienda no carga categorías en hoteles. Se revirtieron los cambios al formulario de categoría (límites 100/500, tarjeta de capacidad) y a Ayuda/asistente. Store 74/75 (falla previa de `app.component`), admin 50. Antes (2026-10-10): nombres según el modelo Booking, solo en hospedaje. Menú y migas: "Categorías" (`/categorias`) y "Tipos de habitación" (`/habitaciones`, y `/productos/...` con `breadcrumbHotelUrl`); textos de la pantalla de categorías, lista de tipos, ficha de estadía, formulario del producto (categoría requerida, "Tipo de habitación creado") y tarjeta del formulario de categoría. La vitrina sigue diciendo "Habitaciones" (es lo que busca el huésped). "Habitaciones" en el admin queda libre para las físicas (fase 5). Admin compila, 50 tests; falta verlo en el navegador (requiere sesión).
 
 ## Fase 2 — Vista de recepción
+> Reemplazada por motor-reservas-hotel M2 (2026-10-14).
 - [ ] 2.1 Backend: disponibilidad con solicitudes pendientes y reservas por celda (`?detalle=1` o endpoint de celda).
 - [ ] 2.2 Admin: grilla con colores, "+N por responder", rango 14/30, totales del día.
 - [ ] 2.3 Admin: detalle de celda con acciones.
@@ -54,6 +55,7 @@ Antes de la fase 1: confirmar las 3 decisiones marcadas "Por confirmar" en la sp
 - [ ] 4.5 Tests (alarga sin cupo, acorta, cambio de tipo, no reembolsable, máximo de reprogramaciones).
 
 ## Fase 5 — Habitaciones físicas y tape chart
+> Fuera del hotel (2026-10-14): solo el hostal, ya cubierto por Recepción. No se construye.
 - [ ] 5.0 Schema: `hotel_habitaciones`, `reserva_habitaciones`; migración de unidades a habitaciones.
 - [ ] 5.1 Cupo a partir de las habitaciones activas y los bloqueos de habitación.
 - [ ] 5.2 Asignación sugerida al aceptar; reasignar.

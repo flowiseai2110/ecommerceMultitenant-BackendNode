@@ -4,6 +4,7 @@ import { vozAlojamiento } from "./hotel/alojamiento.js";
 import { textoEn } from "../traducciones/traducciones.service.js";
 import { PLANTILLA_BASE } from "./locales/contrato.js";
 import { DATOS, datosDe } from "../negocio/datos.js";
+import { formularioDe } from "./formulario.js";
 
 /**
  * Configuración de reservas de la tienda (spec R1.3). Sin fila en
@@ -43,6 +44,10 @@ const BASE = {
   vitrinaAlPaso: false,
   // Solo eventos
   apartadoManualMin: 120,
+  // Pago en línea (reserva-directa-hotel RD6): el cupo se aparta mientras paga con tarjeta o Yape.
+  apartadoEnLineaMin: 15,
+  // Con adelanto, el cliente elige pagar el adelanto o el total (plantillas-por-rubro C8).
+  cobroEleccion: false,
   maxEntradasPorCompra: 10,
   umbralUltimasEntradas: 20,
   cierrePagoManualHoras: null,
@@ -79,9 +84,9 @@ const BASE = {
 };
 
 export const CAMPOS_CONFIG = [
-  "modoConfirmacion", "cobro", "adelantoPct", "anticipacionMinHoras", "avisoProximoHoras", "avisoProximoTexto",
+  "modoConfirmacion", "cobro", "adelantoPct", "cobroEleccion", "camposFormulario", "anticipacionMinHoras", "avisoProximoHoras", "avisoProximoTexto",
   "maxSolicitudesAbiertas", "instrucciones", "politicaCancelacion", "horaCheckin", "horaCheckout", "comprobanteEn",
-  "apartadoManualMin", "maxEntradasPorCompra", "umbralUltimasEntradas", "cierrePagoManualHoras",
+  "apartadoManualMin", "apartadoEnLineaMin", "maxEntradasPorCompra", "umbralUltimasEntradas", "cierrePagoManualHoras",
   "tipoAlojamiento", "ninosGratisHasta", "cargoNinoNoche", "exoneraIgvExtranjeros",
   "tipoCambioUsd", "resenasExternas", "recepcionDocumento", "vitrinaAlPaso",
   "separacionTipo", "separacionMonto", "respuestaHoras", "apartadoHoras", "saldoDiasAntes", "maxCuotas", "garantiaMonto",
@@ -114,6 +119,8 @@ export function resolverConfig(tipoNegocio, fila) {
     config.contratoPlantilla = config.contratoPlantilla || PLANTILLA_BASE;
   }
   config.resenasExternas = Array.isArray(config.resenasExternas) ? config.resenasExternas : [];
+  // Campos del formulario con su modo: los del rubro y lo que cambió la tienda.
+  config.formulario = formularioDe(tipoNegocio, config.camposFormulario);
   const v = vozAlojamiento(config.tipoAlojamiento);
   const avisoPorDefecto = (datosDe(tipoNegocio).textoAviso ?? DATOS.hotel.textoAviso)
     .replace("{negocio}", v.negocio).replace("{alNegocio}", v.alNegocio);
@@ -149,6 +156,8 @@ export function configPublica(config, lang = "es") {
     modoConfirmacion: config.modoConfirmacion,
     cobro: config.cobro,
     adelantoPct: config.adelantoPct,
+    cobroEleccion: config.cobro === "adelanto" && !!config.cobroEleccion,
+    formulario: config.formulario,
     anticipacionMinHoras: config.anticipacionMinHoras,
     avisoProximoHoras: config.avisoProximoHoras,
     instrucciones: textoEn(config.instrucciones, tr.instrucciones),
@@ -157,6 +166,7 @@ export function configPublica(config, lang = "es") {
     horaCheckout: config.horaCheckout,
     comprobanteEn: config.comprobanteEn,
     apartadoManualMin: config.apartadoManualMin,
+    apartadoEnLineaMin: config.apartadoEnLineaMin,
     maxEntradasPorCompra: config.maxEntradasPorCompra,
     cierrePagoManualHoras: config.cierrePagoManualHoras,
     tipoAlojamiento: config.tipoAlojamiento,

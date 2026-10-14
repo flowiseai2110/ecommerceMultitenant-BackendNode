@@ -9,6 +9,7 @@ import { montoACuenta } from "./hotel/cotizar.js";
 import { vozAlojamiento } from "./hotel/alojamiento.js";
 import { ESTADOS_EN_CURSO, transicionar, estadoEfectivo } from "./estados.js";
 import { obtenerConfig } from "./reservas.config.service.js";
+import { aplicarFormulario, formularioDe } from "./formulario.js";
 import { cupoEstadia } from "./hotel/disponibilidad.service.js";
 import { moverVendidos } from "./eventos/eventos.service.js";
 import { firmarTokenReserva } from "./reservas.token.js";
@@ -19,7 +20,7 @@ import {
 } from "./reservas.emails.js";
 import { instanteLima, fechaLima, sumarDias } from "./tiempo.js";
 import { estrategiaDe, verticalDePedido } from "../negocio/registro.js";
-import { exigirManual } from "../pagos/modo-pago.service.js";
+import { exigirManual, modoEfectivo } from "../pagos/modo-pago.service.js";
 import { errorNoDisponible, filasCuotas, prepararAceptacion } from "./locales/locales.service.js";
 import { actualizarOcupacion, FechaNoDisponibleError, liberar, liberarHuerfanas, ocupar } from "./locales/ocupaciones.js";
 import { conPreparacion } from "./locales/franja.js";
@@ -106,10 +107,19 @@ export const efectivoDe = (pedido, ahora) => {
 };
 
 /** Hasta cuándo queda apartado el cupo de una compra (nunca después de la función). */
-const nuevoApartado = (inicio, config, ahora) => {
-  const limite = new Date(ahora.getTime() + config.apartadoManualMin * 60 * 1000);
+const nuevoApartado = (inicio, minutos, ahora) => {
+  const limite = new Date(ahora.getTime() + minutos * 60 * 1000);
   return limite < inicio ? limite : inicio;
 };
+
+/** Modo de confirmación efectivo: el de la estrategia del rubro (hotel con inventario: directo) o el de la tienda. */
+const modoDe = (vertical, config, cotizado) => vertical.modoConfirmacion?.(config, cotizado) ?? config.modoConfirmacion;
+
+/** Cuánto se aparta el cupo mientras se paga: corto en línea, largo para subir una captura (reserva-directa-hotel RD2). */
+async function minutosApartado(tiendaId, config) {
+  const { modo } = await modoEfectivo(tiendaId);
+  return modo === "automatico" ? config.apartadoEnLineaMin : config.apartadoManualMin;
+}
 const redondear = (n) => Math.round(n * 100) / 100;
 
 async function tiendaDeReservas(tiendaId) {
@@ -215,10 +225,13 @@ export function enviar(destino, correo, replyTo) {
 export async function cotizar(datos, ahora = new Date()) {
   const { vertical } = await tiendaDeReservas(datos.tiendaId);
   const config = await obtenerConfig(datos.tiendaId);
-  const { c } = await vertical.cotizar({ tiendaId: datos.tiendaId, datos, config, ahora });
+  const cotizado = await vertical.cotizar({ tiendaId: datos.tiendaId, datos, config, ahora });
+  const { c } = cotizado;
+  // Con el modo efectivo la vitrina elige textos y flujo sin preguntar por el rubro (reserva-directa-hotel RD7).
+  const base = { ...serializarCotizacion(c), modoConfirmacion: modoDe(vertical, config, cotizado) };
   // Lo que una vertical agrega a la cotización (locales: separación, garantía y si la franja está libre, R3.5, R4.1).
-  if (vertical.extraCotizacion) return { ...serializarCotizacion(c), ...await vertical.extraCotizacion(datos.tiendaId, datos, c, ahora) };
-  return serializarCotizacion(c);
+  if (vertical.extraCotizacion) return { ...base, ...await vertical.extraCotizacion(datos.tiendaId, datos, c, ahora) };
+  return base;
 }
 
 const serializarCotizacion = (c) => ({
@@ -228,6 +241,8 @@ const serializarCotizacion = (c) => ({
   exoneradoIgv: c.exoneradoIgv ?? false, totalExtranjero: c.totalExtranjero ?? null,
   // Fase C: habitaciones, plan y cupo ("Quedan 2").
   habitaciones: c.habitaciones ?? 1, plan: c.plan ?? null, quedan: c.quedan ?? null,
+  // Adelanto o total para elegir (C8); null si la tienda no lo ofrece.
+  opcionesPago: c.opcionesPago ?? null,
   // Extras elegidos con el dato que hay que pedirle al huésped (B3).
   extras: (c.extras ?? []).map(x => ({ id: x.id, nombre: x.nombre, cantidad: x.cantidad, total: x.total, datoPedido: x.datoPedido }))
 });
@@ -242,7 +257,7 @@ async function validarSolicitudesAbiertas(tiendaId, vertical, { whatsapp, docNum
       AND: [
         { tiendaId, tipo: vertical.tipoPedido },
         enCurso,
-        { OR: [{ clienteWhatsapp: whatsapp }, { reserva: { titularDocNumero: docNumero } }] }
+        { OR: [{ clienteWhatsapp: whatsapp }, ...(docNumero ? [{ reserva: { titularDocNumero: docNumero } }] : [])] }
       ]
     }
   });
@@ -272,6 +287,8 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
   if (existente) return resultadoSolicitud(tienda, existente.id, false);
 
   const config = await obtenerConfig(tienda.id);
+  // Lo obligatorio del formulario de la tienda, y fuera lo que no pide.
+  aplicarFormulario(datos, config.formulario ?? formularioDe(tienda.tipoNegocio, null));
   const cotizado = await vertical.cotizar({ tiendaId: tienda.id, datos, config, ahora });
   const { producto, c, detalle, log, inventario = null } = cotizado;
   if (c.errores.length) {
@@ -279,16 +296,17 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
   }
 
   const whatsapp = datos.whatsapp.replace(/[\s-]/g, "");
-  const docNumero = datos.titular.docNumero.toUpperCase();
+  const docNumero = datos.titular.docNumero?.toUpperCase() ?? null;
   await validarSolicitudesAbiertas(tienda.id, vertical, { whatsapp, docNumero }, config.maxSolicitudesAbiertas, ahora);
 
   // Pago directo sin nada que pagar por adelantado (cobro en destino): la
   // reserva nace confirmada; se paga al llegar (hospedaje-completo A6).
   const estadoInicial = vertical.estadoInicial?.(c)
-    ?? (config.modoConfirmacion === "pago_directo" ? (c.montoAPagar > 0 ? "aceptada" : "confirmada") : "solicitada");
-  // Hotel con inventario y pago directo: la habitación queda apartada mientras
-  // paga; si no sube la captura a tiempo, la reserva se anula y el cupo vuelve (C1).
-  if (inventario && estadoInicial === "aceptada") detalle.apartadoHasta = nuevoApartado(c.inicio, config, ahora);
+    ?? (modoDe(vertical, config, cotizado) === "pago_directo" ? (c.montoAPagar > 0 ? "aceptada" : "confirmada") : "solicitada");
+  // Hotel con inventario: la habitación queda apartada mientras paga (en línea
+  // o subiendo la captura); si no paga a tiempo, la reserva se anula y el cupo
+  // vuelve (C1, reserva-directa-hotel RD2).
+  if (inventario && estadoInicial === "aceptada") detalle.apartadoHasta = nuevoApartado(c.inicio, await minutosApartado(tienda.id, config), ahora);
   // Locales: la solicitud aparta la fecha durante el plazo de respuesta (R6.4).
   if (vertical.apartadoInicial) detalle.apartadoHasta = vertical.apartadoInicial(estadoInicial, c, config, ahora);
   // Idioma en que reservó el huésped: los correos le llegan en ese idioma (C3).
@@ -373,6 +391,7 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
               titularDocNumero: docNumero,
               titularNacionalidad: datos.titular.nacionalidad,
               titularNacimiento: datos.titular.nacimiento ? new Date(`${datos.titular.nacimiento}T00:00:00Z`) : null,
+              horaLlegada: datos.horaLlegada ?? null,
               acompanantes: datos.acompanantes.length
                 ? datos.acompanantes.map(a => ({ ...a, docNumero: a.docNumero.toUpperCase() }))
                 : undefined,
@@ -848,7 +867,7 @@ export async function rechazarPago(tiendaId, pedidoId, { motivo }, user, ahora =
     // un apartado nuevo para que suba otra captura.
     if (pedido.tipo === "evento" || pedido.reserva.apartadoHasta) {
       const config = await obtenerConfig(tiendaId);
-      await tx.reservas.update({ where: { pedidoId }, data: { apartadoHasta: nuevoApartado(pedido.reserva.inicio, config, ahora) } });
+      await tx.reservas.update({ where: { pedidoId }, data: { apartadoHasta: nuevoApartado(pedido.reserva.inicio, config.apartadoManualMin, ahora) } });
     }
   });
   return detalleReservaAdmin(tiendaId, pedidoId, ahora);

@@ -26,6 +26,12 @@ export function etiquetaModalidad(modalidad, reserva) {
 
 /** "44836469" → "•••••469": el titular reconoce su documento sin exponerlo entero. */
 const enmascarar = (doc) => (doc ? `${"•".repeat(Math.max(doc.length - 3, 0))}${doc.slice(-3)}` : null);
+/** "ana@correo.com" → "a••@correo.com": a dónde llegó la confirmación, sin exponer el correo entero. */
+export const enmascararCorreo = (correo) => {
+  const [usuario, dominio] = String(correo ?? "").split("@");
+  if (!usuario || !dominio) return null;
+  return `${usuario[0]}${"•".repeat(Math.max(usuario.length - 1, 2))}@${dominio}`;
+};
 
 const imagenPrincipal = (producto) => {
   const img = producto?.imagenes?.find(i => i.esPrincipal) ?? producto?.imagenes?.[0];
@@ -227,6 +233,10 @@ export function serializeReservaStore(pedido, { tienda, config, metodosPago = []
       docNumero: enmascarar(r.titularDocNumero),
       nacionalidad: r.titularNacionalidad
     },
+    // Hotel: hora estimada de llegada que dio al reservar (parte 4).
+    horaLlegada: r.horaLlegada ?? null,
+    // "Confirmación enviada a a••@correo.com" (plantillas-por-rubro, parte 5).
+    correo: enmascararCorreo(pedido.clienteEmail),
     pago: {
       // Datos de pago solo cuando toca pagar (R6.2).
       metodos: esperaPago ? metodosPago : [],
@@ -300,6 +310,7 @@ export function serializeReservaAdmin(pedido, { urlsCaptura = new Map(), ahora =
       nacionalidad: r.titularNacionalidad,
       nacimiento: r.titularNacimiento ? r.titularNacimiento.toISOString().slice(0, 10) : null
     },
+    horaLlegada: r.horaLlegada ?? null,
     acompanantes: r.acompanantes ?? [],
     // Hotel (plantillas-por-rubro E8): lo que el huésped mandó antes de llegar.
     checkin: r.checkinOnline ?? null,

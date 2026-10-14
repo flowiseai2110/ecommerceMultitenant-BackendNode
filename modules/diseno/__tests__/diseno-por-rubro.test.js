@@ -10,11 +10,11 @@ const ahora = new Date("2026-10-05T12:00:00-05:00");
 const seccion = (estructura, tipo) => estructura.home.secciones.find((s) => s.tipo === tipo);
 
 describe("plantillas por tipo de negocio (H1)", () => {
-  it("las de siempre son de productos y hay dos de hotel", () => {
+  it("las de siempre son de productos; hotel, tours y eventos tienen las suyas", () => {
     expect(tipoNegocioDe(buscarPlantilla("clasica"))).toBe("productos");
-    expect(PLANTILLAS.filter((p) => p.tipoNegocio === "hotel").map((p) => p.id)).toEqual(["hotel-boutique", "hotel-casa"]);
-    expect(PLANTILLAS.filter((p) => p.tipoNegocio === "tours").map((p) => p.id)).toEqual(["tours-catalogo", "tours-operador"]);
-    expect(PLANTILLAS.filter((p) => p.tipoNegocio === "eventos").map((p) => p.id)).toEqual(["eventos-cartelera", "eventos-unico"]);
+    expect(PLANTILLAS.filter((p) => p.tipoNegocio === "hotel").map((p) => p.id)).toEqual(["hotel-boutique", "hotel-casa", "hotel-estandar"]);
+    expect(PLANTILLAS.filter((p) => p.tipoNegocio === "tours").map((p) => p.id)).toEqual(["tours-catalogo", "tours-operador", "tours-estandar"]);
+    expect(PLANTILLAS.filter((p) => p.tipoNegocio === "eventos").map((p) => p.id)).toEqual(["eventos-cartelera", "eventos-unico", "eventos-estandar"]);
   });
 
   it.each(PLANTILLAS.map((p) => p.id))("%s solo usa secciones de su tipo de negocio", (id) => {
@@ -116,7 +116,12 @@ describe("opciones de la ficha de habitación (fase 1b)", () => {
   it("una estructura sin `habitacion` recibe los defaults", () => {
     const e = copiarPlantilla(buscarPlantilla("hotel-boutique"));
     expect(resolverTema({ estructura: e, tipoNegocio: "hotel" }, ahora).estructura.layout.habitacion)
-      .toEqual({ galeria: "carrusel", servicios: true, politicas: true, mapa: true, otras: true });
+      .toEqual({ galeria: "carrusel", listado: "grilla", servicios: true, politicas: true, mapa: true, otras: true });
+  });
+
+  it("la plantilla estándar del hotel lista las habitaciones en filas (mapeo-pantallas 2.2)", () => {
+    const e = copiarPlantilla(buscarPlantilla("hotel-estandar"));
+    expect(resolverTema({ estructura: e, tipoNegocio: "hotel" }, ahora).estructura.layout.habitacion.listado).toBe("filas");
   });
 
   it("Casa única usa la galería en mosaico y el layout del hotel rechaza una galería desconocida", () => {

@@ -40,14 +40,24 @@ export const verticalHotel = {
     };
   },
   /**
+   * Con inventario el sistema conoce el cupo: la reserva es directa (se aparta,
+   * se paga y se confirma sola) aunque la tienda esté en modo solicitud. Sin
+   * inventario rige su configuración (docs/specs/reserva-directa-hotel RD1).
+   */
+  modoConfirmacion(config, { inventario }) {
+    return inventario ? "pago_directo" : config.modoConfirmacion;
+  },
+  /**
    * Con inventario, una reserva que nace aceptada (pago directo) o
    * confirmada aparta el cupo: se revalida con el tipo bloqueado para que
    * dos huéspedes no se lleven la última habitación (C1).
    */
-  async enTransaccion(tx, { tiendaId, c, estadoInicial, ahora, inventario }) {
+  async enTransaccion(tx, { tiendaId, pedidoId, c, estadoInicial, ahora, inventario }) {
     if (!inventario || !["aceptada", "confirmada"].includes(estadoInicial)) return;
     await bloquearTipo(tx, inventario.productoId);
-    const cupo = await cupoEstadia(tx, tiendaId, inventario, inventario.fecha, inventario.noches, { ahora });
+    // La reserva ya está insertada en esta transacción: no se cuenta a sí misma
+    // (si no, la última habitación libre siempre saldría ocupada).
+    const cupo = await cupoEstadia(tx, tiendaId, inventario, inventario.fecha, inventario.noches, { ahora, excluirPedidoId: pedidoId });
     if (cupo && c.habitaciones > cupo.libres) {
       const message = "Se acaba de ocupar el último cupo para esas fechas. Elige otras fechas.";
       throw new ConflictError(message, { message, motivo: "SIN_CUPO" });
@@ -74,7 +84,9 @@ async function cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora })
     nacionalidad: datos.titular?.nacionalidad ?? datos.nacionalidad ?? null,
     habitaciones: datos.habitaciones ?? 1, cupo, plan,
     // El huésped que reserva en inglés ve las líneas y los errores en inglés (C3).
-    idioma: datos.lang
+    idioma: datos.lang,
+    // Adelanto o total, si la tienda deja elegir (C8).
+    pago: datos.pago
   });
   if (datos.planId && !plan) cotizacion.errores.push({ codigo: "PLAN_INVALIDO", mensaje: "Esa tarifa ya no está disponible", campo: "planId" });
   if (modalidad.tipo === "horas" && !datos.hora) {

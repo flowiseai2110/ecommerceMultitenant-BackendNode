@@ -1,6 +1,6 @@
 # Spec: inventario, anulación y reprogramación de hotel
 
-> Estado: **fase 0 implementada** (2026-10-10); fases 1–5 propuestas. Tareas: [tasks.md](tasks.md).
+> Estado: **fase 0 implementada** (2026-10-10); fases 1, 3 y 4 propuestas. La fase 2 pasó a [motor-reservas-hotel](../motor-reservas-hotel/spec.md) M2 y la fase 5 queda solo para el hostal ([recepcion](../recepcion/spec.md)) (2026-10-14). Tareas: [tasks.md](tasks.md).
 > Base: [hospedaje-completo](../hospedaje-completo/spec.md) (C1 inventario, C2 varias habitaciones, C5 planes) y [alquiler-locales](../alquiler-locales/spec.md) (apartado durante la respuesta, tramos, `reserva_cambios`, saldo a favor).
 > Repos: BackendNode, FrontendAdmin, FrontendStore.
 
@@ -34,7 +34,7 @@ Además, el formulario de reserva de la ficha (fase 0) se ve como un formulario 
 | `unidades` | **Obligatorio** (≥ 1). Se migran los null | Mantener "sin control" | Tomada |
 | Solicitud sin responder | **Aparta el cupo durante el plazo de respuesta** (`respuesta_horas`, como locales; sugerido 3 h para hotel). Al vencer, la solicitud sigue viva pero deja de apartar y el negocio la acepta solo si hay cupo | No aparta (hoy) | **Por confirmar** |
 | Precio al reprogramar | **Tarifa vigente** de las fechas nuevas; la recepcionista puede ajustar el total con motivo | Respetar la tarifa original | **Por confirmar** |
-| Habitaciones físicas | **Fase 5** (después de anulación y reprogramación, que funcionan igual sobre el pool). Las tiendas con Recepción las tienen antes: ver [recepcion](../recepcion/spec.md) R1 | En este ciclo, antes que todo | **Por confirmar** |
+| Habitaciones físicas | **Solo el hostal al paso**, con Recepción ([recepcion](../recepcion/spec.md) R1). El hotel vende por tipo y lleva sus habitaciones en su PMS o Excel ([motor-reservas-hotel](../motor-reservas-hotel/spec.md)) | Fase 5 para todos los hoteles; en este ciclo, antes que todo | Tomada (2026-10-14) |
 
 ## Modelo de inventario (enfoque Booking.com)
 
@@ -96,6 +96,8 @@ Rediseño del panel de `habitacion-page` según las capturas acordadas (2026-10-
 
 ## Fase 2 — Vista rápida para recepción (caso 3, parte 1)
 
+> **Reemplazada (2026-10-14)** por [motor-reservas-hotel](../motor-reservas-hotel/spec.md) M2 (cupo a la venta), que la incluye y además deja corregir los libres. Se conserva como referencia.
+
 - **R2.1 Grilla enriquecida** (pestaña Disponibilidad): tipos × días con libres/total, color por ocupación (verde / ámbar / rojo / sobrevendido) y "+N por responder" en las celdas con solicitudes que apartan.
 - **R2.2 Detalle de la celda.** Al tocar una celda se ven las reservas de esa noche (cliente, estado, noches, saldo) con acceso al detalle y a aceptar o rechazar.
 - **R2.3 Rango** de 14 / 30 días; hoy resaltado; fila resumen con ocupación % del día.
@@ -124,6 +126,8 @@ Rediseño del panel de `habitacion-page` según las capturas acordadas (2026-10-
 - **R4.7 (Opcional, después)** el cliente pide el cambio desde el seguimiento y la recepcionista lo aprueba.
 
 ## Fase 5 — Habitaciones físicas y tape chart (caso 3, parte 2)
+
+> **Fuera del hotel (2026-10-14).** El hotel no trabaja así: lo lleva su PMS o Excel. Las habitaciones físicas y la entrada y salida ya existen para el hostal al paso en [recepcion](../recepcion/spec.md); el tape chart de varios días no se construye (el hostal rota por horas y usa el tablero "ahora"). Se conserva como referencia.
 
 - **R5.1 `hotel_habitaciones`:** número o nombre, tipo, piso, estado (`activa | mantenimiento | fuera_servicio`) y orden. `unidades` pasa a calcularse como las habitaciones activas del tipo (se crean N habitaciones a partir de las unidades actuales).
 - **R5.2 `reserva_habitaciones`:** asignación (una reserva de N habitaciones tiene N filas), opcional hasta el check-in. Sugerencia automática al aceptar: la misma habitación todas las noches, la de menor número libre.

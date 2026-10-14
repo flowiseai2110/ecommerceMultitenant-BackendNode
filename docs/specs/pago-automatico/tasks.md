@@ -41,7 +41,7 @@ PAGOS_PROVEEDOR=simulado
 ```
 
 - [ ] **T2.1** `PUT /admin/pagos/modo { modo: "automatico" }` en una tienda demo → 200 con `listo: true`. `GET /store/pagos/config` → `proveedor: "simulado"`, `urlTokens`.
-- [ ] **T2.2** Hotel o tours: crear una solicitud, aceptarla en el admin y luego:
+- [ ] **T2.2** Tours, u hotel **sin inventario**: crear una solicitud, aceptarla en el admin y luego (un hotel con inventario no pasa por el admin: se aparta, se paga y se confirma solo, ver [reserva-directa-hotel](../reserva-directa-hotel/spec.md)):
   1. `POST /simulador-pagos/tokens` con 4111 1111 1111 1111;
   2. `POST /store/reservas/seguimiento/:token/pago` → la reserva queda `confirmada` y llega el correo.
 - [ ] **T2.3** Con 4000 0000 0000 0002 → 422 con "Tu tarjeta no tiene fondos suficientes."; la reserva sigue `aceptada`.

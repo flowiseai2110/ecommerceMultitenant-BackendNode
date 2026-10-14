@@ -1,5 +1,7 @@
 # Spec: Recepción (hostal al paso)
 
+> **Solo para el hostal al paso** (2026-10-14): hospedaje pequeño que vende por horas o por noche al que llega y vuelve a vender la habitación varias veces al día. El hotel que vende con reserva previa no usa Recepción: lleva su operación en su PMS o Excel y usa el motor de reservas ([motor-reservas-hotel](../motor-reservas-hotel/spec.md)).
+
 > Estado: **fases 1 a 4 implementadas** (2026-10-11); 1 a 3 probadas por el usuario. SQL: `docs/sql/recepcion_fase_1.sql` a `_4.sql`. Demo: `scripts/demo/hotel/hostal-al-paso.mjs`.
 > Base: [hotel-inventario](../hotel-inventario/spec.md) (adelanta su fase 5: habitaciones físicas, check-in/out), [análisis Infhotel](../verticales-reserva/analisis-infhotel.md) (caja con turnos, pasajero libre).
 > Repos: BackendNode, FrontendAdmin. FrontendStore solo en la fase 4 (opcional).
@@ -131,4 +133,4 @@ Hoy el admin no tiene nada de eso: no hay habitaciones físicas (101, 102), no h
 
 ## Fuera de alcance
 
-Boleta/factura electrónica, POS de restaurante, app offline, channel manager, tape chart de varios días (sigue en hotel-inventario fase 5) y tarifas por placa o cochera.
+Boleta/factura electrónica, POS de restaurante, app offline, channel manager, tape chart de varios días (no se construye: el hostal rota por horas y usa el tablero) y tarifas por placa o cochera.

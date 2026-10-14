@@ -6,6 +6,7 @@ import { TIPOS_ALOJAMIENTO } from "./hotel/alojamiento.js";
 import { variablesDesconocidas } from "./locales/contrato.js";
 import { MODALIDADES as MODALIDADES_LOCAL, TIPOS_EVENTO } from "./locales/cotizar.js";
 import { DURACIONES_CANCHA, FORMATOS_CANCHA, minutosCierre, minutosHora } from "./canchas/tarifa.js";
+import { CAMPOS_FORMULARIO, MODOS_CAMPO } from "./formulario.js";
 
 /**
  * Schemas Zod del mini booking (docs/specs/mini-booking). El schema ES el
@@ -65,6 +66,8 @@ const estadiaBase = {
     dato: z.string().trim().max(120).nullish().transform(v => v || null)
   })).max(10).optional().default([]),
   nacionalidad: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, "Nacionalidad inválida").nullish().transform(v => v || null),
+  // Con adelanto y elección (C8): el cliente paga el adelanto o el total.
+  pago: z.enum(["adelanto", "total"]).nullish().transform(v => v ?? null),
   // Fase C: varias habitaciones del mismo tipo, plan de tarifa e idioma del huésped.
   habitaciones: z.coerce.number().int().min(1).max(10).optional().default(1),
   planId: uuid("planId").nullish().transform(v => v || null),
@@ -107,10 +110,16 @@ const personaSchema = z.object({
 export const crearSolicitudSchema = z.object({
   ...estadiaBase,
   // Mismos datos que hoy se piden por chat (spec R5.1).
+  // Documento, país y nacimiento según el formulario de la tienda (formulario.js): aquí
+  // solo el formato; lo obligatorio lo exige el servicio.
   titular: personaSchema.extend({
-    nacionalidad: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, "Nacionalidad inválida"),
+    docTipo: z.enum(TIPOS_DOCUMENTO, { message: "Tipo de documento inválido" }).nullish().transform(v => v ?? null),
+    docNumero: z.string().trim().max(20).nullish().transform(v => v || null),
+    nacionalidad: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, "Nacionalidad inválida").nullish().transform(v => v || null),
     nacimiento: fecha.nullish().transform(v => v || null)
   }),
+  // Hotel: hora estimada de llegada (HH:mm).
+  horaLlegada: hora.nullish().transform(v => v || null),
   whatsapp: z.string({ required_error: "WhatsApp es requerido" }).trim()
     .regex(/^\+?[0-9\s-]{9,20}$/, "Número de WhatsApp inválido"),
   email: z.string({ required_error: "Correo es requerido" }).trim().toLowerCase().email("Correo inválido").max(100),
@@ -132,7 +141,9 @@ export const crearSolicitudSchema = z.object({
   // Honeypot: una persona nunca llena este campo. Se valida en la ruta.
   sitioWeb: z.string().max(500).optional()
 }).superRefine((d, ctx) => {
-  const personas = [["titular", d.titular], ...d.acompanantes.map((a, i) => [`acompanantes.${i}`, a])];
+  // El documento del titular puede no pedirse; si viene, se valida igual que el de los acompañantes.
+  const conDocumento = d.titular.docTipo && d.titular.docNumero ? [["titular", d.titular]] : [];
+  const personas = [...conDocumento, ...d.acompanantes.map((a, i) => [`acompanantes.${i}`, a])];
   for (const [path, p] of personas) {
     if (!documentoValido(p.docTipo, p.docNumero)) {
       ctx.addIssue({
@@ -323,6 +334,9 @@ export const configSchema = z.object({
   tiendaId: uuid("tiendaId"),
   modoConfirmacion: z.enum(["solicitud", "pago_directo"]).optional(),
   cobro: z.enum(["total", "adelanto", "en_destino"]).optional(),
+  cobroEleccion: z.boolean().optional(),
+  // Formulario de la reserva: el modo de cada campo (los fijos no se configuran).
+  camposFormulario: z.record(z.enum(CAMPOS_FORMULARIO), z.enum(MODOS_CAMPO)).nullable().optional(),
   adelantoPct: z.coerce.number().int().min(1).max(99).nullish(),
   anticipacionMinHoras: z.coerce.number().int().min(0).max(720).optional(),
   // null = sin aviso de reserva próxima.
@@ -336,6 +350,8 @@ export const configSchema = z.object({
   comprobanteEn: z.enum(["al_pagar", "en_el_servicio"]).optional(),
   // Eventos
   apartadoManualMin: z.coerce.number().int().min(10).max(1440).optional(),
+  // Pago en línea (reserva-directa-hotel RD6)
+  apartadoEnLineaMin: z.coerce.number().int().min(5).max(60).optional(),
   maxEntradasPorCompra: z.coerce.number().int().min(1).max(50).optional(),
   umbralUltimasEntradas: z.coerce.number().int().min(1).max(1000).nullable().optional(),
   cierrePagoManualHoras: z.coerce.number().int().min(1).max(168).nullable().optional(),

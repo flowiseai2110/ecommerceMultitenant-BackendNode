@@ -176,10 +176,21 @@ export function descuentoIgv(montoAlojamiento) {
 }
 
 /** Cuánto se paga al reservar según el cobro configurado. */
-export function montoACuenta(total, { cobro, adelantoPct }) {
+export function montoACuenta(total, { cobro, adelantoPct, cobroEleccion = false }, pago = null) {
   if (cobro === "en_destino") return 0;
+  // Con elección (C8), el cliente puede pagar el total en vez del adelanto.
+  if (cobro === "adelanto" && cobroEleccion && pago === "total") return total;
   if (cobro === "adelanto" && adelantoPct) return redondear(total * adelantoPct / 100);
   return total;
+}
+
+/** Las dos formas de pagar que el cliente elige (C8), o null si la tienda no las ofrece. */
+export function opcionesDePago(total, config) {
+  if (config.cobro !== "adelanto" || !config.cobroEleccion || !config.adelantoPct) return null;
+  return [
+    { tipo: "adelanto", pct: config.adelantoPct, monto: montoACuenta(total, config, "adelanto") },
+    { tipo: "total", pct: 100, monto: total }
+  ];
 }
 
 /** Texto del aviso de reserva próxima con {hora} resuelto. */
@@ -287,7 +298,7 @@ export function validarSolicitud({
 export function cotizarHotel({
   tipo, modalidad, fecha, hora, noches = null, adultos, ninos = 0, cierres = [], config, ahora = new Date(),
   temporadas = [], edadesNinos = [], extrasCatalogo = [], extrasElegidos = [], nacionalidad = null,
-  habitaciones = 1, cupo = null, plan = null, idioma = "es"
+  habitaciones = 1, cupo = null, plan = null, idioma = "es", pago = null
 }) {
   const t = textosCotizar(idioma);
   const { inicio, fin, fechas } = ventanaEstadia({
@@ -324,7 +335,8 @@ export function cotizarHotel({
     lineas.push({ descripcion: t.igv, cantidad: 1, precioUnitario: -descuento, total: -descuento });
   }
   const total = redondear(lineas.reduce((s, l) => s + l.total, 0));
-  const aPagar = montoACuenta(total, config);
+  const aPagar = montoACuenta(total, config, pago);
+  const opcionesPago = opcionesDePago(total, config);
 
   const horasFaltan = horasEntre(ahora, inicio);
   const aviso = config.avisoProximoHoras && horasFaltan > 0 && horasFaltan < config.avisoProximoHoras
@@ -332,6 +344,7 @@ export function cotizarHotel({
     : null;
 
   return {
+    opcionesPago,
     inicio,
     fin,
     noches: modalidad.tipo === "noche" ? noches : null,

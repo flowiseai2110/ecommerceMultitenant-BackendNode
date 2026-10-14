@@ -13,7 +13,9 @@ export const TIPOGRAFIAS = Object.freeze(
     { id: "tecnologica", nombre: "Space Grotesk + Inter · Tecnológica", titulos: "space-grotesk", cuerpo: "inter" },
     { id: "amigable", nombre: "Nunito · Amigable", titulos: "nunito", cuerpo: "nunito" },
     { id: "shopify", nombre: "Assistant · Clásica", titulos: "assistant", cuerpo: "assistant" },
-    { id: "deportiva", nombre: "Barlow Condensed + Figtree · Deportiva", titulos: "barlow-condensed", cuerpo: "figtree" }
+    { id: "deportiva", nombre: "Barlow Condensed + Figtree · Deportiva", titulos: "barlow-condensed", cuerpo: "figtree" },
+    // Plantillas estándar por rubro (docs/specs/plantillas-por-rubro): grotesca con carácter + cuerpo abierto.
+    { id: "estandar", nombre: "Bricolage Grotesque + Figtree · Estándar", titulos: "bricolage", cuerpo: "figtree" }
   ].map((t) => Object.freeze(t))
 );
 

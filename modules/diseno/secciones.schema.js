@@ -90,7 +90,9 @@ const seccionSchema = z.discriminatedUnion("tipo", [
   z.object({
     ...base,
     tipo: z.literal("hero"),
-    variante: z.enum(["imagen-completa", "compacto", "dividido", "minimal"]),
+    // buscador-abajo: foto más baja y el buscador montado sobre su borde
+    // inferior (plantillas-por-rubro, hotel 2.2-1).
+    variante: z.enum(["imagen-completa", "compacto", "dividido", "minimal", "buscador-abajo"]),
     titulo: textoOpcional(100),
     subtitulo: textoOpcional(300),
     textoBoton: textoOpcional(50),
@@ -202,12 +204,15 @@ const seccionSchema = z.discriminatedUnion("tipo", [
   z.object({
     ...base,
     tipo: z.literal("servicios"),
-    variante: z.enum(["iconos", "lista", "tarjetas"]),
+    // franja: chips en el celular y columnas con su detalle en desktop, debajo
+    // del buscador (plantillas-por-rubro, hotel 2.2-1).
+    variante: z.enum(["iconos", "lista", "tarjetas", "franja"]),
     fondo,
     kicker: textoOpcional(40),
     titulo: texto(80),
     items: z
-      .array(z.object({ icono: z.enum(ICONOS_SERVICIO), titulo: texto(40) }))
+      // texto: detalle corto ("Buffet 6:30–10:00"); solo lo muestra la franja.
+      .array(z.object({ icono: z.enum(ICONOS_SERVICIO), titulo: texto(40), texto: textoOpcional(60) }))
       .min(2, "Agrega al menos 2 servicios")
       .max(12, "Máximo 12 servicios")
   }),
@@ -445,6 +450,9 @@ export const productoSchema = z.object({
 // fijo: el dueño solo elige la galería y qué bloques se muestran.
 export const habitacionSchema = z.object({
   galeria: z.enum(["carrusel", "mosaico"]).default("carrusel"),
+  // /habitaciones: tarjetas en grilla o filas con el total de la estadía
+  // (plantillas-por-rubro, mapeo-pantallas 2.2).
+  listado: z.enum(["grilla", "filas"]).default("grilla"),
   servicios: z.boolean().default(true),
   politicas: z.boolean().default(true),
   mapa: z.boolean().default(true),
@@ -469,7 +477,12 @@ export const eventoSchema = z.object({
   otros: z.boolean().default(true)
 });
 
-const headerSchema = z.object({ logo: z.enum(["izquierda", "centro"]) });
+// navegacion: buscador del catálogo (y barra de categorías) o enlaces a las
+// secciones con el botón de reservar (plantillas-por-rubro, C10).
+const headerSchema = z.object({
+  logo: z.enum(["izquierda", "centro"]),
+  navegacion: z.enum(["buscador", "secciones"]).default("buscador")
+});
 const productCardSchema = z.object({ cta: z.enum(["slide-up", "boton"]), imagen: z.enum(["cuadrada", "vertical"]) });
 
 // Layout de cada tipo de negocio (docs/specs/layout-por-rubro RU8): el header es

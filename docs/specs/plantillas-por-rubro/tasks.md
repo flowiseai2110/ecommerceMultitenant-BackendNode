@@ -50,7 +50,29 @@ Storefront: se agregó la dependencia `qrcode` (`npm install` en otras máquinas
   - Solicitud de cambio de fechas: se cotiza y se avisa al hotel. El cambio lo aplica el hotel a mano.
 - [x] **E9** Filtro por talla y color en /productos y en categorías (`?opcion=Talla:M,Color:Negro`). Disponibilidad por fecha en el listado de salones.
 
+## 2b. Los diseños: plantillas "Estándar" en Admin › Diseño
+
+Las maquetas del lienzo son ahora **una plantilla por rubro** en `modules/diseno/plantillas.js`. Están al final de cada rubro, así que la plantilla por defecto de las tiendas nuevas no cambia.
+
+| Rubro | Plantilla | Tema |
+|---|---|---|
+| Productos | `productos-estandar` · Estándar · Tienda | Terracota · Clara |
+| Hotel | `hotel-estandar` · Estándar · Reserva directa | Azul marino · Clara |
+| Tours | `tours-estandar` · Estándar · Experiencias | Verde petróleo · Clara |
+| Eventos | `eventos-estandar` · Estándar · Agenda | Uva · Clara |
+| Locales | `locales-estandar` · Estándar · Salones | Magenta · Clara |
+| Canchas | `canchas-estandar` · Estándar · Reserva por turno | Verde cancha · Clara |
+
+Todas usan la tipografía nueva **"estandar"**: Bricolage Grotesque para títulos y Figtree para el cuerpo. Es la del lienzo.
+
+Para la plantilla de locales se agregó un buscador en la portada (qué celebras, fecha e invitados). Lleva a /salones con la fecha puesta y filtra por aforo.
+
+Para verlas: reiniciar el backend → Admin › **Diseño** → elegir "Estándar · …" → probar en la vista previa → aplicar.
+
 ## 3. Pruebas manuales (pendientes)
+
+- [ ] **Plantillas estándar:** en cada rubro, Admin › Diseño → aplicar "Estándar · …" → revisar la home (móvil y desktop), el listado, la ficha y el seguimiento.
+
 
 Requisito previo: una tienda demo de cada rubro con **Admin › Pagos › Cómo cobras = Automático**. Con el simulador no pide llaves.
 

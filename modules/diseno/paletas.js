@@ -17,7 +17,14 @@ const BASES = [
   { id: "amber", nombre: "Ámbar", primario: "#f59e0b", neutro: "stone" },
   { id: "grafito", nombre: "Grafito", primario: "#1c1917", neutro: "stone" },
   // Complejo de canchas (alquiler-canchas): el verde del grass; el ámbar de la tarifa noche es el acento.
-  { id: "cancha", nombre: "Verde cancha", primario: "#1d6b3c", neutro: "gray" }
+  { id: "cancha", nombre: "Verde cancha", primario: "#1d6b3c", neutro: "gray" },
+  // Acentos de las plantillas estándar por rubro (docs/specs/plantillas-por-rubro):
+  // todos con texto blanco legible encima (contraste ≥ 4.5:1).
+  { id: "terracota", nombre: "Terracota", primario: "#c2410c", neutro: "stone" },
+  { id: "marino", nombre: "Azul marino", primario: "#1d4e89", neutro: "slate" },
+  { id: "petroleo", nombre: "Verde petróleo", primario: "#0f766e", neutro: "zinc" },
+  { id: "uva", nombre: "Uva", primario: "#7e22ce", neutro: "zinc" },
+  { id: "magenta", nombre: "Magenta", primario: "#9d174d", neutro: "neutral" }
 ];
 
 const VERSIONES = [

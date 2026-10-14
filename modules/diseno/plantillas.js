@@ -230,6 +230,27 @@ export const PLANTILLAS = congelar([
     ]
   }),
 
+  // Estándar · Productos: hero dividido, categorías en círculos, lo más vendido en grilla,
+  // novedades y beneficios (ecommerce retail, pautas Baymard de home y listado).
+  plantilla({
+    id: "productos-estandar",
+    rubro: "general",
+    nombre: "Estándar · Tienda",
+    descripcion: "La plantilla estándar del rubro: portada dividida, categorías en círculos, lo más vendido, novedades y beneficios.",
+    radio: "suave",
+    encabezados: "comercial",
+    tema: { paleta: "terracota-clara", tipografia: "estandar" },
+    layout: { header: { logo: "izquierda" }, productCard: { cta: "slide-up", imagen: "cuadrada" } },
+    secciones: [
+      { id: "hero", tipo: "hero", variante: "dividido", titulo: "Nueva colección", subtitulo: "Lo último que llegó, con envío a todo el Perú.", textoBoton: "Ver ahora" },
+      { id: "categorias", tipo: "categorias", variante: "circulos", fondo: "pagina", titulo: "Categorías" },
+      { id: "destacados", tipo: "productos", fuente: "destacados", variante: "grilla", fondo: "superficie", titulo: "Más vendidos", subtitulo: "Lo que más se llevan", limite: 8 },
+      { id: "recientes", tipo: "productos", fuente: "recientes", variante: "carrusel", fondo: "pagina", titulo: "Recién llegados" },
+      { id: "beneficios", tipo: "beneficios", variante: "franja", fondo: "superficie", items: [B.envio, B.cambios, B.pago] },
+      { id: "contacto", tipo: "contacto", titulo: "¿Dudas? Escríbenos.", texto: "Te respondemos por WhatsApp y te ayudamos a elegir." }
+    ]
+  }),
+
   // ── Hospedaje (docs/specs/diseno-por-rubro, fase 1) ───────────────────
   // Boutique: buscador de fechas sobre la portada, habitaciones con precio
   // arriba, después lo que convence (servicios, la casa, reseñas) y al final
@@ -278,6 +299,34 @@ export const PLANTILLAS = congelar([
       { id: "ubicacion", tipo: "ubicacion", fondo: "superficie", titulo: "Dónde queda", texto: null, cercanos: [], mapa: true },
       { id: "politicas", tipo: "politicas", fondo: "pagina", titulo: "Antes de reservar" },
       { id: "contacto", tipo: "contacto", titulo: "¿Quieres saber más?", texto: "Escríbenos por WhatsApp y te contamos todo sobre la casa." }
+    ]
+  }),
+
+  // Estándar · Hotel: buscador de fechas sobre la portada, servicios a la vista,
+  // habitaciones con precio y la ficha con mosaico y panel fijo (Booking, motores de cadenas).
+  plantilla({
+    id: "hotel-estandar",
+    tipoNegocio: "hotel",
+    rubro: "hospedaje",
+    nombre: "Estándar · Reserva directa",
+    descripcion: "La plantilla estándar del rubro: buscador de fechas sobre la foto, servicios, habitaciones con precio, reseñas y cómo llegar.",
+    radio: "suave",
+    encabezados: "editorial",
+    tema: { paleta: "marino-clara", tipografia: "estandar" },
+    layout: { header: { logo: "izquierda", navegacion: "secciones" }, habitacion: { galeria: "mosaico", listado: "filas", servicios: true, politicas: true, mapa: true, otras: true } },
+    secciones: [
+      { id: "hero", tipo: "hero", variante: "buscador-abajo", buscador: true, titulo: "Tu casa en la ciudad", subtitulo: "Habitaciones cómodas cerca de todo. Mejor precio reservando aquí.", textoBoton: "Ver disponibilidad" },
+      { id: "servicios", tipo: "servicios", variante: "franja", fondo: "pagina", espacio: "compacto", titulo: "Servicios", items: [
+        { ...S.desayuno, texto: "Buffet de 6:30 a 10:00" },
+        { icono: "traslado", titulo: "Traslado", texto: "Aeropuerto y terminal" },
+        { ...S.terraza, texto: "Con vista a la ciudad" },
+        { ...S.wifi, texto: "En toda la casa" }
+      ] },
+      { id: "habitaciones", tipo: "habitaciones", variante: "grilla", fondo: "superficie", titulo: "Habitaciones", subtitulo: "Precio total de tu estadía, sin sorpresas." },
+      { id: "testimonios", tipo: "testimonios", fondo: "pagina", titulo: "Lo que dicen nuestros huéspedes", items: [] },
+      { id: "ubicacion", tipo: "ubicacion", fondo: "superficie", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true },
+      { id: "politicas", tipo: "politicas", fondo: "pagina", titulo: "Antes de reservar" },
+      { id: "contacto", tipo: "contacto", titulo: "¿Tienes dudas?", texto: "Escríbenos por WhatsApp y te ayudamos a elegir tu habitación." }
     ]
   }),
 
@@ -337,6 +386,37 @@ export const PLANTILLAS = congelar([
       { id: "ubicacion", tipo: "ubicacion", fondo: "superficie", titulo: "Dónde encontrarnos", texto: null, cercanos: [], mapa: true },
       { id: "politicas", tipo: "politicas", fondo: "pagina", titulo: "Antes de reservar" },
       { id: "contacto", tipo: "contacto", titulo: "¿Tienes dudas?", texto: "Escríbenos por WhatsApp y te ayudamos a elegir tu tour." }
+    ]
+  }),
+
+  // Estándar · Tours: buscador de fecha y personas, los más reservados, ficha con mosaico,
+  // itinerario e incluye, y el calendario en el panel (Viator / GetYourGuide).
+  plantilla({
+    id: "tours-estandar",
+    tipoNegocio: "tours",
+    rubro: "turismo",
+    nombre: "Estándar · Experiencias",
+    descripcion: "La plantilla estándar del rubro: buscador sobre la foto, los tours más reservados, por qué viajar con ustedes, reseñas y preguntas.",
+    radio: "suave",
+    encabezados: "impacto",
+    tema: { paleta: "petroleo-clara", tipografia: "estandar" },
+    layout: { header: { logo: "izquierda" }, tour: { galeria: "mosaico", itinerario: true, incluye: true, otros: true } },
+    secciones: [
+      { id: "hero", tipo: "hero", variante: "imagen-completa", buscador: true, titulo: "Vive el destino con guías locales", subtitulo: "Operador autorizado. Recojo en tu hotel y cancelación flexible.", textoBoton: "Buscar tours" },
+      { id: "tours", tipo: "tours", variante: "grilla", fondo: "superficie", titulo: "Más reservados", subtitulo: "Precio desde, duración y lo que incluye cada tour." },
+      { id: "servicios", tipo: "servicios", variante: "iconos", fondo: "pagina", titulo: "Por qué viajar con nosotros", items: [
+        { icono: "guia", titulo: "Guías locales" },
+        { icono: "traslado", titulo: "Recojo en tu hotel" },
+        { icono: "calendario", titulo: "Cancelación flexible" },
+        { icono: "idiomas", titulo: "Español e inglés" }
+      ] },
+      { id: "testimonios", tipo: "testimonios", fondo: "superficie", titulo: "Viajeros que ya fueron", items: [] },
+      { id: "faq", tipo: "faq", fondo: "pagina", titulo: "Preguntas frecuentes", items: [
+        { pregunta: "¿Qué pasa si llueve?", respuesta: "Escribe aquí qué haces si el clima no acompaña: si el tour sale igual, si se reprograma o si devuelves el pago." },
+        { pregunta: "¿Dónde me recogen?", respuesta: "Escribe aquí desde qué zonas recoges y a qué hora pasas." }
+      ] },
+      { id: "politicas", tipo: "politicas", fondo: "superficie", titulo: "Antes de reservar" },
+      { id: "contacto", tipo: "contacto", titulo: "¿Armamos tu viaje a medida?", texto: "Cuéntanos tus días y te proponemos un plan por WhatsApp." }
     ]
   }),
 
@@ -403,6 +483,35 @@ export const PLANTILLAS = congelar([
     ]
   }),
 
+  // Estándar · Eventos: la agenda manda (fecha, hora y precio desde), compra con
+  // el total final claro y entradas con QR (Eventbrite / Joinnus; Baymard ticketing).
+  plantilla({
+    id: "eventos-estandar",
+    tipoNegocio: "eventos",
+    rubro: "eventos",
+    nombre: "Estándar · Agenda",
+    descripcion: "La plantilla estándar del rubro: portada con buscador por fecha, la agenda de próximos eventos, cómo funciona la compra y preguntas.",
+    radio: "suave",
+    encabezados: "impacto",
+    tema: { paleta: "uva-clara", tipografia: "estandar" },
+    layout: { header: { logo: "izquierda" }, evento: { galeria: "carrusel", mapa: true, otros: true } },
+    secciones: [
+      { id: "hero", tipo: "hero", variante: "imagen-completa", buscador: true, titulo: "Lo que se viene", subtitulo: "Compra en línea y entra con tu QR desde el celular.", textoBoton: "Ver agenda" },
+      { id: "agenda", tipo: "eventos", variante: "agenda", fondo: "superficie", titulo: "Próximos", subtitulo: "Fecha, hora y precio desde. Elige y compra en un minuto." },
+      { id: "servicios", tipo: "servicios", variante: "iconos", fondo: "pagina", titulo: "Comprar es fácil", items: [
+        { icono: "entrada", titulo: "Entrada digital con QR" },
+        { icono: "seguro", titulo: "Pago seguro" },
+        { icono: "calendario", titulo: "Agrega la fecha a tu calendario" }
+      ] },
+      { id: "faq", tipo: "faq", fondo: "superficie", titulo: "Preguntas frecuentes", items: [
+        { pregunta: "¿Cómo recibo mis entradas?", respuesta: "Escribe aquí cómo llegan las entradas: al correo y en el link de tu compra, una por persona con su QR." },
+        { pregunta: "¿Puedo devolver mi entrada?", respuesta: "Escribe aquí tu política: si devuelves el dinero, si se puede cambiar de fecha o de titular." }
+      ] },
+      { id: "politicas", tipo: "politicas", fondo: "pagina", titulo: "Antes de comprar" },
+      { id: "contacto", tipo: "contacto", titulo: "¿Compras para un grupo?", texto: "Escríbenos por WhatsApp y te ayudamos con tus entradas." }
+    ]
+  }),
+
   // ── Alquiler de locales (docs/specs/alquiler-locales L1.30) ────────────
   // Quinceaños, promociones, cumpleaños y conferencias. El cliente llega de
   // TikTok o de un portal y quiere ver tres cosas: el salón, si la fecha está
@@ -432,6 +541,37 @@ export const PLANTILLAS = congelar([
       ] },
       { id: "ubicacion", tipo: "ubicacion", fondo: "pagina", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true },
       { id: "politicas", tipo: "politicas", fondo: "superficie", titulo: "Antes de reservar" },
+      { id: "contacto", tipo: "contacto", titulo: "¿Quieres visitar el local?", texto: "Escríbenos por WhatsApp y agenda tu visita." }
+    ]
+  }),
+
+  // Estándar · Locales: buscador por tipo de evento, fecha e invitados; qué se celebra,
+  // los salones con la disponibilidad del día y cómo se separa la fecha (Peerspace / Tagvenue).
+  plantilla({
+    id: "locales-estandar",
+    tipoNegocio: "locales",
+    rubro: "general",
+    nombre: "Estándar · Salones",
+    descripcion: "La plantilla estándar del rubro: buscador de fecha e invitados, qué celebras, los salones con fechas libres, cómo separar y preguntas.",
+    radio: "redondeado",
+    encabezados: "editorial",
+    tema: { paleta: "magenta-clara", tipografia: "estandar" },
+    layout: { header: { logo: "izquierda" } },
+    secciones: [
+      { id: "hero", tipo: "hero", variante: "imagen-completa", buscador: true, titulo: "Tu celebración, sin preocupaciones", subtitulo: "Mira qué salón está libre en tu fecha y cotiza al instante.", textoBoton: "Ver salones libres" },
+      { id: "celebras", tipo: "servicios", variante: "tarjetas", fondo: "pagina", titulo: "¿Qué celebras?", items: [
+        { icono: "musica", titulo: "Quinceañero" },
+        { icono: "bar", titulo: "Boda" },
+        { icono: "grupo", titulo: "Infantil" },
+        { icono: "calendario", titulo: "Corporativo" }
+      ] },
+      { id: "salones", tipo: "salones", variante: "grilla", fondo: "superficie", titulo: "Salones", subtitulo: "Elige una fecha en la lista para ver cuáles están libres." },
+      { id: "galeria", tipo: "galeria", variante: "mosaico", fondo: "pagina", titulo: "Eventos que hicimos", subtitulo: null, fotos: [], oculto: true },
+      { id: "faq", tipo: "faq", fondo: "pagina", titulo: "Preguntas frecuentes", items: [
+        { pregunta: "¿Cómo separo la fecha?", respuesta: "Escribe aquí cuánto es la separación, cómo pagas el resto en cuotas y hasta cuándo." },
+        { pregunta: "¿Puedo visitar el local antes?", respuesta: "Escribe aquí los días y horas en que recibes visitas." }
+      ] },
+      { id: "ubicacion", tipo: "ubicacion", fondo: "superficie", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true },
       { id: "contacto", tipo: "contacto", titulo: "¿Quieres visitar el local?", texto: "Escríbenos por WhatsApp y agenda tu visita." }
     ]
   }),
@@ -549,6 +689,47 @@ export const PLANTILLAS = congelar([
       { id: "faq", tipo: "faq", variante: "dos-columnas", fondo: "pagina", kicker: "Políticas", titulo: "Preguntas frecuentes", items: [
         { pregunta: "¿Cómo inscribo a mi equipo en el campeonato?", respuesta: "Escribe aquí cómo se inscriben los equipos y cuánto cuesta." },
         { pregunta: "¿Cuánto tengo que adelantar?", respuesta: "Escribe aquí cuánto se adelanta y cómo se paga el saldo." },
+        { pregunta: "¿Puedo cambiar o cancelar?", respuesta: "Escribe aquí hasta cuándo se puede cambiar de día y si devuelves el adelanto." }
+      ] },
+      { id: "ubicacion", tipo: "ubicacion", fondo: "pagina", kicker: "Ubicación", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true }
+    ]
+  }),
+
+  // Estándar · Canchas: deporte y día en la portada, la grilla de horarios al centro,
+  // tarifas de día y de noche y cómo funciona (Playtomic / MATCHi). Clara, con la letra estándar.
+  plantilla({
+    id: "canchas-estandar",
+    tipoNegocio: "canchas",
+    rubro: "general",
+    nombre: "Estándar · Reserva por turno",
+    descripcion: "La plantilla estándar del rubro: portada con los horarios libres, la grilla para reservar, las canchas, servicios y preguntas. En claro.",
+    radio: "suave",
+    encabezados: "deportivo",
+    tema: { paleta: "cancha-clara", tipografia: "estandar" },
+    layout: { header: { logo: "izquierda" } },
+    secciones: [
+      {
+        id: "portada", tipo: "canchas-portada", kicker: null, titulo: "Reserva tu cancha", acento: "en 1 minuto",
+        subtitulo: "Elige día y hora, mira lo libre al instante y separa con un adelanto.",
+        textoBoton: "Ver horarios libres", textoBotonSecundario: "Conocer las canchas"
+      },
+      { id: "reservador", tipo: "reservador", fondo: "superficie", kicker: "Disponibilidad en tiempo real", titulo: "Elige tu horario" },
+      { id: "canchas", tipo: "canchas", variante: "grilla", fondo: "pagina", espacio: "compacto", kicker: null, titulo: "Nuestras canchas", subtitulo: null },
+      { id: "pasos", tipo: "pasos", fondo: "superficie", kicker: "Cómo funciona", titulo: "Tres pasos y a jugar" },
+      { id: "servicios", tipo: "servicios", variante: "tarjetas", fondo: "pagina", espacio: "compacto", kicker: "Servicios", titulo: "Todo para el partido", items: [
+        { icono: "reflectores", titulo: "Reflectores LED" },
+        { icono: "vestuarios", titulo: "Vestuarios y duchas" },
+        { icono: "pelota", titulo: "Pelotas y chalecos" },
+        { icono: "pagos", titulo: "Yape, Plin y tarjeta" }
+      ] },
+      {
+        id: "fijo", tipo: "fijo-semanal", kicker: "Alquiler fijo semanal", titulo: "Tu equipo, el mismo día cada semana",
+        texto: "Separa la misma hora todas las semanas y asegura la cancha para tu equipo.",
+        textoBoton: "Pedir horario fijo"
+      },
+      { id: "faq", tipo: "faq", variante: "dos-columnas", fondo: "superficie", kicker: "Políticas", titulo: "Preguntas frecuentes", items: [
+        { pregunta: "¿Cuánto tengo que adelantar?", respuesta: "Escribe aquí cuánto se adelanta y cómo se paga el saldo." },
+        { pregunta: "¿Puedo dividir el pago con mi equipo?", respuesta: "Sí: al reservar puedes dividir el total y cada jugador paga su parte con su link." },
         { pregunta: "¿Puedo cambiar o cancelar?", respuesta: "Escribe aquí hasta cuándo se puede cambiar de día y si devuelves el adelanto." }
       ] },
       { id: "ubicacion", tipo: "ubicacion", fondo: "pagina", kicker: "Ubicación", titulo: "Cómo llegar", texto: null, cercanos: [], mapa: true }

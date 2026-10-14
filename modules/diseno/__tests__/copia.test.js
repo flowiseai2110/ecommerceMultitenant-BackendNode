@@ -10,7 +10,7 @@ describe("copiarPlantilla", () => {
     const moda = buscarPlantilla("moda");
     const e = copiarPlantilla(moda);
     expect(e).toMatchObject({ formato: FORMATO_ACTUAL, plantillaId: "moda", plantillaVersion: moda.version, radio: "recto", encabezados: "editorial" });
-    expect(e.layout).toEqual(moda.layout);
+    expect(e.layout).toMatchObject(moda.layout); // con los defaults del esquema (header.navegacion)
     expect(e.home.secciones.map((s) => s.id)).toEqual(moda.secciones.map((s) => s.id));
   });
 

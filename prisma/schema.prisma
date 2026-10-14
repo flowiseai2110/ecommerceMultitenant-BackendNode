@@ -1067,6 +1067,9 @@ model config_reservas {
   comprobanteEn          String   @default("al_pagar") @map("comprobante_en") @db.VarChar(14) // al_pagar | en_el_servicio
   // Solo eventos (fase 3)
   apartadoManualMin      Int      @default(120) @map("apartado_manual_min") // minutos que el cupo queda apartado mientras se paga
+  apartadoEnLineaMin     Int      @default(15) @map("apartado_en_linea_min") // ídem, si se paga en línea (reserva-directa-hotel RD6)
+  cobroEleccion          Boolean  @default(false) @map("cobro_eleccion") // con adelanto: el cliente elige adelanto o total (plantillas-por-rubro C8)
+  camposFormulario       Json?    @map("campos_formulario") @db.JsonB // modo de cada campo del formulario (reservas/formulario.js)
   maxEntradasPorCompra   Int      @default(10) @map("max_entradas_por_compra")
   umbralUltimasEntradas  Int?     @default(20) @map("umbral_ultimas_entradas") // "Últimas entradas" si quedan menos; null = nunca
   cierrePagoManualHoras  Int?     @map("cierre_pago_manual_horas") // sin Yape/transferencia N h antes de la función
@@ -1228,8 +1231,30 @@ model hotel_tipos_habitacion {
   modalidades hotel_modalidades[]
   // Recepción (docs/specs/recepcion R1): con habitaciones físicas, `unidades` = las activas.
   habitacionesFisicas hotel_habitaciones[]
+  // Motor de reservas (docs/specs/motor-reservas-hotel M2): lo vendido fuera de la web.
+  cupoExterno         hotel_cupo_externo[]
 
   @@index([tiendaId], name: "idx_hotel_tipos_tienda")
+}
+
+// Motor de reservas (docs/specs/motor-reservas-hotel M2): habitaciones de un
+// tipo ocupadas una noche por ventas fuera de la web (Booking, WhatsApp, la
+// puerta). El dueño fija "libres" y se guarda la diferencia; iCal (M3) escribe
+// con su propio origen. `ocupacion()` las suma a las reservas web.
+model hotel_cupo_externo {
+  id                   String    @id @default(uuid()) @db.Uuid
+  tiendaId             String    @map("tienda_id") @db.Uuid
+  productoId           String    @map("producto_id") @db.Uuid // tipo de habitación
+  fecha                DateTime  @db.Date // la noche
+  origen               String    @default("manual") @db.VarChar(10) // manual | ical
+  ocupadas             Int
+  fechaActualizacion   DateTime? @default(now()) @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  tipo hotel_tipos_habitacion @relation(fields: [productoId], references: [productoId], onDelete: Cascade)
+
+  @@unique([productoId, fecha, origen], map: "uq_hotel_cupo_externo_noche")
+  @@index([tiendaId, fecha], map: "idx_hotel_cupo_externo_tienda_fecha")
 }
 
 // Recepción (docs/specs/recepcion R1): habitación física (la 101, "Jacuzzi 2").
@@ -1435,9 +1460,10 @@ model reservas {
   // Titular (registro de huésped)
   titularNombres      String    @map("titular_nombres") @db.VarChar(100)
   titularApellidos    String    @map("titular_apellidos") @db.VarChar(100)
-  titularDocTipo      String    @map("titular_doc_tipo") @db.VarChar(10) // DNI | CE | PASAPORTE
-  titularDocNumero    String    @map("titular_doc_numero") @db.VarChar(20)
-  titularNacionalidad String    @map("titular_nacionalidad") @db.VarChar(2) // ISO 3166
+  titularDocTipo      String?   @map("titular_doc_tipo") @db.VarChar(10) // DNI | CE | PASAPORTE; null si la tienda no lo pide
+  titularDocNumero    String?   @map("titular_doc_numero") @db.VarChar(20)
+  titularNacionalidad String?   @map("titular_nacionalidad") @db.VarChar(2) // ISO 3166
+  horaLlegada         String?   @map("hora_llegada") @db.VarChar(5) // hora estimada de llegada (HH:mm), hotel
   titularNacimiento   DateTime? @map("titular_nacimiento") @db.Date
   acompanantes        Json?     @db.JsonB
   // Hotel (plantillas-por-rubro E8): check-in en línea { horaLlegada, comentarios, completadoEn }
