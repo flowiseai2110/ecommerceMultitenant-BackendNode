@@ -164,6 +164,156 @@ t("Noches") ; t("Quedan {n}", { n })
 
 ---
 
+## Traducciones organizada por pantalla (1.21–1.26)
+
+**Problema (2026-10-15).** Un hotel tiene ~680 textos fijos y la pantalla los muestra en una sección por grupo técnico: "Reservas" sola son ~250 frases seguidas ("Ver todas", "{n} noches") sin decir en qué parte de la tienda salen. Los grupos son nuestros (deciden qué textos le tocan a cada rubro y cuándo se publica el idioma), no del dueño.
+
+**Investigación.** Shopify y Wix organizan por tipo de contenido y por página, con filtros; WPML por "dominio" técnico (lo que hacemos hoy, y su punto débil); Weglot, Transifex Live, Phrase y Crowdin agregan un editor sobre la propia página. Los maduros combinan lista organizada + editor en contexto; ninguno resuelve todo con un solo árbol. Nuestro `"texto|contexto"` es el `msgctxt` de gettext, y el prefijo `[qu]` de las pruebas es pseudo-localización, la base técnica del editor en contexto.
+
+**Decisión: dos etapas.** A) lista por tipo de contenido y por pantalla, con filtros; B) "modo traducir" en la tienda. Elegido por el usuario (2026-10-15):
+- Un texto usado en varias pantallas (22 % de los de un hotel) **se muestra en cada una**, con "también en: …"; se traduce una vez y los contadores cuentan claves únicas.
+- El contenido del dueño (habitaciones, extras, diseño…) va en **su propia sección**, no repartido por pantallas.
+- Sin enlace "Ver en la tienda" en la etapa A: lo reemplaza el modo traducir.
+
+### Idea central: la unidad de guardado no es la unidad de lectura
+
+Hoy la pantalla muestra los textos fijos como se guardan: una "fila" por grupo (`almacenTextosFijos`), que es también lo que decide la publicación (P5). Ese es el error de fondo: se muestra el modelo de escritura. La solución separa los dos:
+
+- **Escritura (no cambia):** almacenes por grupo, `guardarManual`, `publicarCompletos`, el 100 % por grupo.
+- **Lectura (nueva):** cada campo dice en qué **lugares** aparece; la pantalla navega por lugares.
+
+Es una **proyección de lectura** (CQRS liviano, sin bases separadas): se arma al leer y no se guarda. Así nada de A1–A5 puede romper cómo se guarda ni cuándo se publica un idioma.
+
+### A1. `Lugar`: una forma única para los dos tipos de texto (Strategy, extiende B4) (1.22)
+
+Hoy el admin pregunta `if (g.fuente === 'textos')` para nombrar el campo. En lugar de un segundo `if` para agrupar, cada fuente de `FUENTES` declara dónde aparecen sus campos, con la misma forma:
+
+```js
+// Lugar: { zona, id, nombre, orden, seccion?: { id, nombre } }
+// zona: "contenido" | "pantallas" | "mensajes"
+lugares(fila, campo) → Lugar[]
+```
+
+- Fuentes de contenido (`fuenteCampos`, diseño, tours): un lugar en `contenido`, con su `etiqueta` ("Habitaciones") y la fila como sección ("Estándar Queen"). Default en `fuenteCampos`: ninguna fuente lo escribe a mano.
+- `textos`: los lugares salen de las ubicaciones de la clave (A2), filtrados por rubro (A3).
+- El admin solo agrupa por `lugar`: no conoce fuentes, ni rubros, ni grupos; se borra el `if` de `nombreCampo`.
+- Contrato: toda fuente de `FUENTES` tiene `lugares` (se agrega al test del contrato 2).
+
+Descartado: que el admin agrupe distinto según la fuente (otro `if` por cada fuente nueva).
+
+### A2. De dónde sale la ubicación: registro declarativo + resolutor por prefijo (1.21)
+
+`scripts/claves-tienda.mjs` ya resuelve el grupo con `GRUPO_POR_CARPETA` (gana el prefijo más largo). La pantalla usa el mismo mecanismo:
+
+- **Un resolutor compartido** `porPrefijo(mapa, ruta)` para grupo y pantalla: una sola regla, no dos copias.
+- **Registro** `PANTALLAS = { habitacion: { nombre: "Ficha de la habitación", orden, carpetas: [...] } }` y `SECCIONES = { "features/reservas/hotel/calendario-estadia.component": "Calendario y tarifas", … }`. Lo que no es una pantalla pero el dueño reconoce va como tema: *Fechas y horarios*, *Estados de la reserva*, *Menú y pie de página*.
+- El grupo de cada pantalla no se declara: sale de `GRUPO_POR_CARPETA` (una sola verdad).
+- Salida: `ubicaciones: ["habitacion/calendario", …]` en cada clave, más `pantallas-tienda.json` (id, nombre, orden, grupo, secciones).
+- **Contrato 10** (función de aptitud, como el 9): un archivo con textos sin pantalla o sin nombre de sección hace fallar `npm run claves`.
+
+Descartado:
+- **Anotación en cada componente** (`// @pantalla …`): ~60 archivos que tocar, un comentario que nadie ve al mover el archivo, y no queda un lugar donde leer el orden del recorrido.
+- **Nombres sacados del nombre del archivo**: "calendario-estadia.component" no es lenguaje del dueño.
+
+### A3. Qué lugares ve cada tienda: Specification por capacidad (1.22)
+
+- `ubicacionVisible(ubicacion, gruposTextos)`: la pantalla pertenece a un grupo del rubro. Pregunta por la capacidad (`gruposTextos`), nunca por el rubro: un hotel no ve "Ficha del evento" aunque "Ver todas" también se use ahí.
+- Respaldo: una clave sin ubicación visible cae en el lugar de su grupo ("Textos generales"), así ningún texto requerido para el 100 % queda fuera de la navegación. Test: la suma de los lugares cubre todas las claves de la tienda.
+
+### A4. Texto compartido: identidad por clave, no copias (1.23, 1.24)
+
+- Un campo es uno solo (`fuente|id|campo`); varios lugares lo referencian. El borrador, el guardado y el estado se llevan por esa identidad: si lo editas en "Reservar", en "Seguimiento" se ve igual.
+- "También en: …" se deriva de sus lugares.
+- Los contadores cuentan campos únicos: el resumen y el aviso de publicación no cambian. Por lugar se cuenta lo que falta en ese lugar (un texto compartido pendiente suma en cada uno, a propósito: el dueño lo ve donde está).
+
+### A5. Admin: modelo de presentación como función pura (1.23)
+
+- `navegacion(datos, filtro, busqueda)` → `zona → lugar → sección → campos`, con lo que falta en cada nivel. Función pura en un archivo propio, con tests sin TestBed; el componente solo la pinta con un `computed`.
+- Profundidad fija (3 niveles): estructuras anidadas simples, sin Composite genérico.
+- Panel izquierdo con las zonas (**Tu contenido**, **Pantallas de la tienda**, **Mensajes**); a la derecha el lugar elegido con sus secciones en acordeón (abierta la que tiene pendientes). Búsqueda en el español y en la traducción. En celular, el panel pasa a un selector.
+- La URL guarda el lugar (`?lugar=pantallas/habitacion`): se puede volver y, en la etapa B, abrir directo.
+
+### A6. Servidor: misma regla, misma salida (1.22)
+
+- `claves-servidor.js` emite `ubicaciones` con la misma forma.
+- **Correos:** sección = la función exportada que arma el correo (`confirmadaEmail` → "Reserva confirmada"), registradas en `CORREOS`. Lo de las funciones auxiliares (`layout`, `resumen`, `voz`) va a "Partes comunes de los correos". Los correos al negocio no tienen claves (van en el idioma base) y no aparecen.
+- **Avisos y errores:** sección por módulo (pedidos, pagos, reservas).
+- Contrato 10 también aquí: una función de correo nueva sin nombre en `CORREOS` hace fallar el test de claves.
+
+### A7. La ubicación vive en el JSON, no en la BD
+
+`ubicaciones` y `pantallas` se leen del JSON desplegado y quedan en memoria, **sin columna nueva**:
+- Solo sirven para mostrar; vienen con el mismo deploy que el código que las usa, y el JSON ya es la verdad.
+- El grupo sí está en `textos_claves`, porque filtra consultas y decide la publicación.
+
+Costo: no se consultan con SQL desde Supabase. *Pendiente de confirmar por el usuario.*
+
+### Grupos exactos: una clave es de todos los grupos donde se usa (1.22b)
+
+**Hallado en la 1.22.** Cada clave tenía un solo grupo; si se usaba en varios rubros se subía a uno general (`{productos, tours}` → `comun`, `{hotel, tours}` → `reservas`). Un hotel tenía que traducir "Antes de salir" y "Filtros" para publicar un idioma aunque su tienda nunca los muestra (eventos, locales y canchas: ~9 cada uno). Elegido por el usuario (2026-10-15): corregirlo.
+
+- La relación clave ↔ grupo es de muchos a muchos: `textos_claves.grupos TEXT[]` (`docs/sql/idiomas_fase_1d.sql`). Los extractores emiten todos los grupos de los archivos donde se usa la clave, sin subirla; se borra `grupoComun`.
+- Una tienda traduce las claves que tienen **alguno** de sus `gruposTextos` (`hasSome`): la misma Specification por capacidad que la visibilidad de un lugar (A3), que ahora también mira los `grupos` de la sección.
+- El modelo de escritura no cambia: el almacén sigue con una fila por grupo y cada clave va a su **grupo principal** en esa tienda (`grupoPrincipal`: el primero de los suyos en el orden de `gruposTextos`), así una clave de dos grupos no se repite.
+- Solo quita textos pedidos, nunca agrega (medido: productos −1, hotel −2, tours −1, eventos −9, locales −8, canchas −9): ningún idioma publicado queda incompleto.
+
+### B. Modo traducir en la tienda (1.26)
+
+**Qué ya existe (editor de Diseño en vivo, `docs/specs/editor-diseno-en-vivo`).** El admin abre la tienda en un iframe con `?vista-previa=1`; se hablan por `postMessage` con origen verificado (`environment.adminOrigins` en la tienda, `e.source`/`e.origin` en el admin); la tienda captura los clics (ninguno navega) y avisa qué parte tocó el dueño (`VistaPreviaService`). El modo traducir reusa ese canal: no es un mecanismo nuevo.
+
+#### B1. Cómo saber qué texto se tocó — evaluado
+
+| Opción | Cómo | Problema |
+|---|---|---|
+| Marcas invisibles en el texto (pseudo-localización, como Phrase o Lokalise) | En modo traducir, `traducir()` agrega caracteres invisibles con el id de la clave | Rompe la lógica que trabaja con el texto ya traducido: `split` por oraciones (la política de cancelación), `replace` en fechas, comparaciones, `maxlength`. Y no cubre el contenido, que llega traducido del backend: habría que marcarlo también ahí (B5). |
+| Atributo `data-clave` en cada texto | Directiva o cambio en cada plantilla | Cientos de plantillas que tocar; lo que se arma en TypeScript (`traducir()`) no tiene elemento. |
+| **Búsqueda inversa en el admin (elegida para proponer)** | La tienda solo manda **el texto que se tocó** (y el de sus 2 ancestros). El admin ya tiene todos los textos de la tienda con su traducción (`listarTextos`): los busca ahí | Un mismo texto puede salir en varios campos ("Habitaciones" categoría y botón): se muestran todos los candidatos, cada uno con su lugar. |
+
+La búsqueda inversa no toca el traductor de la tienda ni el backend, y cubre por igual textos fijos y contenido, porque la verdad está en un solo lado (el admin). Patrones:
+- **Mediator** (`postMessage`): la tienda no sabe de claves ni de fuentes; solo informa "tocaron este texto".
+- **Índice invertido** en el admin: `textoVisible → campos`, armado de los datos de Traducciones. Los textos con marcadores (`"{n} noches"`) se buscan como plantilla (`{n}` → cualquier valor). Función pura con tests, junto a `navegacion()`.
+- **Cadena de intentos:** el elemento tocado; si no coincide, su padre; después el abuelo (un texto armado con varias claves en un mismo nodo).
+- Se compara el `textContent`, no el `innerText`: este último trae las mayúsculas del CSS (`uppercase`).
+
+#### B2. Elegir o navegar
+
+En el editor de Diseño ningún clic navega. Para traducir hay que recorrer pantallas, así que la barra del admin tiene dos modos: **Navegar** (la tienda funciona normal) y **Elegir texto** (el clic elige y no navega; al pasar el mouse se resalta el elemento). El admin manda el modo a la tienda (`tr-modo`).
+
+#### B3. Idioma que todavía no se publica
+
+Lo más útil del modo es traducir un idioma **antes** de publicarlo, pero la tienda solo acepta idiomas publicados (P5). Opciones: (a) un **permiso firmado de vista previa**: el admin pide al backend un token corto (tienda + idioma, 1 hora; como los tokens de reserva), la tienda lo manda en cada pedido y `resolverIdioma` acepta ese idioma aunque no esté publicado; (b) solo idiomas publicados.
+
+#### B4. Después de guardar
+
+El admin recarga el iframe en la misma URL (el backend ya invalida sus cachés al guardar). Mandar el texto nuevo por mensaje para no recargar queda para después.
+
+#### B5. Protocolo
+
+| Mensaje | De → a | Datos |
+|---|---|---|
+| `tr-lista` | tienda → admin | al arrancar (propio: el modo traducir no comparte servicio con el editor de Diseño) |
+| `tr-modo` | admin → tienda | `{ elegir: boolean }` |
+| `tr-texto` | tienda → admin | `{ textos: string[] }` (el tocado y sus 2 ancestros) |
+
+#### Decisiones del usuario (2026-10-15)
+
+- Mecanismo: **búsqueda inversa en el admin** (B1).
+- Idioma sin publicar: **permiso firmado de vista previa** (B3, opción a). `GET /admin/idiomas/vista-previa?tiendaId=&idioma=` (roles que traducen; el idioma tiene que estar elegido por la tienda) devuelve un token de 1 hora firmado como los de reserva. La tienda lo recibe en la URL del iframe y lo manda en cada pedido; `resolverIdioma` amplía la Specification: visible = elegido ∧ (base ∨ publicado **∨ permiso de vista previa válido para esa tienda e idioma**). Sin token, nada cambia. Las cachés por idioma no filtran: sin permiso el pedido se resuelve al base y usa otra llave.
+- Pantalla: **dividida, solo escritorio** (tienda a la izquierda, texto elegido a la derecha, arriba Navegar / Elegir texto). En celular no se ofrece.
+
+#### Límites
+
+- Lo que no se ve en pantalla (correos, mensajes de error, estados vacíos) sigue en la lista de Traducciones: el modo la complementa, no la reemplaza.
+- Pantallas que necesitan datos (el seguimiento de una reserva) solo se ven si se entra con un enlace real.
+
+### Antipatrones evitados
+
+- Sin `if (fuente === …)` en el admin ni `if (rubro === …)` en ningún lado: lugares por Strategy y visibilidad por capacidad.
+- Sin copiar claves por pantalla en la BD: una clave, varias ubicaciones.
+- Sin tocar el modelo de escritura: guardado y publicación siguen por grupo.
+
+---
+
 ## Contratos
 
 | # | Test | Repo |
@@ -177,6 +327,7 @@ t("Noches") ; t("Quedan {n}", { n })
 | 7 | `idiomaVisible`: oculto si le falta un texto fijo de sus grupos; visible al 100 % | Backend |
 | 8 | Todo campo de texto de las secciones de diseño (leído del schema) se traduce o está marcado como no traducible | Backend |
 | 9 | Toda carpeta de rubro de la tienda tiene grupo de textos (`npm run claves` falla si no) | Store |
+| 10 | Todo archivo con textos fijos tiene pantalla y sección con nombre (tienda: `npm run claves`; servidor: test de claves) | Ambos |
 
 ## Orden de implementación
 

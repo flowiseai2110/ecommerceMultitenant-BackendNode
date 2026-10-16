@@ -119,6 +119,62 @@ export function periodoTransmision(funcion) {
   return new Date(funcion.inicio.getTime() - 5 * 60 * MS_MIN).toISOString().slice(0, 7);
 }
 
+// ============================================
+// Problemas de la señal y de la plataforma (docs/specs/transmision-eventos/mejoras.md, A1-A3)
+// ============================================
+
+/**
+ * Qué le decimos a quien transmite cuando la señal llega con un problema
+ * (código de `live_input.errored`). Los de la plataforma no los puede arreglar
+ * quien graba: se avisa también a la plataforma.
+ */
+export const MENSAJES_ERROR_SENAL = {
+  ERR_GOP_OUT_OF_RANGE: "La app de transmisión tiene mal el intervalo de fotogramas clave (keyframe). Ponlo en 2 segundos y vuelve a empezar.",
+  ERR_UNSUPPORTED_VIDEO_CODEC: "La app envía un formato de video que no aceptamos. En su configuración elige H.264 y vuelve a empezar.",
+  ERR_UNSUPPORTED_AUDIO_CODEC: "La app envía un formato de audio que no aceptamos. En su configuración elige AAC y vuelve a empezar.",
+  ERR_STORAGE_QUOTA_EXHAUSTED: "No podemos recibir la transmisión por un problema de nuestra plataforma. Ya avisamos al equipo; escríbenos si el evento es ahora.",
+  ERR_MISSING_SUBSCRIPTION: "No podemos recibir la transmisión por un problema de nuestra plataforma. Ya avisamos al equipo; escríbenos si el evento es ahora."
+};
+const MENSAJE_ERROR_GENERICO = "La señal llegó con un problema. Revisa la configuración de la app (1080p o 720p, 30 fps, keyframe cada 2 s, video H.264 y audio AAC) y vuelve a empezar.";
+export const ERRORES_DE_PLATAFORMA = new Set(["ERR_STORAGE_QUOTA_EXHAUSTED", "ERR_MISSING_SUBSCRIPTION"]);
+
+export const mensajeErrorSenal = (codigo) => (codigo ? MENSAJES_ERROR_SENAL[codigo] ?? MENSAJE_ERROR_GENERICO : null);
+
+/**
+ * El problema de la señal sigue vigente salvo que la señal se haya conectado
+ * después. No se borra al conectar: una app mal configurada se conecta y falla
+ * una y otra vez, y así no se avisa en cada intento.
+ * @returns {{ codigo: string, mensaje: string, en: Date } | null}
+ */
+export function errorSenalVigente(transmision) {
+  const { senalError, senalErrorEn, senal, senalEn } = transmision;
+  if (!senalError || !senalErrorEn) return null;
+  if (senal === "conectada" && senalEn && senalEn > senalErrorEn) return null;
+  return { codigo: senalError, mensaje: mensajeErrorSenal(senalError), en: senalErrorEn };
+}
+
+/** Un mismo problema de señal se vuelve a avisar por correo solo tras 30 min sin repetirse. */
+export const AVISO_ERROR_SENAL_MIN = 30;
+
+/** Se avisa a la plataforma cuando el almacenamiento de video pasa este porcentaje (decisión 2026-10-15: solo avisar). */
+export const CUOTA_AVISO_PCT = 80;
+
+/** Porcentaje usado del almacenamiento, o null si el proveedor no informa límite. */
+export function porcentajeCuota({ usadoMin, limiteMin }) {
+  if (!limiteMin) return null;
+  return Math.round((usadoMin / limiteMin) * 1000) / 10;
+}
+
+/**
+ * La señal se consulta a la API solo si ningún aviso del proveedor la confirmó
+ * hace poco: los webhooks avisan y la API confirma (A3, ahorra llamadas).
+ */
+export const SENAL_VIGENTE_MIN = 3;
+export function debeConsultarSenal(transmision, ahora = new Date()) {
+  const v = transmision.senalVerificadaEn;
+  return !v || ahora.getTime() - v.getTime() >= SENAL_VIGENTE_MIN * MS_MIN;
+}
+
 /** Una sesión de invitado cuenta como conectada si dio señal de vida hace menos de 75 s. */
 export const SESION_VIVA_MS = 75 * 1000;
 export const sesionViva = (inv, ahora = new Date()) =>
@@ -281,6 +337,30 @@ export const PRECIO_PREMIUM = 40;
 export const MAX_DESTINOS = 2;
 /** Intentos para generar el resumen con IA antes de rendirse. */
 export const MAX_INTENTOS_RESUMEN = 3;
+
+/**
+ * ¿Por qué no se puede pedir el resumen con IA ahora? null = se puede. La IA
+ * solo corre cuando alguien aprieta "Generar resumen" (decisión 2026-10-15).
+ * Un error se puede volver a pedir cuando se agotaron los reintentos.
+ * @returns {{ motivo: string, message: string } | null}
+ */
+export function motivoSinResumen(transmision, funcion, ahora = new Date()) {
+  const no = (motivo, message) => ({ motivo, message });
+  const t = transmision;
+  if (t.plan !== "premium") return no("SOLO_PREMIUM", "El resumen con IA es del plan Premium");
+  if (!t.terminadaEn || !conGrabacion(t)) return no("SIN_GRABACION", "El resumen se genera cuando la transmisión termina y tiene grabación");
+  if (ahora >= grabacionHasta(t, funcion)) return no("VENCIDA", "La grabación ya venció");
+  const partes = (t.grabaciones ?? []).filter(g => g.estado !== "borrada");
+  if (partes.some(g => g.estado === "procesando")) return no("PROCESANDO", "La grabación todavía se está procesando. Intenta en unos minutos");
+  if (!partes.some(g => g.estado === "lista")) return no("SIN_GRABACION", "No hay grabación lista para resumir");
+  if (t.resumenEstado === "listo") return no("YA_LISTO", "El resumen ya está listo");
+  if (t.resumenEstado === "sin_audio") return no("SIN_AUDIO", "La grabación casi no tiene voz (solo música o ruido): no hay qué resumir");
+  if (t.resumenEstado === "pendiente" || t.resumenEstado === "generando"
+    || (t.resumenEstado === "error" && (t.resumenIntentos ?? 0) < MAX_INTENTOS_RESUMEN)) {
+    return no("EN_CURSO", "El resumen ya se está preparando");
+  }
+  return null;
+}
 
 /**
  * La retransmisión emite desde que abre la sala hasta el corte, nunca en la

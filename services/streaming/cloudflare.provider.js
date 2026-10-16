@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { SignJWT, importJWK } from "jose";
 import config from "../../config/index.js";
-import { StreamingProvider } from "./streaming-provider.js";
+import { LimiteApiError, StreamingProvider } from "./streaming-provider.js";
 
 /**
  * Cloudflare Stream (live inputs). Datos verificados en la Fase 0
@@ -11,11 +11,15 @@ import { StreamingProvider } from "./streaming-provider.js";
  * - `enabled: false` rechaza la señal: así se corta.
  * - Token de reproducción RS256 firmado aquí (sin llamar a la API), máx. 24 h.
  * - Una reconexión de más de `timeoutSeconds` crea otro video.
+ * - La API admite 1,200 llamadas cada 5 min por usuario; al pasarse, rechaza
+ *   todo con 429 hasta que se reinicia la ventana (docs/specs/transmision-eventos/mejoras.md, A3).
  */
 
 const API = "https://api.cloudflare.com/client/v4/accounts";
 const MAX_TOKEN_MS = 24 * 60 * 60 * 1000;
 const TIMEOUT_MS = 10_000;
+/** Sin el encabezado Ratelimit, se espera la ventana completa de Cloudflare. */
+const PAUSA_POR_DEFECTO_SEG = 300;
 
 const cf = () => config.streaming.cloudflare;
 
@@ -24,14 +28,36 @@ function requerir(...campos) {
   if (faltan.length) throw new Error(`Cloudflare Stream sin configurar: ${faltan.join(", ")} (ver config.streaming)`);
 }
 
-async function api(metodo, ruta, body) {
+let llamadas = 0;
+let pausadaHasta = 0;
+
+/** Segundos hasta que se reinicia la ventana: `Ratelimit: "default";r=0;t=42` o `Retry-After: 42`. */
+export function segundosDePausa(headers) {
+  const t = /(?:^|;)\s*t=(\d+)/.exec(headers.get("ratelimit") ?? "")?.[1] ?? headers.get("retry-after");
+  const seg = Number(t);
+  return Number.isFinite(seg) && seg > 0 ? Math.min(seg, PAUSA_POR_DEFECTO_SEG) : PAUSA_POR_DEFECTO_SEG;
+}
+
+/** Toda llamada a la API pasa por aquí: cuenta, respeta la pausa y la activa ante un 429. */
+async function pedir(url, { metodo = "GET", body, urgente = false, timeoutMs = TIMEOUT_MS } = {}) {
   requerir("accountId", "apiToken");
-  const res = await fetch(`${API}/${cf().accountId}/stream${ruta}`, {
+  if (!urgente && Date.now() < pausadaHasta) throw new LimiteApiError(new Date(pausadaHasta));
+  llamadas++;
+  const res = await fetch(url, {
     method: metodo,
     headers: { Authorization: `Bearer ${cf().apiToken}`, ...(body ? { "Content-Type": "application/json" } : {}) },
     body: body ? JSON.stringify(body) : undefined,
-    signal: AbortSignal.timeout(TIMEOUT_MS)
+    signal: AbortSignal.timeout(timeoutMs)
   });
+  if (res.status === 429) {
+    pausadaHasta = Date.now() + segundosDePausa(res.headers) * 1000;
+    throw new LimiteApiError(new Date(pausadaHasta));
+  }
+  return res;
+}
+
+async function api(metodo, ruta, body, { urgente = false } = {}) {
+  const res = await pedir(`${API}/${cf().accountId}/stream${ruta}`, { metodo, body, urgente });
   if (metodo === "DELETE" && res.status === 404) return null; // ya no existe: borrar es idempotente
   const json = await res.json().catch(() => ({}));
   if (!res.ok || json.success === false) {
@@ -57,7 +83,37 @@ const iguales = (a, b) => {
   return x.length === y.length && crypto.timingSafeEqual(x, y);
 };
 
-const RECORDING = { mode: "automatic", requireSignedURLs: true, timeoutSeconds: 60 };
+const LOCALES = /^(localhost|127\.\d+\.\d+\.\d+|\[::1\])$/;
+
+/**
+ * Dónde se puede reproducir el video (`allowedOrigins`): el storefront (las
+ * tiendas en `*.<dominio>`) y el admin (la vista previa del panel en vivo).
+ * Con CF_STREAM_ALLOWED_ORIGINS se fija a mano. En local queda vacío: sin
+ * restricción, porque Cloudflare no conoce localhost.
+ */
+export function origenesPermitidos(c = config) {
+  if (c.streaming.cloudflare.allowedOrigins?.length) return c.streaming.cloudflare.allowedOrigins;
+  const hosts = new Set();
+  if (c.platform.baseDomain) hosts.add(c.platform.baseDomain).add(`*.${c.platform.baseDomain}`);
+  for (const url of [c.frontendUrl, c.platform.storefrontUrl]) {
+    try { hosts.add(new URL(url).hostname); } catch { /* URL mal escrita: se ignora */ }
+  }
+  return [...hosts].filter(h => h && !LOCALES.test(h));
+}
+
+/**
+ * Grabación de cada entrada. `timeoutSeconds`: cuánto puede caerse la señal sin
+ * abrir otro video (0 = el valor de Cloudflare, que es su recomendación).
+ */
+function recording() {
+  const origenes = origenesPermitidos();
+  return {
+    mode: "automatic",
+    requireSignedURLs: true,
+    timeoutSeconds: cf().timeoutSeconds,
+    ...(origenes.length ? { allowedOrigins: origenes } : {})
+  };
+}
 
 const baseCliente = () => `https://customer-${cf().customerCode}.cloudflarestream.com`;
 
@@ -95,7 +151,7 @@ export default class CloudflareStreamProvider extends StreamingProvider {
   async crearEntrada({ nombre, meta, habilitada }) {
     const r = await api("POST", "/live_inputs", {
       meta: { name: nombre.slice(0, 100), ...meta },
-      recording: RECORDING,
+      recording: recording(),
       enabled: habilitada
     });
     return {
@@ -110,14 +166,14 @@ export default class CloudflareStreamProvider extends StreamingProvider {
     };
   }
 
-  async habilitarEntrada(entradaId, habilitada) {
+  async habilitarEntrada(entradaId, habilitada, { urgente = false } = {}) {
     // PUT reemplaza la entrada: se reenvían meta y recording para no perderlos.
-    const actual = await api("GET", `/live_inputs/${entradaId}`);
+    const actual = await api("GET", `/live_inputs/${entradaId}`, undefined, { urgente });
     await api("PUT", `/live_inputs/${entradaId}`, {
       meta: actual.meta,
-      recording: { ...RECORDING, ...actual.recording },
+      recording: { ...recording(), ...actual.recording },
       enabled: habilitada
-    });
+    }, { urgente });
   }
 
   async estadoEntrada(entradaId) {
@@ -205,11 +261,7 @@ export default class CloudflareStreamProvider extends StreamingProvider {
 
   /** Texto WebVTT de los subtítulos. */
   async leerSubtitulos(videoId, idioma = "es") {
-    requerir("accountId", "apiToken");
-    const res = await fetch(`${API}/${cf().accountId}/stream/${videoId}/captions/${idioma}/vtt`, {
-      headers: { Authorization: `Bearer ${cf().apiToken}` },
-      signal: AbortSignal.timeout(30_000)
-    });
+    const res = await pedir(`${API}/${cf().accountId}/stream/${videoId}/captions/${idioma}/vtt`, { timeoutMs: 30_000 });
     if (!res.ok) throw new Error(`Cloudflare Stream subtítulos ${videoId}: HTTP ${res.status}`);
     return res.text();
   }
@@ -227,6 +279,21 @@ export default class CloudflareStreamProvider extends StreamingProvider {
     };
   }
 
+  // ---------- Operación de la plataforma ----------
+
+  /** Minutos guardados contra la capacidad prepagada (`GET /stream/storage-usage`). */
+  async usoAlmacenamiento() {
+    const r = await api("GET", "/storage-usage");
+    return {
+      usadoMin: Number(r?.totalStorageMinutes ?? 0),
+      limiteMin: r?.totalStorageMinutesLimit > 0 ? Number(r.totalStorageMinutesLimit) : null
+    };
+  }
+
+  consumoApi() {
+    return { llamadas, pausadaHasta: Date.now() < pausadaHasta ? new Date(pausadaHasta) : null };
+  }
+
   verificarWebhook({ tipo, headers, rawBody }) {
     const cuerpo = rawBody?.toString("utf8") ?? "";
     let payload;
@@ -239,11 +306,17 @@ export default class CloudflareStreamProvider extends StreamingProvider {
       if (!d.input_id || !d.event_type) return null;
       const senal = d.event_type === "live_input.connected" ? "conectada"
         : ["live_input.disconnected", "live_input.errored"].includes(d.event_type) ? "desconectada" : null;
+      // errored trae el motivo: keyframe fuera de rango, códec, almacenamiento lleno…
+      const e = d.live_input_errored?.error;
+      const error = d.event_type === "live_input.errored"
+        ? { codigo: String(e?.code ?? "ERR_UNHEALTHY").slice(0, 40), mensaje: e?.message ?? null }
+        : null;
       return {
         eventoId: `${d.event_type}:${d.input_id}:${d.updated_at ?? payload.ts ?? ""}`.slice(0, 120),
         tipo: d.event_type,
         entradaId: d.input_id,
         senal,
+        error,
         payload
       };
     }

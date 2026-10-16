@@ -1,966 +1,2183 @@
 [
   {
-    "clave": "{n} horas",
-    "grupo": "comun"
-  },
-  {
-    "clave": "{n} noche",
-    "grupo": "comun"
-  },
-  {
-    "clave": "{n} noches",
-    "grupo": "comun"
-  },
-  {
-    "clave": "Demasiados intentos de pago en poco tiempo, intenta más tarde",
-    "grupo": "comun"
-  },
-  {
-    "clave": "Solo se puede reservar con hasta un año de anticipación",
-    "grupo": "comun"
-  },
-  {
     "clave": "¡Tu reserva está confirmada!",
-    "grupo": "correos"
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
   },
   {
     "clave": "¡Tu solicitud fue aceptada!",
-    "grupo": "correos"
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
   },
   {
     "clave": "¡Tus entradas están confirmadas!",
-    "grupo": "correos"
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
   },
   {
     "clave": "¿Cómo te fue con {negocio}?|estadía",
-    "grupo": "correos"
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/pedido-de-resena"
+    ]
   },
   {
     "clave": "¿Cómo te fue con {negocio}?|tour",
-    "grupo": "correos"
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/pedido-de-resena"
+    ]
   },
   {
     "clave": "¿Cómo te fue?",
-    "grupo": "correos"
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/pedido-de-resena"
+    ]
   },
   {
     "clave": "¿Tienes un minuto más? Tu reseña en {sitio} nos ayuda mucho.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "{dia}, {fecha}, {hora}|fecha y hora",
-    "grupo": "correos"
-  },
-  {
-    "clave": "{inicio} a {fin}|horario",
-    "grupo": "correos"
-  },
-  {
-    "clave": "{n} adulto",
-    "grupo": "correos"
-  },
-  {
-    "clave": "{n} adultos",
-    "grupo": "correos"
-  },
-  {
-    "clave": "{n} niño",
-    "grupo": "correos"
-  },
-  {
-    "clave": "{n} niños",
-    "grupo": "correos"
-  },
-  {
-    "clave": "{Negocio} ajustó el total: {motivo}.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "✅ Entradas confirmadas {codigo} — {evento}",
-    "grupo": "correos"
-  },
-  {
-    "clave": "✅ Reserva confirmada {codigo} — {negocio}",
-    "grupo": "correos"
-  },
-  {
-    "clave": "a la agencia|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "a la cancha|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "a la casa|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "a la posada|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Adelanto",
-    "grupo": "correos"
-  },
-  {
-    "clave": "al apart|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "al hostal|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "al hotel|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "al local|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "al lodge|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "al organizador|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Apartamos tus entradas",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Apartamos tus entradas {codigo} — completa el pago",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Cancha",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Código de reserva",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Dejar mi reseña",
-    "grupo": "correos"
-  },
-  {
-    "clave": "dom|día corto",
-    "grupo": "correos"
-  },
-  {
-    "clave": "El apart|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "el horario|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "El hostal|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "El hotel|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "el inicio de la función|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "El local|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "El lodge|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "El organizador|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "El resto se paga en cuotas según el plan de pagos que verás en el link.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "El saldo de {monto} se paga {enNegocio}.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "en destino|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "en el apart|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "en el hostal|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "en el hotel|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "en el local|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "en el lodge|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "en el lugar|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "en la cancha|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "en la casa|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "en la posada|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Entrada|estadia",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Entradas",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Estadía",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Evento",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Fecha",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Función",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Garantía",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Habitación",
-    "grupo": "correos"
-  },
-  {
-    "clave": "hasta las {hora}",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Hola {nombre}, {negocio} aceptó tu solicitud. Para separar la fecha, lee y acepta el contrato, y paga la separación de {monto} antes del {fecha}.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Hola {nombre}, {negocio} aceptó tu solicitud. Para separar la fecha, lee y acepta el contrato, y paga la separación de {monto}.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Hola {nombre}, {negocio} no tiene disponibilidad para tu solicitud.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Hola {nombre}, {negocio} tiene disponibilidad. Para confirmar, paga {monto} antes de {inicio} y sube la captura desde el link.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Hola {nombre}, enviamos tu solicitud a {negocio}. {Negocio} confirmará {conf} y te avisaremos por este medio.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Hola {nombre}, gracias por elegir {negocio}. Tu reseña toma un minuto y ayuda a otros viajeros a decidir.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Hola {nombre}, te esperamos en {lugar} ({direccion}).",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Hola {nombre}, te esperamos en {lugar}.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Hola {nombre}, tu horario en {negocio} está apartado hasta las {hora}. Para confirmarlo, paga el adelanto de {monto} y sube la captura desde el link.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Hola {nombre}, tu horario en {negocio} está apartado. Para confirmarlo, paga el adelanto de {monto} y sube la captura desde el link.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Hola {nombre}, tus entradas para {evento} están apartadas. Para confirmarlas, paga {monto} y sube la captura desde el link antes de las {hora}.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Hola {nombre}, tus entradas para {evento} están apartadas. Para confirmarlas, paga {monto} y sube la captura desde el link.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Horario",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Importante",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Invitados",
-    "grupo": "correos"
-  },
-  {
-    "clave": "jue|día corto",
-    "grupo": "correos"
-  },
-  {
-    "clave": "La agencia|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "La cancha|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "La casa|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "la disponibilidad de la salida|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "la disponibilidad|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "la fecha del evento|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "la fecha|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "la hora de ingreso|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "la hora de salida|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "la hora del partido|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "La posada|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Los consumos durante tu estadía se pagan {enNegocio}. Tu boleta o factura se entrega al finalizar tu estadía.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Lugar",
-    "grupo": "correos"
-  },
-  {
-    "clave": "lun|día corto",
-    "grupo": "correos"
-  },
-  {
-    "clave": "mar|día corto",
-    "grupo": "correos"
-  },
-  {
-    "clave": "mié|día corto",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Motivo: {motivo}",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Muestra tu pasaporte y la Tarjeta Andina de Migración (TAM) al llegar para mantener la exoneración del IGV.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "No se realizó ningún cobro.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Pagado a cuenta: {monto}.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Pagado: {monto}.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Pagado: {pagado}. Saldo: {saldo}.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Pagar y subir mi captura",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Pagas {monto} {enNegocio}.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Paquete",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Pasajeros",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Personas",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Presenta esta confirmación o tu código de compra y tu documento en el ingreso.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Presenta esta confirmación o tu código de reserva al llegar.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Presenta esta confirmación o tu código de reserva en la salida.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Próxima cuota: {monto} hasta el {fecha}.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Puedes elegir otra fecha o escribirle {alNegocio} por WhatsApp.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Punto de encuentro",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Recibimos tu solicitud de reserva",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Recibimos tu solicitud de reserva {codigo} — {negocio}",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Recojo",
-    "grupo": "correos"
-  },
-  {
-    "clave": "sáb|día corto",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Saldo a pagar {enNegocio}: {monto}.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Saldo en la cancha",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Salida",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Salida|tour",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Salón",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Separación",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Separamos tu horario",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Separamos tu horario {codigo}: paga el adelanto",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Si no la confirma antes de {inicio}, la solicitud se anula sola. Puedes seguir el estado desde el botón de abajo.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Si no pagas antes de {inicio}, la reserva se anula.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Si no pagas la separación a tiempo, la fecha se libera.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Si no subes la captura a tiempo, el horario se libera para otro equipo.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Si no subes la captura a tiempo, las entradas vuelven a la venta.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Todavía no tienes una reserva confirmada: esto es una solicitud.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Total",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Tour",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Tu compra se confirma cuando el organizador verifica el pago.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "tu compra|voz",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Tu estadía es de {inicio} a {fin}. Si llegas más tarde, la hora de salida no cambia.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Tu reserva {codigo} fue aceptada: completa el pago",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Tu reserva|estadía",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Tu reserva|tour",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Tu solicitud {codigo} no pudo ser aceptada — {negocio}",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Tu solicitud no pudo ser aceptada",
-    "grupo": "correos"
-  },
-  {
-    "clave": "turno {nombre}",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Una reseña por reserva. El link es personal.",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Ver contrato y pagar",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Ver detalles",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Ver mi confirmación",
-    "grupo": "correos"
-  },
-  {
-    "clave": "Ver mi reserva",
-    "grupo": "correos"
-  },
-  {
-    "clave": "vie|día corto",
-    "grupo": "correos"
-  },
-  {
-    "clave": "{n} hab.",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "{n} hab.|una",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "{n} niño mayor de {edad} años",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "{n} niños mayores de {edad} años",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Debe haber al menos un adulto",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Elige entre 1 y {max} habitaciones",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Elige entre 1 y {max} noches",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Elige una fecha y hora futuras",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "en {n} habitaciones",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Esta habitación admite hasta {n} adulto{en}",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Esta habitación admite hasta {n} adultos{en}",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Esta habitación admite hasta {n} niño{en}",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Esta habitación admite hasta {n} niños{en}",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Esta habitación admite hasta {n} personas en total{en}",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Esta habitación no admite niños",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Esta modalidad ya no está disponible",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Exoneración de IGV (turista extranjero)",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Indica la edad de cada niño",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Las reservas se piden con al menos {n} hora de anticipación",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Las reservas se piden con al menos {n} horas de anticipación",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "No quedan habitaciones de este tipo para esas fechas. Elige otras fechas",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "No se reciben reservas para el {fecha}. Elige otra fecha",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Noche",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Para llegar en {temporada} la estadía mínima es de {n} noches",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "por noche",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "por persona",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "por persona y noche",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Solo queda 1 habitación de este tipo para esas fechas",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Solo quedan {n} habitaciones de este tipo para esas fechas",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "Uno de los extras ya no está disponible",
-    "grupo": "hotel"
-  },
-  {
-    "clave": "{metodo} no llega a tu distrito. Elige otro método de envío.",
-    "grupo": "productos"
-  },
-  {
-    "clave": "Cupón agotado",
-    "grupo": "productos"
-  },
-  {
-    "clave": "Cupón aún no vigente",
-    "grupo": "productos"
-  },
-  {
-    "clave": "Cupón expirado",
-    "grupo": "productos"
-  },
-  {
-    "clave": "Cupón no válido",
-    "grupo": "productos"
-  },
-  {
-    "clave": "Demasiadas consultas de seguimiento, intenta más tarde",
-    "grupo": "productos"
-  },
-  {
-    "clave": "Demasiados intentos de verificación para este pedido, intenta en unos minutos",
-    "grupo": "productos"
-  },
-  {
-    "clave": "El método de envío ya no está disponible",
-    "grupo": "productos"
-  },
-  {
-    "clave": "Esta tienda solo emite boletas",
-    "grupo": "productos"
-  },
-  {
-    "clave": "Has creado demasiados pedidos en poco tiempo, intenta más tarde",
-    "grupo": "productos"
-  },
-  {
-    "clave": "Para boletas desde S/ {monto} se requiere DNI o CE",
-    "grupo": "productos"
-  },
-  {
-    "clave": "Ya usaste este cupón el máximo de veces permitido",
-    "grupo": "productos"
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/pedido-de-resena"
+    ]
   },
   {
     "clave": "{dd}/{mm}|fecha corta; también {d} y {mes}",
-    "grupo": "reservas"
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/fechas"
+    ]
   },
   {
-    "clave": "abr.|mes corto",
-    "grupo": "reservas"
+    "clave": "{dia}, {fecha}, {hora}|fecha y hora",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
   },
   {
-    "clave": "Aceptada, esperando pago",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "ago.|mes corto",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "Anulada",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "Cancelada",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "Completada",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "Confirmada",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "dic.|mes corto",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "ene.|mes corto",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "feb.|mes corto",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "jul.|mes corto",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "jun.|mes corto",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "mar.|mes corto",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "may.|mes corto",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "No se presentó",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "nov.|mes corto",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "oct.|mes corto",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "Pago en revisión",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "Pendiente de pago",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "Por noche",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "Rechazada",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "set.|mes corto",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "Solicitada",
-    "grupo": "reservas"
-  },
-  {
-    "clave": "Suspendida, fecha por definir",
-    "grupo": "reservas"
+    "clave": "{inicio} a {fin}|horario",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
   },
   {
     "clave": "{lista} y {ultimo}",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "{metodo} no llega a tu distrito. Elige otro método de envío.",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
+    "clave": "{n} adulto",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "{n} adultos",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "{n} hab.",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "{n} hab.|una",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "{n} horas",
+    "grupos": [
+      "correos",
+      "hotel",
+      "reservas"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos",
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "{n} niño",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "{n} niño mayor de {edad} años",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "{n} niños",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "{n} niños mayores de {edad} años",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "{n} noche",
+    "grupos": [
+      "correos",
+      "hotel",
+      "reservas"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos",
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "{n} noches",
+    "grupos": [
+      "correos",
+      "hotel",
+      "reservas"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos",
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "{Negocio} ajustó el total: {motivo}.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "✅ Entradas confirmadas {codigo} — {evento}",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "✅ Reserva confirmada {codigo} — {negocio}",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "a la agencia|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "a la cancha|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "a la casa|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "a la posada|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "abr.|mes corto",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/fechas"
+    ]
+  },
+  {
+    "clave": "Aceptada, esperando pago",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/estados-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Adelanto",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "ago.|mes corto",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/fechas"
+    ]
+  },
+  {
+    "clave": "al apart|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "al hostal|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "al hotel|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "al local|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "al lodge|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "al organizador|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Anulada",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/estados-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Apartamos tus entradas",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/compra-por-pagar"
+    ]
+  },
+  {
+    "clave": "Apartamos tus entradas {codigo} — completa el pago",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/compra-por-pagar"
+    ]
+  },
+  {
+    "clave": "Cancelada",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/estados-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Cancha",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Código de reserva",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Completada",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/estados-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Confirmada",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/estados-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Cupón agotado",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
+    "clave": "Cupón aún no vigente",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
+    "clave": "Cupón expirado",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
+    "clave": "Cupón no válido",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
+    "clave": "Debe haber al menos un adulto",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Dejar mi reseña",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/pedido-de-resena"
+    ]
+  },
+  {
+    "clave": "Demasiadas consultas de seguimiento, intenta más tarde",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
+    "clave": "Demasiados intentos de pago en poco tiempo, intenta más tarde",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "sistema/pago-en-linea"
+    ]
+  },
+  {
+    "clave": "Demasiados intentos de verificación para este pedido, intenta en unos minutos",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
+    "clave": "dic.|mes corto",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/fechas"
+    ]
+  },
+  {
+    "clave": "dom|día corto",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
   },
   {
     "clave": "domingos|días de salida",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "El apart|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "el horario|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "El hostal|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "El hotel|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "el inicio de la función|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "El local|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "El lodge|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "El método de envío ya no está disponible",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
+    "clave": "El organizador|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "El resto se paga en cuotas según el plan de pagos que verás en el link.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "El saldo de {monto} se paga {enNegocio}.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "Elige entre 1 y {max} habitaciones",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Elige entre 1 y {max} noches",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
   },
   {
     "clave": "Elige la hora de salida",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "Elige una fecha y hora futuras",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "en {n} habitaciones",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "en destino|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "en el apart|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "en el hostal|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "en el hotel|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "en el local|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "en el lodge|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "en el lugar|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "en la cancha|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "en la casa|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "en la posada|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "ene.|mes corto",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/fechas"
+    ]
+  },
+  {
+    "clave": "Entrada|estadia",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Entradas",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
   },
   {
     "clave": "Esa salida ya pasó. Elige una fecha futura",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "Esta habitación admite hasta {n} adulto{en}",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Esta habitación admite hasta {n} adultos{en}",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Esta habitación admite hasta {n} niño{en}",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Esta habitación admite hasta {n} niños{en}",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Esta habitación admite hasta {n} personas en total{en}",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Esta habitación no admite niños",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Esta modalidad ya no está disponible",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Esta tienda solo emite boletas",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
+    "clave": "Estadía",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
   },
   {
     "clave": "Este tour no se ofrece en ese idioma",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
   },
   {
     "clave": "Este tour sale a las {horas}",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
   },
   {
     "clave": "Este tour sale los {dias}. Elige otra fecha",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
   },
   {
     "clave": "Este tour sale todos los días. Elige otra fecha",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "Evento",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Exoneración de IGV (turista extranjero)",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "feb.|mes corto",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/fechas"
+    ]
+  },
+  {
+    "clave": "Fecha",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Función",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Garantía",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Habitación",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Has creado demasiados pedidos en poco tiempo, intenta más tarde",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
+    "clave": "hasta las {hora}",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Hola {nombre}, {negocio} aceptó tu solicitud. Para separar la fecha, lee y acepta el contrato, y paga la separación de {monto} antes del {fecha}.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "Hola {nombre}, {negocio} aceptó tu solicitud. Para separar la fecha, lee y acepta el contrato, y paga la separación de {monto}.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "Hola {nombre}, {negocio} no tiene disponibilidad para tu solicitud.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-rechazada"
+    ]
+  },
+  {
+    "clave": "Hola {nombre}, {negocio} tiene disponibilidad. Para confirmar, paga {monto} antes de {inicio} y sube la captura desde el link.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "Hola {nombre}, enviamos tu solicitud a {negocio}. {Negocio} confirmará {conf} y te avisaremos por este medio.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/solicitud-recibida"
+    ]
+  },
+  {
+    "clave": "Hola {nombre}, gracias por elegir {negocio}. Tu reseña toma un minuto y ayuda a otros viajeros a decidir.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/pedido-de-resena"
+    ]
+  },
+  {
+    "clave": "Hola {nombre}, te esperamos en {lugar} ({direccion}).",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "Hola {nombre}, te esperamos en {lugar}.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "Hola {nombre}, tu horario en {negocio} está apartado hasta las {hora}. Para confirmarlo, paga el adelanto de {monto} y sube la captura desde el link.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "Hola {nombre}, tu horario en {negocio} está apartado. Para confirmarlo, paga el adelanto de {monto} y sube la captura desde el link.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "Hola {nombre}, tus entradas para {evento} están apartadas. Para confirmarlas, paga {monto} y sube la captura desde el link antes de las {hora}.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/compra-por-pagar"
+    ]
+  },
+  {
+    "clave": "Hola {nombre}, tus entradas para {evento} están apartadas. Para confirmarlas, paga {monto} y sube la captura desde el link.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/compra-por-pagar"
+    ]
+  },
+  {
+    "clave": "Horario",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Importante",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
   },
   {
     "clave": "Indica cuántas personas van",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "Indica la edad de cada niño",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Invitados",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "jue|día corto",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
   },
   {
     "clave": "jueves|días de salida",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "jul.|mes corto",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/fechas"
+    ]
+  },
+  {
+    "clave": "jun.|mes corto",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/fechas"
+    ]
+  },
+  {
+    "clave": "La agencia|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "La cancha|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "La casa|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "la disponibilidad de la salida|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "la disponibilidad|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "la fecha del evento|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "la fecha|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "la hora de ingreso|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "la hora de salida|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "la hora del partido|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "La posada|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Las reservas se piden con al menos {n} hora de anticipación",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Las reservas se piden con al menos {n} horas de anticipación",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Los consumos durante tu estadía se pagan {enNegocio}. Tu boleta o factura se entrega al finalizar tu estadía.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
   },
   {
     "clave": "Los tours se reservan con al menos {n} hora de anticipación",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
   },
   {
     "clave": "Los tours se reservan con al menos {n} horas de anticipación",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "Lugar",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "lun|día corto",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
   },
   {
     "clave": "lunes|días de salida",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "mar.|mes corto",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/fechas"
+    ]
+  },
+  {
+    "clave": "mar|día corto",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
   },
   {
     "clave": "martes|días de salida",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "may.|mes corto",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/fechas"
+    ]
+  },
+  {
+    "clave": "mié|día corto",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
   },
   {
     "clave": "miércoles|días de salida",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "Motivo: {motivo}",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-rechazada"
+    ]
+  },
+  {
+    "clave": "Muestra tu pasaporte y la Tarjeta Andina de Migración (TAM) al llegar para mantener la exoneración del IGV.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
   },
   {
     "clave": "No hay salida el {fecha}. Elige otra fecha",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "No quedan habitaciones de este tipo para esas fechas. Elige otras fechas",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "No se presentó",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/estados-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "No se realizó ningún cobro.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-rechazada"
+    ]
+  },
+  {
+    "clave": "No se reciben reservas para el {fecha}. Elige otra fecha",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Noche",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "nov.|mes corto",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/fechas"
+    ]
+  },
+  {
+    "clave": "oct.|mes corto",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/fechas"
+    ]
+  },
+  {
+    "clave": "Pagado a cuenta: {monto}.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "Pagado: {monto}.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "Pagado: {pagado}. Saldo: {saldo}.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "Pagar y subir mi captura",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/compra-por-pagar",
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "Pagas {monto} {enNegocio}.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "Pago en revisión",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/estados-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Paquete",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Para boletas desde S/ {monto} se requiere DNI o CE",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
+    "clave": "Para llegar en {temporada} la estadía mínima es de {n} noches",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Pasajeros",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Pendiente de pago",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/estados-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Personas",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
   },
   {
     "clave": "por {tipo}|precio desde",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "por noche",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Por noche",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "por persona",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "por persona y noche",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Presenta esta confirmación o tu código de compra y tu documento en el ingreso.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "Presenta esta confirmación o tu código de reserva al llegar.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "Presenta esta confirmación o tu código de reserva en la salida.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "Próxima cuota: {monto} hasta el {fecha}.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "Puedes elegir otra fecha o escribirle {alNegocio} por WhatsApp.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-rechazada"
+    ]
   },
   {
     "clave": "Puedes solicitar hasta {n} persona por reserva. Para grupos más grandes, escribe a la agencia",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
   },
   {
     "clave": "Puedes solicitar hasta {n} personas por reserva. Para grupos más grandes, escribe a la agencia",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "Punto de encuentro",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Rechazada",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/estados-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Recibimos tu solicitud de reserva",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/solicitud-recibida"
+    ]
+  },
+  {
+    "clave": "Recibimos tu solicitud de reserva {codigo} — {negocio}",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/solicitud-recibida"
+    ]
+  },
+  {
+    "clave": "Recojo",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "sáb|día corto",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
   },
   {
     "clave": "sábados|días de salida",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "Saldo a pagar {enNegocio}: {monto}.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "Saldo en la cancha",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Salida",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Salida|tour",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Salón",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Separación",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Separamos tu horario",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "Separamos tu horario {codigo}: paga el adelanto",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "set.|mes corto",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/fechas"
+    ]
+  },
+  {
+    "clave": "Si no la confirma antes de {inicio}, la solicitud se anula sola. Puedes seguir el estado desde el botón de abajo.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/solicitud-recibida"
+    ]
+  },
+  {
+    "clave": "Si no pagas antes de {inicio}, la reserva se anula.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "Si no pagas la separación a tiempo, la fecha se libera.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "Si no subes la captura a tiempo, el horario se libera para otro equipo.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "Si no subes la captura a tiempo, las entradas vuelven a la venta.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/compra-por-pagar"
+    ]
+  },
+  {
+    "clave": "Solicitada",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/estados-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Solo queda 1 habitación de este tipo para esas fechas",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Solo quedan {n} habitaciones de este tipo para esas fechas",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Solo se puede reservar con hasta un año de anticipación",
+    "grupos": [
+      "hotel",
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios",
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "Suspendida, fecha por definir",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/estados-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Todavía no tienes una reserva confirmada: esto es una solicitud.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/solicitud-recibida"
+    ]
   },
   {
     "clave": "todos los días",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "Total",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Tour",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Tu compra se confirma cuando el organizador verifica el pago.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/compra-por-pagar"
+    ]
+  },
+  {
+    "clave": "tu compra|voz",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Tu estadía es de {inicio} a {fin}. Si llegas más tarde, la hora de salida no cambia.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "Tu reserva {codigo} fue aceptada: completa el pago",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "Tu reserva|estadía",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/pedido-de-resena"
+    ]
+  },
+  {
+    "clave": "Tu reserva|tour",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/pedido-de-resena"
+    ]
+  },
+  {
+    "clave": "Tu solicitud {codigo} no pudo ser aceptada — {negocio}",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-rechazada"
+    ]
+  },
+  {
+    "clave": "Tu solicitud no pudo ser aceptada",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-rechazada"
+    ]
+  },
+  {
+    "clave": "turno {nombre}",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
+  },
+  {
+    "clave": "Una reseña por reserva. El link es personal.",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/pedido-de-resena"
+    ]
+  },
+  {
+    "clave": "Uno de los extras ya no está disponible",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
   },
   {
     "clave": "Uno de los tipos de pasajero ya no está disponible. Actualiza la página",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "Ver contrato y pagar",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "Ver detalles",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-rechazada"
+    ]
+  },
+  {
+    "clave": "Ver mi confirmación",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "Ver mi reserva",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/solicitud-recibida"
+    ]
+  },
+  {
+    "clave": "vie|día corto",
+    "grupos": [
+      "correos"
+    ],
+    "ubicaciones": [
+      "correos/partes-comunes-de-los-correos"
+    ]
   },
   {
     "clave": "viernes|días de salida",
-    "grupo": "tours"
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "Ya usaste este cupón el máximo de veces permitido",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
   }
 ]

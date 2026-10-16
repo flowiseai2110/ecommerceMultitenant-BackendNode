@@ -14,14 +14,18 @@ const idiomas = {
 };
 const TIENDA = "11111111-1111-4111-8111-111111111111";
 // Eligió inglés y quechua; solo el inglés está publicado (P5).
-const tiendas = { findUnique: jest.fn(async ({ where }) => (where.id === TIENDA ? { idiomas: ["es", "en", "qu"], idiomasPublicados: ["en"] } : null)) };
+const tiendas = { findUnique: jest.fn(async ({ where }) => (where.id === TIENDA ? { idiomas: ["es", "en", "qu"], idiomasPublicados: ["en"], slug: "hostal-prueba" } : null)) };
 jest.unstable_mockModule("../../../config/prisma.js", () => ({ prisma: { idiomas, tiendas }, default: { idiomas, tiendas } }));
+// Antes de cargar la configuración: firma los permisos de vista previa de estos tests.
+process.env.IDIOMAS_VISTA_PREVIA_SECRET = "secreto-de-prueba-de-vista-previa-32+caracteres";
 
 const { crearIdioma, IDIOMA_BASE } = await import("../idioma.js");
 const servicio = await import("../idiomas.service.js");
 const { crearIdiomaSchema, actualizarIdiomaSchema } = await import("../idiomas.schema.js");
 const { updateTiendaSchema } = await import("../../tenants/tiendas.schema.js");
-const { idiomasElegidos, idiomasVisibles, invalidarIdiomasDeTienda, resolverIdioma } = await import("../idiomas-tienda.js");
+const { idiomasDePeticion, idiomasElegidos, idiomasVisibles, invalidarIdiomasDeTienda, permisoVistaPrevia, resolverIdioma } = await import("../idiomas-tienda.js");
+const { firmarPermisoVistaPrevia, sinCachePublica, verificarPermisoVistaPrevia } = await import("../vista-previa.js");
+const { firmarTokenReserva } = await import("../../reservas/reservas.token.js");
 
 beforeEach(() => {
   servicio.invalidarIdiomas();
@@ -143,5 +147,71 @@ describe("idioma de una petición a la tienda", () => {
     await idiomasVisibles(TIENDA);
     await idiomasVisibles(TIENDA);
     expect(tiendas.findUnique).toHaveBeenCalledTimes(1);
+  });
+});
+
+// docs/specs/idiomas, diseno.md B3: permiso firmado de vista previa
+describe("vista previa de un idioma sin publicar", () => {
+  const OTRA = "22222222-2222-4222-8222-222222222222";
+  const res = () => {
+    const cabeceras = {};
+    return { cabeceras, set: (k, v) => { cabeceras[k.toLowerCase()] = v; }, vary: (k) => { cabeceras.vary = k; } };
+  };
+  const resolver = async ({ token, ...req }) => {
+    const r = { query: {}, body: {}, get: (k) => (k === "x-vista-previa" ? token : undefined), ...req };
+    const respuesta = res();
+    await new Promise((ok, mal) => resolverIdioma(r, respuesta, (e) => (e ? mal(e) : ok())));
+    return { idioma: r.idioma.codigo, permiso: r.permisoVistaPrevia, cabeceras: respuesta.cabeceras };
+  };
+
+  it("el permiso vuelve con su tienda e idioma; alterado, de otro uso o vencido no vale (y nunca lanza)", async () => {
+    const { token, expiraEn } = await firmarPermisoVistaPrevia({ tiendaId: TIENDA, idioma: "qu" });
+    expect(await verificarPermisoVistaPrevia(token)).toEqual({ tiendaId: TIENDA, idioma: "qu" });
+    expect(new Date(expiraEn).getTime() - Date.now()).toBeGreaterThan(59 * 60_000);
+    expect(await verificarPermisoVistaPrevia(`${token}x`)).toBeNull();
+    expect(await verificarPermisoVistaPrevia(await firmarTokenReserva({ pedidoId: "p1", tiendaId: TIENDA }, { secret: process.env.IDIOMAS_VISTA_PREVIA_SECRET }))).toBeNull();
+    const vencido = await firmarPermisoVistaPrevia({ tiendaId: TIENDA, idioma: "qu" }, { duracion: Math.floor(Date.now() / 1000) - 60 });
+    expect(await verificarPermisoVistaPrevia(vencido.token)).toBeNull();
+    expect(await verificarPermisoVistaPrevia(undefined)).toBeNull();
+  });
+
+  it("con permiso de esta tienda, el idioma elegido sin publicar se ve; sin permiso, no", async () => {
+    const { token } = await firmarPermisoVistaPrevia({ tiendaId: TIENDA, idioma: "qu" });
+    expect(await resolver({ tiendaId: TIENDA, query: { lang: "qu" }, token })).toMatchObject({ idioma: "qu", permiso: { tiendaId: TIENDA, idioma: "qu" } });
+    expect((await resolver({ tiendaId: TIENDA, query: { lang: "qu" } })).idioma).toBe("es");
+    // El selector de la tienda suma el idioma del permiso, en el orden de la plataforma.
+    expect((await idiomasDePeticion(TIENDA, { tiendaId: TIENDA, idioma: "qu" })).map((i) => i.codigo)).toEqual(["es", "qu", "en"]);
+  });
+
+  it("un permiso de otra tienda o de otro idioma no abre nada", async () => {
+    const deOtra = await firmarPermisoVistaPrevia({ tiendaId: OTRA, idioma: "qu" });
+    expect((await resolver({ tiendaId: TIENDA, query: { lang: "qu" }, token: deOtra.token })).idioma).toBe("es");
+    const deIngles = await firmarPermisoVistaPrevia({ tiendaId: TIENDA, idioma: "en" });
+    expect((await resolver({ tiendaId: TIENDA, query: { lang: "qu" }, token: deIngles.token })).idioma).toBe("es");
+    expect((await idiomasDePeticion(TIENDA, { tiendaId: OTRA, idioma: "qu" })).map((i) => i.codigo)).toEqual(["es", "en"]);
+  });
+
+  it("un permiso de un idioma que la tienda no eligió no lo agrega", async () => {
+    expect((await idiomasDePeticion(TIENDA, { tiendaId: TIENDA, idioma: "ay" })).map((i) => i.codigo)).toEqual(["es", "en"]);
+  });
+
+  it("con permiso la respuesta no va a cachés compartidas, aunque la ruta pida public; sin permiso no se toca", async () => {
+    const { token } = await firmarPermisoVistaPrevia({ tiendaId: TIENDA, idioma: "qu" });
+    const con = await resolver({ tiendaId: TIENDA, query: { lang: "qu" }, token });
+    expect(con.cabeceras).toEqual({ "cache-control": "private, no-store", vary: "x-vista-previa" });
+    const respuesta = res();
+    sinCachePublica(respuesta);
+    respuesta.set("Cache-Control", "public, max-age=60");
+    respuesta.set("X-Otra", "1");
+    expect(respuesta.cabeceras).toMatchObject({ "cache-control": "private, no-store", "x-otra": "1" });
+    expect((await resolver({ tiendaId: TIENDA, query: { lang: "en" } })).cabeceras).toEqual({});
+  });
+
+  it("el admin solo obtiene permiso de un idioma que la tienda eligió y no es el base", async () => {
+    const { token, slug } = await permisoVistaPrevia(TIENDA, "qu");
+    expect(await verificarPermisoVistaPrevia(token)).toEqual({ tiendaId: TIENDA, idioma: "qu" });
+    expect(slug).toBe("hostal-prueba");
+    await expect(permisoVistaPrevia(TIENDA, "ay")).rejects.toThrow(/no es uno de los que ofrece/);
+    await expect(permisoVistaPrevia(TIENDA, "es")).rejects.toThrow(/no es uno de los que ofrece/);
   });
 });

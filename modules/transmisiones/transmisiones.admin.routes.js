@@ -4,8 +4,8 @@ import { authMiddleware, requireTiendaAccess } from "../../kernel/tenant/index.j
 import { apiResponse } from "../../utils/apiResponse.js";
 import {
   activar, agregarDestino, agregarInvitados, anularInvitacion, borrarGrabacionAhora, cancelar, crearVinculacion, datosConexion, editar, extender,
-  guardarAnio, horasTienda, iniciarPrueba, listarTransmisiones, obtenerPorFuncion, quitarDestino, regenerarClave, regenerarInvitacion, terminar,
-  terminarALaHora
+  guardarAnio, horasTienda, iniciarPrueba, listarTransmisiones, obtenerPorFuncion, pedirResumen, quitarDestino, regenerarClave, regenerarInvitacion,
+  terminar, terminarALaHora
 } from "./transmisiones.service.js";
 import {
   activarSchema, destinoParamSchema, destinoSchema, editarSchema, extenderSchema, funcionParamSchema, idParamSchema, invitacionParamSchema, invitadosSchema,
@@ -131,6 +131,11 @@ router.post("/:id/destinos", ...gestion, validate({ params: idParamSchema, body:
     const { tiendaId, ...destino } = req.body;
     return ok(res, "TRANSMISION_DESTINO_AGREGADO", await agregarDestino(req.tiendaId, req.params.id, destino, req.user));
   } catch (error) { next(error); }
+});
+
+// R8.3: "Generar resumen" con IA. Nunca corre solo (decisión 2026-10-15).
+router.post("/:id/resumen", ...gestion, validate({ params: idParamSchema, body: tiendaQuerySchema }), async (req, res, next) => {
+  try { return ok(res, "TRANSMISION_RESUMEN_PEDIDO", await pedirResumen(req.tiendaId, req.params.id, req.user)); } catch (error) { next(error); }
 });
 
 router.delete("/:id/destinos/:destinoId", ...gestion, validate({ params: destinoParamSchema, query: tiendaQuerySchema }), async (req, res, next) => {

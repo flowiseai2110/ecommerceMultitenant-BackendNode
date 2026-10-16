@@ -2,9 +2,9 @@ import { prisma } from "../../config/prisma.js";
 
 /** Acceso a `textos_claves`, `textos_plataforma` y `tienda_textos` (docs/specs/idiomas D7). Sin reglas de negocio. */
 
-/** Claves vigentes de unos grupos. */
+/** Claves vigentes que tienen alguno de estos grupos (una clave puede tener varios). */
 export const clavesDeGrupos = (grupos) => prisma.textos_claves.findMany({
-  where: { grupo: { in: grupos }, obsoleta: false }, select: { clave: true, grupo: true }, orderBy: { clave: "asc" }
+  where: { grupos: { hasSome: grupos }, obsoleta: false }, select: { clave: true, grupos: true }, orderBy: { clave: "asc" }
 });
 
 /** Traducciones de la plataforma a un idioma. */

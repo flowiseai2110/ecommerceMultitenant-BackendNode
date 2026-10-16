@@ -4,6 +4,8 @@ import { SECCIONES_COMUNES } from "../secciones.js";
 export const productos = {
   // Textos fijos que muestra su tienda: los traduce el dueño (docs/specs/idiomas D8).
   gruposTextos: Object.freeze(["comun", "productos", "correos", "errores"]),
+  // Cómo se llama su catálogo en Traducciones ("Tu contenido"; docs/specs/idiomas, diseno.md A1).
+  nombreCatalogo: "Productos",
   recibeReservas: false,
   planDePagos: false,
   transmisiones: false,

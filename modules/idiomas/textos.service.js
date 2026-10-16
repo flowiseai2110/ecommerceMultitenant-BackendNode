@@ -24,10 +24,20 @@ export async function gruposDeTienda(tiendaId) {
   return datosDe((await tiendaDe(tiendaId)).tipoNegocio).gruposTextos;
 }
 
-/** Claves vigentes que la tienda muestra. @returns {Promise<{ clave: string, grupo: string }[]>} */
+/**
+ * Claves vigentes que la tienda muestra: las que tienen alguno de sus grupos.
+ * `grupo` es el principal para esta tienda (el primero de los suyos, en el
+ * orden de `gruposTextos`): con él se agrupan al guardar, sin repetir una
+ * clave que es de dos grupos.
+ * @returns {Promise<{ clave: string, grupo: string }[]>}
+ */
 export async function clavesDeTienda(tiendaId) {
-  return clavesDeGrupos([...(await gruposDeTienda(tiendaId))]);
+  const grupos = await gruposDeTienda(tiendaId);
+  return (await clavesDeGrupos([...grupos])).map(({ clave, grupos: deLaClave }) => ({ clave, grupo: grupoPrincipal(deLaClave, grupos) }));
 }
+
+/** El primero de `gruposTextos` que tiene la clave. */
+export const grupoPrincipal = (deLaClave, gruposTextos) => gruposTextos.find((g) => deLaClave.includes(g));
 
 /**
  * Diccionario clave → texto traducido de una tienda en un idioma (solo las

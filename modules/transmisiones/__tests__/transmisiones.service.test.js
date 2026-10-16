@@ -6,6 +6,7 @@ process.env.TRANSMISIONES_LINK_SECRET = "secreto-de-prueba-de-al-menos-32-bytes!
 process.env.PAGOS_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
 process.env.STOREFRONT_URL = "https://tienda.test";
 delete process.env.PLATFORM_BASE_DOMAIN;
+process.env.TRANSMISIONES_ALERTAS_EMAIL = "plataforma@test.com";
 
 const TIENDA = "22222222-2222-4222-8222-222222222222";
 const OTRA = "33333333-3333-4333-8333-333333333333";
@@ -25,7 +26,8 @@ const prisma = {
   transmision_movimientos: { groupBy: jest.fn(), aggregate: jest.fn(), createMany: jest.fn() },
   transmision_paquetes: { findMany: jest.fn(), update: jest.fn() },
   transmision_excedentes: { findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn(), upsert: jest.fn() },
-  transmision_grabaciones: { createMany: jest.fn(), findMany: jest.fn(), update: jest.fn() },
+  transmision_grabaciones: { createMany: jest.fn(), findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
+  transmision_avisos_plataforma: { create: jest.fn() },
   transmision_cargos: { upsert: jest.fn(), updateMany: jest.fn(), create: jest.fn() },
   transmision_destinos: { create: jest.fn(), findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn(), delete: jest.fn() }
 };
@@ -58,6 +60,8 @@ const proveedor = {
   pedirSubtitulos: jest.fn(async () => {}),
   estadoSubtitulos: jest.fn(async () => "listo"),
   leerSubtitulos: jest.fn(async () => "WEBVTT"),
+  usoAlmacenamiento: jest.fn(async () => ({ usadoMin: 0, limiteMin: 1000 })),
+  consumoApi: jest.fn(() => ({ llamadas: 0, pausadaHasta: null })),
   verificarWebhook: jest.fn()
 };
 jest.unstable_mockModule("../../../services/streaming/index.js", () => ({ getStreamingProvider: () => proveedor }));
@@ -66,6 +70,8 @@ jest.unstable_mockModule("../../../services/streaming/index.js", () => ({ getStr
 const correo = {
   sendTransmisionAvisoFinEmail: jest.fn(async () => ({ success: true })),
   sendTransmisionGrabacionEmail: jest.fn(async () => ({ success: true })),
+  sendTransmisionErrorSenalEmail: jest.fn(async () => ({ success: true })),
+  sendTransmisionAlertaPlataformaEmail: jest.fn(async () => ({ success: true })),
   escapeHtml: (v) => String(v),
   default: {}
 };
@@ -276,7 +282,8 @@ describe("terminar y corte (R6.3, R7.1, R7.8)", () => {
   it("corta la señal, mide lo transmitido y lo descuenta una sola vez", async () => {
     prisma.evento_transmisiones.updateMany.mockResolvedValueOnce({ count: 1 }).mockResolvedValueOnce({ count: 0 });
     expect(await envivo.terminarTransmision(t(), { motivo: "admin", ahora: alas })).toBe(true);
-    expect(proveedor.habilitarEntrada).toHaveBeenCalledWith("in-1", false);
+    // El corte es urgente: se intenta aunque el proveedor esté en pausa por límite de llamadas.
+    expect(proveedor.habilitarEntrada).toHaveBeenCalledWith("in-1", false, { urgente: true });
     expect(prisma.evento_transmisiones.updateMany.mock.calls[0][0]).toMatchObject({
       where: { id: TRANSMISION, terminadaEn: null }, data: { minutosUsados: 60, minutosDescontados: 120 }
     });
@@ -694,13 +701,31 @@ describe("Premium (R8.2, R8.3)", () => {
     expect(proveedor.habilitarSalida).toHaveBeenCalledWith("in-1", "salida-1", true);
   });
 
-  it("con los subtítulos listos, genera el resumen y avisa al anfitrión", async () => {
+  it("sin el botón \"Generar resumen\" no pide subtítulos ni llama a la IA", async () => {
     const parte = { id: "g1", videoId: "v-1", orden: 1, estado: "lista", mp4Estado: "lista", subtitulosEstado: "listo", duracionSeg: 600, r2Key: "k" };
     prisma.transmision_grabaciones.findMany.mockResolvedValue([]);
     prisma.evento_transmisiones.findMany.mockResolvedValueOnce([tPremium({
       funcion: { ...funcion3h(), evento: { producto: { nombre: "Quinceañero de Valeria" } } }, grabar: true, guardarAnio: true,
       terminadaEn: new Date("2026-10-17T19:05:00-05:00"), limpiadaEn: new Date("2026-10-17T19:05:00-05:00"),
-      avisoGrabacionEn: ahora, resumenEstado: null, resumenIntentos: 0, anfitrionEmail: "carla@test.com", grabaciones: [parte]
+      avisoGrabacionEn: ahora, resumenEstado: null, resumenPedidoEn: null, resumenIntentos: 0, grabaciones: [parte]
+    })]).mockResolvedValue([]);
+
+    await grab.cicloGrabaciones(new Date("2026-10-18T10:00:00-05:00"));
+    await new Promise(r => setTimeout(r, 20));
+
+    expect(ia.generarResumen).not.toHaveBeenCalled();
+    expect(proveedor.leerSubtitulos).not.toHaveBeenCalled();
+    // Los subtítulos (IA de Cloudflare) solo se buscan para transmisiones con el resumen pedido.
+    expect(prisma.transmision_grabaciones.findMany.mock.calls[1][0].where.transmision).toMatchObject({ resumenPedidoEn: { not: null } });
+  });
+
+  it("con el resumen pedido y los subtítulos listos, genera el resumen y avisa al anfitrión", async () => {
+    const parte = { id: "g1", videoId: "v-1", orden: 1, estado: "lista", mp4Estado: "lista", subtitulosEstado: "listo", duracionSeg: 600, r2Key: "k" };
+    prisma.transmision_grabaciones.findMany.mockResolvedValue([]);
+    prisma.evento_transmisiones.findMany.mockResolvedValueOnce([tPremium({
+      funcion: { ...funcion3h(), evento: { producto: { nombre: "Quinceañero de Valeria" } } }, grabar: true, guardarAnio: true,
+      terminadaEn: new Date("2026-10-17T19:05:00-05:00"), limpiadaEn: new Date("2026-10-17T19:05:00-05:00"),
+      avisoGrabacionEn: ahora, resumenEstado: "pendiente", resumenPedidoEn: ahora, resumenIntentos: 0, anfitrionEmail: "carla@test.com", grabaciones: [parte]
     })]).mockResolvedValue([]);
     prisma.evento_transmisiones.updateMany.mockResolvedValue({ count: 1 });
     prisma.tiendas.findUnique.mockResolvedValue({ nombre: "Fiestas", email: "negocio@test.com", slug: "fiestas" });
@@ -714,5 +739,187 @@ describe("Premium (R8.2, R8.3)", () => {
       data: expect.objectContaining({ resumenEstado: "listo", resumenTokensEntrada: 10 })
     }));
     expect(correo.sendTransmisionGrabacionEmail).toHaveBeenCalledWith(expect.objectContaining({ tipo: "resumen", resumen: { resumen: "Fue lindo", capitulos: [], momentos: [] } }));
+  });
+});
+
+// ============================================
+// Mejoras (docs/specs/transmision-eventos/mejoras.md)
+// ============================================
+
+const plataforma = await import("../transmisiones.plataforma.js");
+
+describe("problemas de la señal (A2)", () => {
+  const req = { tipo: "notificaciones", headers: {}, rawBody: Buffer.from("{}") };
+  const errored = (codigo) => ({
+    eventoId: `live_input.errored:in-1:${codigo}`, tipo: "live_input.errored", entradaId: "in-1", senal: "desconectada",
+    error: { codigo, mensaje: "detalle de Cloudflare" }, payload: {}
+  });
+  const conContacto = () => privadoBase({
+    funcion: { ...funcion3h(), evento: { producto: { nombre: "Cumpleaños de Mateo" } } }, contactoEmail: "tia@test.com", senal: "conectada", senalEn: ahora
+  });
+
+  beforeEach(() => {
+    correo.sendTransmisionErrorSenalEmail.mockClear();
+    correo.sendTransmisionAlertaPlataformaEmail.mockClear();
+    prisma.tiendas.findUnique.mockResolvedValue({ nombre: "Fiestas Mateo", email: "negocio@test.com" });
+    prisma.evento_transmisiones.update.mockImplementation(async ({ data }) => ({ ...conContacto(), ...data }));
+  });
+
+  it("guarda el código y avisa en español al negocio y al contacto de la transmisión", async () => {
+    proveedor.verificarWebhook.mockReturnValue(errored("ERR_GOP_OUT_OF_RANGE"));
+    prisma.evento_transmisiones.findFirst.mockResolvedValue(conContacto());
+    prisma.evento_transmisiones.updateMany.mockResolvedValue({ count: 1 });
+
+    await envivo.procesarWebhook(req, new Date("2026-10-17T16:10:00-05:00"));
+    expect(prisma.evento_transmisiones.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: { senalError: "ERR_GOP_OUT_OF_RANGE", senalErrorEn: new Date("2026-10-17T16:10:00-05:00") }
+    }));
+    expect(correo.sendTransmisionErrorSenalEmail).toHaveBeenCalledWith(expect.objectContaining({
+      to: ["negocio@test.com", "tia@test.com"], evento: "Cumpleaños de Mateo", mensaje: expect.stringMatching(/keyframe/)
+    }));
+    // Un problema de quien graba no es de la plataforma.
+    expect(prisma.transmision_avisos_plataforma.create).not.toHaveBeenCalled();
+  });
+
+  it("el mismo problema repetido al reintentar no manda otro correo", async () => {
+    proveedor.verificarWebhook.mockReturnValue(errored("ERR_GOP_OUT_OF_RANGE"));
+    prisma.evento_transmisiones.findFirst.mockResolvedValue({ ...conContacto(), senalError: "ERR_GOP_OUT_OF_RANGE", senalErrorEn: ahora });
+    prisma.evento_transmisiones.updateMany.mockResolvedValue({ count: 0 });
+
+    await envivo.procesarWebhook(req, new Date("2026-10-17T16:11:00-05:00"));
+    expect(correo.sendTransmisionErrorSenalEmail).not.toHaveBeenCalled();
+    expect(prisma.evento_transmisiones.update).toHaveBeenCalledWith(expect.objectContaining({ data: { senalErrorEn: new Date("2026-10-17T16:11:00-05:00") } }));
+  });
+
+  it("almacenamiento lleno: avisa a la plataforma una vez por hora, aunque la entrada no sea de una transmisión", async () => {
+    proveedor.verificarWebhook.mockReturnValue(errored("ERR_STORAGE_QUOTA_EXHAUSTED"));
+    prisma.evento_transmisiones.findFirst.mockResolvedValue(null);
+    prisma.transmision_avisos_plataforma.create.mockResolvedValueOnce({})
+      .mockRejectedValueOnce(Object.assign(new Prisma.PrismaClientKnownRequestError("dup"), { code: "P2002" }));
+
+    await envivo.procesarWebhook(req, new Date("2026-10-17T16:10:00-05:00"));
+    expect(prisma.transmision_avisos_plataforma.create).toHaveBeenCalledWith({
+      data: { clave: "ERR_STORAGE_QUOTA_EXHAUSTED:2026-10-17T21", detalle: { codigo: "ERR_STORAGE_QUOTA_EXHAUSTED", entradaId: "in-1" } }
+    });
+    expect(correo.sendTransmisionAlertaPlataformaEmail).toHaveBeenCalledWith(expect.objectContaining({
+      to: ["plataforma@test.com"], titulo: expect.stringMatching(/almacenamiento/)
+    }));
+
+    correo.sendTransmisionAlertaPlataformaEmail.mockClear();
+    await envivo.procesarWebhook(req, new Date("2026-10-17T16:20:00-05:00"));
+    expect(correo.sendTransmisionAlertaPlataformaEmail).not.toHaveBeenCalled();
+  });
+
+  it("la App Transmitir ve qué corregir mientras no se conecte bien", async () => {
+    const t = privadoBase({
+      funcion: funcion3h(), invitaciones: [], senal: "desconectada", senalEn: new Date("2026-10-17T16:10:00-05:00"),
+      senalError: "ERR_UNSUPPORTED_VIDEO_CODEC", senalErrorEn: new Date("2026-10-17T16:10:00-05:00")
+    });
+    prisma.transmision_vinculaciones.findUnique.mockResolvedValue({ id: "v1", tiendaId: TIENDA, transmisionId: TRANSMISION, venceEn: new Date("2026-10-17T17:00:00-05:00"), usadoEn: null });
+    prisma.transmision_vinculaciones.updateMany.mockResolvedValue({ count: 1 });
+    prisma.evento_transmisiones.findFirst.mockResolvedValue(t);
+    prisma.tiendas.findUnique.mockResolvedValue({ nombre: "Fiestas Mateo", logoUrl: null });
+    const r = await svc.vincularApp("codigo", new Date("2026-10-17T16:12:00-05:00"));
+    expect(r.senalError).toMatchObject({ codigo: "ERR_UNSUPPORTED_VIDEO_CODEC", mensaje: expect.stringMatching(/H\.264/) });
+  });
+});
+
+describe("límite de llamadas del proveedor (A3)", () => {
+  const vencida = () => privadoBase({ id: "t-vencida", funcion: funcion3h(), habilitada: true });
+  const enCurso = (extra = {}) => privadoBase({
+    id: "t-curso", entradaId: "in-2", habilitada: true, senal: "conectada", senalEn: new Date("2026-10-17T19:00:00-05:00"),
+    funcion: funcion3h({ inicio: new Date("2026-10-17T18:00:00-05:00"), fin: new Date("2026-10-17T21:00:00-05:00") }), ...extra
+  });
+  afterEach(() => proveedor.consumoApi.mockImplementation(() => ({ llamadas: 0, pausadaHasta: null })));
+
+  it("en pausa, el corte se intenta igual y lo demás espera al próximo ciclo", async () => {
+    proveedor.consumoApi.mockImplementation(() => ({ llamadas: 1200, pausadaHasta: new Date("2026-10-17T19:08:00-05:00") }));
+    prisma.evento_transmisiones.findMany.mockResolvedValueOnce([enCurso(), vencida()]).mockResolvedValue([]);
+    prisma.evento_transmisiones.updateMany.mockResolvedValue({ count: 1 });
+
+    const r = await envivo.cicloTransmisiones(new Date("2026-10-17T19:05:00-05:00"));
+    expect(proveedor.habilitarEntrada).toHaveBeenCalledTimes(1);
+    expect(proveedor.habilitarEntrada).toHaveBeenCalledWith("in-1", false, { urgente: true });
+    expect(proveedor.estadoEntrada).not.toHaveBeenCalled();
+    expect(r.limpiadas).toBe(0); // la limpieza tampoco llama durante la pausa
+  });
+
+  it("no consulta la señal por API si un aviso la confirmó hace menos de 3 min", async () => {
+    prisma.evento_transmisiones.findMany.mockResolvedValueOnce([enCurso({ senalVerificadaEn: new Date("2026-10-17T19:03:00-05:00") })]).mockResolvedValue([]);
+    await envivo.cicloTransmisiones(new Date("2026-10-17T19:05:00-05:00"));
+    expect(proveedor.estadoEntrada).not.toHaveBeenCalled();
+
+    prisma.evento_transmisiones.findMany.mockResolvedValueOnce([enCurso({ senalVerificadaEn: new Date("2026-10-17T19:01:00-05:00") })]).mockResolvedValue([]);
+    proveedor.estadoEntrada.mockResolvedValue({ senal: "conectada" });
+    prisma.evento_transmisiones.update.mockImplementation(async ({ data }) => ({ ...enCurso(), ...data }));
+    await envivo.cicloTransmisiones(new Date("2026-10-17T19:05:00-05:00"));
+    expect(proveedor.estadoEntrada).toHaveBeenCalledWith("in-2");
+    // Misma señal: solo anota la confirmación.
+    expect(prisma.evento_transmisiones.update).toHaveBeenCalledWith(expect.objectContaining({ data: { senalVerificadaEn: new Date("2026-10-17T19:05:00-05:00") } }));
+  });
+});
+
+describe("almacenamiento de video (A1)", () => {
+  beforeEach(() => plataforma.reiniciarRevision());
+
+  it("al pasar el 80 % avisa a la plataforma, una vez por día, y no bloquea nada", async () => {
+    proveedor.usoAlmacenamiento.mockResolvedValue({ usadoMin: 850, limiteMin: 1000 });
+    prisma.transmision_avisos_plataforma.create.mockResolvedValue({});
+    const r = await plataforma.revisarAlmacenamiento(new Date("2026-10-17T10:00:00-05:00"));
+    expect(r.pct).toBe(85);
+    expect(prisma.transmision_avisos_plataforma.create).toHaveBeenCalledWith({ data: expect.objectContaining({ clave: "cuota-80:2026-10-17" }) });
+    expect(correo.sendTransmisionAlertaPlataformaEmail).toHaveBeenCalledWith(expect.objectContaining({ titulo: "El almacenamiento de video está al 85 %" }));
+
+    // Dentro de los 10 min no vuelve a consultar.
+    proveedor.usoAlmacenamiento.mockClear();
+    expect(await plataforma.revisarAlmacenamiento(new Date("2026-10-17T10:05:00-05:00"))).toBeNull();
+    expect(proveedor.usoAlmacenamiento).not.toHaveBeenCalled();
+  });
+
+  it("debajo del 80 % no avisa, y un error del proveedor no rompe el job", async () => {
+    proveedor.usoAlmacenamiento.mockResolvedValue({ usadoMin: 500, limiteMin: 1000 });
+    await plataforma.revisarAlmacenamiento(new Date("2026-10-17T10:00:00-05:00"));
+    expect(prisma.transmision_avisos_plataforma.create).not.toHaveBeenCalled();
+
+    plataforma.reiniciarRevision();
+    proveedor.usoAlmacenamiento.mockRejectedValue(new Error("sin red"));
+    expect(await plataforma.revisarAlmacenamiento(new Date("2026-10-17T11:00:00-05:00"))).toBeNull();
+  });
+});
+
+describe("Generar resumen (la IA solo a pedido)", () => {
+  const terminadaPremium = (extra = {}) => privadoBase({
+    plan: "premium", funcion: funcion3h(), grabar: true, terminadaEn: new Date("2026-10-17T19:05:00-05:00"),
+    limpiadaEn: new Date("2026-10-17T19:05:00-05:00"), resumenEstado: null, resumenIntentos: 0,
+    grabaciones: [{ id: "g1", videoId: "v-1", orden: 1, estado: "lista", mp4Estado: "lista", subtitulosEstado: "error" }],
+    invitaciones: [], cargos: [], destinos: [], ...extra
+  });
+  const despues = new Date("2026-10-18T10:00:00-05:00");
+
+  it("anota quién lo pidió y vuelve a pedir los subtítulos que fallaron", async () => {
+    prisma.evento_transmisiones.findFirst.mockResolvedValue(terminadaPremium());
+    prisma.evento_transmisiones.updateMany.mockResolvedValue({ count: 1 });
+    prisma.transmision_grabaciones.updateMany.mockResolvedValue({ count: 1 });
+    await svc.pedirResumen(TIENDA, TRANSMISION, user, despues).catch(() => {});
+    expect(prisma.evento_transmisiones.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: TRANSMISION, tiendaId: TIENDA }),
+      data: expect.objectContaining({ resumenEstado: "pendiente", resumenIntentos: 0, resumenPedidoEn: despues, resumenPedidoPor: "dueno@test.com" })
+    }));
+    expect(prisma.transmision_grabaciones.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { transmisionId: TRANSMISION, subtitulosEstado: "error" }, data: expect.objectContaining({ subtitulosEstado: "sin_pedir" })
+    }));
+  });
+
+  it("no se pide fuera del Premium ni dos veces", async () => {
+    prisma.evento_transmisiones.findFirst.mockResolvedValue(terminadaPremium({ plan: "privado" }));
+    await expect(svc.pedirResumen(TIENDA, TRANSMISION, user, despues)).rejects.toMatchObject({ details: { motivo: "SOLO_PREMIUM" } });
+
+    prisma.evento_transmisiones.findFirst.mockResolvedValue(terminadaPremium({ resumenEstado: "generando" }));
+    await expect(svc.pedirResumen(TIENDA, TRANSMISION, user, despues)).rejects.toMatchObject({ details: { motivo: "EN_CURSO" } });
+
+    // Dos clics seguidos: el segundo ya no encuentra el estado que se validó.
+    prisma.evento_transmisiones.findFirst.mockResolvedValue(terminadaPremium());
+    prisma.evento_transmisiones.updateMany.mockResolvedValue({ count: 0 });
+    await expect(svc.pedirResumen(TIENDA, TRANSMISION, user, despues)).rejects.toMatchObject({ details: { motivo: "EN_CURSO" } });
   });
 });

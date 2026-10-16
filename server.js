@@ -53,7 +53,8 @@ app.use(compression());
 // origen. El resto de la API (admin) mantiene la lista CORS_ORIGIN.
 const corsBase = {
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  // X-Vista-Previa: permiso firmado para ver un idioma sin publicar (docs/specs/idiomas B3).
+  allowedHeaders: ["Content-Type", "Authorization", "X-Vista-Previa"],
   // Cachea el preflight (Chrome topa en 2 h): menos OPTIONS por visita.
   maxAge: 7200
 };

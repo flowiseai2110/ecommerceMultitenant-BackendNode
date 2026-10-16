@@ -10,7 +10,19 @@
  * - `conexion` son los datos para la app: { rtmpsUrl, streamKey, srtUrl, srtStreamId, srtPassphrase }.
  *   Son secretos: el servicio los guarda cifrados.
  * - La señal se normaliza a: "conectada" | "desconectada".
+ * - Si el proveedor limita las llamadas a su API y se llega al tope, lanza
+ *   LimiteApiError y deja de llamar hasta `hasta`, salvo las llamadas urgentes
+ *   (el corte, R7.8), que se intentan igual.
  */
+
+/** El proveedor rechazó por exceso de llamadas: no se le llama hasta `hasta`. */
+export class LimiteApiError extends Error {
+  constructor(hasta) {
+    super(`Límite de llamadas del proveedor de video: en pausa hasta ${hasta.toISOString()}`);
+    this.name = "LimiteApiError";
+    this.hasta = hasta;
+  }
+}
 
 export class StreamingProvider {
   /** Identificador corto del proveedor (ej. "cloudflare"). */
@@ -25,8 +37,11 @@ export class StreamingProvider {
    */
   async crearEntrada(params) { throw new Error("crearEntrada no implementado"); }
 
-  /** Acepta o rechaza la señal (cortar = deshabilitar). */
-  async habilitarEntrada(entradaId, habilitada) { throw new Error("habilitarEntrada no implementado"); }
+  /**
+   * Acepta o rechaza la señal (cortar = deshabilitar).
+   * @param {{ urgente?: boolean }} [opts] - urgente: el corte se intenta aunque el proveedor esté en pausa.
+   */
+  async habilitarEntrada(entradaId, habilitada, opts) { throw new Error("habilitarEntrada no implementado"); }
 
   /** @returns {Promise<{ senal: "conectada" | "desconectada" }>} */
   async estadoEntrada(entradaId) { throw new Error("estadoEntrada no implementado"); }
@@ -88,10 +103,30 @@ export class StreamingProvider {
   /** @returns {Promise<string>} WebVTT */
   async leerSubtitulos(videoId, idioma) { throw new Error("leerSubtitulos no implementado"); }
 
+  // ---------- Operación de la plataforma ----------
+
+  /**
+   * Almacenamiento usado y contratado. Si se llena, el proveedor rechaza los lives
+   * nuevos de TODAS las tiendas (el job avisa a la plataforma antes).
+   * @returns {Promise<{ usadoMin: number, limiteMin: number|null }>}
+   */
+  async usoAlmacenamiento() { throw new Error("usoAlmacenamiento no implementado"); }
+
+  /**
+   * Llamadas hechas a la API desde que arrancó el proceso y pausa por límite.
+   * Un proveedor sin límite de llamadas no necesita sobrescribirlo.
+   * @returns {{ llamadas: number, pausadaHasta: Date|null }}
+   */
+  consumoApi() { return { llamadas: 0, pausadaHasta: null }; }
+
   /**
    * Verifica un webhook y lo traduce a un evento normalizado, o null si no es válido.
+   * `error` viene cuando la señal llegó con un problema: `codigo` es el del
+   * proveedor (ej. "ERR_GOP_OUT_OF_RANGE") y el mensaje para el usuario sale de
+   * MENSAJES_ERROR_SENAL en transmisiones.reglas.js.
    * @param {{ tipo: "videos" | "notificaciones", headers: object, rawBody: Buffer }} req
-   * @returns {{ eventoId: string, tipo: string, entradaId: string|null, senal?: string, payload: object } | null}
+   * @returns {{ eventoId: string, tipo: string, entradaId: string|null, senal?: string,
+   *             error?: { codigo: string, mensaje: string|null } | null, payload: object } | null}
    */
   verificarWebhook(req) { throw new Error("verificarWebhook no implementado"); }
 }

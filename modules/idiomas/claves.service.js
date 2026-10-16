@@ -14,32 +14,39 @@ import { invalidarTextos } from "./textos.service.js";
  * `claves-tienda.json` (lo genera `npm run claves` en FrontendStore); las del
  * servidor (correos, estados) se suman en tasks.md 1.7. `cargarClaves` las
  * lleva a `textos_claves` (el backend lo hace solo al arrancar; también
- * `node scripts/cargar-claves.mjs`): crea las nuevas, actualiza el grupo de las que
+ * `node scripts/cargar-claves.mjs`): crea las nuevas, actualiza los grupos de las que
  * cambiaron y marca obsoletas las que ya no están (no las borra: la tienda
- * puede tener su traducción y la clave podría volver).
+ * puede tener su traducción y la clave podría volver). Una clave lleva todos
+ * los grupos donde se usa (tienda y servidor juntos).
  */
 
 const CARPETA = join(dirname(fileURLToPath(import.meta.url)), "claves");
 
-/** Las claves de todos los JSON de la carpeta, validadas. @returns {{ clave: string, grupo: string }[]} */
+/** Los grupos en el orden de GRUPOS_TEXTOS: una lista se compara con otra sin importar de dónde vino. */
+export const ordenarGrupos = (grupos) => [...new Set(grupos)].sort((a, b) => GRUPOS_TEXTOS.indexOf(a) - GRUPOS_TEXTOS.indexOf(b));
+
+/** Las claves de todos los JSON de la carpeta, validadas. @returns {{ clave: string, grupos: string[] }[]} */
 export function leerCatalogo(carpeta = CARPETA) {
   const porClave = new Map();
   for (const archivo of readdirSync(carpeta).filter((a) => a.endsWith(".json")).sort()) {
-    for (const { clave, grupo } of JSON.parse(readFileSync(join(carpeta, archivo), "utf8"))) {
+    for (const { clave, grupos } of JSON.parse(readFileSync(join(carpeta, archivo), "utf8"))) {
       if (typeof clave !== "string" || !clave.trim()) throw new Error(`${archivo}: clave vacía`);
-      if (!GRUPOS_TEXTOS.includes(grupo)) throw new Error(`${archivo}: grupo desconocido "${grupo}" en "${clave}"`);
-      const previo = porClave.get(clave);
-      // La misma clave en la tienda y en el servidor: vale para toda tienda.
-      porClave.set(clave, previo && previo !== grupo ? "comun" : grupo);
+      if (!Array.isArray(grupos) || !grupos.length) throw new Error(`${archivo}: "${clave}" sin grupos`);
+      const desconocido = grupos.find((g) => !GRUPOS_TEXTOS.includes(g));
+      if (desconocido) throw new Error(`${archivo}: grupo desconocido "${desconocido}" en "${clave}"`);
+      // La misma clave en la tienda y en el servidor: los grupos de los dos.
+      porClave.set(clave, [...(porClave.get(clave) ?? []), ...grupos]);
     }
   }
-  return [...porClave.entries()].map(([clave, grupo]) => ({ clave, grupo }));
+  return [...porClave.entries()].map(([clave, grupos]) => ({ clave, grupos: ordenarGrupos(grupos) }));
 }
+
+const mismosGrupos = (a, b) => a.length === b.length && a.every((g, i) => g === b[i]);
 
 /**
  * Qué hacer para que la tabla refleje el catálogo. Función pura.
- * @param {{ clave: string, grupo: string, obsoleta: boolean }[]} existentes
- * @param {{ clave: string, grupo: string }[]} catalogo
+ * @param {{ clave: string, grupos: string[], obsoleta: boolean }[]} existentes
+ * @param {{ clave: string, grupos: string[] }[]} catalogo
  */
 export function planDeCarga(existentes, catalogo) {
   const actuales = new Map(existentes.map((e) => [e.clave, e]));
@@ -48,7 +55,7 @@ export function planDeCarga(existentes, catalogo) {
     crear: catalogo.filter((c) => !actuales.has(c.clave)),
     actualizar: catalogo.filter((c) => {
       const e = actuales.get(c.clave);
-      return e && (e.grupo !== c.grupo || e.obsoleta);
+      return e && (!mismosGrupos(ordenarGrupos(e.grupos), c.grupos) || e.obsoleta);
     }),
     obsoletas: existentes.filter((e) => !e.obsoleta && !enCatalogo.has(e.clave)).map((e) => e.clave)
   };
@@ -56,18 +63,21 @@ export function planDeCarga(existentes, catalogo) {
 
 /** Lleva el catálogo a la BD. Con `simular`, solo devuelve el plan. */
 export async function cargarClaves({ catalogo = leerCatalogo(), usuario = "cargar-claves", simular = false } = {}) {
-  const existentes = await prisma.textos_claves.findMany({ select: { clave: true, grupo: true, obsoleta: true } });
+  const existentes = await prisma.textos_claves.findMany({ select: { clave: true, grupos: true, obsoleta: true } });
   const plan = planDeCarga(existentes, catalogo);
   if (simular || (!plan.crear.length && !plan.actualizar.length && !plan.obsoletas.length)) return plan;
   const ahora = new Date();
   // En bloque, no fila por fila: con la BD remota, cientos de UPDATE pasan el
-  // tope de 5 s de la transacción. Las que cambian de grupo, un UPDATE por grupo.
-  const porGrupo = new Map();
-  for (const c of plan.actualizar) porGrupo.set(c.grupo, [...(porGrupo.get(c.grupo) ?? []), c.clave]);
+  // tope de 5 s de la transacción. Las que cambian de grupos, un UPDATE por cada combinación.
+  const porGrupos = new Map();
+  for (const c of plan.actualizar) {
+    const k = c.grupos.join(",");
+    porGrupos.set(k, { grupos: c.grupos, claves: [...(porGrupos.get(k)?.claves ?? []), c.clave] });
+  }
   await prisma.$transaction([
     prisma.textos_claves.createMany({ data: plan.crear.map((c) => ({ ...c, usuarioRegistro: usuario })), skipDuplicates: true }),
-    ...[...porGrupo].map(([grupo, claves]) => prisma.textos_claves.updateMany({
-      where: { clave: { in: claves } }, data: { grupo, obsoleta: false, fechaActualizacion: ahora, usuarioActualizacion: usuario }
+    ...[...porGrupos.values()].map(({ grupos, claves }) => prisma.textos_claves.updateMany({
+      where: { clave: { in: claves } }, data: { grupos, obsoleta: false, fechaActualizacion: ahora, usuarioActualizacion: usuario }
     })),
     prisma.textos_claves.updateMany({
       where: { clave: { in: plan.obsoletas } }, data: { obsoleta: true, fechaActualizacion: ahora, usuarioActualizacion: usuario }

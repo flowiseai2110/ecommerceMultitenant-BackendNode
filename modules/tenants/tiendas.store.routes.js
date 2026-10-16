@@ -11,7 +11,7 @@ import { disenoPublico } from "../campanas/resolver.js";
 import { getTiendasStore, setTiendasStore } from "./tiendas.cache.js";
 import { localizar } from "../traducciones/localizar.js";
 import { FUENTES } from "../traducciones/fuentes.js";
-import { elegirIdioma, idiomasVisibles } from "../idiomas/idiomas-tienda.js";
+import { elegirIdioma, idiomasDePeticion } from "../idiomas/idiomas-tienda.js";
 import { getComunicadosPublicos } from "../comunicados/comunicados.service.js";
 
 const tiendasRepository = new GenericRepository(prisma.tiendas, "Tienda");
@@ -29,8 +29,11 @@ router.get("/", validate({ query: paginationSchema }), async (req, res, next) =>
     // La tienda aún no se conoce (se busca por slug): el idioma se elige
     // abajo con los suyos; la caché separa por el ?lang= pedido.
     const cacheKey = JSON.stringify({ ...query, lang: lang ?? null });
+    // Con permiso de vista previa (docs/specs/idiomas B3) el selector suma un
+    // idioma sin publicar: esa respuesta no se lee ni se guarda en la caché.
+    const conCache = !req.permisoVistaPrevia;
 
-    const cached = getTiendasStore(cacheKey);
+    const cached = conCache && getTiendasStore(cacheKey);
     if (cached) {
       return apiResponse(res, cached);
     }
@@ -50,7 +53,7 @@ router.get("/", validate({ query: paginationSchema }), async (req, res, next) =>
       // Comunicados vigentes, ya resueltos en hora de Lima (docs/specs/comunicados R2.1).
       data[0].comunicados = await getComunicadosPublicos(data[0].id);
       // Idiomas del selector y textos del diseño en el idioma pedido (docs/specs/idiomas D2, D5).
-      const visibles = await idiomasVisibles(data[0].id);
+      const visibles = await idiomasDePeticion(data[0].id, req.permisoVistaPrevia);
       const idioma = await elegirIdioma(visibles, lang);
       const local = localizar(FUENTES.diseno, {
         estructura: data[0].diseno.tema.estructura, descripcion: data[0].descripcion, traducciones: diseno.traducciones
@@ -63,7 +66,7 @@ router.get("/", validate({ query: paginationSchema }), async (req, res, next) =>
     }
 
     const responsePayload = { status: 200, type: "SUCCESS", code: "TIENDA_LIST", data, meta };
-    setTiendasStore(cacheKey, responsePayload);
+    if (conCache) setTiendasStore(cacheKey, responsePayload);
 
     return apiResponse(res, responsePayload);
   } catch (error) {

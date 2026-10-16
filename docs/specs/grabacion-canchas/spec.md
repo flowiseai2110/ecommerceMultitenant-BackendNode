@@ -1,6 +1,8 @@
 # Spec: Grabación de partidos para canchas sintéticas
 
-> Estado: **exploración y propuesta** (2026-10-06). Sin implementar.
+> ⚠️ **Descartada el 2026-10-15.** No vamos a poner el kit (cámaras, internet, instalación, mantenimiento, robos), y Beelup ya cubre ese modelo en Perú (DeporPlaza Matamula). Para canchas **solo ofrecemos la transmisión en vivo desde el celular** del cliente. Lo de abajo queda como historial. Investigación y decisión: [analisis-2026-10-15.md](analisis-2026-10-15.md).
+>
+> Estado anterior: **exploración y propuesta** (2026-10-06). Sin implementar.
 > Diseño técnico: pendiente (`plan.md`, después del piloto).
 > Repos involucrados: BackendNode, FrontendAdmin, FrontendStore.
 > Relacionado: [transmision-eventos](../transmision-eventos/spec.md) (usa la misma infraestructura de video) y [mini-booking](../mini-booking/spec.md) (reservas por horas).

@@ -22,10 +22,10 @@ const simular = process.argv.includes("--simular");
 
 try {
   const plan = await cargarClaves({ simular });
-  const muestra = (l) => l.slice(0, 5).map((c) => `    ${typeof c === "string" ? c : `${c.clave} (${c.grupo})`}`).join("\n");
+  const muestra = (l) => l.slice(0, 5).map((c) => `    ${typeof c === "string" ? c : `${c.clave} (${c.grupos.join(", ")})`}`).join("\n");
   console.log(`${simular ? "SIMULACIÓN — no se escribió nada" : "Listo"}:`);
   console.log(`  nuevas: ${plan.crear.length}\n${muestra(plan.crear)}`);
-  console.log(`  grupo cambiado o reactivadas: ${plan.actualizar.length}\n${muestra(plan.actualizar)}`);
+  console.log(`  grupos cambiados o reactivadas: ${plan.actualizar.length}\n${muestra(plan.actualizar)}`);
   console.log(`  obsoletas: ${plan.obsoletas.length}\n${muestra(plan.obsoletas)}`);
   // Las traducciones de la plataforma van después: necesitan sus claves.
   const pl = await cargarTextosPlataforma({ simular });

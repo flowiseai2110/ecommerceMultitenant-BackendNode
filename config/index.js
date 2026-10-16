@@ -243,6 +243,10 @@ export const config = {
     // Bucket PRIVADO de R2 (mismas credenciales R2_*) donde se copia el MP4 de
     // las grabaciones con "Guardar 1 año". Nunca se sirve público: solo con URL firmada.
     bucketGrabaciones: process.env.R2_BUCKET_GRABACIONES,
+    // Avisos a la plataforma (almacenamiento de video casi lleno), separados por coma.
+    // Si falta, van a PLATFORM_ADMIN_EMAILS.
+    alertasEmails: (process.env.TRANSMISIONES_ALERTAS_EMAIL || process.env.PLATFORM_ADMIN_EMAILS || "")
+      .split(",").map(e => e.trim()).filter(Boolean),
     // Resumen con IA de la grabación (Premium, R8.3). Sin clave propia usa la del asesor.
     ia: {
       apiKey: process.env.TRANSMISIONES_IA_API_KEY || process.env.AGENTE_IA_API_KEY,
@@ -266,8 +270,19 @@ export const config = {
       // Secret del webhook de videos (PUT /stream/webhook)
       webhookSecret: process.env.CF_STREAM_WEBHOOK_SECRET,
       // Secret del destino de Notifications (avisos de conectado/desconectado)
-      notificacionesSecret: process.env.CF_NOTIFICATIONS_SECRET
+      notificacionesSecret: process.env.CF_NOTIFICATIONS_SECRET,
+      // Segundos que la señal puede caerse sin abrir otra grabación (0 = el de Cloudflare).
+      timeoutSeconds: parseInt(process.env.CF_STREAM_TIMEOUT_SEG) || 0,
+      // Dónde se reproduce el video, separados por coma (ej. "ecompyme.com,*.ecompyme.com").
+      // Vacío: se arma con PLATFORM_BASE_DOMAIN, FRONTEND_URL y STOREFRONT_URL.
+      allowedOrigins: (process.env.CF_STREAM_ALLOWED_ORIGINS || "").split(",").map(o => o.trim()).filter(Boolean)
     }
+  },
+
+  // Idiomas (docs/specs/idiomas B3): firma el permiso de vista previa de un
+  // idioma sin publicar (1 hora). Si falta, usa el de reservas.
+  idiomas: {
+    vistaPreviaSecret: process.env.IDIOMAS_VISTA_PREVIA_SECRET || process.env.RESERVAS_LINK_SECRET
   },
 
   reservas: {

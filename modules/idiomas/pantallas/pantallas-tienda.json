@@ -1,0 +1,491 @@
+[
+  {
+    "id": "inicio",
+    "nombre": "Inicio",
+    "secciones": [
+      {
+        "id": "contacto",
+        "nombre": "Contacto",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "ubicacion",
+        "nombre": "Ubicación",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "politicas",
+        "nombre": "Políticas",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "testimonios",
+        "nombre": "Testimonios",
+        "grupos": [
+          "comun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "general",
+    "nombre": "Menú, pie y avisos",
+    "secciones": [
+      {
+        "id": "menu-superior",
+        "nombre": "Menú superior",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "menu-inferior-celular",
+        "nombre": "Menú inferior (celular)",
+        "grupos": [
+          "comun",
+          "productos"
+        ]
+      },
+      {
+        "id": "pie-de-pagina",
+        "nombre": "Pie de página",
+        "grupos": [
+          "comun",
+          "productos",
+          "reservas"
+        ]
+      },
+      {
+        "id": "buscador",
+        "nombre": "Buscador",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "avisos-de-la-tienda",
+        "nombre": "Avisos de la tienda",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "videos",
+        "nombre": "Videos",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "efecto-festivo",
+        "nombre": "Efecto festivo",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "pagina-no-encontrada-y-mantenimiento",
+        "nombre": "Página no encontrada y mantenimiento",
+        "grupos": [
+          "comun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "catalogo",
+    "nombre": "Catálogo y categorías",
+    "secciones": [
+      {
+        "id": "catalogo",
+        "nombre": "Catálogo",
+        "grupos": [
+          "productos"
+        ]
+      },
+      {
+        "id": "categoria",
+        "nombre": "Categoría",
+        "grupos": [
+          "productos"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "producto",
+    "nombre": "Ficha del producto",
+    "secciones": [
+      {
+        "id": "ficha",
+        "nombre": "Ficha",
+        "grupos": [
+          "productos"
+        ]
+      },
+      {
+        "id": "opiniones",
+        "nombre": "Opiniones",
+        "grupos": [
+          "productos"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "carrito",
+    "nombre": "Carrito",
+    "secciones": [
+      {
+        "id": "carrito",
+        "nombre": "Carrito",
+        "grupos": [
+          "productos"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "compra",
+    "nombre": "Finalizar compra",
+    "secciones": [
+      {
+        "id": "datos-y-entrega",
+        "nombre": "Datos y entrega",
+        "grupos": [
+          "productos"
+        ]
+      },
+      {
+        "id": "envio-a-domicilio",
+        "nombre": "Envío a domicilio",
+        "grupos": [
+          "productos"
+        ]
+      },
+      {
+        "id": "envio-a-agencia",
+        "nombre": "Envío a agencia",
+        "grupos": [
+          "productos"
+        ]
+      },
+      {
+        "id": "recojo-en-tienda",
+        "nombre": "Recojo en tienda",
+        "grupos": [
+          "productos"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pago",
+    "nombre": "Pago en línea",
+    "secciones": [
+      {
+        "id": "pago-con-tarjeta-o-yape",
+        "nombre": "Pago con tarjeta o Yape",
+        "grupos": [
+          "comun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pedido",
+    "nombre": "Seguimiento del pedido",
+    "secciones": [
+      {
+        "id": "seguimiento",
+        "nombre": "Seguimiento",
+        "grupos": [
+          "productos"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "habitaciones",
+    "nombre": "Habitaciones",
+    "secciones": [
+      {
+        "id": "buscador-de-fechas",
+        "nombre": "Buscador de fechas",
+        "grupos": [
+          "hotel"
+        ]
+      },
+      {
+        "id": "lista-de-habitaciones",
+        "nombre": "Lista de habitaciones",
+        "grupos": [
+          "hotel"
+        ]
+      },
+      {
+        "id": "disponibilidad-por-fechas",
+        "nombre": "Disponibilidad por fechas",
+        "grupos": [
+          "hotel"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "habitacion",
+    "nombre": "Ficha de la habitación",
+    "secciones": [
+      {
+        "id": "ficha",
+        "nombre": "Ficha",
+        "grupos": [
+          "hotel"
+        ]
+      },
+      {
+        "id": "calendario-de-la-estadia",
+        "nombre": "Calendario de la estadía",
+        "grupos": [
+          "hotel"
+        ]
+      },
+      {
+        "id": "camas",
+        "nombre": "Camas",
+        "grupos": [
+          "hotel"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tours",
+    "nombre": "Tours",
+    "secciones": [
+      {
+        "id": "buscador",
+        "nombre": "Buscador",
+        "grupos": [
+          "tours"
+        ]
+      },
+      {
+        "id": "lista-de-tours",
+        "nombre": "Lista de tours",
+        "grupos": [
+          "tours"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tour",
+    "nombre": "Ficha del tour",
+    "secciones": [
+      {
+        "id": "ficha",
+        "nombre": "Ficha",
+        "grupos": [
+          "tours"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reservar",
+    "nombre": "Reservar",
+    "secciones": [
+      {
+        "id": "datos-de-la-reserva",
+        "nombre": "Datos de la reserva",
+        "grupos": [
+          "reservas"
+        ]
+      },
+      {
+        "id": "fechas-y-cantidades",
+        "nombre": "Fechas y cantidades",
+        "grupos": [
+          "reservas"
+        ]
+      },
+      {
+        "id": "resumen-del-precio",
+        "nombre": "Resumen del precio",
+        "grupos": [
+          "reservas"
+        ]
+      },
+      {
+        "id": "envio-de-la-reserva",
+        "nombre": "Envío de la reserva",
+        "grupos": [
+          "reservas"
+        ]
+      },
+      {
+        "id": "avisos-y-errores",
+        "nombre": "Avisos y errores",
+        "grupos": [
+          "reservas"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "seguimiento",
+    "nombre": "Seguimiento de la reserva",
+    "secciones": [
+      {
+        "id": "seguimiento",
+        "nombre": "Seguimiento",
+        "grupos": [
+          "reservas"
+        ]
+      },
+      {
+        "id": "antes-de-llegar",
+        "nombre": "Antes de llegar",
+        "grupos": [
+          "hotel"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cuenta",
+    "nombre": "Mi cuenta",
+    "secciones": [
+      {
+        "id": "mis-pedidos",
+        "nombre": "Mis pedidos",
+        "grupos": [
+          "productos"
+        ]
+      },
+      {
+        "id": "calificar-compras",
+        "nombre": "Calificar compras",
+        "grupos": [
+          "productos"
+        ]
+      },
+      {
+        "id": "mis-reservas",
+        "nombre": "Mis reservas",
+        "grupos": [
+          "reservas"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reclamos",
+    "nombre": "Libro de reclamaciones",
+    "secciones": [
+      {
+        "id": "formulario",
+        "nombre": "Formulario",
+        "grupos": [
+          "comun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "negocio",
+    "nombre": "Palabras de tu negocio",
+    "secciones": [
+      {
+        "id": "tipo-de-alojamiento",
+        "nombre": "Tipo de alojamiento",
+        "grupos": [
+          "hotel"
+        ]
+      },
+      {
+        "id": "frases-del-hotel",
+        "nombre": "Frases del hotel",
+        "grupos": [
+          "hotel"
+        ]
+      },
+      {
+        "id": "frases-de-los-tours",
+        "nombre": "Frases de los tours",
+        "grupos": [
+          "tours"
+        ]
+      },
+      {
+        "id": "frases-de-los-eventos",
+        "nombre": "Frases de los eventos",
+        "grupos": [
+          "eventos"
+        ]
+      },
+      {
+        "id": "frases-del-local",
+        "nombre": "Frases del local",
+        "grupos": [
+          "locales"
+        ]
+      },
+      {
+        "id": "frases-de-la-cancha",
+        "nombre": "Frases de la cancha",
+        "grupos": [
+          "canchas"
+        ]
+      },
+      {
+        "id": "frases-de-la-tienda",
+        "nombre": "Frases de la tienda",
+        "grupos": [
+          "productos"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "formatos",
+    "nombre": "Fechas, personas y listas",
+    "secciones": [
+      {
+        "id": "fechas-y-horas",
+        "nombre": "Fechas y horas",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "personas-e-idiomas",
+        "nombre": "Personas e idiomas",
+        "grupos": [
+          "reservas"
+        ]
+      },
+      {
+        "id": "nacionalidades",
+        "nombre": "Nacionalidades",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "resenas",
+        "nombre": "Reseñas",
+        "grupos": [
+          "reservas"
+        ]
+      }
+    ]
+  }
+]

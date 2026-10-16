@@ -2,6 +2,7 @@
 
 > Parte de [spec.md](spec.md). Fecha: 2026-10-06. Estado: **plan por fases aprobado**. Las [preguntas abiertas](spec.md#preguntas-abiertas) se deciden al llegar a la fase que las necesita (ver [Decisiones pendientes](#decisiones-pendientes-por-fase)).
 > Repos: BackendNode, FrontendAdmin, FrontendStore y App Transmitir (Android, repositorio aparte; ver [spec](spec.md#app-transmitir-proyecto-aparte)).
+> Mejoras después de la Fase 5 (cuota, errores del live, límite de la API, cambio de proveedor): [mejoras.md](mejoras.md).
 
 ## Decisiones (2026-10-06)
 
@@ -306,7 +307,7 @@ Además, Stream se compra en **bloques prepagados** de minutos guardados y entre
   - hasta 2 destinos (Facebook, YouTube u otro RTMP), con la clave cifrada;
   - cada destino es una "live output" de Cloudflare que el job **habilita solo desde que abre la sala hasta el corte**: una prueba previa no sale en el Facebook del anfitrión;
   - al regenerar la clave se recrean las salidas; al terminar desaparecen con la entrada.
-- **Resumen con IA** (R8.3):
+- **Resumen con IA** (R8.3). Desde el 2026-10-15 todo esto empieza solo con el botón "Generar resumen" del admin ([mejoras.md](mejoras.md), decisión 5):
   - el job pide los subtítulos automáticos **en español** de cada parte (Cloudflare los soporta);
   - con todas las partes listas, encadena los WebVTT (cada parte desfasada por la duración de las anteriores);
   - llama a Claude una sola vez con **salida estructurada** (Zod: resumen, capítulos y momentos con su segundo) y `fallbacks: "default"`;

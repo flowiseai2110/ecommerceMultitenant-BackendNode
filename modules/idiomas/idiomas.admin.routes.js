@@ -5,10 +5,14 @@ import { apiResponse } from "../../utils/apiResponse.js";
 import { actualizarIdiomaSchema, codigoParamSchema, crearIdiomaSchema } from "./idiomas.schema.js";
 import { actualizarIdioma, crearIdiomaPlataforma, idiomasActivos, listarTodos } from "./idiomas.service.js";
 import { estadoIdiomas } from "./publicacion.service.js";
+import { permisoVistaPrevia } from "./idiomas-tienda.js";
+import { urlTienda } from "../resenas/resenas.service.js";
+import { codigoIdiomaSchema } from "./idioma.js";
 import { requireTiendaAccess } from "../../kernel/tenant/index.js";
 import { z } from "zod";
 
 const tiendaQuery = z.object({ tiendaId: z.string().uuid("tiendaId inválido") });
+const vistaPreviaQuery = tiendaQuery.extend({ idioma: codigoIdiomaSchema });
 
 /**
  * Idiomas (docs/specs/idiomas D1, D9). Cualquier usuario del admin ve los
@@ -26,6 +30,15 @@ router.get("/", async (_req, res, next) => {
 // GET /tienda?tiendaId= — idiomas de la tienda con su avance y si están publicados (P5).
 router.get("/tienda", requireTiendaAccess("viewer"), validate({ query: tiendaQuery }), async (req, res, next) => {
   try { return ok(res, "IDIOMAS_TIENDA", await estadoIdiomas(req.tiendaId)); } catch (error) { next(error); }
+});
+
+// GET /vista-previa?tiendaId=&idioma= — permiso de 1 hora para ver la tienda en un
+// idioma elegido aunque no esté publicado (modo traducir; diseno.md B3). Quien traduce: admin.
+router.get("/vista-previa", requireTiendaAccess("admin"), validate({ query: vistaPreviaQuery }), async (req, res, next) => {
+  try {
+    const { token, expiraEn, slug } = await permisoVistaPrevia(req.tiendaId, req.validatedQuery?.idioma ?? req.query.idioma);
+    return ok(res, "IDIOMA_VISTA_PREVIA", { token, expiraEn, url: slug ? urlTienda(slug, "") : null });
+  } catch (error) { next(error); }
 });
 
 // GET /permisos — si quien entra administra la plataforma (el admin muestra el enlace a la pantalla Idiomas).

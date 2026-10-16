@@ -320,7 +320,7 @@ Ver [Modelo de cobro](#modelo-de-cobro).
 - **R8.1.2** 7 días antes de cada borrado, el anfitrión recibe un correo con el enlace de descarga y la opción de comprar "Guardar 1 año".
 - **R8.1.3** Al activar, se puede elegir **"Solo en vivo"** (sin grabación) en cualquier plan.
 - **R8.2** Premium: la tienda configura hasta 2 destinos de retransmisión (Facebook y YouTube) con su URL y clave. La UI avisa que en esas plataformas no hay control de acceso.
-- **R8.3** Premium: al quedar lista la grabación, se generan el resumen, los capítulos y los momentos clave (Mux Robots). El anfitrión recibe un correo con el resumen y el enlace.
+- **R8.3** Premium: con la grabación lista, el negocio aprieta **"Generar resumen"** en el admin y se generan el resumen, los capítulos y los momentos clave. La IA nunca corre sola, tampoco los subtítulos automáticos (decisión 14). El anfitrión recibe un correo con el resumen y el enlace.
 
 ### R9 — Privacidad y legal
 
@@ -499,6 +499,8 @@ Estos datos salen de búsquedas en la web; las páginas oficiales de Mux y Cloud
 11. **Paquetes y excedente** (preguntas abiertas 2 y 4, decididas el 2026-10-06 al empezar la Fase 3): paquetes prepagados de 10 h por S/ 250 y de 25 h por S/ 550, que vencen a los 12 meses. Excedente a S/ 20 por cada 30 min de paquete (minutos × factor), con tope de 2 h por tienda al mes; se cobra a mano con el siguiente pago.
 12. **Grabación** (decidida el 2026-10-07 al empezar la Fase 4): en Privado está incluida y activada por defecto (30 días para ver y descargar). "Guardar 1 año" cuesta S/ 50, como cargo manual a la tienda. El MP4 se copia a R2 privado solo en ese caso.
 13. **Premium** (decidido el 2026-10-09 al empezar la Fase 5): S/ 40 por evento, cargo manual a la tienda, además de las horas. La retransmisión a Facebook y YouTube va incluida (hasta 2 destinos). La grabación se ve 90 días y se descarga durante 1 año. El resumen con IA usa los subtítulos automáticos en español de Cloudflare y Claude.
+
+14. **IA solo a pedido** (decidido el 2026-10-15, [mejoras.md](mejoras.md)): el resumen del Premium y los subtítulos automáticos en que se basa se generan solo cuando el negocio aprieta "Generar resumen" en el admin. Antes se generaban solos al quedar lista la grabación.
 
 ## Pendiente al terminar
 

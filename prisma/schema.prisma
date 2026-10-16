@@ -258,7 +258,7 @@ model idiomas {
 // del servidor; una clave que desaparece del código queda obsoleta, no se borra.
 model textos_claves {
   clave    String  @id @db.Text
-  grupo    String  @db.VarChar(20) // comun | productos | hotel | tours | ... | correos | errores
+  grupos   String[] @db.Text // comun | productos | hotel | tours | ... | correos | errores (todos los de las carpetas donde se usa)
   obsoleta Boolean @default(false)
 
   fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
@@ -2053,7 +2053,12 @@ model evento_transmisiones {
   // Señal que llega del celular: sin_senal | conectada | desconectada
   senal                String    @default("sin_senal") @db.VarChar(20)
   senalEn              DateTime? @map("senal_en") @db.Timestamptz
-  inicioRealEn         DateTime? @map("inicio_real_en") @db.Timestamptz
+  // Última vez que un aviso del proveedor o la API confirmó la señal: el job no la consulta si es reciente.
+  senalVerificadaEn    DateTime? @map("senal_verificada_en") @db.Timestamptz
+  // Problema de la señal (código de live_input.errored, ej. ERR_GOP_OUT_OF_RANGE). Se limpia al conectar.
+  senalError           String?   @map("senal_error") @db.VarChar(40)
+  senalErrorEn         DateTime? @map("senal_error_en") @db.Timestamptz
+  inicioRealEn        DateTime? @map("inicio_real_en") @db.Timestamptz
   // Corte (job, a los 5 min del fin) o "Terminar" del admin (R6.3, R7.8).
   terminadaEn          DateTime? @map("terminada_en") @db.Timestamptz
   minutosUsados        Int?      @map("minutos_usados")
@@ -2090,6 +2095,9 @@ model evento_transmisiones {
   resumenTokensEntrada Int?      @map("resumen_tokens_entrada")
   resumenTokensSalida  Int?      @map("resumen_tokens_salida")
   avisoResumenEn       DateTime? @map("aviso_resumen_en") @db.Timestamptz
+  // La IA solo corre a pedido: quién apretó "Generar resumen" y cuándo (decisión 2026-10-15).
+  resumenPedidoEn      DateTime? @map("resumen_pedido_en") @db.Timestamptz
+  resumenPedidoPor     String?   @map("resumen_pedido_por") @db.VarChar(100)
   // Entrada borrada en el proveedor (las grabaciones se conservan aparte).
   limpiadaEn           DateTime? @map("limpiada_en") @db.Timestamptz
 
@@ -2160,6 +2168,16 @@ model transmision_eventos_proveedor {
   fechaRegistro DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
 
   @@unique([proveedor, eventoId], name: "uq_transmision_evento_proveedor")
+}
+
+// Avisos a la plataforma (almacenamiento de video casi lleno o lleno). La clave
+// única ("cuota-80:2026-10-15") hace que cada aviso salga una sola vez, aunque
+// corran varias réplicas o el proceso se reinicie.
+model transmision_avisos_plataforma {
+  id            String    @id @default(uuid()) @db.Uuid
+  clave         String    @unique @db.VarChar(80)
+  detalle       Json?     @db.JsonB
+  fechaRegistro DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
 }
 
 // Código de un solo uso del QR "Transmitir con este celular" (App Transmitir,

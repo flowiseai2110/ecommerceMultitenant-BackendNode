@@ -4,6 +4,7 @@ import { NotFoundError, ValidationError } from "../../utils/errors.js";
 import { idiomaBase } from "../idiomas/idiomas.service.js";
 import { idiomasElegidos } from "../idiomas/idiomas-tienda.js";
 import { FUENTES } from "./fuentes.js";
+import { datosDe } from "../negocio/datos.js";
 import { estadoCampo, traduccionesDe, vacio } from "./texto-local.js";
 import { iaDisponible, traducirTextos } from "./traducir-ia.js";
 import { publicarCompletos } from "../idiomas/publicacion.service.js";
@@ -71,16 +72,21 @@ async function* textosDeTienda(tiendaId, codigo) {
  * dónde salen, con su estado.
  */
 export async function listarTextos(tiendaId, codigo) {
-  await tiendaDe(tiendaId);
+  const tienda = await tiendaDe(tiendaId);
+  const datos = datosDe(tienda.tipoNegocio);
   const elegidos = await idiomasElegidos(tiendaId);
   const idioma = await idiomaDeTrabajo(tiendaId, codigo);
   const grupos = [];
+  const lugares = catalogoDeLugares();
   if (idioma) {
     for await (const { nombre, fuente, fila, campos } of textosDeTienda(tiendaId, idioma.codigo)) {
       if (!campos.length) continue;
       grupos.push({
         fuente: nombre, id: fuente.almacen.idDe(fila), etiqueta: fuente.etiqueta, nombre: fuente.nombre(fila) ?? "",
-        campos: campos.map((c) => ({ campo: c.campo, base: c.base, traduccion: c.tr?.t ?? null, manual: !!c.tr?.m, estado: c.estado }))
+        campos: campos.map((c) => ({
+          campo: c.campo, nombre: fuente.nombreCampo(c.campo), base: c.base, traduccion: c.tr?.t ?? null, manual: !!c.tr?.m, estado: c.estado,
+          lugares: lugares.agregar(fuente.lugares(fila, c.campo, datos))
+        }))
       });
     }
   }
@@ -94,7 +100,34 @@ export async function listarTextos(tiendaId, codigo) {
       faltan: todos.filter((c) => c.estado === "falta").length,
       desactualizadas: todos.filter((c) => c.estado === "desactualizada").length
     },
-    grupos
+    grupos,
+    lugares: lugares.lista()
+  };
+}
+
+/**
+ * Los lugares de la respuesta (diseno.md A1, A5): cada campo lleva solo
+ * referencias { lugar, seccion } y los nombres y el orden van una vez, aquí.
+ * Una sección sin `orden` (las filas del contenido) queda en el orden en que
+ * aparece.
+ */
+/** Zonas de la navegación, en el orden en que se muestran. */
+export const ZONAS = Object.freeze(["contenido", "pantallas", "mensajes"]);
+
+export function catalogoDeLugares() {
+  const porId = new Map();
+  return {
+    agregar(lugaresDelCampo) {
+      return lugaresDelCampo.map(({ lugar, seccion }) => {
+        if (!porId.has(lugar.id)) porId.set(lugar.id, { ...lugar, secciones: new Map() });
+        const secciones = porId.get(lugar.id).secciones;
+        if (!secciones.has(seccion.id)) secciones.set(seccion.id, { id: seccion.id, nombre: seccion.nombre, orden: seccion.orden ?? secciones.size });
+        return { lugar: lugar.id, seccion: seccion.id };
+      });
+    },
+    lista: () => [...porId.values()]
+      .sort((a, b) => ZONAS.indexOf(a.zona) - ZONAS.indexOf(b.zona) || a.orden - b.orden)
+      .map(({ secciones, ...lugar }) => ({ ...lugar, secciones: [...secciones.values()].sort((a, b) => a.orden - b.orden).map(({ id, nombre }) => ({ id, nombre })) }))
   };
 }
 

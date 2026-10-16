@@ -4,6 +4,8 @@ import { SECCIONES_COMUNES, SECCIONES_RESERVAS } from "../secciones.js";
 export const eventos = {
   // Textos fijos que muestra su tienda: los traduce el dueño (docs/specs/idiomas D8).
   gruposTextos: Object.freeze(["comun", "reservas", "eventos", "correos", "errores"]),
+  // Cómo se llama su catálogo en Traducciones ("Tu contenido"; docs/specs/idiomas, diseno.md A1).
+  nombreCatalogo: "Eventos",
   recibeReservas: true,
   planDePagos: false,
   // Transmisión en vivo de la función (docs/specs/transmision-eventos).

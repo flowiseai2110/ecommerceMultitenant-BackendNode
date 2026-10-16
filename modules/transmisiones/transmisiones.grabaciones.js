@@ -137,7 +137,7 @@ function resumirEnSegundoPlano(t, ahora) {
   resumiendo = true;
   (async () => {
     const tomada = await prisma.evento_transmisiones.updateMany({
-      where: { id: t.id, OR: [{ resumenEstado: null }, { resumenEstado: { in: ["pendiente", "error"] } }] },
+      where: { id: t.id, resumenPedidoEn: { not: null }, resumenEstado: { in: ["pendiente", "error"] } },
       data: { resumenEstado: "generando", resumenIntentos: { increment: 1 } }
     });
     if (tomada.count !== 1) return; // otra réplica ya lo está generando
@@ -177,9 +177,13 @@ function resumirEnSegundoPlano(t, ahora) {
  *  3. aviso "tu grabación está lista" cuando todo está listo;
  *  4. "Guardar 1 año": copiar a R2 (en segundo plano, una a la vez);
  *  5. avisos 7 días antes de cada borrado y borrado al vencer;
- *  6. Premium: subtítulos en español de cada parte y resumen con IA (en segundo plano).
+ *  6. Premium, solo si alguien apretó "Generar resumen": subtítulos en español de cada
+ *     parte y resumen con IA (en segundo plano).
  */
 export async function cicloGrabaciones(ahora = new Date()) {
+  // Con el proveedor en pausa por límite de llamadas, nada de esto es urgente: se retoma después.
+  const pausa = provider().consumoApi?.().pausadaHasta;
+  if (pausa && pausa > ahora) return;
   // 1 y 2: partes pendientes de Cloudflare
   const pendientes = await prisma.transmision_grabaciones.findMany({
     where: { OR: [{ estado: "procesando" }, { estado: "lista", mp4Estado: { in: ["sin_pedir", "pendiente"] } }] },
@@ -211,8 +215,12 @@ export async function cicloGrabaciones(ahora = new Date()) {
   }
 
   // Premium: subtítulos automáticos en español de cada parte lista (base del resumen).
+  // Son IA de Cloudflare: solo se piden si alguien apretó "Generar resumen" (decisión 2026-10-15).
   const sinSubtitulos = await prisma.transmision_grabaciones.findMany({
-    where: { estado: "lista", subtitulosEstado: { in: ["sin_pedir", "pendiente"] }, transmision: { plan: "premium" } },
+    where: {
+      estado: "lista", subtitulosEstado: { in: ["sin_pedir", "pendiente"] },
+      transmision: { plan: "premium", resumenPedidoEn: { not: null }, resumenEstado: { in: ["pendiente", "error"] } }
+    },
     take: 30
   });
   for (const g of sinSubtitulos) {
@@ -251,10 +259,11 @@ export async function cicloGrabaciones(ahora = new Date()) {
         if (porCopiar) copiarEnSegundoPlano(porCopiar, t);
       }
 
-      // Premium: resumen con IA cuando todas las partes tienen sus subtítulos (o fallaron).
+      // Premium: resumen con IA, solo si alguien lo pidió, cuando todas las partes tienen sus subtítulos (o fallaron).
+      // Un error se reintenta solo hasta MAX_INTENTOS_RESUMEN: sigue siendo el mismo pedido.
       const listas = vivas.filter(g => g.estado === "lista");
-      const pendienteResumen = t.resumenEstado == null || t.resumenEstado === "pendiente"
-        || (t.resumenEstado === "error" && t.resumenIntentos < MAX_INTENTOS_RESUMEN);
+      const pendienteResumen = !!t.resumenPedidoEn
+        && (t.resumenEstado === "pendiente" || (t.resumenEstado === "error" && t.resumenIntentos < MAX_INTENTOS_RESUMEN));
       if (t.plan === "premium" && pendienteResumen && listas.length && ahora < enLinea
         && !vivas.some(g => g.estado === "procesando")
         && listas.every(g => g.subtitulosEstado === "listo" || g.subtitulosEstado === "error")) {

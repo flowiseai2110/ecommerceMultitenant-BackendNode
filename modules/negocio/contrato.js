@@ -13,7 +13,8 @@ import { GRUPOS_TEXTOS } from "../idiomas/grupos.js";
  * - Datos del rubro (negocio/<rubro>/datos.js): recibeReservas, planDePagos,
  *   transmisiones, alquilerPorHoras y marcas (capacidades), diseno { plantillaPorDefecto,
  *   secciones, temaPorDefecto? }, configReservas (defaults), textoAviso (string o null) y
- *   gruposTextos (grupos del catálogo de textos fijos que muestra su tienda; docs/specs/idiomas D8).
+ *   gruposTextos (grupos del catálogo de textos fijos que muestra su tienda; docs/specs/idiomas D8) y
+ *   nombreCatalogo (cómo se llama su catálogo en Traducciones: "Habitaciones", "Tours"…; diseno.md A1).
  * - agente: perfil del asesor de ventas, o null (usa el de productos).
  * - dashboard: widgets del dashboard del admin, arreglo no vacío de funciones
  *   `(ctx) => Promise<Widget | null>` (docs/specs/dashboard-por-rubro).
@@ -36,6 +37,7 @@ export function faltantesDeDatos(d) {
   if (d?.textoAviso !== null && typeof d?.textoAviso !== "string") faltan.push("textoAviso");
   const g = d?.gruposTextos;
   if (!Array.isArray(g) || !g.includes("comun") || !g.every((x) => GRUPOS_TEXTOS.includes(x))) faltan.push("gruposTextos");
+  if (typeof d?.nombreCatalogo !== "string" || !d.nombreCatalogo.trim()) faltan.push("nombreCatalogo");
   return faltan;
 }
 

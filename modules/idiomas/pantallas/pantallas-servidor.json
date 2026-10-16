@@ -1,0 +1,108 @@
+[
+  {
+    "id": "correos",
+    "nombre": "Correos al cliente",
+    "zona": "mensajes",
+    "secciones": [
+      {
+        "id": "solicitud-recibida",
+        "nombre": "Solicitud recibida",
+        "grupos": [
+          "correos"
+        ]
+      },
+      {
+        "id": "compra-por-pagar",
+        "nombre": "Compra por pagar",
+        "grupos": [
+          "correos"
+        ]
+      },
+      {
+        "id": "reserva-aceptada",
+        "nombre": "Reserva aceptada",
+        "grupos": [
+          "correos"
+        ]
+      },
+      {
+        "id": "reserva-rechazada",
+        "nombre": "Reserva rechazada",
+        "grupos": [
+          "correos"
+        ]
+      },
+      {
+        "id": "reserva-confirmada",
+        "nombre": "Reserva confirmada",
+        "grupos": [
+          "correos"
+        ]
+      },
+      {
+        "id": "pedido-de-resena",
+        "nombre": "Pedido de reseña",
+        "grupos": [
+          "correos"
+        ]
+      },
+      {
+        "id": "partes-comunes-de-los-correos",
+        "nombre": "Partes comunes de los correos",
+        "grupos": [
+          "correos"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sistema",
+    "nombre": "Mensajes del sistema",
+    "zona": "mensajes",
+    "secciones": [
+      {
+        "id": "disponibilidad-y-precios",
+        "nombre": "Disponibilidad y precios",
+        "grupos": [
+          "hotel",
+          "reservas"
+        ]
+      },
+      {
+        "id": "salidas-de-los-tours",
+        "nombre": "Salidas de los tours",
+        "grupos": [
+          "tours"
+        ]
+      },
+      {
+        "id": "estados-de-la-reserva",
+        "nombre": "Estados de la reserva",
+        "grupos": [
+          "reservas"
+        ]
+      },
+      {
+        "id": "fechas",
+        "nombre": "Fechas",
+        "grupos": [
+          "reservas"
+        ]
+      },
+      {
+        "id": "pedidos",
+        "nombre": "Pedidos",
+        "grupos": [
+          "productos"
+        ]
+      },
+      {
+        "id": "pago-en-linea",
+        "nombre": "Pago en línea",
+        "grupos": [
+          "comun"
+        ]
+      }
+    ]
+  }
+]

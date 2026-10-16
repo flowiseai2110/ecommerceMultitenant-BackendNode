@@ -164,3 +164,86 @@ describe("plan Privado (Fase 2)", () => {
     expect(sesionViva({ sesionVistaEn: null }, ahora)).toBe(false);
   });
 });
+
+// ============================================
+// Mejoras (docs/specs/transmision-eventos/mejoras.md): errores de señal, cuota,
+// consulta de la señal y resumen con IA a pedido
+// ============================================
+
+const reglas = await import("../transmisiones.reglas.js");
+
+describe("errores de la señal (A2)", () => {
+  it("cada código conocido tiene su mensaje y uno desconocido cae en el genérico", () => {
+    expect(reglas.mensajeErrorSenal("ERR_GOP_OUT_OF_RANGE")).toMatch(/keyframe/);
+    expect(reglas.mensajeErrorSenal("ERR_UNSUPPORTED_AUDIO_CODEC")).toMatch(/AAC/);
+    expect(reglas.mensajeErrorSenal("ERR_ALGO_NUEVO")).toMatch(/H\.264 y audio AAC/);
+    expect(reglas.mensajeErrorSenal(null)).toBeNull();
+  });
+
+  it("los de la plataforma no se le cargan a quien graba", () => {
+    expect(reglas.ERRORES_DE_PLATAFORMA.has("ERR_STORAGE_QUOTA_EXHAUSTED")).toBe(true);
+    expect(reglas.ERRORES_DE_PLATAFORMA.has("ERR_GOP_OUT_OF_RANGE")).toBe(false);
+    expect(reglas.mensajeErrorSenal("ERR_STORAGE_QUOTA_EXHAUSTED")).toMatch(/nuestra plataforma/);
+  });
+
+  it("sigue vigente hasta que la señal se conecta después del error", () => {
+    const error = { senalError: "ERR_GOP_OUT_OF_RANGE", senalErrorEn: en("2026-10-17T16:05:00-05:00") };
+    expect(reglas.errorSenalVigente({ ...error, senal: "desconectada", senalEn: en("2026-10-17T16:05:00-05:00") }))
+      .toMatchObject({ codigo: "ERR_GOP_OUT_OF_RANGE", mensaje: expect.stringMatching(/keyframe/) });
+    // Conectada antes del error (la app se conecta y falla): sigue vigente.
+    expect(reglas.errorSenalVigente({ ...error, senal: "conectada", senalEn: en("2026-10-17T16:04:00-05:00") })).not.toBeNull();
+    // Conectada después: ya se corrigió.
+    expect(reglas.errorSenalVigente({ ...error, senal: "conectada", senalEn: en("2026-10-17T16:10:00-05:00") })).toBeNull();
+    expect(reglas.errorSenalVigente({ senalError: null, senal: "desconectada" })).toBeNull();
+  });
+});
+
+describe("almacenamiento de video (A1)", () => {
+  it("porcentaje con un decimal, o null si el proveedor no informa límite", () => {
+    expect(reglas.porcentajeCuota({ usadoMin: 850, limiteMin: 1000 })).toBe(85);
+    expect(reglas.porcentajeCuota({ usadoMin: 1, limiteMin: 3 })).toBe(33.3);
+    expect(reglas.porcentajeCuota({ usadoMin: 850, limiteMin: null })).toBeNull();
+    expect(reglas.CUOTA_AVISO_PCT).toBe(80);
+  });
+});
+
+describe("consulta de la señal por API (A3)", () => {
+  it("solo si ningún aviso la confirmó en los últimos 3 minutos", () => {
+    const ahora = en("2026-10-17T16:10:00-05:00");
+    expect(reglas.debeConsultarSenal({ senalVerificadaEn: null }, ahora)).toBe(true);
+    expect(reglas.debeConsultarSenal({ senalVerificadaEn: en("2026-10-17T16:08:00-05:00") }, ahora)).toBe(false);
+    expect(reglas.debeConsultarSenal({ senalVerificadaEn: en("2026-10-17T16:07:00-05:00") }, ahora)).toBe(true);
+  });
+});
+
+describe("resumen con IA a pedido (decisión 2026-10-15)", () => {
+  const fin = en("2026-10-17T19:05:00-05:00");
+  const lista = { estado: "lista" };
+  const premium = (extra = {}) => ({
+    plan: "premium", estado: "programada", grabar: true, grabacionBorradaEn: null, terminadaEn: fin,
+    resumenEstado: null, resumenIntentos: 0, grabaciones: [lista], ...extra
+  });
+  const ahora = en("2026-10-18T10:00:00-05:00");
+  const motivo = (extra) => reglas.motivoSinResumen(premium(extra), funcion, ahora)?.motivo ?? null;
+
+  it("se puede pedir con la grabación lista y sin resumen", () => {
+    expect(motivo({})).toBeNull();
+  });
+
+  it("no se puede fuera del Premium, sin grabación, en proceso o vencida", () => {
+    expect(motivo({ plan: "privado" })).toBe("SOLO_PREMIUM");
+    expect(motivo({ terminadaEn: null })).toBe("SIN_GRABACION");
+    expect(motivo({ grabar: false })).toBe("SIN_GRABACION");
+    expect(motivo({ grabaciones: [lista, { estado: "procesando" }] })).toBe("PROCESANDO");
+    expect(reglas.motivoSinResumen(premium(), funcion, en("2027-02-01T10:00:00-05:00")).motivo).toBe("VENCIDA") // Premium: 90 días en línea;
+  });
+
+  it("no se pide dos veces; tras un error, solo cuando se agotaron los reintentos", () => {
+    expect(motivo({ resumenEstado: "pendiente" })).toBe("EN_CURSO");
+    expect(motivo({ resumenEstado: "generando" })).toBe("EN_CURSO");
+    expect(motivo({ resumenEstado: "listo" })).toBe("YA_LISTO");
+    expect(motivo({ resumenEstado: "sin_audio" })).toBe("SIN_AUDIO");
+    expect(motivo({ resumenEstado: "error", resumenIntentos: 1 })).toBe("EN_CURSO");
+    expect(motivo({ resumenEstado: "error", resumenIntentos: reglas.MAX_INTENTOS_RESUMEN })).toBeNull();
+  });
+});

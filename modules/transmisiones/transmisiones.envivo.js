@@ -2,14 +2,16 @@ import { prisma, Prisma } from "../../config/prisma.js";
 import config from "../../config/index.js";
 import { logger } from "../../config/logger.js";
 import { getStreamingProvider } from "../../services/streaming/index.js";
-import { sendTransmisionAvisoFinEmail } from "../../services/email.service.js";
+import { sendTransmisionAvisoFinEmail, sendTransmisionErrorSenalEmail } from "../../services/email.service.js";
 import { UnprocessableError } from "../../utils/errors.js";
 import { registrarConsumo, saldoHoras, textoMinutos } from "./transmisiones.horas.js";
 import { firmarTokenAccion } from "./transmisiones.token.js";
 import { conGrabacion, registrarGrabaciones } from "./transmisiones.grabaciones.js";
+import { avisarErrorDePlataforma } from "./transmisiones.plataforma.js";
 import {
-  EXTENSIONES_MIN, EXTENSION_MAX_MIN, corteEn, debeEstarHabilitada, debeRetransmitir, esVideoPropio, finTransmision, minutosADescontar,
-  minutosConsumidos, montoExcedente, periodoTransmision, salaAbreEn, tocaAvisoFin, tocaExtensionAuto
+  AVISO_ERROR_SENAL_MIN, ERRORES_DE_PLATAFORMA, EXTENSIONES_MIN, EXTENSION_MAX_MIN, corteEn, debeConsultarSenal, debeEstarHabilitada,
+  debeRetransmitir, esVideoPropio, finTransmision, mensajeErrorSenal, minutosADescontar, minutosConsumidos, montoExcedente,
+  periodoTransmision, salaAbreEn, tocaAvisoFin, tocaExtensionAuto
 } from "./transmisiones.reglas.js";
 
 /**
@@ -18,27 +20,73 @@ import {
  *
  * Cloudflare no corta solo por duración: el corte (R7.8) lo hace el backend
  * deshabilitando la entrada. Como respaldo de los webhooks, el job consulta la
- * señal de las transmisiones en su ventana (reconciliación).
+ * señal de las transmisiones en su ventana (reconciliación), salvo que un
+ * aviso del proveedor la haya confirmado hace poco (límite de llamadas, A3).
  */
 
 const MS_MIN = 60 * 1000;
 const provider = () => getStreamingProvider();
 const INCLUDE = { funcion: { select: { inicio: true, fin: true } } };
 const noProcesable = (message, motivo, extra = {}) => new UnprocessableError(message, { message, motivo, ...extra });
+/** Transmisiones que el ciclo atiende a la vez: un timeout de 10 s no debe retrasar a las demás. */
+const EN_PARALELO = 4;
 
-/** Cambia la señal. La primera señal dentro de la ventana del evento marca el inicio real (R7.1). */
+/** Corre `fn` sobre los elementos, hasta `n` a la vez. */
+async function enLotes(items, n, fn) {
+  const cola = [...items];
+  await Promise.all(Array.from({ length: Math.min(n, cola.length) }, async () => {
+    while (cola.length) await fn(cola.shift());
+  }));
+}
+
+/**
+ * Cambia la señal y anota que está confirmada. La primera señal dentro de la
+ * ventana del evento marca el inicio real (R7.1).
+ */
 export async function aplicarSenal(t, senal, ahora = new Date()) {
-  if (!senal || (t.senal === senal && t.senalEn)) return t;
+  if (!senal) return t;
+  if (t.senal === senal && t.senalEn) {
+    // Ya se sabía: solo se anota la confirmación (el job no la vuelve a consultar por un rato).
+    return prisma.evento_transmisiones.update({ where: { id: t.id }, data: { senalVerificadaEn: ahora }, include: INCLUDE });
+  }
   const enVentana = ahora >= salaAbreEn(t.funcion);
   return prisma.evento_transmisiones.update({
     where: { id: t.id },
     data: {
       senal,
       senalEn: ahora,
+      senalVerificadaEn: ahora,
       ...(senal === "conectada" && enVentana && !t.inicioRealEn ? { inicioRealEn: ahora } : {})
     },
     include: INCLUDE
   });
+}
+
+/**
+ * La señal llegó con un problema (A2): se guarda para el admin y la App
+ * Transmitir y se avisa por correo al negocio y al contacto de la transmisión
+ * (decisión 2026-10-15: el contacto que ya existe). Un mismo problema se avisa
+ * una vez, salvo que pasen 30 min sin repetirse.
+ */
+export async function aplicarErrorSenal(t, error, ahora = new Date()) {
+  if (!error?.codigo) return;
+  const repetido = new Date(ahora.getTime() - AVISO_ERROR_SENAL_MIN * MS_MIN);
+  const nuevo = await prisma.evento_transmisiones.updateMany({
+    where: { id: t.id, OR: [{ senalError: null }, { senalError: { not: error.codigo } }, { senalErrorEn: { lt: repetido } }] },
+    data: { senalError: error.codigo, senalErrorEn: ahora }
+  });
+  if (nuevo.count !== 1) {
+    // Mismo problema hace poco: solo se actualiza la hora (sigue vigente en el panel).
+    await prisma.evento_transmisiones.update({ where: { id: t.id }, data: { senalErrorEn: ahora } });
+    return;
+  }
+  logger.warn(`Transmisión ${t.id}: la señal llegó con un problema (${error.codigo}${error.mensaje ? `: ${error.mensaje}` : ""})`);
+  const tienda = await prisma.tiendas.findUnique({ where: { id: t.tiendaId }, select: { nombre: true, email: true } });
+  const to = [...new Set([tienda?.email, t.contactoEmail].filter(Boolean))];
+  if (!to.length) return;
+  await sendTransmisionErrorSenalEmail({
+    to, tiendaNombre: tienda.nombre, evento: t.funcion?.evento?.producto?.nombre ?? "tu evento", mensaje: mensajeErrorSenal(error.codigo)
+  }).catch(e => logger.error(`No se envió el aviso de error de señal de ${t.id}: ${e.message}`));
 }
 
 /** Deja la entrada habilitada solo en la prueba o en la ventana del evento. */
@@ -101,7 +149,8 @@ export async function limpiarEntrada(t, ahora = new Date()) {
 export async function terminarTransmision(t, { motivo, ahora = new Date() }) {
   if (!esVideoPropio(t) || t.terminadaEn) return false;
   if (t.entradaId) {
-    await provider().habilitarEntrada(t.entradaId, false)
+    // Urgente: el corte se intenta aunque el proveedor esté en pausa por límite de llamadas.
+    await provider().habilitarEntrada(t.entradaId, false, { urgente: true })
       .catch(e => logger.error(`No se pudo cortar la señal de la transmisión ${t.id}: ${e.message}`));
   }
   // Si la señal ya se había caído, lo transmitido llega hasta esa caída.
@@ -212,18 +261,60 @@ async function enviarAvisoFin(t, ahora) {
   }).catch(e => logger.error(`No se envió el aviso de fin de ${t.id}: ${e.message}`));
 }
 
+/** ¿El proveedor está en pausa por exceso de llamadas? */
+const enPausa = (ahora) => {
+  const hasta = provider().consumoApi?.().pausadaHasta;
+  return !!hasta && hasta > ahora;
+};
+
+const INCLUDE_CICLO = {
+  funcion: { select: { inicio: true, fin: true, evento: { select: { producto: { select: { nombre: true } } } } } },
+  excedente: true
+};
+
+/**
+ * Primera pasada, lo que no puede esperar: la extensión automática al llegar
+ * al fin (R7.6) y el corte (R7.8).
+ * @returns {Promise<object|null>} la transmisión (al día), o null si se cortó.
+ */
+async function atenderFin(t, ahora) {
+  if (tocaExtensionAuto(t, t.funcion, ahora)) {
+    try {
+      await extenderTransmision(t, 30, { quien: "extensión automática", ahora });
+      t = await prisma.evento_transmisiones.findUnique({ where: { id: t.id }, include: INCLUDE_CICLO });
+    } catch (e) {
+      logger.warn(`Extensión automática de ${t.id} no aplicada: ${e.message}`);
+    }
+  }
+  if (ahora >= corteEn(t, t.funcion)) {
+    await terminarTransmision(t, { motivo: "corte", ahora });
+    return null;
+  }
+  return t;
+}
+
+/** Segunda pasada: aviso de 15 min, habilitación, retransmisión y señal real. */
+async function atenderEnCurso(t, ahora) {
+  if (tocaAvisoFin(t, t.funcion, ahora)) await enviarAvisoFin(t, ahora);
+  // Con el proveedor en pausa no se le llama: se retoma en el próximo ciclo.
+  if (enPausa(ahora)) return;
+  t = await sincronizarHabilitacion(t, ahora);
+  await sincronizarRetransmision(t, ahora);
+  if (t.habilitada && debeConsultarSenal(t, ahora)) {
+    const { senal } = await provider().estadoEntrada(t.entradaId);
+    await aplicarSenal(t, senal, ahora);
+  }
+}
+
 /**
  * Un ciclo del job (cada minuto):
  *  1. Transmisiones con video propio en curso o por empezar (o en prueba):
- *     corte a los 5 min del fin, habilitación de la entrada y señal real.
+ *     primero las que llegan al fin (extensión automática o corte), después
+ *     el resto, hasta 4 a la vez.
  *  2. Canceladas o terminadas cuya limpieza quedó pendiente.
  */
 export async function cicloTransmisiones(ahora = new Date()) {
   const proxima = new Date(ahora.getTime() + 61 * MS_MIN);
-  const INCLUDE_CICLO = {
-    funcion: { select: { inicio: true, fin: true, evento: { select: { producto: { select: { nombre: true } } } } } },
-    excedente: true
-  };
   const activas = await prisma.evento_transmisiones.findMany({
     where: {
       plan: { not: "basico" },
@@ -235,34 +326,24 @@ export async function cicloTransmisiones(ahora = new Date()) {
     include: INCLUDE_CICLO
   });
 
-  for (let t of activas) {
+  const siguen = [];
+  for (const t of activas) {
     try {
-      // Extensión automática autorizada al activar (R7.6): al llegar al fin, con señal.
-      if (tocaExtensionAuto(t, t.funcion, ahora)) {
-        try {
-          await extenderTransmision(t, 30, { quien: "extensión automática", ahora });
-          t = await prisma.evento_transmisiones.findUnique({ where: { id: t.id }, include: INCLUDE_CICLO });
-        } catch (e) {
-          logger.warn(`Extensión automática de ${t.id} no aplicada: ${e.message}`);
-        }
-      }
-      if (ahora >= corteEn(t, t.funcion)) {
-        await terminarTransmision(t, { motivo: "corte", ahora });
-        continue;
-      }
-      if (tocaAvisoFin(t, t.funcion, ahora)) await enviarAvisoFin(t, ahora);
-      t = await sincronizarHabilitacion(t, ahora);
-      await sincronizarRetransmision(t, ahora);
-      if (t.habilitada) {
-        const { senal } = await provider().estadoEntrada(t.entradaId);
-        if (senal !== t.senal) await aplicarSenal(t, senal, ahora);
-      }
+      const actual = await atenderFin(t, ahora);
+      if (actual) siguen.push(actual);
+    } catch (e) {
+      logger.error(`Job de transmisiones, corte (${t.id}): ${e.message}`);
+    }
+  }
+  await enLotes(siguen, EN_PARALELO, async (t) => {
+    try {
+      await atenderEnCurso(t, ahora);
     } catch (e) {
       logger.error(`Job de transmisiones (${t.id}): ${e.message}`);
     }
-  }
+  });
 
-  const porLimpiar = await prisma.evento_transmisiones.findMany({
+  const porLimpiar = enPausa(ahora) ? [] : await prisma.evento_transmisiones.findMany({
     where: { entradaId: { not: null }, limpiadaEn: null, OR: [{ estado: "cancelada" }, { terminadaEn: { not: null } }] },
     include: INCLUDE,
     take: 20
@@ -290,12 +371,20 @@ export async function procesarWebhook({ tipo, headers, rawBody }, ahora = new Da
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return { valido: true, duplicado: true };
     throw error;
   }
+  // Almacenamiento lleno o sin suscripción: afecta a todas las tiendas, se avisa a la plataforma.
+  if (evento.error && ERRORES_DE_PLATAFORMA.has(evento.error.codigo)) {
+    await avisarErrorDePlataforma(evento.error.codigo, { entradaId: evento.entradaId }, ahora)
+      .catch(e => logger.error(`Aviso a la plataforma (${evento.error.codigo}): ${e.message}`));
+  }
   if (evento.senal && evento.entradaId) {
     const t = await prisma.evento_transmisiones.findFirst({
       where: { proveedor: p.nombre, entradaId: evento.entradaId, terminadaEn: null, estado: "programada" },
-      include: INCLUDE
+      include: INCLUDE_CICLO
     });
-    if (t) await aplicarSenal(t, evento.senal, ahora);
+    if (t) {
+      await aplicarSenal(t, evento.senal, ahora);
+      if (evento.error) await aplicarErrorSenal(t, evento.error, ahora);
+    }
   }
   return { valido: true, duplicado: false };
 }

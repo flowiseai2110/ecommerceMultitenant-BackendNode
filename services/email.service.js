@@ -649,7 +649,63 @@ export async function sendTransmisionGrabacionEmail({ to, tipo, tiendaNombre, ev
   return deliverEmail({ to, subject: t.titulo(evento), html });
 }
 
+/** Correo simple de una columna (título, párrafos y un pie), para los avisos de transmisión. */
+function htmlAvisoSimple({ encabezado, titulo, parrafos, pie }) {
+  const cuerpo = parrafos.map(p => `<p style="margin: 12px 0 0; font-size: 15px; line-height: 1.6; color: #4a4a4a;">${escapeHtml(p)}</p>`).join("");
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 16px;">
+        <table role="presentation" style="width: 100%; max-width: 560px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px;">
+          <tr>
+            <td style="padding: 32px;">
+              ${encabezado ? `<p style="margin: 0 0 8px; font-size: 13px; color: #6b7280;">${escapeHtml(encabezado)}</p>` : ""}
+              <h1 style="margin: 0; font-size: 20px; color: #1a1a1a;">${escapeHtml(titulo)}</h1>
+              ${cuerpo}
+              ${pie ? `<p style="margin: 20px 0 0; font-size: 13px; color: #6b7280;">${escapeHtml(pie)}</p>` : ""}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`.trim();
+}
+
+/**
+ * La señal llegó con un problema (docs/specs/transmision-eventos/mejoras.md, A2):
+ * al negocio y al contacto de la transmisión, con qué corregir en la app.
+ */
+export async function sendTransmisionErrorSenalEmail({ to, tiendaNombre, evento, mensaje }) {
+  const titulo = `Hay un problema con la señal de ${evento}`;
+  if (!hasResendApiKey()) {
+    logger.info(`📧 [DEV] Error de señal (${evento}) para: ${to.join(", ")} · ${mensaje}`);
+    return { success: false, reason: "RESEND_API_KEY not configured" };
+  }
+  const html = htmlAvisoSimple({
+    encabezado: tiendaNombre,
+    titulo,
+    parrafos: [mensaje],
+    pie: "Cuando la señal vuelva a llegar bien, el panel de la transmisión lo mostrará como En vivo."
+  });
+  return deliverEmail({ to, subject: titulo, html });
+}
+
+/** Aviso a la plataforma (A1): por ejemplo, el almacenamiento de video casi lleno. */
+export async function sendTransmisionAlertaPlataformaEmail({ to, titulo, parrafos }) {
+  if (!hasResendApiKey()) {
+    logger.info(`📧 [DEV] Aviso a la plataforma para: ${to.join(", ")} · ${titulo}`);
+    return { success: false, reason: "RESEND_API_KEY not configured" };
+  }
+  return deliverEmail({ to, subject: titulo, html: htmlAvisoSimple({ titulo, parrafos }) });
+}
+
 export default {
   sendInvitationEmail, previewInvitationEmail, sendNewOrderEmail, sendConsumoIaAvisoEmail, sendTransactionalEmail, sendTransmisionAvisoFinEmail,
-  sendTransmisionGrabacionEmail
+  sendTransmisionGrabacionEmail, sendTransmisionErrorSenalEmail, sendTransmisionAlertaPlataformaEmail
 };

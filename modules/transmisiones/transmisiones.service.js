@@ -18,8 +18,8 @@ import {
 import {
   DIAS_GUARDAR_ANIO, FACTORES, MAX_DESTINOS, PRECIO_GUARDAR_ANIO, PRECIO_PREMIUM, PRUEBA_MIN, TOPES_PRIVADO, conGrabacion,
   corteEn, debeRetransmitir, descargaHasta,
-  duracionEfectiva, enlaceWhatsapp, esVideoPropio, etapaTransmision, finEnVivo, finTransmision, grabacionHasta, hayVideo,
-  minutosADescontar, periodoTransmision, salaAbreEn, sesionViva, topeInvitaciones
+  duracionEfectiva, enlaceWhatsapp, errorSenalVigente, esVideoPropio, etapaTransmision, finEnVivo, finTransmision, grabacionHasta, hayVideo,
+  minutosADescontar, motivoSinResumen, periodoTransmision, salaAbreEn, sesionViva, topeInvitaciones
 } from "./transmisiones.reglas.js";
 
 /**
@@ -186,6 +186,8 @@ async function serializarTransmision(t, funcion, tienda, ahora) {
     envivo: propio ? {
       senal: t.senal,
       senalEn: t.senalEn,
+      // A2: qué corregir en la app si la señal llegó con un problema (null si no hay o ya se conectó bien).
+      senalError: errorSenalVigente(t),
       habilitada: t.habilitada,
       pruebaHasta: t.pruebaHasta && t.pruebaHasta > ahora ? t.pruebaHasta : null,
       corteEn: corteEn(t, funcion),
@@ -213,7 +215,15 @@ async function serializarTransmision(t, funcion, tienda, ahora) {
       // Fase 5 (Premium): retransmisión y resumen con IA.
       destinos: (t.destinos ?? []).map(d => ({ id: d.id, plataforma: d.plataforma, url: d.url, habilitada: d.habilitada, conectada: !!d.salidaId })),
       maxDestinos: t.plan === "premium" ? MAX_DESTINOS : 0,
-      resumen: t.plan === "premium" ? { estado: t.resumenEstado, datos: t.resumen, generadoEn: t.resumenGeneradoEn } : null,
+      // La IA solo corre con el botón "Generar resumen" (decisión 2026-10-15).
+      resumen: t.plan === "premium" ? {
+        estado: t.resumenEstado,
+        datos: t.resumen,
+        generadoEn: t.resumenGeneradoEn,
+        pedidoEn: t.resumenPedidoEn,
+        pedidoPor: t.resumenPedidoPor,
+        puedePedir: !motivoSinResumen(t, funcion, ahora)
+      } : null,
       cargoPremium: (() => {
         const c = (t.cargos ?? []).find(x => x.tipo === "premium");
         return c ? { monto: Number(c.monto), estado: c.estado } : null;
@@ -559,6 +569,34 @@ export async function borrarGrabacionAhora(tiendaId, id, user, ahora = new Date(
   return obtenerPorFuncion(tiendaId, t.funcionId, ahora);
 }
 
+/**
+ * R8.3 (Premium): "Generar resumen". La IA nunca corre sola (decisión
+ * 2026-10-15): este pedido es lo único que dispara los subtítulos automáticos
+ * y el resumen; el job los hace en segundo plano. Tras un error con los
+ * reintentos agotados, se puede volver a pedir.
+ */
+export async function pedirResumen(tiendaId, id, user, ahora = new Date()) {
+  await tiendaDeEventos(tiendaId);
+  const t = await transmisionDeTienda(tiendaId, id);
+  const motivo = motivoSinResumen(t, t.funcion, ahora);
+  if (motivo) throw noProcesable(motivo.message, motivo.motivo);
+
+  const usuario = usuarioDe(user);
+  const pedido = await prisma.evento_transmisiones.updateMany({
+    // Mismo estado que se validó: dos clics seguidos no piden dos veces.
+    where: { id, tiendaId, OR: [{ resumenEstado: null }, { resumenEstado: "error" }] },
+    data: { resumenEstado: "pendiente", resumenIntentos: 0, resumenPedidoEn: ahora, resumenPedidoPor: usuario, fechaActualizacion: ahora, usuarioActualizacion: usuario }
+  });
+  if (pedido.count !== 1) throw noProcesable("El resumen ya se está preparando", "EN_CURSO");
+  // Si los subtítulos fallaron en un intento anterior, se vuelven a pedir.
+  await prisma.transmision_grabaciones.updateMany({
+    where: { transmisionId: id, subtitulosEstado: "error" },
+    data: { subtitulosEstado: "sin_pedir", fechaActualizacion: ahora }
+  });
+  logger.info(`Resumen con IA de la transmisión ${id} pedido por ${usuario}`);
+  return obtenerPorFuncion(tiendaId, t.funcionId, ahora);
+}
+
 /** R5.1: datos para la app que transmite. Solo editor+ (lo exige la ruta). */
 export async function datosConexion(tiendaId, id) {
   await tiendaDeEventos(tiendaId);
@@ -703,6 +741,8 @@ async function datosParaApp(t, ahora) {
     },
     etapa,
     senal: t.senal,
+    // A2: { codigo, mensaje, en } para mostrar en la app qué corregir, o null.
+    senalError: errorSenalVigente(t),
     habilitada: t.habilitada,
     pruebaHasta: t.pruebaHasta && t.pruebaHasta > ahora ? t.pruebaHasta : null,
     segundosRestantes: Math.max(0, Math.floor((limite.getTime() - ahora.getTime()) / 1000)),

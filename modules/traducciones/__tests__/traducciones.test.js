@@ -2,8 +2,10 @@ import { jest } from "@jest/globals";
 
 jest.unstable_mockModule("../../../config/prisma.js", () => ({ prisma: {}, default: {} }));
 const { estadoCampo, textoLocal } = await import("../texto-local.js");
-const { FUENTES, textosDiseno, textosTour } = await import("../fuentes.js");
+const { CAMPOS_DISENO_TRADUCIBLES, FUENTES, textosDiseno, textosTour } = await import("../fuentes.js");
 const { localizar, localizado } = await import("../localizar.js");
+const { catalogoDeLugares } = await import("../traducciones.service.js");
+const { DATOS } = await import("../../negocio/datos.js");
 
 // docs/specs/idiomas D4 (cadena de respaldo) · antes hospedaje-completo C3
 describe("estado y texto de una traducción", () => {
@@ -58,11 +60,81 @@ describe("localizar", () => {
 });
 
 describe("todas las fuentes tienen la misma forma (diseno.md B4)", () => {
-  it.each(Object.keys(FUENTES))("%s declara etiqueta, almacén, nombre, textos y aplicar", (nombre) => {
+  it.each(Object.keys(FUENTES))("%s declara etiqueta, almacén, nombre, nombreCampo, textos, aplicar y lugares", (nombre) => {
     const f = FUENTES[nombre];
     expect(typeof f.etiqueta).toBe("string");
     for (const m of ["leer", "leerUna", "idDe", "guardar"]) expect(typeof f.almacen[m]).toBe("function");
-    for (const m of ["nombre", "textos", "aplicar"]) expect(typeof f[m]).toBe("function");
+    for (const m of ["nombre", "nombreCampo", "textos", "aplicar", "lugares"]) expect(typeof f[m]).toBe("function");
+  });
+
+  it("nombreCampo: cada fuente nombra sus campos como los ve el dueño", () => {
+    expect(FUENTES.habitaciones.nombreCampo("amenities")).toBe("Servicios");
+    expect(FUENTES.productos.nombreCampo("descripcionCorta")).toBe("Descripción corta");
+    expect(FUENTES.tours.nombreCampo("itinerario.1.titulo")).toBe("Itinerario, paso 2: título");
+    expect(FUENTES.tours.nombreCampo("pasajero.abc")).toBe("Tipo de pasajero");
+    expect(FUENTES.diseno.nombreCampo("tienda.descripcion")).toBe("Descripción de la tienda");
+    expect(FUENTES.diseno.nombreCampo("s.faq.items.1.pregunta")).toBe("Pregunta (2)");
+    expect(FUENTES.diseno.nombreCampo("s.cerca.cercanos.0")).toBe("Lugar cercano 1");
+    expect(FUENTES.diseno.nombreCampo("s.hero.textoBotonSecundario")).toBe("Botón secundario");
+    expect(FUENTES.textos.nombreCampo("Salida|tour")).toBe("Texto fijo (tour)");
+    expect(FUENTES.textos.nombreCampo("Buscar")).toBe("Texto fijo");
+  });
+
+  it("nombreCampo: todo campo traducible del diseño tiene nombre (no queda la clave técnica)", () => {
+    for (const c of CAMPOS_DISENO_TRADUCIBLES.filter((x) => !x.includes("[]"))) {
+      expect([c, FUENTES.diseno.nombreCampo(`s.x.${c}`)]).not.toEqual([c, c]);
+    }
+  });
+});
+
+// docs/specs/idiomas, diseno.md A1 (Strategy) y A5 (catálogo de la respuesta)
+describe("dónde se muestra cada texto en Traducciones", () => {
+  const ESTANDAR = "8a1f0c2e-0000-4000-8000-000000000001";
+
+  it("nombre, ficha de habitación y ficha del tour van al catálogo, con el producto como sección", () => {
+    const delProducto = FUENTES.productos.lugares({ id: ESTANDAR, nombre: "Estándar Queen" }, "nombre", DATOS.hotel);
+    const deLaFicha = FUENTES.habitaciones.lugares({ productoId: ESTANDAR, producto: { nombre: "Estándar Queen" } }, "camas", DATOS.hotel);
+    expect(deLaFicha).toEqual(delProducto);
+    expect(delProducto).toEqual([{
+      lugar: { id: "contenido/catalogo", zona: "contenido", nombre: "Habitaciones", orden: 0 },
+      seccion: { id: ESTANDAR, nombre: "Estándar Queen" }
+    }]);
+    expect(FUENTES.tours.lugares({ id: "t1", nombre: "Valle Sagrado" }, "incluye", DATOS.tours)[0].lugar.nombre).toBe("Tours");
+  });
+
+  it("el nombre del catálogo es del rubro (nombreCatalogo), sin preguntar cuál es", () => {
+    for (const [rubro, datos] of Object.entries(DATOS)) {
+      expect([rubro, FUENTES.productos.lugares({ id: "x", nombre: "X" }, "nombre", datos)[0].lugar.nombre]).toEqual([rubro, datos.nombreCatalogo]);
+    }
+  });
+
+  it("los textos fijos van a la pantalla de la tienda donde salen, filtrada por los grupos del rubro", () => {
+    const lugares = FUENTES.textos.lugares({ id: "hotel" }, "Ver disponibilidad", DATOS.hotel);
+    expect(lugares.length).toBeGreaterThan(0);
+    expect(lugares.every((l) => l.lugar.zona === "pantallas")).toBe(true);
+    expect(lugares.map((l) => l.lugar.id)).not.toContain("pantallas/otros");
+  });
+
+  it("el catálogo de la respuesta: referencias en cada campo, nombres una vez, zonas y secciones en orden", () => {
+    const c = catalogoDeLugares();
+    const correo = { lugar: { id: "mensajes/correos", zona: "mensajes", nombre: "Correos al cliente", orden: 19 }, seccion: { id: "reserva-confirmada", nombre: "Reserva confirmada", orden: 4 } };
+    const ficha = { lugar: { id: "pantallas/habitacion", zona: "pantallas", nombre: "Ficha de la habitación", orden: 9 }, seccion: { id: "ficha", nombre: "Ficha", orden: 0 } };
+    const calendario = { ...ficha, seccion: { id: "calendario-de-la-estadia", nombre: "Calendario de la estadía", orden: 1 } };
+    const producto = (id, nombre) => ({ lugar: { id: "contenido/catalogo", zona: "contenido", nombre: "Habitaciones", orden: 0 }, seccion: { id, nombre } });
+
+    expect(c.agregar([correo])).toEqual([{ lugar: "mensajes/correos", seccion: "reserva-confirmada" }]);
+    c.agregar([calendario, ficha]);
+    c.agregar([producto("b", "Suite")]);
+    c.agregar([producto("a", "Estándar Queen")]);
+    c.agregar([producto("b", "Suite")]);
+
+    expect(c.lista()).toEqual([
+      // Las filas del contenido, en el orden en que aparecen.
+      { id: "contenido/catalogo", zona: "contenido", nombre: "Habitaciones", orden: 0, secciones: [{ id: "b", nombre: "Suite" }, { id: "a", nombre: "Estándar Queen" }] },
+      // Las secciones de una pantalla, en el orden del registro.
+      { id: "pantallas/habitacion", zona: "pantallas", nombre: "Ficha de la habitación", orden: 9, secciones: [{ id: "ficha", nombre: "Ficha" }, { id: "calendario-de-la-estadia", nombre: "Calendario de la estadía" }] },
+      { id: "mensajes/correos", zona: "mensajes", nombre: "Correos al cliente", orden: 19, secciones: [{ id: "reserva-confirmada", nombre: "Reserva confirmada" }] }
+    ]);
   });
 });
 

@@ -1,6 +1,7 @@
 import { almacenColumna, almacenDiseno, almacenTextosFijos } from "./almacenes.js";
 import { textoLocal, vacio } from "./texto-local.js";
 import { textoBase } from "../idiomas/textos.service.js";
+import { ubicaciones } from "../idiomas/ubicaciones.js";
 
 /**
  * Fuentes de texto traducible de la tienda (docs/specs/idiomas D5, diseno.md B4).
@@ -13,14 +14,32 @@ import { textoBase } from "../idiomas/textos.service.js";
  *   nombre(fila)      → el nombre de la fila en Traducciones
  *   textos(fila)      → { clave: texto base } de lo que se traduce
  *   aplicar(fila, tr) → copia de la fila con los textos de un idioma
+ *   nombreCampo(campo) → cómo ve el dueño un campo ("Camas", "Itinerario, paso 2: título")
+ *   lugar             → entrada de "Tu contenido" donde se muestra (CONTENIDO), o
+ *   lugares(fila, campo, datos) → dónde se muestra cada campo en Traducciones
+ *                       (diseno.md A1; `datos` son los del rubro de la tienda)
  */
 
+/** Nombre de cada campo de texto en Traducciones (columnas y partes de la ficha o del diseño). */
+const NOMBRES_CAMPO = {
+  nombre: "Nombre", descripcion: "Descripción", descripcionCorta: "Descripción corta", camas: "Camas",
+  amenities: "Servicios", datoPedido: "Dato que pides", instrucciones: "Instrucciones de llegada",
+  politicaCancelacion: "Política de cancelación", titulo: "Título", subtitulo: "Subtítulo", texto: "Texto",
+  kicker: "Antetítulo", textoBoton: "Botón", textoBotonSecundario: "Botón secundario", acento: "Texto destacado",
+  campeonato: "Campeonato", nota: "Nota", pregunta: "Pregunta", respuesta: "Respuesta", pie: "Pie de foto",
+  duracion: "Duración", incluye: "Incluye", noIncluye: "No incluye", queLlevar: "Qué llevar", requisitos: "Requisitos",
+  puntoEncuentro: "Punto de encuentro", recojo: "Recojo"
+};
+const nombreDe = (campo) => NOMBRES_CAMPO[campo] ?? campo;
+
 /** Fuente cuyas claves son columnas de la fila (el caso común). */
-function fuenteCampos({ etiqueta, tabla, pk = "id", campos, where, nombre = (f) => f.nombre, incluir = {} }) {
+function fuenteCampos({ etiqueta, lugar, tabla, pk = "id", campos, where, nombre = (f) => f.nombre, incluir = {} }) {
   return {
     etiqueta,
+    lugar,
     almacen: almacenColumna({ tabla, pk, where, select: { ...Object.fromEntries(campos.map((c) => [c, true])), ...incluir } }),
     nombre,
+    nombreCampo: nombreDe,
     textos: (fila) => Object.fromEntries(campos.map((c) => [c, fila[c]])),
     aplicar: (fila, tr) => ({ ...fila, ...Object.fromEntries(campos.filter((c) => c in fila).map((c) => [c, textoLocal(fila[c], tr[c])])) })
   };
@@ -40,6 +59,14 @@ export function textosTour(t) {
   });
   for (const tp of t.tiposPasajero ?? []) textos[`pasajero.${tp.id}`] = tp.nombre;
   return textos;
+}
+
+/** "incluye" → "Incluye"; "itinerario.1.titulo" → "Itinerario, paso 2: título"; "pasajero.<id>" → "Tipo de pasajero". */
+function nombreCampoTour(campo) {
+  const [primero, i, parte] = campo.split(".");
+  if (primero === "pasajero") return "Tipo de pasajero";
+  if (primero === "itinerario") return `Itinerario, paso ${Number(i) + 1}: ${nombreDe(parte).toLowerCase()}`;
+  return nombreDe(campo);
 }
 
 function aplicarTour(tour, tr) {
@@ -99,6 +126,19 @@ export function textosDiseno(estructura, descripcion) {
   return textos;
 }
 
+/**
+ * "tienda.descripcion" → "Descripción de la tienda"; "s.faq.items.1.pregunta" →
+ * "Pregunta (2)"; "s.cerca.cercanos.0" → "Lugar cercano 1"; "s.hero.titulo" → "Título".
+ */
+function nombreCampoDiseno(campo) {
+  if (campo === "tienda.descripcion") return "Descripción de la tienda";
+  const partes = campo.split(".");
+  const ultimo = partes.at(-1);
+  if (/^\d+$/.test(ultimo)) return `${partes.at(-2) === "cercanos" ? "Lugar cercano" : "Elemento"} ${Number(ultimo) + 1}`;
+  const i = partes.indexOf("items");
+  return i >= 0 && partes[i + 1] ? `${nombreDe(ultimo)} (${Number(partes[i + 1]) + 1})` : nombreDe(ultimo);
+}
+
 /** Copia de la estructura con los textos de un idioma (al día o manuales). */
 export function aplicarDiseno(estructura, tr) {
   if (!estructura?.home) return estructura;
@@ -123,17 +163,50 @@ export function aplicarDiseno(estructura, tr) {
   };
 }
 
+// ── Dónde se muestra cada texto en Traducciones (diseno.md A1) ─────────
+
+/**
+ * Entradas de "Tu contenido", en orden. Varias fuentes pueden ir a la misma:
+ * nombre, ficha de habitación y ficha del tour son del mismo producto, y su
+ * sección es el producto (todas usan su id). El nombre del catálogo es del
+ * rubro (`nombreCatalogo` en negocio/<rubro>/datos.js), no de un if.
+ */
+const CONTENIDO = {
+  catalogo: (datos) => datos.nombreCatalogo,
+  categorias: () => "Categorías",
+  extras: () => "Extras",
+  planes: () => "Planes de tarifa",
+  temporadas: () => "Temporadas",
+  config: () => "Políticas de reserva",
+  diseno: () => "Página de inicio"
+};
+const ORDEN_CONTENIDO = Object.keys(CONTENIDO);
+
+/** `lugares` de una fuente de contenido: su entrada, y la fila como sección. */
+function lugaresDeContenido(fuente) {
+  if (!CONTENIDO[fuente.lugar]) throw new Error(`FUENTES: lugar de contenido desconocido "${fuente.lugar}"`);
+  return (fila, _campo, datos) => [{
+    lugar: { id: `contenido/${fuente.lugar}`, zona: "contenido", nombre: CONTENIDO[fuente.lugar](datos), orden: ORDEN_CONTENIDO.indexOf(fuente.lugar) },
+    seccion: { id: String(fuente.almacen.idDe(fila)), nombre: fuente.nombre(fila) ?? "" }
+  }];
+}
+
+/** Completa el registro: la fuente que declara `lugar` recibe sus `lugares`. */
+const conLugares = (fuentes) => Object.fromEntries(Object.entries(fuentes)
+  .map(([nombre, f]) => [nombre, Object.freeze(f.lugares ? f : { ...f, lugares: lugaresDeContenido(f) })]));
+
 // ── Registro ───────────────────────────────────────────────────────────
 
 const activosDe = (tiendaId) => ({ tiendaId, activo: true });
 const deLaTienda = (tiendaId) => ({ tiendaId });
 
-export const FUENTES = Object.freeze({
+export const FUENTES = Object.freeze(conLugares({
   productos: fuenteCampos({
-    etiqueta: "Nombre y descripción", tabla: "productos", campos: ["nombre", "descripcionCorta", "descripcion"], where: activosDe
+    etiqueta: "Nombre y descripción", lugar: "catalogo", tabla: "productos", campos: ["nombre", "descripcionCorta", "descripcion"], where: activosDe
   }),
   tours: {
     etiqueta: "Ficha del tour",
+    lugar: "catalogo",
     almacen: almacenColumna({
       tabla: "productos",
       where: (tiendaId) => ({ ...activosDe(tiendaId), tour: { isNot: null } }),
@@ -148,26 +221,29 @@ export const FUENTES = Object.freeze({
       }
     }),
     nombre: (f) => f.nombre,
+    nombreCampo: nombreCampoTour,
     textos: (f) => textosTour(f.tour),
     // La fila es el producto: { tour, traducciones }.
     aplicar: (fila, tr) => ({ ...fila, tour: aplicarTour(fila.tour, tr) })
   },
-  categorias: fuenteCampos({ etiqueta: "Categoría", tabla: "categorias", campos: ["nombre", "descripcion"], where: activosDe }),
+  categorias: fuenteCampos({ etiqueta: "Categoría", lugar: "categorias", tabla: "categorias", campos: ["nombre", "descripcion"], where: activosDe }),
   habitaciones: fuenteCampos({
-    etiqueta: "Ficha de habitación", tabla: "hotel_tipos_habitacion", pk: "productoId", campos: ["camas", "amenities"],
+    etiqueta: "Ficha de habitación", lugar: "catalogo", tabla: "hotel_tipos_habitacion", pk: "productoId", campos: ["camas", "amenities"],
     where: deLaTienda, incluir: { producto: { select: { nombre: true } } }, nombre: (f) => f.producto?.nombre
   }),
-  extras: fuenteCampos({ etiqueta: "Extra", tabla: "hotel_extras", campos: ["nombre", "descripcion", "datoPedido"], where: deLaTienda }),
-  temporadas: fuenteCampos({ etiqueta: "Temporada", tabla: "hotel_temporadas", campos: ["nombre"], where: deLaTienda }),
-  planes: fuenteCampos({ etiqueta: "Plan de tarifa", tabla: "hotel_planes", campos: ["nombre", "descripcion"], where: deLaTienda }),
+  extras: fuenteCampos({ etiqueta: "Extra", lugar: "extras", tabla: "hotel_extras", campos: ["nombre", "descripcion", "datoPedido"], where: deLaTienda }),
+  temporadas: fuenteCampos({ etiqueta: "Temporada", lugar: "temporadas", tabla: "hotel_temporadas", campos: ["nombre"], where: deLaTienda }),
+  planes: fuenteCampos({ etiqueta: "Plan de tarifa", lugar: "planes", tabla: "hotel_planes", campos: ["nombre", "descripcion"], where: deLaTienda }),
   config: fuenteCampos({
-    etiqueta: "Configuración de reservas", tabla: "config_reservas", pk: "tiendaId",
+    etiqueta: "Configuración de reservas", lugar: "config", tabla: "config_reservas", pk: "tiendaId",
     campos: ["instrucciones", "politicaCancelacion"], where: deLaTienda, nombre: () => "Reservas"
   }),
   diseno: {
     etiqueta: "Página de inicio",
+    lugar: "diseno",
     almacen: almacenDiseno(),
     nombre: (f) => f.nombre,
+    nombreCampo: nombreCampoDiseno,
     textos: (f) => textosDiseno(f.estructura, f.descripcion),
     // La fila es { estructura, descripcion, traducciones }.
     aplicar: (fila, tr) => ({ ...fila, estructura: aplicarDiseno(fila.estructura, tr), descripcion: textoLocal(fila.descripcion, tr["tienda.descripcion"]) })
@@ -178,10 +254,14 @@ export const FUENTES = Object.freeze({
     etiqueta: "Textos fijos",
     almacen: almacenTextosFijos(),
     nombre: (f) => f.nombre,
+    // Lo que va después de "|" aclara dónde se usa ("Salida|tour" → "Texto fijo (tour)").
+    nombreCampo: (clave) => (clave.includes("|") ? `Texto fijo (${clave.split("|")[1]})` : "Texto fijo"),
     textos: (f) => Object.fromEntries(f.claves.map((c) => [c, textoBase(c)])),
     // La fila es un grupo: { claves, traducciones } → { clave: texto en el idioma }.
-    aplicar: (fila, tr) => ({ ...fila, textos: Object.fromEntries(fila.claves.map((c) => [c, textoLocal(textoBase(c), tr[c])])) })
+    aplicar: (fila, tr) => ({ ...fila, textos: Object.fromEntries(fila.claves.map((c) => [c, textoLocal(textoBase(c), tr[c])])) }),
+    // La pantalla y sección de la tienda (o el correo) donde sale; la fila es su grupo.
+    lugares: (fila, clave, datos) => ubicaciones().lugaresDeClave(clave, { gruposTextos: datos.gruposTextos, grupo: fila.id })
   }
-});
+}));
 
 export const NOMBRES_FUENTES = Object.freeze(Object.keys(FUENTES));

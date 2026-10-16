@@ -7,7 +7,7 @@ const filtrar = (lista, where = {}) => lista.filter((x) => Object.entries(where)
   (v && typeof v === "object" && "in" in v ? v.in.includes(x[k]) : x[k] === v)));
 const prisma = {
   tiendas: { findUnique: jest.fn(async () => ({ id: TIENDA, tipoNegocio: "productos" })) },
-  textos_claves: { findMany: jest.fn(async ({ where }) => claves.filter((c) => where.grupo.in.includes(c.grupo) && !c.obsoleta)) },
+  textos_claves: { findMany: jest.fn(async ({ where }) => claves.filter((c) => c.grupos.some((g) => where.grupos.hasSome.includes(g)) && !c.obsoleta)) },
   textos_plataforma: { findMany: jest.fn(async ({ where } = {}) => filtrar(plataforma, where)) },
   tienda_textos: {
     findMany: jest.fn(async ({ where }) => filtrar(propias, where)),
@@ -22,7 +22,7 @@ const prisma = {
 };
 jest.unstable_mockModule("../../../config/prisma.js", () => ({ prisma, default: prisma }));
 
-const { avanceTextos, diccionario, invalidarTextos, textoBase, textosPara, traductorPara } = await import("../textos.service.js");
+const { avanceTextos, clavesDeTienda, diccionario, grupoPrincipal, invalidarTextos, textoBase, textosPara, traductorPara } = await import("../textos.service.js");
 const { invalidarIdiomas } = await import("../idiomas.service.js");
 const { invalidarRubrosCache } = await import("../../negocio/rubros.cache.js");
 const { FUENTES } = await import("../../traducciones/fuentes.js");
@@ -33,11 +33,11 @@ const en = crearIdioma({ codigo: "en", nombre: "English", activo: true });
 
 beforeEach(() => {
   claves = [
-    { clave: "Buscar", grupo: "comun", obsoleta: false },
-    { clave: "Agregar al carrito", grupo: "productos", obsoleta: false },
-    { clave: "Quedan {n}", grupo: "productos", obsoleta: false },
-    { clave: "Salida|tour", grupo: "tours", obsoleta: false },
-    { clave: "Vieja", grupo: "comun", obsoleta: true }
+    { clave: "Buscar", grupos: ["comun"], obsoleta: false },
+    { clave: "Agregar al carrito", grupos: ["productos"], obsoleta: false },
+    { clave: "Quedan {n}", grupos: ["productos", "tours"], obsoleta: false },
+    { clave: "Salida|tour", grupos: ["tours"], obsoleta: false },
+    { clave: "Vieja", grupos: ["comun"], obsoleta: true }
   ];
   plataforma = [
     { idioma: "en", clave: "Buscar", texto: "Search" },
@@ -78,6 +78,24 @@ describe("diccionario de una tienda", () => {
     await diccionario(TIENDA, en);
     await diccionario(TIENDA, en);
     expect(prisma.textos_claves.findMany).toHaveBeenCalledTimes(1);
+  });
+});
+
+// diseno.md "Grupos exactos": una clave lleva todos los grupos donde se usa
+describe("claves que traduce una tienda", () => {
+  it("las que tienen alguno de sus grupos, una vez cada una, con su grupo principal; las de otro rubro no", async () => {
+    // Tienda de productos: "Quedan {n}" es de productos y de tours; "Salida|tour" solo de tours.
+    const porClave = (a, b) => a.clave.localeCompare(b.clave);
+    expect((await clavesDeTienda(TIENDA)).sort(porClave)).toEqual([
+      { clave: "Agregar al carrito", grupo: "productos" },
+      { clave: "Buscar", grupo: "comun" },
+      { clave: "Quedan {n}", grupo: "productos" }
+    ]);
+  });
+
+  it("grupoPrincipal: el primero de los del rubro, en su orden", () => {
+    expect(grupoPrincipal(["tours", "productos"], ["comun", "productos"])).toBe("productos");
+    expect(grupoPrincipal(["hotel", "comun"], ["comun", "reservas", "hotel"])).toBe("comun");
   });
 });
 

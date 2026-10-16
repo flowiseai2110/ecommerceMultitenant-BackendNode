@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals";
 import crypto from "node:crypto";
 import { exportJWK, generateKeyPair, jwtVerify } from "jose";
 
@@ -9,8 +10,13 @@ process.env.CF_STREAM_SIGNING_KEY_ID = "kid-prueba";
 process.env.CF_STREAM_SIGNING_KEY_JWK = Buffer.from(JSON.stringify(await exportJWK(privateKey))).toString("base64");
 process.env.CF_STREAM_WEBHOOK_SECRET = "secreto-webhook";
 process.env.CF_NOTIFICATIONS_SECRET = "secreto-notificaciones";
+process.env.CF_STREAM_ACCOUNT_ID = "cuenta-1";
+process.env.CF_STREAM_API_TOKEN = "token-1";
+delete process.env.CF_STREAM_TIMEOUT_SEG;
+delete process.env.CF_STREAM_ALLOWED_ORIGINS;
 
-const { default: CloudflareStreamProvider } = await import("../cloudflare.provider.js");
+const { default: CloudflareStreamProvider, origenesPermitidos, segundosDePausa } = await import("../cloudflare.provider.js");
+const { LimiteApiError } = await import("../streaming-provider.js");
 const cf = new CloudflareStreamProvider();
 
 const firmar = (cuerpo, time = Math.floor(Date.now() / 1000), secreto = "secreto-webhook") =>
@@ -45,6 +51,21 @@ describe("verificarWebhook — Notifications (cf-webhook-auth)", () => {
       .toMatchObject({ entradaId: "in-1", senal: "conectada", eventoId: "live_input.connected:in-1:2026-10-17T21:05:00Z" });
     expect(cf.verificarWebhook({ tipo: "notificaciones", headers, rawBody: aviso("live_input.disconnected") }).senal).toBe("desconectada");
     expect(cf.verificarWebhook({ tipo: "notificaciones", headers, rawBody: aviso("live_input.errored") }).senal).toBe("desconectada");
+    expect(cf.verificarWebhook({ tipo: "notificaciones", headers, rawBody: aviso("live_input.connected") }).error).toBeNull();
+  });
+
+  it("errored trae el código del problema (A2)", () => {
+    const cuerpo = Buffer.from(JSON.stringify({
+      data: {
+        input_id: "in-1", event_type: "live_input.errored", updated_at: "2026-10-17T21:06:00Z",
+        live_input_errored: { error: { code: "ERR_GOP_OUT_OF_RANGE", message: "Keyframe interval out of range" }, video_codec: "h264", audio_codec: "aac" }
+      }
+    }));
+    const r = cf.verificarWebhook({ tipo: "notificaciones", headers: { "cf-webhook-auth": "secreto-notificaciones" }, rawBody: cuerpo });
+    expect(r.error).toEqual({ codigo: "ERR_GOP_OUT_OF_RANGE", mensaje: "Keyframe interval out of range" });
+    // Sin detalle: se trata como un problema genérico.
+    expect(cf.verificarWebhook({ tipo: "notificaciones", headers: { "cf-webhook-auth": "secreto-notificaciones" }, rawBody: aviso("live_input.errored") }).error)
+      .toEqual({ codigo: "ERR_UNHEALTHY", mensaje: null });
   });
 
   it("rechaza un secret distinto o ausente", () => {
@@ -70,5 +91,65 @@ describe("urlReproduccion", () => {
     expect(r.iframeUrl).toMatch(/\/iframe\?autoplay=true&muted=true$/);
     const token = r.iframeUrl.split("/")[3];
     expect(r.estadoUrl).toBe(`https://customer-abc123.cloudflarestream.com/${token}/lifecycle`);
+  });
+});
+
+describe("origenesPermitidos (allowedOrigins)", () => {
+  const base = (extra = {}) => ({
+    streaming: { cloudflare: { allowedOrigins: [] } },
+    platform: { baseDomain: "ecompyme.com", storefrontUrl: "https://ecompyme.com" },
+    frontendUrl: "https://admin.ecompyme.com",
+    ...extra
+  });
+
+  it("las tiendas en *.<dominio> y el admin, sin repetir", () => {
+    expect(origenesPermitidos(base())).toEqual(["ecompyme.com", "*.ecompyme.com", "admin.ecompyme.com"]);
+  });
+
+  it("en local queda vacío (sin restricción) y la variable manda si está", () => {
+    expect(origenesPermitidos(base({ platform: { baseDomain: null, storefrontUrl: "http://localhost:4200" }, frontendUrl: "http://localhost:4201" }))).toEqual([]);
+    expect(origenesPermitidos(base({ streaming: { cloudflare: { allowedOrigins: ["tienda.pe"] } } }))).toEqual(["tienda.pe"]);
+  });
+});
+
+describe("llamadas a la API", () => {
+  const respuesta = (status, result, headers = {}) => new Response(JSON.stringify({ success: status < 400, result, errors: [] }), { status, headers });
+  const original = global.fetch;
+  afterAll(() => { global.fetch = original; });
+
+  it("crearEntrada graba con firma y timeoutSeconds 0 (el valor de Cloudflare)", async () => {
+    global.fetch = jest.fn(async () => respuesta(200, { uid: "in-1", rtmps: { url: "rtmps://x/", streamKey: "k" }, srt: {} }));
+    await cf.crearEntrada({ nombre: "Cumple", meta: { tiendaId: "t1" }, habilitada: false });
+    const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+    expect(body.recording).toEqual({ mode: "automatic", requireSignedURLs: true, timeoutSeconds: 0 });
+  });
+
+  it("usoAlmacenamiento normaliza storage-usage", async () => {
+    global.fetch = jest.fn(async () => respuesta(200, { totalStorageMinutes: 850.5, totalStorageMinutesLimit: 1000, videoCount: 3 }));
+    expect(await cf.usoAlmacenamiento()).toEqual({ usadoMin: 850.5, limiteMin: 1000 });
+    expect(global.fetch.mock.calls[0][0]).toBe("https://api.cloudflare.com/client/v4/accounts/cuenta-1/stream/storage-usage");
+  });
+
+  it("lee la pausa del encabezado Ratelimit o Retry-After, con tope de 5 min", () => {
+    expect(segundosDePausa(new Headers({ ratelimit: '"default";r=0;t=42' }))).toBe(42);
+    expect(segundosDePausa(new Headers({ "retry-after": "7" }))).toBe(7);
+    expect(segundosDePausa(new Headers({ ratelimit: '"default";r=0;t=9999' }))).toBe(300);
+    expect(segundosDePausa(new Headers())).toBe(300);
+  });
+
+  // Va al final: la pausa queda activa para el resto del archivo.
+  it("ante un 429 deja de llamar hasta que se reinicia la ventana, salvo lo urgente (el corte)", async () => {
+    global.fetch = jest.fn(async () => respuesta(429, null, { ratelimit: '"default";r=0;t=60' }));
+    await expect(cf.estadoEntrada("in-1")).rejects.toBeInstanceOf(LimiteApiError);
+    const pausa = cf.consumoApi().pausadaHasta;
+    expect(pausa.getTime() - Date.now()).toBeGreaterThan(55_000);
+
+    global.fetch = jest.fn(async () => respuesta(200, { uid: "in-1", meta: {}, recording: {}, status: { current: { state: "connected" } } }));
+    await expect(cf.estadoEntrada("in-1")).rejects.toBeInstanceOf(LimiteApiError);
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    await cf.habilitarEntrada("in-1", false, { urgente: true });
+    expect(global.fetch).toHaveBeenCalledTimes(2); // GET + PUT
+    expect(JSON.parse(global.fetch.mock.calls[1][1].body).enabled).toBe(false);
   });
 });

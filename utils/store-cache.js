@@ -46,7 +46,9 @@ export function cacheRespuesta(namespace, { ttlMs = DEFAULT_TTL_MS, ttlDe } = {}
   const cache = cacheDe(namespace);
 
   return (req, res, next) => {
-    if (req.method !== "GET") return next();
+    // Con permiso de vista previa (docs/specs/idiomas B3) la respuesta puede
+    // estar en un idioma sin publicar: ni se lee ni se guarda (la llave es la URL).
+    if (req.method !== "GET" || req.permisoVistaPrevia) return next();
 
     const key = `${req.tiendaId ?? "-"}|${req.originalUrl}`;
     const hit = cache.get(key);
