@@ -3,6 +3,7 @@ import { logger } from "../../config/logger.js";
 import { escapeHtml, sendTransactionalEmail } from "../../services/email.service.js";
 import { urlTienda } from "../resenas/resenas.service.js";
 import { ConflictError, NotFoundError, ValidationError } from "../../utils/errors.js";
+import { textoRicoEmail } from "../../utils/texto-rico-email.js";
 import { isoLima } from "./comunicados.logic.js";
 import { guardarLista, leerLista } from "./comunicados.service.js";
 
@@ -16,7 +17,7 @@ import { guardarLista, leerLista } from "./comunicados.service.js";
  */
 
 // Reservas vigentes: las terminadas, canceladas o rechazadas no se avisan.
-export const ESTADOS_AVISABLES = ["solicitada", "aceptada", "por_pagar", "pago_en_revision", "confirmada"];
+export const ESTADOS_AVISABLES = ["solicitada", "aceptada", "por_pagar", "pago_en_revision", "confirmada", "hospedada"];
 export const MAX_DESTINATARIOS = 500;
 export const MAX_RANGO_DIAS = 180;
 const PAUSA_MS = 600; // ~1,6 envíos por segundo: por debajo del límite de Resend
@@ -95,10 +96,8 @@ export function linkAbsoluto(link, slug) {
 }
 
 export function comunicadoEmail({ comunicado, tienda, destinatario }) {
-  const parrafos = e(comunicado.mensaje)
-    .split(/\n+/)
-    .map((p) => `<p style="margin: 0 0 10px; font-size: 15px; line-height: 1.6; color: #4a4a4a;">${p}</p>`)
-    .join("");
+  // El mensaje admite formato (Markdown liviano, igual que en la tienda).
+  const parrafos = textoRicoEmail(comunicado.mensaje);
   const reservas = destinatario.reservas
     .map((r) => {
       const fechas = r.fin ? `${formatoFecha.format(new Date(r.inicio))} – ${formatoFecha.format(new Date(r.fin))}` : formatoFecha.format(new Date(r.inicio));

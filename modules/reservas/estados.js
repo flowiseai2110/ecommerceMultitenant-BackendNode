@@ -22,14 +22,18 @@ import { clave } from "../idiomas/clave.js";
  * mayor (la fecha se libera; lo pagado queda como saldo a favor). Reprogramar
  * no cambia el estado.
  *
+ * Hotel (docs/specs/ciclo-reserva-hotel): el ciclo de recepción sigue a la
+ * confirmación. confirmada ─check_in─▶ hospedada ─check_out─▶ completada.
+ *
  * No hay plazos: lo que sigue `solicitada` o `aceptada` al llegar la hora de
  * inicio se anula (`vencida`), y una `confirmada` cuyo servicio ya terminó es
- * `completada`. Ambas cosas se calculan al leer (`estadoEfectivo`), sin cron.
+ * `completada` (salvo con ciclo de estadía: la cierra el check-out). Ambas
+ * cosas se calculan al leer (`estadoEfectivo`), sin cron.
  */
 
 export const ESTADOS_RESERVA = [
   "solicitada", "aceptada", "por_pagar", "pago_en_revision", "confirmada",
-  "completada", "rechazada", "vencida", "cancelada", "no_show", "suspendida"
+  "completada", "rechazada", "vencida", "cancelada", "no_show", "suspendida", "hospedada"
 ];
 
 /** Esperan algo del negocio o del cliente; vencen a la hora de inicio. */
@@ -68,7 +72,30 @@ export const TRANSICIONES_LOCAL = {
   completada:       { no_show: "no_show" }
 };
 
-const MAQUINAS = { evento: TRANSICIONES_EVENTO, local: TRANSICIONES_LOCAL };
+/**
+ * Hotel: después de confirmar, recepción registra la entrada y la salida. La
+ * reserva hospedada no se cancela ni es no-show: el huésped ya llegó.
+ */
+export const TRANSICIONES_HOTEL = {
+  ...TRANSICIONES,
+  // Recepción registra la cancelación de quien la pida, en cualquier momento antes de llegar (C5).
+  solicitada:       { ...TRANSICIONES.solicitada, cancelar_negocio: "cancelada" },
+  aceptada:         { ...TRANSICIONES.aceptada, cancelar_negocio: "cancelada" },
+  pago_en_revision: { ...TRANSICIONES.pago_en_revision, cancelar_cliente: "cancelada", cancelar_negocio: "cancelada" },
+  confirmada:       { ...TRANSICIONES.confirmada, check_in: "hospedada", cancelar_cliente: "cancelada" },
+  hospedada:        { check_out: "completada" },
+  completada:       {}
+};
+
+const MAQUINAS = { hotel: TRANSICIONES_HOTEL, evento: TRANSICIONES_EVENTO, local: TRANSICIONES_LOCAL };
+
+/**
+ * Con ciclo de estadía (check-in y check-out), la reserva no se cierra sola al
+ * llegar la fecha: la cierra recepción. Se deduce de la máquina, no del rubro.
+ */
+export const tieneCicloEstadia = (tipo) => Boolean((MAQUINAS[tipo] ?? TRANSICIONES).confirmada?.check_in);
+/** Tipos de reserva con ciclo de estadía (para filtrar en SQL). */
+export const TIPOS_CON_CICLO = Object.keys(MAQUINAS).filter(tieneCicloEstadia);
 
 /**
  * @param {string} actual
@@ -90,19 +117,19 @@ export function transicionar(actual, accion, tipo = "hotel") {
 
 /**
  * Estado real a una hora dada.
- * @param {{ estado: string, inicio: Date, fin?: Date|null, apartadoHasta?: Date|null }} reserva
+ * @param {{ estado: string, inicio: Date, fin?: Date|null, apartadoHasta?: Date|null, tipo?: string }} reserva
  * @param {Date} [ahora]
  */
-export function estadoEfectivo({ estado, inicio, fin, apartadoHasta = null }, ahora = new Date()) {
-  if (ESTADOS_ABIERTOS.includes(estado) && inicio <= ahora) return "vencida";
-  // Habitación apartada con pago directo (hospedaje-completo C1) o local
-  // aceptado sin pagar: si no se pagó a tiempo, se anula. En locales, una
-  // solicitud sin respuesta vence al terminar su plazo (alquiler-locales R6.4);
-  // hotel y tours no ponen `apartadoHasta` en sus solicitudes.
-  if (["solicitada", "aceptada"].includes(estado) && apartadoHasta && apartadoHasta <= ahora) return "vencida";
+export function estadoEfectivo({ estado, inicio, fin, apartadoHasta = null, tipo = null }, ahora = new Date()) {
+  // Lo no atendido vence al terminar su plazo o, sin plazo, a la hora de inicio.
+  // Plazo: habitación apartada con pago directo (hospedaje-completo C1), local
+  // sin respuesta o sin pago (alquiler-locales R6.4), o llegada tardía de hotel
+  // (pedida ya pasado el check-in: vence al terminar el día). Solo la llegada
+  // tardía tiene un plazo posterior al inicio.
+  if (ESTADOS_ABIERTOS.includes(estado) && (apartadoHasta ?? inicio) <= ahora) return "vencida";
   // Compra de entradas sin captura: vence al terminar el apartado (o al empezar la función).
   if (estado === "por_pagar" && (inicio <= ahora || (apartadoHasta && apartadoHasta <= ahora))) return "vencida";
-  if (estado === "confirmada" && (fin ?? inicio) <= ahora) return "completada";
+  if (estado === "confirmada" && !tieneCicloEstadia(tipo) && (fin ?? inicio) <= ahora) return "completada";
   return estado;
 }
 
@@ -119,7 +146,8 @@ const ETIQUETAS = {
   vencida: clave("Anulada"),
   cancelada: clave("Cancelada"),
   no_show: clave("No se presentó"),
-  suspendida: clave("Suspendida, fecha por definir")
+  suspendida: clave("Suspendida, fecha por definir"),
+  hospedada: clave("Hospedado")
 };
 
 export const etiquetaEstado = (estado) => ETIQUETAS[estado] ?? estado;

@@ -2,7 +2,7 @@ import { prisma } from "../../../config/prisma.js";
 import { ConflictError, ValidationError } from "../../../utils/errors.js";
 import { cierresDeProducto } from "../cierres.service.js";
 import { sumarDias } from "../tiempo.js";
-import { cotizarHotel } from "./cotizar.js";
+import { cotizarHotel, plazoLlegadaTardia } from "./cotizar.js";
 import { cargarHabitacionParaReserva } from "./habitaciones.service.js";
 import { extrasDeTienda, planDeTienda, temporadasParaEstadia } from "./tarifas.service.js";
 import { bloquearTipo, cupoEstadia } from "./disponibilidad.service.js";
@@ -33,7 +33,10 @@ export const verticalHotel = {
       detalle: {
         modalidadId: modalidad.id, noches: c.noches, horas: c.horas, adultos: datos.adultos, ninos: datos.ninos,
         edadesNinos: c.edadesNinos, exoneradoIgv: c.exoneradoIgv, habitaciones: c.habitaciones,
-        ...(c.extras.length ? { extras: c.extras } : {}), ...(c.plan ? { plan: c.plan } : {})
+        ...(c.extras.length ? { extras: c.extras } : {}), ...(c.plan ? { plan: c.plan } : {}),
+        // Llegada tardía (ya pasó el check-in de hoy): no vence a la hora de ingreso
+        // sino al terminar el día, para que el hotel alcance a atenderla.
+        ...(c.inicio <= ahora ? { apartadoHasta: plazoLlegadaTardia(datos.fecha) } : {})
       },
       // Para revalidar el cupo dentro de la transacción (C1).
       inventario: tipo.unidades != null && c.noches ? { productoId: producto.id, unidades: tipo.unidades, fecha: datos.fecha, noches: c.noches } : null,
@@ -74,7 +77,8 @@ async function cotizarHotelConCierres({ datos, tipo, modalidad, config, ahora })
     modalidad.tipo === "noche" ? temporadasParaEstadia(datos.tiendaId, datos.productoId, desde, hasta, datos.lang) : [],
     datos.extras?.length ? extrasDeTienda(datos.tiendaId, datos.lang) : [],
     modalidad.tipo === "noche" && datos.noches
-      ? cupoEstadia(prisma, datos.tiendaId, { productoId: datos.productoId, unidades: tipo.unidades }, datos.fecha, datos.noches, { ahora })
+      // Al modificar una reserva (ciclo-reserva-hotel C3, C4) no se cuenta a sí misma.
+      ? cupoEstadia(prisma, datos.tiendaId, { productoId: datos.productoId, unidades: tipo.unidades }, datos.fecha, datos.noches, { ahora, excluirPedidoId: datos.excluirPedidoId ?? null })
       : null,
     datos.planId ? planDeTienda(datos.tiendaId, datos.planId, datos.lang) : null
   ]);

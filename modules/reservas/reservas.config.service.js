@@ -1,6 +1,7 @@
 import { prisma } from "../../config/prisma.js";
 import { ConflictError, NotFoundError } from "../../utils/errors.js";
 import { vozAlojamiento } from "./hotel/alojamiento.js";
+import { HORA_CORTE_HOY } from "./hotel/cotizar.js";
 import { localizar } from "../traducciones/localizar.js";
 import { FUENTES } from "../traducciones/fuentes.js";
 import { PLANTILLA_BASE } from "./locales/contrato.js";
@@ -50,6 +51,9 @@ const BASE = {
   apartadoEnLineaMin: 15,
   // Con adelanto, el cliente elige pagar el adelanto o el total (plantillas-por-rubro C8).
   cobroEleccion: false,
+  // Política de cancelación del hotel (ciclo-reserva-hotel C5)
+  cancelacionGratisHoras: 48,
+  penalidadNoches: 1,
   maxEntradasPorCompra: 10,
   umbralUltimasEntradas: 20,
   cierrePagoManualHoras: null,
@@ -86,7 +90,7 @@ const BASE = {
 };
 
 export const CAMPOS_CONFIG = [
-  "modoConfirmacion", "cobro", "adelantoPct", "cobroEleccion", "camposFormulario", "anticipacionMinHoras", "avisoProximoHoras", "avisoProximoTexto",
+  "modoConfirmacion", "cobro", "adelantoPct", "cobroEleccion", "cancelacionGratisHoras", "penalidadNoches", "camposFormulario", "anticipacionMinHoras", "avisoProximoHoras", "avisoProximoTexto",
   "maxSolicitudesAbiertas", "instrucciones", "politicaCancelacion", "horaCheckin", "horaCheckout", "comprobanteEn",
   "apartadoManualMin", "apartadoEnLineaMin", "maxEntradasPorCompra", "umbralUltimasEntradas", "cierrePagoManualHoras",
   "tipoAlojamiento", "ninosGratisHasta", "cargoNinoNoche", "exoneraIgvExtranjeros",
@@ -159,6 +163,9 @@ export function configPublica(config, lang = IDIOMA_BASE) {
     cobro: config.cobro,
     adelantoPct: config.adelantoPct,
     cobroEleccion: config.cobro === "adelanto" && !!config.cobroEleccion,
+    // El huésped ve la política antes de reservar (motor de reservas, responsabilidad 3).
+    cancelacionGratisHoras: config.cancelacionGratisHoras,
+    penalidadNoches: config.penalidadNoches,
     formulario: config.formulario,
     anticipacionMinHoras: config.anticipacionMinHoras,
     avisoProximoHoras: config.avisoProximoHoras,
@@ -166,6 +173,8 @@ export function configPublica(config, lang = IDIOMA_BASE) {
     politicaCancelacion: local.politicaCancelacion,
     horaCheckin: config.horaCheckin,
     horaCheckout: config.horaCheckout,
+    // Hasta qué hora se reserva por noche para hoy (llegada tardía).
+    horaCorteHoy: HORA_CORTE_HOY,
     comprobanteEn: config.comprobanteEn,
     apartadoManualMin: config.apartadoManualMin,
     apartadoEnLineaMin: config.apartadoEnLineaMin,

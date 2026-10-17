@@ -267,7 +267,7 @@ export const PLANTILLAS = congelar([
     layout: { header: { logo: "izquierda" } },
     secciones: [
       { id: "hero", tipo: "hero", variante: "imagen-completa", buscador: true, titulo: "Tu descanso empieza aquí", subtitulo: "Habitaciones cómodas en el mejor lugar de la ciudad.", textoBoton: "Ver habitaciones" },
-      { id: "habitaciones", tipo: "habitaciones", variante: "grilla", fondo: "superficie", titulo: "Nuestras habitaciones", subtitulo: "Elige la tuya y envía tu solicitud: confirmamos la disponibilidad." },
+      { id: "habitaciones", tipo: "habitaciones", variante: "grilla", fondo: "superficie", titulo: "Nuestras habitaciones" },
       { id: "servicios", tipo: "servicios", variante: "iconos", fondo: "suave", titulo: "Servicios", items: [S.wifi, S.desayuno, S.agua, S.recepcion, S.cochera, S.equipaje] },
       { id: "historia", tipo: "imagen-texto", fondo: "superficie", espacio: "amplio", imagen: "banner", posicionImagen: "izquierda", kicker: "Nuestra casa", titulo: "Cuenta qué hace especial a tu hospedaje", texto: "Desde cuándo reciben huéspedes, quién los atiende y qué no se encuentra en otro lugar. Dos o tres frases bastan.", textoBoton: "Ver habitaciones" },
       { id: "testimonios", tipo: "testimonios", fondo: "pagina", titulo: "Lo que dicen nuestros huéspedes", items: [] },

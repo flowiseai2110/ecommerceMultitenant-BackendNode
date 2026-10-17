@@ -172,6 +172,7 @@ const serializarExtra = (x) => ({
   precio: Number(x.precio),
   cobro: x.cobro,
   datoPedido: x.datoPedido,
+  horario: x.horario ?? null,
   activo: x.activo,
   orden: x.orden
 });
@@ -217,6 +218,7 @@ const datosExtra = (d) => ({
   precio: d.precio,
   cobro: d.cobro,
   datoPedido: d.datoPedido ?? null,
+  horario: d.horario ?? null,
   activo: d.activo ?? true,
   orden: d.orden ?? 0
 });

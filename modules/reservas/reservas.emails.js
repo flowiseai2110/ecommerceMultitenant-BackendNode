@@ -3,6 +3,7 @@ import { escapeHtml } from "../../services/email.service.js";
 import { clave } from "../idiomas/clave.js";
 import { rellenar, TRADUCTOR_BASE } from "../idiomas/traductor.js";
 import { fechaCortaLocal } from "./textos-fecha.js";
+import { textoPlano } from "../../utils/texto-plano.js";
 
 /**
  * Correos del mini booking (spec "Avisos" en plan.md). Reciben la reserva ya
@@ -392,7 +393,8 @@ export function confirmadaEmail(r, url, t = TRADUCTOR_BASE) {
         (enHotel && !esTour(r) && !evento ? texto(html(t, clave("Los consumos durante tu estadía se pagan {enNegocio}. Tu boleta o factura se entrega al finalizar tu estadía."), { enNegocio: v.enNegocio })) : "") +
         (r.modalidad?.tipo === "horas" ? texto(html(t, clave("Tu estadía es de {inicio} a {fin}. Si llegas más tarde, la hora de salida no cambia."), { inicio: e(fechaHora(r.inicio, t)), fin: e(fechaHora(r.fin, t)) })) : "") +
         (r.tour?.recojo ? texto(`${b(e(t(clave("Recojo"))))}: ${e(r.tour.recojo)}`) : "") +
-        (r.instrucciones ? texto(`${b(e(t(clave("Importante"))))}: ${e(r.instrucciones)}`) : ""),
+        // Las instrucciones vienen con formato (Markdown liviano): en el correo van sin símbolos, línea por línea.
+        (r.instrucciones ? texto(`${b(e(t(clave("Importante"))))}: ${e(textoPlano(r.instrucciones)).replace(/\n/g, "<br>")}`) : ""),
       cuerpo: resumen(r, t) + boton(url, e(t(clave("Ver mi confirmación")))),
       pie: e(t(evento
         ? clave("Presenta esta confirmación o tu código de compra y tu documento en el ingreso.")

@@ -140,7 +140,22 @@ Los resultados van a [fase0.md](fase0.md) (sus filas siguen vacías) y la config
 - **Admin:** aviso rojo con qué corregir en la app, botón "Generar resumen" con su estado, y el refresco ya no espera un resumen que nadie pidió.
 - **Variables:** `CF_STREAM_TIMEOUT_SEG`, `CF_STREAM_ALLOWED_ORIGINS`, `TRANSMISIONES_ALERTAS_EMAIL` (en `.env.example`).
 
+### LL-HLS y parámetros de la plataforma (2026-10-16)
+
+- **LL-HLS (`preferLowLatency`) activado** por defecto, para probarlo con Streamlabs. Decisión: un parámetro **de la plataforma** (no por tienda ni por transmisión) que cambia solo su administrador.
+- **Parámetros de la plataforma** (módulo nuevo `modules/parametros/`): tabla [parametros_plataforma](../../sql/parametros_plataforma.sql) + pantalla **"Parámetros de la plataforma"** en el admin (`/parametros-plataforma`, con enlace en la pantalla de transmisión y en Idiomas de la plataforma, solo para `PLATFORM_ADMIN_EMAILS`).
+  - El registro `parametros.registro.js` es la única lista de parámetros: cada uno trae su validación (Zod) y su valor por defecto, y un test exige que estén completos. La tabla solo guarda lo que se cambió, con quién y cuándo.
+  - Caché de 30 s: el job no consulta la BD cada minuto, y un cambio llega a todas las réplicas en menos de un minuto. Si la BD no responde, rige el valor por defecto (un parámetro nunca frena el corte).
+- **Parámetros de transmisión:**
+  - `transmision.baja_latencia` (por defecto: activado);
+  - `transmision.timeout_segundos` (por defecto: `CF_STREAM_TIMEOUT_SEG`, o sea 0). Así la prueba de 0 contra 60 se hace desde la pantalla, sin reiniciar.
+- **Cuándo se aplican:** al crear la entrada (activar o "Cambiar clave") y **cada vez que el job la habilita**, al abrir la sala o en la prueba. Por eso una transmisión ya programada toma el valor vigente sin recrearla. Nunca se cambian con la señal llegando.
+- **Corrección importante:** el `PUT` que habilita o corta la entrada reemplaza la entrada completa en Cloudflare. Ahora reenvía `preferLowLatency` (y el `timeoutSeconds` de la entrada). Sin eso, la baja latencia se habría apagado sola en el primer corte o habilitación.
+- **Encoder para LL-HLS:** keyframe de 1 a 2 s y B-frames apagados (según la [guía de Cloudflare](https://blog.cloudflare.com/cloudflare-stream-low-latency-hls-open-beta/)). Hay que ver si Streamlabs móvil permite configurarlos.
+
 **Por verificar en la próxima transmisión real:**
+- [ ] Con LL-HLS: retraso medido (cronómetro contra reproductor), si el reproductor muestra "Low Latency" y si la reproducción firmada sigue funcionando.
+- [ ] Que la grabación siga funcionando con LL-HLS activado.
 - [ ] Con `allowedOrigins`: la página del invitado (iframe y `lifecycle`), la vista previa del admin y la descarga del MP4 del anfitrión funcionan.
 - [ ] El código real de un `live_input.errored` (por ejemplo, poniendo el keyframe en 20 s en Larix) llega con `live_input_errored.error.code`.
 - [ ] `GET /stream/storage-usage` devuelve `totalStorageMinutesLimit` con la capacidad comprada.

@@ -7,6 +7,7 @@ import { calcularEntrada, calcularExtension, estadoHabitacion, numerosNuevos, pr
 import { exigirTurno, turnoAbierto } from "./caja.service.js";
 import { listarHabitacionesStore } from "./habitaciones.service.js";
 import { IDIOMA_BASE } from "../../idiomas/idioma.js";
+import { aplicarAccion, efectivoDe, pedidoDeReserva } from "../reservas.service.js";
 
 /**
  * Recepción (docs/specs/recepcion, fases 1 a 3): habitaciones físicas, tablero,
@@ -373,6 +374,12 @@ export async function registrarLlegada(tiendaId, pedidoId, data, user, ahora = n
         salidas[0] = await tx.hotel_estadias.update({ where: { id: principal.id }, data: { pagado: total } });
         await aplicarAlPedido(tx, principal, saldo);
       }
+      // El mostrador también hace el check-in de la reserva (ciclo-reserva-hotel C0.3).
+      const pedido = await pedidoDeReserva(tiendaId, pedidoId, tx);
+      if (efectivoDe(pedido, ahora) === "confirmada") {
+        await aplicarAccion(tx, pedido, "check_in", { ahora, datosPedido: { usuarioActualizacion: usuario }, nota: "Check-in en Recepción" });
+        await tx.reservas.update({ where: { pedidoId }, data: { checkinEn: ahora } });
+      }
       return salidas;
     });
     return creadas.map(serializarEstadia);
@@ -594,10 +601,19 @@ export async function registrarSalida(tiendaId, id, { formaPago } = {}, user, ah
       await aplicarAlPedido(tx, actual, saldo);
     }
     await tx.hotel_habitaciones.update({ where: { id: actual.habitacionId }, data: { limpieza: "por_limpiar", fechaActualizacion: ahora, usuarioActualizacion: usuario } });
-    return tx.hotel_estadias.update({
+    const cerrada = await tx.hotel_estadias.update({
       where: { id },
       data: { estado: "cerrada", salida: ahora, pagado: num(actual.total), fechaActualizacion: ahora, usuarioActualizacion: usuario }
     });
+    // La última habitación de una reserva web que sale hace su check-out (ciclo-reserva-hotel C0.3).
+    if (actual.pedidoId && !(await tx.hotel_estadias.count({ where: { pedidoId: actual.pedidoId, estado: "en_curso" } }))) {
+      const pedido = await pedidoDeReserva(tiendaId, actual.pedidoId, tx);
+      if (efectivoDe(pedido, ahora) === "hospedada") {
+        await aplicarAccion(tx, pedido, "check_out", { ahora, datosPedido: { usuarioActualizacion: usuario }, nota: "Check-out en Recepción" });
+        await tx.reservas.update({ where: { pedidoId: actual.pedidoId }, data: { checkoutEn: ahora } });
+      }
+    }
+    return cerrada;
   });
   return serializarEstadia(e);
 }

@@ -1,4 +1,4 @@
-import { estadoEfectivo, etiquetaEstado } from "./estados.js";
+import { ESTADOS_ABIERTOS, estadoEfectivo, etiquetaEstado } from "./estados.js";
 import { serializarEntrada } from "./eventos/entradas.js";
 import { localizar } from "../traducciones/localizar.js";
 import { FUENTES } from "../traducciones/fuentes.js";
@@ -126,7 +126,7 @@ function base(pedido, ahora) {
   const esCancha = r.tipo === "cancha";
   const pasajeros = esTour ? pasajerosDe(r) : null;
   const entradas = esEvento ? entradasDe(pedido) : null;
-  const estado = estadoEfectivo({ estado: pedido.estado, inicio: r.inicio, fin: r.fin, apartadoHasta: r.apartadoHasta }, ahora);
+  const estado = estadoEfectivo({ estado: pedido.estado, inicio: r.inicio, fin: r.fin, apartadoHasta: r.apartadoHasta, tipo: r.tipo }, ahora);
   return {
     id: pedido.id,
     codigo: pedido.numeroPedido,
@@ -154,7 +154,11 @@ function base(pedido, ahora) {
     ninos: r.ninos,
     // Hotel (hospedaje-completo, fase B): extras con el dato del huésped
     // (vuelo, hora de llegada), edades de los niños e IGV exonerado.
-    extras: Array.isArray(r.extras) ? r.extras.map(x => ({ nombre: x.nombre, cantidad: x.cantidad, total: x.total, datoPedido: x.datoPedido ?? null, dato: x.dato ?? null })) : [],
+    extras: Array.isArray(r.extras) ? r.extras.map(x => ({
+      id: x.id ?? null, nombre: x.nombre, cantidad: x.cantidad, total: x.total, datoPedido: x.datoPedido ?? null, dato: x.dato ?? null,
+      // Early/late (ciclo-reserva-hotel C7): hora pedida y si el hotel lo aprobó; origen "mostrador" si lo dio recepción.
+      horario: x.horario ?? null, hora: x.hora ?? null, estado: x.estado ?? null, origen: x.origen ?? null
+    })) : [],
     edadesNinos: r.edadesNinos ?? [],
     exoneradoIgv: r.exoneradoIgv ?? false,
     // Fase C: habitaciones del mismo tipo, plan de tarifa e idioma del huésped.
@@ -293,10 +297,28 @@ function rechazosPorCuota(pedido) {
 }
 
 /** Fila de la bandeja del admin (R11.1). */
+/**
+ * Lo que lleva recepción (ciclo-reserva-hotel): código del PMS, entrada y salida
+ * reales, notas para el siguiente turno, cancelación y lo retenido. Solo para el
+ * negocio: la tienda no lo ve.
+ */
+const recepcion = (r) => ({
+  codigoPms: r.codigoPms ?? null,
+  checkinEn: r.checkinEn ?? null,
+  checkoutEn: r.checkoutEn ?? null,
+  notas: Array.isArray(r.notas) ? r.notas : [],
+  cancelacion: r.cancelacion ?? null,
+  retenido: r.retenido == null ? null : Number(r.retenido)
+});
+
 export function serializeReservaLista(pedido, ahora = new Date()) {
   const r = pedido.reserva;
+  const b = base(pedido, ahora);
   return {
-    ...base(pedido, ahora),
+    ...b,
+    // Sin atender, cuándo se anula sola: al terminar su plazo o, sin plazo, a la hora de inicio.
+    venceEn: ESTADOS_ABIERTOS.includes(b.estado) ? (r.apartadoHasta ?? r.inicio) : null,
+    ...recepcion(r),
     titular: `${r.titularNombres} ${r.titularApellidos}`,
     whatsapp: pedido.clienteWhatsapp,
     capturaSubida: Boolean(ultimoPagoManual(pedido.pagos))
@@ -313,6 +335,7 @@ export function serializeReservaAdmin(pedido, { urlsCaptura = new Map(), ahora =
   const r = pedido.reserva;
   return {
     ...base(pedido, ahora),
+    ...recepcion(r),
     estadoGuardado: pedido.estado,
     lineas: lineas(pedido),
     ajuste: ajuste(r),

@@ -267,7 +267,7 @@ describe("listarResenables", () => {
 
     // Pedidos entregados, o estadías y tours ya terminados (hospedaje-completo C6).
     expect(db.pedidos.findMany.mock.calls[0][0].where).toEqual(expect.objectContaining({
-      tiendaId: TIENDA, authUserId: USUARIO, OR: [{ estado: "entregado" }, expect.objectContaining({ estado: { in: ["confirmada", "completada"] } })]
+      tiendaId: TIENDA, authUserId: USUARIO, OR: [{ estado: "entregado" }, expect.objectContaining({ estado: { in: ["confirmada", "hospedada", "completada"] } })]
     }));
     expect(r).toEqual([{
       pedidoId: PEDIDO, numeroPedido: "PED-0001", fechaEntregado: "2026-09-10",

@@ -11,8 +11,8 @@ import { tablero } from "./recepcion.service.js";
  * inventario (`unidades` del tipo): sin inventario no hay porcentaje. El mapa
  * de habitaciones sale del tablero de Recepción y solo existe con habitaciones.
  */
-const ESTADOS_LLEGADA = ["aceptada", "pago_en_revision", "confirmada", "completada"];
-const ESTADOS_VENDIDAS = ["confirmada", "completada"];
+const ESTADOS_LLEGADA = ["aceptada", "pago_en_revision", "confirmada", "hospedada", "completada"];
+const ESTADOS_VENDIDAS = ["confirmada", "hospedada", "completada"];
 
 const tiposDe = (ctx) => ctx.memo("hotel_tipos", () => prisma.hotel_tipos_habitacion.findMany({
   where: { tiendaId: ctx.tiendaId, producto: { activo: true } },

@@ -32,14 +32,19 @@ export class StreamingProvider {
 
   /**
    * Crea una entrada que graba (para poder ver en vivo) y exige reproducción firmada.
-   * @param {{ nombre: string, meta: object, habilitada: boolean }} params
+   * `ajustes` sale de los parámetros de la plataforma (modules/parametros):
+   * `bajaLatencia` (LL-HLS) y `timeoutSegundos` (corte que abre otra grabación).
+   * @param {{ nombre: string, meta: object, habilitada: boolean,
+   *           ajustes?: { bajaLatencia?: boolean, timeoutSegundos?: number } }} params
    * @returns {Promise<{ entradaId: string, conexion: object }>}
    */
   async crearEntrada(params) { throw new Error("crearEntrada no implementado"); }
 
   /**
-   * Acepta o rechaza la señal (cortar = deshabilitar).
-   * @param {{ urgente?: boolean }} [opts] - urgente: el corte se intenta aunque el proveedor esté en pausa.
+   * Acepta o rechaza la señal (cortar = deshabilitar). Conserva la configuración
+   * de la entrada, salvo los `ajustes` que se le pasen (al habilitar).
+   * @param {{ urgente?: boolean, ajustes?: { bajaLatencia?: boolean, timeoutSegundos?: number } }} [opts]
+   *   urgente: el corte se intenta aunque el proveedor esté en pausa.
    */
   async habilitarEntrada(entradaId, habilitada, opts) { throw new Error("habilitarEntrada no implementado"); }
 

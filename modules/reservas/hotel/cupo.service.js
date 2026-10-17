@@ -90,7 +90,7 @@ export async function detalleNoche(tiendaId, productoId, fecha, ahora = new Date
     prisma.pedidos.findMany({
       where: {
         tiendaId, tipo: "hotel",
-        estado: { in: ["solicitada", "aceptada", "pago_en_revision", "confirmada"] },
+        estado: { in: ["solicitada", "aceptada", "pago_en_revision", "confirmada", "hospedada"] },
         reserva: {
           productoId, noches: { not: null },
           inicio: { lt: instanteLima(sumarDias(fecha, 1)) },

@@ -30,6 +30,15 @@ export const MAX_HABITACIONES = 10;
 
 export const MAX_NOCHES = 30;
 export const MAX_DIAS_ADELANTE = 365;
+/**
+ * Hasta qué hora se reserva por noche para hoy, ya pasado el check-in (llegada
+ * tardía, como en Booking). La reserva tardía no vence a la hora de ingreso: su
+ * plazo es `plazoLlegadaTardia`.
+ */
+export const HORA_CORTE_HOY = "23:00";
+
+/** Plazo de una reserva por noche pedida ya pasado el check-in: el fin del día de llegada. */
+export const plazoLlegadaTardia = (fecha) => instanteLima(sumarDias(fecha, 1), "00:00");
 
 const redondear = (n) => Math.round(n * 100) / 100;
 
@@ -161,7 +170,11 @@ export function lineasExtras({ catalogo, elegidos, noches, personas, esHoras, t 
     const total = redondear(precio * cantidad);
     const unidad = t.unidadExtra[extra.cobro] ?? "";
     lineas.push({ descripcion: `${extra.nombre}${cantidad > 1 ? ` × ${cantidad}` : ""}${unidad ? ` (${unidad})` : ""}`, cantidad, precioUnitario: precio, total });
-    snapshot.push({ id: extra.id, nombre: extra.nombre, cobro: extra.cobro, precio, cantidad, total, datoPedido: extra.datoPedido ?? null, dato: el.dato ?? null });
+    snapshot.push({
+      id: extra.id, nombre: extra.nombre, cobro: extra.cobro, precio, cantidad, total, datoPedido: extra.datoPedido ?? null, dato: el.dato ?? null,
+      // Early/late: queda pedido con la hora que escribió el huésped hasta que el hotel lo apruebe (ciclo-reserva-hotel C7).
+      ...(extra.horario ? { horario: extra.horario, hora: /^([01]\d|2[0-3]):[0-5]\d$/.test(el.dato ?? "") ? el.dato : null, estado: "pedido" } : {})
+    });
   }
   return { lineas, snapshot, errores };
 }
@@ -246,9 +259,10 @@ export function validarSolicitud({
     }
   }
 
-  // Por noche, llegar hoy después de la hora de check-in es válido: el
-  // huésped llega tarde, no es una fecha pasada. Solo cuenta la anticipación.
-  const llegaHoy = modalidad.tipo === "noche" && fecha === fechaLima(ahora);
+  // Por noche, llegar hoy después de la hora de check-in es válido hasta la
+  // hora de corte: el huésped llega tarde, no es una fecha pasada. Solo cuenta
+  // la anticipación.
+  const llegaHoy = modalidad.tipo === "noche" && fecha === fechaLima(ahora) && ahora < instanteLima(fecha, HORA_CORTE_HOY);
   const horasFaltan = llegaHoy ? Math.max(0, horasEntre(ahora, inicio)) : horasEntre(ahora, inicio);
   if (horasFaltan <= 0 && !llegaHoy) {
     errores.push(error("FECHA_PASADA", e.fechaPasada, "hora"));

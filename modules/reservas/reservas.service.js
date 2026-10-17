@@ -8,7 +8,7 @@ import { generarNumeroPedido, upsertCliente } from "../ordenes/pedidos.service.j
 import { datosFactura } from "../sunat/ruc.service.js";
 import { montoACuenta } from "./hotel/cotizar.js";
 import { vozAlojamiento } from "./hotel/alojamiento.js";
-import { ESTADOS_EN_CURSO, transicionar, estadoEfectivo } from "./estados.js";
+import { ESTADOS_EN_CURSO, TIPOS_CON_CICLO, transicionar, estadoEfectivo } from "./estados.js";
 import { obtenerConfig } from "./reservas.config.service.js";
 import { aplicarFormulario, formularioDe } from "./formulario.js";
 import { cupoEstadia } from "./hotel/disponibilidad.service.js";
@@ -105,13 +105,14 @@ function exigirNoLocal(pedido) {
 /** Estado efectivo de un pedido-reserva (con el apartado de eventos). */
 export const efectivoDe = (pedido, ahora) => {
   const r = pedido.reserva;
-  return estadoEfectivo({ estado: pedido.estado, inicio: r.inicio, fin: r.fin, apartadoHasta: r.apartadoHasta }, ahora);
+  return estadoEfectivo({ estado: pedido.estado, inicio: r.inicio, fin: r.fin, apartadoHasta: r.apartadoHasta, tipo: r.tipo }, ahora);
 };
 
 /** Hasta cuándo queda apartado el cupo de una compra (nunca después de la función). */
+/** Plazo para pagar: los minutos dados, sin pasar la hora de inicio (salvo una llegada tardía de hotel, que ya empezó). */
 const nuevoApartado = (inicio, minutos, ahora) => {
   const limite = new Date(ahora.getTime() + minutos * 60 * 1000);
-  return limite < inicio ? limite : inicio;
+  return limite < inicio || inicio <= ahora ? limite : inicio;
 };
 
 /** Modo de confirmación efectivo: el de la estrategia del rubro (hotel con inventario: directo) o el de la tienda. */
@@ -153,18 +154,14 @@ export function urlSeguimiento(slug, token) {
  * lectura usa `estadoEfectivo` y es correcta aunque esto no corra nunca.
  */
 export async function persistirVencimientos(tiendaId) {
+  // Lo no atendido vence al terminar su plazo o, sin plazo, a la hora de inicio:
+  // habitación apartada que no se pagó a tiempo (C1), local sin respuesta o sin
+  // pago (alquiler-locales R6.4), llegada tardía de hotel al cerrar el día.
   await prisma.$executeRaw`
     UPDATE pedidos p SET estado = 'vencida', fecha_actualizacion = now()
     FROM reservas r
     WHERE r.pedido_id = p.id AND p.tienda_id = ${tiendaId}::uuid
-      AND p.estado IN ('solicitada', 'aceptada') AND r.inicio <= now()`;
-  // Habitación apartada con pago directo que no se pagó a tiempo (C1), o local
-  // sin respuesta o sin pago al terminar su apartado (alquiler-locales R6.4).
-  await prisma.$executeRaw`
-    UPDATE pedidos p SET estado = 'vencida', fecha_actualizacion = now()
-    FROM reservas r
-    WHERE r.pedido_id = p.id AND p.tienda_id = ${tiendaId}::uuid
-      AND p.estado IN ('solicitada', 'aceptada') AND r.apartado_hasta IS NOT NULL AND r.apartado_hasta <= now()`;
+      AND p.estado IN ('solicitada', 'aceptada') AND COALESCE(r.apartado_hasta, r.inicio) <= now()`;
   // Compras de entradas sin captura: el apartado terminó y el cupo vuelve a la venta.
   await prisma.$executeRaw`
     UPDATE pedidos p SET estado = 'vencida', fecha_actualizacion = now()
@@ -175,7 +172,8 @@ export async function persistirVencimientos(tiendaId) {
     UPDATE pedidos p SET estado = 'completada', fecha_actualizacion = now()
     FROM reservas r
     WHERE r.pedido_id = p.id AND p.tienda_id = ${tiendaId}::uuid
-      AND p.estado = 'confirmada' AND COALESCE(r.fin, r.inicio) <= now()`;
+      AND p.estado = 'confirmada' AND COALESCE(r.fin, r.inicio) <= now()
+      AND NOT (r.tipo = ANY(${TIPOS_CON_CICLO}::text[]))`; // con ciclo de estadía la cierra el check-out
   await liberarHuerfanas(tiendaId);
 }
 
@@ -522,13 +520,16 @@ export async function subirCapturaCliente(tiendaId, pedidoId, { file, metodo, nu
 // Admin
 // ============================================
 
-/** Sin plazo, o con el plazo (apartado de locales o habitación) todavía vigente. */
-const apartadoVigente = (ahora) => ({ OR: [{ apartadoHasta: null }, { apartadoHasta: { gt: ahora } }] });
+/**
+ * Abierta y todavía a tiempo: con plazo (apartado de locales o habitación, llegada
+ * tardía de hotel), hasta que termine; sin plazo, hasta la hora de inicio.
+ */
+const abiertaVigente = (ahora) => ({ OR: [{ apartadoHasta: null, inicio: { gt: ahora } }, { apartadoHasta: { gt: ahora } }] });
 const cuotaEnRevision = { tipo: "local", cuotas: { some: { estado: "en_revision" } } };
 
 function wherePestana(pestana, ahora) {
   switch (pestana) {
-    case "por_responder": return { estado: "solicitada", reserva: { inicio: { gt: ahora }, ...apartadoVigente(ahora) } };
+    case "por_responder": return { estado: "solicitada", reserva: abiertaVigente(ahora) };
     // Locales: también las cuotas siguientes en revisión de una reserva ya confirmada.
     case "pago_por_verificar": return { OR: [{ estado: "pago_en_revision" }, cuotaEnRevision] };
     // Locales (alquiler-locales R12.1): mora y garantías por devolver.
@@ -544,15 +545,76 @@ function wherePestana(pestana, ahora) {
     // Próximas: aceptadas o compras esperando pago, y confirmadas que aún no terminan.
     case "confirmadas": return {
       OR: [
-        { estado: "aceptada", reserva: { inicio: { gt: ahora }, ...apartadoVigente(ahora) } },
+        { estado: "aceptada", reserva: abiertaVigente(ahora) },
         { estado: "por_pagar", reserva: { inicio: { gt: ahora }, apartadoHasta: { gt: ahora } } },
-        { estado: "confirmada", reserva: { fin: { gt: ahora } } }
+        { estado: "confirmada", reserva: { fin: { gt: ahora } } },
+        // Hotel: confirmadas con la fecha pasada esperan check-in o no-show; hospedadas, el check-out.
+        { estado: "confirmada", tipo: { in: TIPOS_CON_CICLO } },
+        { estado: "hospedada" }
       ]
     };
     default: return {
       estado: { in: ["completada", "rechazada", "vencida", "cancelada", "no_show"] }
     };
   }
+}
+
+/** Reservas cuyas notas de recepción contienen el texto (búsqueda de la bandeja). */
+async function conNotaQueDice(tiendaId, q) {
+  const filas = await prisma.$queryRaw`
+    SELECT pedido_id FROM reservas
+    WHERE tienda_id = ${tiendaId}::uuid AND jsonb_array_length(notas) > 0 AND notas::text ILIKE ${`%${q}%`}
+    LIMIT 200`;
+  return filas.map(f => f.pedido_id);
+}
+
+/** Día de hoy en Lima como rango de instantes. */
+const hoyLima = (ahora) => ({ gte: instanteLima(fechaLima(ahora)), lt: instanteLima(sumarDias(fechaLima(ahora), 1)) });
+
+/**
+ * Bandeja del hotel (ciclo-reserva-hotel C10): el ciclo de recepción y el
+ * resumen de hoy. Por confirmar junta lo que espera respuesta, pago o verificación.
+ */
+export function whereHotel(filtro, ahora) {
+  const porConfirmar = { OR: [{ estado: { in: ["solicitada", "aceptada"] }, reserva: abiertaVigente(ahora) }, { estado: "pago_en_revision" }] };
+  switch (filtro) {
+    case "por_confirmar": return porConfirmar;
+    case "atender": return porConfirmar;
+    case "reservada": return { estado: "confirmada" };
+    case "ocupada": return { estado: "hospedada" };
+    case "finalizada": return { estado: "completada" };
+    case "no_llego": return { estado: "no_show" };
+    case "anulada": return { estado: { in: ["rechazada", "vencida", "cancelada"] } };
+    case "llegadas": return { estado: { in: ["confirmada", "hospedada"] }, reserva: { inicio: hoyLima(ahora) } };
+    case "salidas": return { estado: { in: ["hospedada", "completada"] }, reserva: { fin: hoyLima(ahora) } };
+    default: return { OR: [porConfirmar, { estado: { in: ["confirmada", "hospedada"] } }] };
+  }
+}
+
+/**
+ * Resumen de hoy y contador de cada estado del ciclo (ciclo-reserva-hotel C10.1-2).
+ * Llegadas y salidas cuentan las ya registradas y las que faltan.
+ */
+export async function resumenHotel(tiendaId, ahora = new Date()) {
+  await persistirVencimientos(tiendaId);
+  const contar = (where) => prisma.pedidos.count({ where: { tiendaId, tipo: { in: TIPOS_CON_CICLO }, ...where } });
+  const hoy = hoyLima(ahora);
+  const [llegadas, llegadasPendientes, salidas, salidasPendientes, ...estados] = await Promise.all([
+    contar(whereHotel("llegadas", ahora)),
+    contar({ estado: "confirmada", reserva: { inicio: hoy } }),
+    contar(whereHotel("salidas", ahora)),
+    contar({ estado: "hospedada", reserva: { fin: hoy } }),
+    ...["activas", "por_confirmar", "reservada", "ocupada", "finalizada", "no_llego", "anulada"].map(f => contar(whereHotel(f, ahora)))
+  ]);
+  const [activas, porConfirmar, reservada, ocupada, finalizada, noLlego, anulada] = estados;
+  return {
+    hoy: fechaLima(ahora),
+    llegadas: { total: llegadas, pendientes: llegadasPendientes },
+    ocupadas: ocupada,
+    salidas: { total: salidas, pendientes: salidasPendientes },
+    porAtender: porConfirmar,
+    estados: { activas, por_confirmar: porConfirmar, reservada, ocupada, finalizada, no_llego: noLlego, anulada }
+  };
 }
 
 /** Cuántas reservas hay en una pestaña de la bandeja (franja de atención del dashboard). */
@@ -584,7 +646,7 @@ export async function listarReservasCuenta(tiendaId, authUserId, ahora = new Dat
     nombre: r.producto.nombre,
     inicio: r.inicio,
     fin: r.fin,
-    estado: estadoEfectivo({ estado, inicio: r.inicio, fin: r.fin, apartadoHasta: r.apartadoHasta }, ahora),
+    estado: estadoEfectivo({ estado, inicio: r.inicio, fin: r.fin, apartadoHasta: r.apartadoHasta, tipo: r.tipo }, ahora),
     total: Number(total),
     token: await firmarTokenReserva({ pedidoId: id, tiendaId })
   })));
@@ -592,10 +654,12 @@ export async function listarReservasCuenta(tiendaId, authUserId, ahora = new Dat
 
 export async function listarReservasAdmin(tiendaId, filtros, ahora = new Date()) {
   await persistirVencimientos(tiendaId);
-  const { pestana, productoId, desde, hasta, q, page, limit } = filtros;
+  const { pestana, estadoHotel, sinPms, conNotas, productoId, desde, hasta, q, page, limit } = filtros;
 
-  const and = [{ tiendaId, tipo: { in: TIPOS_RESERVA } }, wherePestana(pestana, ahora)];
+  const and = [{ tiendaId, tipo: { in: TIPOS_RESERVA } }, estadoHotel ? whereHotel(estadoHotel, ahora) : wherePestana(pestana, ahora)];
   if (productoId) and.push({ reserva: { productoId } });
+  if (sinPms) and.push({ reserva: { codigoPms: null } });
+  if (conNotas) and.push({ reserva: { NOT: { notas: { equals: [] } } } });
   if (desde || hasta) {
     and.push({
       fechaServicio: {
@@ -611,12 +675,15 @@ export async function listarReservasAdmin(tiendaId, filtros, ahora = new Date())
         { numeroPedido: contiene },
         { clienteNombre: contiene },
         { clienteWhatsapp: contiene },
-        { reserva: { titularDocNumero: contiene } }
+        { reserva: { titularDocNumero: contiene } },
+        { reserva: { codigoPms: contiene } },
+        { id: { in: await conNotaQueDice(tiendaId, q) } }
       ]
     });
   }
   const where = { AND: and };
-  const orderBy = pestana === "historial" ? [{ fechaServicio: "desc" }] : [{ fechaServicio: "asc" }];
+  const pasadas = pestana === "historial" || ["finalizada", "no_llego", "anulada"].includes(estadoHotel);
+  const orderBy = pasadas ? [{ fechaServicio: "desc" }] : [{ fechaServicio: "asc" }];
 
   const [total, filas] = await Promise.all([
     prisma.pedidos.count({ where }),
@@ -923,7 +990,7 @@ export async function agendaReservas(tiendaId, { desde, hasta } = {}, ahora = ne
     where: {
       tiendaId,
       tipo: { in: TIPOS_RESERVA },
-      estado: { in: ["aceptada", "por_pagar", "pago_en_revision", "confirmada", "completada"] },
+      estado: { in: ["aceptada", "por_pagar", "pago_en_revision", "confirmada", "hospedada", "completada"] },
       reserva: {
         inicio: { lt: instanteLima(sumarDias(dHasta, 1)) },
         OR: [{ fin: { gte: instanteLima(dDesde) } }, { fin: null, inicio: { gte: instanteLima(dDesde) } }]

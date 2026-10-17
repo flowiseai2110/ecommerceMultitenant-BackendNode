@@ -29,6 +29,7 @@ import transmisionesRoutes from "../../modules/transmisiones/transmisiones.admin
 import comunicadosRoutes from "../../modules/comunicados/comunicados.admin.routes.js";
 import traduccionesRoutes from "../../modules/traducciones/traducciones.admin.routes.js";
 import idiomasRoutes from "../../modules/idiomas/idiomas.admin.routes.js";
+import parametrosRoutes from "../../modules/parametros/parametros.admin.routes.js";
 
 const router = Router();
 
@@ -65,6 +66,7 @@ router.use("/reservas", reservasRoutes);
 router.use("/recepcion", recepcionRoutes);
 router.use("/traducciones", traduccionesRoutes);
 router.use("/idiomas", idiomasRoutes);                   // docs/specs/idiomas D1, D9
+router.use("/parametros", parametrosRoutes);             // solo el administrador de la plataforma
 router.use("/transmisiones", transmisionesRoutes);
 router.use("/comunicados", comunicadosRoutes);
 

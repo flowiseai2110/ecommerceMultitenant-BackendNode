@@ -4,6 +4,7 @@ import { NotFoundError, ValidationError } from "../../utils/errors.js";
 import { idiomaBase } from "../idiomas/idiomas.service.js";
 import { idiomasElegidos } from "../idiomas/idiomas-tienda.js";
 import { FUENTES } from "./fuentes.js";
+import { invalidarOpciones } from "./opciones.js";
 import { datosDe } from "../negocio/datos.js";
 import { estadoCampo, traduccionesDe, vacio } from "./texto-local.js";
 import { iaDisponible, traducirTextos } from "./traducir-ia.js";
@@ -34,7 +35,8 @@ const usuarioDe = (user) => user?.email ?? user?.id ?? null;
 const AL_GUARDAR = {
   productos: (id) => { invalidateProductoDetailCache(id); invalidateProductosHome(); },
   categorias: () => invalidarCacheStore("categorias"),
-  diseno: () => invalidateTiendasStoreCache()
+  diseno: () => invalidateTiendasStoreCache(),
+  opciones: () => invalidarOpciones()
 };
 const alGuardar = (fuente, id) => AL_GUARDAR[fuente]?.(id);
 const error = (message) => new ValidationError(message, { message });

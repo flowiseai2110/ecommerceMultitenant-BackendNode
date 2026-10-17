@@ -8,6 +8,7 @@ import { registrarConsumo, saldoHoras, textoMinutos } from "./transmisiones.hora
 import { firmarTokenAccion } from "./transmisiones.token.js";
 import { conGrabacion, registrarGrabaciones } from "./transmisiones.grabaciones.js";
 import { avisarErrorDePlataforma } from "./transmisiones.plataforma.js";
+import { parametro } from "../parametros/parametros.service.js";
 import {
   AVISO_ERROR_SENAL_MIN, ERRORES_DE_PLATAFORMA, EXTENSIONES_MIN, EXTENSION_MAX_MIN, corteEn, debeConsultarSenal, debeEstarHabilitada,
   debeRetransmitir, esVideoPropio, finTransmision, mensajeErrorSenal, minutosADescontar, minutosConsumidos, montoExcedente,
@@ -37,6 +38,18 @@ async function enLotes(items, n, fn) {
   await Promise.all(Array.from({ length: Math.min(n, cola.length) }, async () => {
     while (cola.length) await fn(cola.shift());
   }));
+}
+
+/**
+ * Ajustes del video que salen de los parámetros de la plataforma
+ * (modules/parametros): se aplican al crear la entrada y al habilitarla.
+ */
+export async function ajustesVideo() {
+  const [bajaLatencia, timeoutSegundos] = await Promise.all([
+    parametro("transmision.baja_latencia"),
+    parametro("transmision.timeout_segundos")
+  ]);
+  return { bajaLatencia, timeoutSegundos };
 }
 
 /**
@@ -93,7 +106,8 @@ export async function aplicarErrorSenal(t, error, ahora = new Date()) {
 export async function sincronizarHabilitacion(t, ahora = new Date()) {
   const debe = debeEstarHabilitada(t, t.funcion, ahora);
   if (debe === t.habilitada || !t.entradaId) return t;
-  await provider().habilitarEntrada(t.entradaId, debe);
+  // Al habilitar (todavía sin señal) se aplican los parámetros vigentes de la plataforma.
+  await provider().habilitarEntrada(t.entradaId, debe, debe ? { ajustes: await ajustesVideo() } : {});
   // Terminó una prueba antes de la sala: sus videos no sirven y ocupan almacenamiento.
   if (!debe && ahora < salaAbreEn(t.funcion)) {
     await provider().borrarVideos(t.entradaId).catch(e => logger.warn(`No se borraron los videos de prueba ${t.id}: ${e.message}`));

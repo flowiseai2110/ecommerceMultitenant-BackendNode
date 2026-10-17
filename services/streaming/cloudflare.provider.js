@@ -105,12 +105,12 @@ export function origenesPermitidos(c = config) {
  * Grabación de cada entrada. `timeoutSeconds`: cuánto puede caerse la señal sin
  * abrir otro video (0 = el valor de Cloudflare, que es su recomendación).
  */
-function recording() {
+function recording({ timeoutSegundos } = {}) {
   const origenes = origenesPermitidos();
   return {
     mode: "automatic",
     requireSignedURLs: true,
-    timeoutSeconds: cf().timeoutSeconds,
+    timeoutSeconds: timeoutSegundos ?? cf().timeoutSeconds,
     ...(origenes.length ? { allowedOrigins: origenes } : {})
   };
 }
@@ -148,10 +148,12 @@ export default class CloudflareStreamProvider extends StreamingProvider {
     return "cloudflare";
   }
 
-  async crearEntrada({ nombre, meta, habilitada }) {
+  async crearEntrada({ nombre, meta, habilitada, ajustes = {} }) {
     const r = await api("POST", "/live_inputs", {
       meta: { name: nombre.slice(0, 100), ...meta },
-      recording: recording(),
+      recording: recording(ajustes),
+      // LL-HLS (beta): el reproductor de Stream lo usa solo si la entrada lo tiene.
+      preferLowLatency: !!ajustes.bajaLatencia,
       enabled: habilitada
     });
     return {
@@ -166,12 +168,18 @@ export default class CloudflareStreamProvider extends StreamingProvider {
     };
   }
 
-  async habilitarEntrada(entradaId, habilitada, { urgente = false } = {}) {
-    // PUT reemplaza la entrada: se reenvían meta y recording para no perderlos.
+  async habilitarEntrada(entradaId, habilitada, { urgente = false, ajustes } = {}) {
+    // PUT reemplaza la entrada: se reenvían meta, recording y preferLowLatency para no
+    // perderlos (sin esto, la baja latencia se apagaría al primer corte o habilitación).
+    // Con `ajustes` (al habilitar, con la entrada sin señal) se aplican los parámetros vigentes.
     const actual = await api("GET", `/live_inputs/${entradaId}`, undefined, { urgente });
     await api("PUT", `/live_inputs/${entradaId}`, {
       meta: actual.meta,
-      recording: { ...recording(), ...actual.recording },
+      recording: {
+        ...recording(), ...actual.recording,
+        ...(ajustes?.timeoutSegundos != null ? { timeoutSeconds: ajustes.timeoutSegundos } : {})
+      },
+      preferLowLatency: ajustes?.bajaLatencia ?? !!actual.preferLowLatency,
       enabled: habilitada
     }, { urgente });
   }

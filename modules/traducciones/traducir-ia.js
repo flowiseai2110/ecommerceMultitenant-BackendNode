@@ -25,6 +25,8 @@ const sistema = (origen, destino) => [
   `Translate naturally, the way a native ${destino.nombre} speaker would say it on a website. Keep it as short as the original. If the language has an official alphabet, use it.`,
   "Keep proper names, brand names, street names, districts and local places in their original form (Barranco, Miraflores, Puente de los Suspiros).",
   "Keep prices, numbers, times, emojis and line breaks exactly as they are. Currency stays as S/.",
+  // Descripciones, políticas y contrato llevan Markdown liviano (FrontendStore shared/utils/texto-rico.ts).
+  "Keep Markdown formatting exactly as it is: **bold**, *italic*, list markers (\"- \", \"1. \") and links [text](url). Translate the text, never the URL.",
   "Keep placeholders in curly braces exactly as they are, untranslated (for example {n}, {nombre}, {Negocio}): the website fills them in.",
   "If a text is only a name or a number, return it unchanged.",
   "Return one translation for every key you receive, with the same key."

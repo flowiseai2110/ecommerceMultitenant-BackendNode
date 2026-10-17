@@ -8,6 +8,7 @@ import { variablesDesconocidas } from "./locales/contrato.js";
 import { MODALIDADES as MODALIDADES_LOCAL, TIPOS_EVENTO } from "./locales/cotizar.js";
 import { DURACIONES_CANCHA, FORMATOS_CANCHA, minutosCierre, minutosHora } from "./canchas/tarifa.js";
 import { CAMPOS_FORMULARIO, MODOS_CAMPO } from "./formulario.js";
+import { FORMAS_PAGO } from "./hotel/recepcion.schema.js";
 
 /**
  * Schemas Zod del mini booking (docs/specs/mini-booking). El schema ES el
@@ -182,6 +183,13 @@ export const slugParamSchema = z.object({ slug: z.string().trim().min(1).max(200
 // ============================================
 
 export const idParamSchema = z.object({ id: uuid("id") });
+
+/** Filtros de la bandeja del hotel: el ciclo y el resumen de hoy (ciclo-reserva-hotel C10). */
+export const FILTROS_HOTEL = [
+  "activas", "por_confirmar", "reservada", "ocupada", "finalizada", "no_llego", "anulada",
+  "llegadas", "salidas", "atender"
+];
+const siNo = z.enum(["true", "false"]).optional().transform(v => v === "true");
 export const productoParamSchema = z.object({ productoId: uuid("productoId") });
 
 export const listarAdminQuerySchema = z.object({
@@ -191,6 +199,10 @@ export const listarAdminQuerySchema = z.object({
   desde: fecha.optional(),
   hasta: fecha.optional(),
   q: z.string().trim().max(100).optional().transform(v => v || undefined),
+  // Bandeja del hotel (ciclo-reserva-hotel C10): reemplaza a `pestana`.
+  estadoHotel: z.enum(FILTROS_HOTEL).optional(),
+  sinPms: siNo,
+  conNotas: siNo,
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20)
 });
@@ -336,6 +348,9 @@ export const configSchema = z.object({
   modoConfirmacion: z.enum(["solicitud", "pago_directo"]).optional(),
   cobro: z.enum(["total", "adelanto", "en_destino"]).optional(),
   cobroEleccion: z.boolean().optional(),
+  // Política de cancelación del hotel (ciclo-reserva-hotel C5)
+  cancelacionGratisHoras: z.number().int().min(0).max(720).optional(),
+  penalidadNoches: z.number().int().min(0).max(30).optional(),
   // Formulario de la reserva: el modo de cada campo (los fijos no se configuran).
   camposFormulario: z.record(z.enum(CAMPOS_FORMULARIO), z.enum(MODOS_CAMPO)).nullable().optional(),
   adelantoPct: z.coerce.number().int().min(1).max(99).nullish(),
@@ -714,6 +729,8 @@ export const extraSchema = z.object({
   precio: monto,
   cobro: z.enum(COBROS_EXTRA, { message: "Elige cómo se cobra" }),
   datoPedido: textoOpcional(80),
+  // Early check-in o late check-out: el huésped lo pide con hora y el hotel lo aprueba (ciclo-reserva-hotel C7).
+  horario: z.enum(["early", "late"]).nullable().optional(),
   activo: z.boolean().optional().default(true),
   orden: z.coerce.number().int().min(0).max(999).optional().default(0)
 });
@@ -748,3 +765,67 @@ export const bloqueoCanchaSchema = z.object({
   horaFin: hora,
   motivo: textoOpcional(100)
 }).refine(d => minutosCierre(d.horaFin) > minutosHora(d.horaInicio), { path: ["horaFin"], message: "La hora de fin debe ser posterior al inicio" });
+
+// ---------- Ciclo de la reserva del hotel (docs/specs/ciclo-reserva-hotel) ----------
+
+/** En el mostrador también se recibe transferencia. */
+export const FORMAS_PAGO_MOSTRADOR = [...FORMAS_PAGO, "transferencia"];
+const formaPagoMostrador = z.enum(FORMAS_PAGO_MOSTRADOR, { message: "Elige cómo pagó" });
+const comprobante = z.enum(["boleta", "factura"], { message: "Elige boleta o factura" });
+
+export const checkinSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  acompanantes: z.array(personaSchema).max(20).optional().default([]),
+  hora: hora.optional(),
+  cobro: z.object({ formaPago: formaPagoMostrador, comprobante: comprobante.optional() }).optional()
+}).superRefine((d, ctx) => {
+  d.acompanantes.forEach((a, i) => {
+    if (!a.docNumero) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["acompanantes", i, "docNumero"], message: "Documento es requerido" });
+    else if (!documentoValido(a.docTipo, a.docNumero)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["acompanantes", i, "docNumero"], message: "Documento inválido" });
+  });
+});
+
+export const checkoutSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  formaPago: formaPagoMostrador.optional(),
+  comprobante: comprobante.optional(),
+  hora: hora.optional()
+});
+
+export const codigoPmsSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  codigo: z.string().trim().max(40, "El código no puede exceder 40 caracteres").nullable().optional()
+});
+
+export const notaSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  texto: texto("La nota", 1, 500)
+});
+
+/** Modificar antes de llegar (C3): lo que no se manda queda igual. */
+export const modificarSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  fecha: fecha.optional(),
+  noches: z.number().int().min(1, "Al menos una noche").max(MAX_NOCHES).optional(),
+  productoId: uuid("productoId").optional(),
+  adultos: z.number().int().min(1, "Al menos un adulto").max(20).optional(),
+  ninos: z.number().int().min(0).max(20).optional(),
+  edadesNinos: z.array(z.number().int().min(0).max(17)).max(20).optional()
+});
+
+export const cambiarSalidaSchema = z.object({ tiendaId: uuid("tiendaId"), fechaSalida: fecha });
+
+export const MOTIVOS_CANCELACION = ["Cambio de planes", "Encontró otra opción", "Problema de salud", "Vuelo cancelado", "Sin disponibilidad del hotel", "Otro"];
+export const cancelarHotelSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  quien: z.enum(["huesped", "hotel"], { message: "Indica quién cancela" }),
+  motivo: z.string().trim().min(1, "Indica el motivo").max(120)
+});
+
+/** Early/late (C7): aprobar o rechazar el pedido del huésped, o dar salida tardía desde el mostrador. */
+export const responderHorarioSchema = z.object({ tiendaId: uuid("tiendaId"), extraId: uuid("extraId"), aprobar: z.boolean() });
+export const salidaTardiaSchema = z.object({
+  tiendaId: uuid("tiendaId"),
+  hora,
+  precio: z.number().min(0, "El precio no puede ser negativo").max(99999.99)
+});

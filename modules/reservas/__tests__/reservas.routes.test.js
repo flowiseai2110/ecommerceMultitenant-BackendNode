@@ -73,9 +73,27 @@ const svc = {
   cancelarPorNegocio: jest.fn(async () => ({ id: PEDIDO, estado: "cancelada" })),
   marcarNoShow: jest.fn(async () => ({ id: PEDIDO, estado: "no_show" })),
   agendaReservas: jest.fn(async () => ({ reservas: [] })),
-  reenviarCorreo: jest.fn(async () => ({ enviadoA: "c@test.com" }))
+  reenviarCorreo: jest.fn(async () => ({ enviadoA: "c@test.com" })),
+  resumenHotel: jest.fn(async () => ({ llegadas: { total: 1, pendientes: 1 } })),
+  aplicarAccion: jest.fn(), efectivoDe: jest.fn(), pedidoDeReserva: jest.fn()
 };
 jest.unstable_mockModule("../reservas.service.js", () => svc);
+
+// Ciclo de la reserva del hotel (ciclo-reserva-hotel).
+const cicloSvc = {
+  registrarCheckin: jest.fn(async () => ({ id: PEDIDO, estado: "hospedada" })),
+  registrarCheckout: jest.fn(async () => ({ id: PEDIDO, estado: "completada" })),
+  guardarCodigoPms: jest.fn(async () => ({ id: PEDIDO, codigoPms: "NB-1" })),
+  agregarNota: jest.fn(async () => ({ id: PEDIDO })),
+  cobrarEnMostrador: jest.fn(),
+  modificarReserva: jest.fn(async () => ({ id: PEDIDO })),
+  cambiarSalida: jest.fn(async () => ({ id: PEDIDO })),
+  cancelarHotel: jest.fn(async () => ({ id: PEDIDO, estado: "cancelada" })),
+  marcarNoLlego: jest.fn(async () => ({ id: PEDIDO, estado: "no_show" })),
+  responderHorario: jest.fn(async () => ({ id: PEDIDO })),
+  darSalidaTardia: jest.fn(async () => ({ id: PEDIDO }))
+};
+jest.unstable_mockModule("../hotel/ciclo.service.js", () => cicloSvc);
 
 // Cupo a la venta (motor-reservas-hotel M2).
 const cupoSvc = {
@@ -448,5 +466,70 @@ describe("canchas (alquiler-canchas)", () => {
     });
     expect(ok.status).toBe(200);
     expect(configSvc.guardarConfig).toHaveBeenCalledWith(TIENDA, expect.objectContaining({ canchaDuraciones: [60, 120] }), expect.anything());
+  });
+});
+
+describe("ciclo de la reserva del hotel (ciclo-reserva-hotel)", () => {
+  const titularDni = { nombres: "Luis", apellidos: "Quispe", docTipo: "DNI", docNumero: "70221346" };
+
+  it("check-in: valida el documento de cada acompañante y solo editor+", async () => {
+    const malo = await request("POST", `/admin/reservas/${PEDIDO}/check-in`, { user: "recepcion", body: { tiendaId: TIENDA, acompanantes: [{ ...titularDni, docNumero: "12" }] } });
+    expect(malo.status).toBe(400);
+    expect((await request("POST", `/admin/reservas/${PEDIDO}/check-in`, { user: "visor", body: { tiendaId: TIENDA } })).status).toBe(403);
+    const r = await request("POST", `/admin/reservas/${PEDIDO}/check-in`, {
+      user: "recepcion", body: { tiendaId: TIENDA, acompanantes: [titularDni], hora: "14:20", cobro: { formaPago: "transferencia", comprobante: "boleta" } }
+    });
+    expect(r.status).toBe(200);
+    expect(cicloSvc.registrarCheckin).toHaveBeenCalledWith(TIENDA, PEDIDO, expect.objectContaining({ hora: "14:20", acompanantes: [titularDni] }), expect.anything());
+  });
+
+  it("check-out: forma de pago y comprobante válidos", async () => {
+    expect((await request("POST", `/admin/reservas/${PEDIDO}/check-out`, { user: "recepcion", body: { tiendaId: TIENDA, formaPago: "cheque" } })).status).toBe(400);
+    expect((await request("POST", `/admin/reservas/${PEDIDO}/check-out`, { user: "recepcion", body: { tiendaId: TIENDA, formaPago: "efectivo", comprobante: "factura" } })).status).toBe(200);
+  });
+
+  it("código PMS y notas", async () => {
+    expect((await request("PUT", `/admin/reservas/${PEDIDO}/codigo-pms`, { user: "recepcion", body: { tiendaId: TIENDA, codigo: "x".repeat(41) } })).status).toBe(400);
+    expect((await request("PUT", `/admin/reservas/${PEDIDO}/codigo-pms`, { user: "recepcion", body: { tiendaId: TIENDA, codigo: " NB-20431 " } })).status).toBe(200);
+    expect(cicloSvc.guardarCodigoPms).toHaveBeenCalledWith(TIENDA, PEDIDO, { tiendaId: TIENDA, codigo: "NB-20431" }, expect.anything());
+    expect((await request("POST", `/admin/reservas/${PEDIDO}/notas`, { user: "recepcion", body: { tiendaId: TIENDA, texto: "  " } })).status).toBe(400);
+    expect((await request("POST", `/admin/reservas/${PEDIDO}/notas`, { user: "recepcion", body: { tiendaId: TIENDA, texto: "Pidió cuna" } })).status).toBe(200);
+  });
+
+  it("bandeja: filtros del hotel y resumen de hoy", async () => {
+    const r = await request("GET", `/admin/reservas?tiendaId=${TIENDA}&estadoHotel=ocupada&sinPms=true`, { user: "visor" });
+    expect(r.status).toBe(200);
+    expect(svc.listarReservasAdmin).toHaveBeenLastCalledWith(TIENDA, expect.objectContaining({ estadoHotel: "ocupada", sinPms: true, conNotas: false }));
+    expect((await request("GET", `/admin/reservas?tiendaId=${TIENDA}&estadoHotel=hospedada`, { user: "visor" })).status).toBe(400);
+    expect((await request("GET", `/admin/reservas/resumen-hotel?tiendaId=${TIENDA}`, { user: "visor" })).status).toBe(200);
+  });
+});
+
+describe("cambios, cancelación y early/late del hotel (ciclo-reserva-hotel C3-C7)", () => {
+  const url = (accion) => `/admin/reservas/${PEDIDO}/${accion}`;
+
+  it("modificar: solo lo que cambia, con noches y adultos válidos", async () => {
+    expect((await request("PUT", url("estadia"), { user: "recepcion", body: { tiendaId: TIENDA, noches: 0 } })).status).toBe(400);
+    expect((await request("PUT", url("estadia"), { user: "recepcion", body: { tiendaId: TIENDA, fecha: "2026-10-20", noches: 3 } })).status).toBe(200);
+    expect(cicloSvc.modificarReserva).toHaveBeenCalledWith(TIENDA, PEDIDO, { fecha: "2026-10-20", noches: 3 }, expect.anything());
+  });
+
+  it("cambiar salida pide una fecha", async () => {
+    expect((await request("POST", url("cambiar-salida"), { user: "recepcion", body: { tiendaId: TIENDA, fechaSalida: "19/10" } })).status).toBe(400);
+    expect((await request("POST", url("cambiar-salida"), { user: "recepcion", body: { tiendaId: TIENDA, fechaSalida: "2026-10-19" } })).status).toBe(200);
+  });
+
+  it("cancelar: quién y motivo", async () => {
+    expect((await request("POST", url("cancelar-hotel"), { user: "recepcion", body: { tiendaId: TIENDA, quien: "agencia", motivo: "x" } })).status).toBe(400);
+    expect((await request("POST", url("cancelar-hotel"), { user: "recepcion", body: { tiendaId: TIENDA, quien: "huesped", motivo: "Vuelo cancelado" } })).status).toBe(200);
+    expect((await request("POST", url("no-llego"), { user: "recepcion", body: { tiendaId: TIENDA } })).status).toBe(200);
+  });
+
+  it("early/late: responder con el id del extra y salida tardía con hora y precio", async () => {
+    expect((await request("POST", url("horario"), { user: "recepcion", body: { tiendaId: TIENDA, extraId: "x", aprobar: true } })).status).toBe(400);
+    expect((await request("POST", url("horario"), { user: "recepcion", body: { tiendaId: TIENDA, extraId: PRODUCTO, aprobar: false } })).status).toBe(200);
+    expect((await request("POST", url("salida-tardia"), { user: "recepcion", body: { tiendaId: TIENDA, hora: "16:00", precio: -1 } })).status).toBe(400);
+    expect((await request("POST", url("salida-tardia"), { user: "recepcion", body: { tiendaId: TIENDA, hora: "16:00", precio: 100 } })).status).toBe(200);
+    expect(cicloSvc.darSalidaTardia).toHaveBeenCalledWith(TIENDA, PEDIDO, { tiendaId: TIENDA, hora: "16:00", precio: 100 }, expect.anything());
   });
 });

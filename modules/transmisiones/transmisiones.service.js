@@ -13,12 +13,12 @@ import { datosDe } from "../negocio/datos.js";
 import { saldoHoras, textoMinutos } from "./transmisiones.horas.js";
 import { borrarGrabacion, enlaceAnfitrion, partesConEnlaces } from "./transmisiones.grabaciones.js";
 import {
-  extenderTransmision, limpiarEntrada, noExtender, opcionesExtension, sincronizarHabilitacion, terminarTransmision
+  ajustesVideo, extenderTransmision, limpiarEntrada, noExtender, opcionesExtension, sincronizarHabilitacion, terminarTransmision
 } from "./transmisiones.envivo.js";
 import {
   DIAS_GUARDAR_ANIO, FACTORES, MAX_DESTINOS, PRECIO_GUARDAR_ANIO, PRECIO_PREMIUM, PRUEBA_MIN, TOPES_PRIVADO, conGrabacion,
   corteEn, debeRetransmitir, descargaHasta,
-  duracionEfectiva, enlaceWhatsapp, errorSenalVigente, esVideoPropio, etapaTransmision, finEnVivo, finTransmision, grabacionHasta, hayVideo,
+  calidadTransmision, duracionEfectiva, enlaceWhatsapp, errorSenalVigente, esVideoPropio, etapaTransmision, finEnVivo, finTransmision, grabacionHasta, hayVideo,
   minutosADescontar, motivoSinResumen, periodoTransmision, salaAbreEn, sesionViva, topeInvitaciones
 } from "./transmisiones.reglas.js";
 
@@ -188,6 +188,8 @@ async function serializarTransmision(t, funcion, tienda, ahora) {
       senalEn: t.senalEn,
       // A2: qué corregir en la app si la señal llegó con un problema (null si no hay o ya se conectó bien).
       senalError: errorSenalVigente(t),
+      // Cortes que vieron los invitados (lo mide su reproductor): porcentaje y quiénes ahora.
+      calidad: calidadTransmision(t.invitaciones, ahora),
       habilitada: t.habilitada,
       pruebaHasta: t.pruebaHasta && t.pruebaHasta > ahora ? t.pruebaHasta : null,
       corteEn: corteEn(t, funcion),
@@ -368,7 +370,8 @@ export async function activar(tiendaId, funcionId, data, user, ahora = new Date(
   const { entradaId, conexion } = await provider().crearEntrada({
     nombre: `${funcion.evento.producto.nombre} · ${tienda.slug}`,
     meta: { tiendaId, transmisionId: id, funcionId },
-    habilitada
+    habilitada,
+    ajustes: await ajustesVideo()
   });
   const premium = data.plan === "premium";
   try {
@@ -620,7 +623,8 @@ export async function regenerarClave(tiendaId, id, user, ahora = new Date()) {
   const { entradaId, conexion } = await provider().crearEntrada({
     nombre: `${t.funcion.evento.producto.nombre} · ${tienda.slug}`,
     meta: { tiendaId, transmisionId: t.id, funcionId: t.funcionId },
-    habilitada: t.habilitada
+    habilitada: t.habilitada,
+    ajustes: await ajustesVideo()
   });
   await prisma.evento_transmisiones.update({
     where: { id },
@@ -743,6 +747,8 @@ async function datosParaApp(t, ahora) {
     senal: t.senal,
     // A2: { codigo, mensaje, en } para mostrar en la app qué corregir, o null.
     senalError: errorSenalVigente(t),
+    // Invitados viendo cortes en este momento: la app puede avisar "tu señal está débil".
+    invitadosConCortes: calidadTransmision(t.invitaciones, ahora).conCortesAhora,
     habilitada: t.habilitada,
     pruebaHasta: t.pruebaHasta && t.pruebaHasta > ahora ? t.pruebaHasta : null,
     segundosRestantes: Math.max(0, Math.floor((limite.getTime() - ahora.getTime()) / 1000)),
@@ -809,7 +815,8 @@ async function invitacionDeToken(token, tiendaIdResuelta) {
   if (tiendaIdResuelta && tiendaIdResuelta !== tiendaId) throw noValido;
   const inv = await prisma.evento_invitaciones.findFirst({
     where: { id: invitacionId, tiendaId },
-    include: { transmision: { include: { funcion: { include: INCLUDE_FUNCION }, grabaciones: { where: { estado: "lista" }, orderBy: { orden: "asc" } } } } }
+    // Las partes en proceso sirven para avisar "la grabación estará lista en unos minutos".
+    include: { transmision: { include: { funcion: { include: INCLUDE_FUNCION }, grabaciones: { where: { estado: { in: ["lista", "procesando"] } }, orderBy: { orden: "asc" } } } } }
   });
   if (!inv || inv.version !== version || inv.estado !== "activa") throw noValido;
   return inv;
@@ -832,7 +839,13 @@ export async function paginaInvitado(token, tiendaIdResuelta, ahora = new Date()
   });
 
   // Grabación del Privado (Fase 4): partes listas, mientras siga en línea.
-  const conPartes = conGrabacion(t) && t.grabaciones.length > 0 && ahora < grabacionHasta(t, funcion);
+  const partesGrabadas = t.grabaciones ?? [];
+  const listas = partesGrabadas.filter(g => g.estado === "lista");
+  const conPartes = conGrabacion(t) && listas.length > 0 && ahora < grabacionHasta(t, funcion);
+  // Terminó y Cloudflare todavía procesa la grabación (o el job aún no la registró): la página
+  // avisa y vuelve a preguntar sola. Sin partes después de limpiar = no quedó grabación.
+  const grabacionEnProceso = conGrabacion(t) && !!t.terminadaEn && ahora < grabacionHasta(t, funcion)
+    && (!t.limpiadaEn || partesGrabadas.some(g => g.estado === "procesando"));
 
   let video = null;
   if (hayVideo(t, etapa, { hayGrabacion: conPartes })) {
@@ -841,7 +854,7 @@ export async function paginaInvitado(token, tiendaIdResuelta, ahora = new Date()
     } else if (etapa === "terminada") {
       // Los invitados ven la grabación; descargarla es del anfitrión (R8.1.1).
       const expiraEn = new Date(ahora.getTime() + 4 * 60 * MS_MIN);
-      const partes = await Promise.all(t.grabaciones.map(async g => (await provider().urlReproduccion(g.videoId, { expiraEn })).iframeUrl));
+      const partes = await Promise.all(listas.map(async g => (await provider().urlReproduccion(g.videoId, { expiraEn })).iframeUrl));
       video = { proveedor: provider().nombre, iframeUrl: partes[0], partes };
     } else if (esVideoPropio(t) && t.entradaId) {
       // Token de reproducción hasta media hora después del corte (máx. 24 h, lo limita el proveedor).
@@ -862,9 +875,12 @@ export async function paginaInvitado(token, tiendaIdResuelta, ahora = new Date()
     funcion: { nombre: funcion.nombre, inicio: funcion.inicio, fin: finEnVivo(t, funcion) },
     etapa,
     senal: esVideoPropio(t) ? t.senal : null,
+    // Desde cuándo está así la señal: tras 5 min sin señal, la página dice "en pausa".
+    senalEn: esVideoPropio(t) ? t.senalEn : null,
     salaAbreEn: salaAbreEn(funcion),
     grabacionHasta: grabacionHasta(t, funcion),
     terminadaEn: t.terminadaEn,
+    grabacionEnProceso,
     // Una sola sesión por enlace (R4.3): la página la reclama con /sesion.
     sesionUnica: esVideoPropio(t),
     video,
@@ -879,15 +895,29 @@ export async function paginaInvitado(token, tiendaIdResuelta, ahora = new Date()
  * recibe 409 "Este enlace se abrió en otro dispositivo". El latido también
  * cuenta a los conectados y trae la señal (R4.4, "Estamos reconectando…").
  */
-export async function latidoInvitado(token, tiendaIdResuelta, { sesionId, reclamar }, ahora = new Date()) {
+export async function latidoInvitado(token, tiendaIdResuelta, { sesionId, reclamar, calidad }, ahora = new Date()) {
   const inv = await invitacionDeToken(token, tiendaIdResuelta);
   const t = inv.transmision;
   if (!reclamar && inv.sesionId && inv.sesionId !== sesionId) {
     const message = "Este enlace se abrió en otro dispositivo";
     throw new ConflictError(message, { message, motivo: "OTRO_DISPOSITIVO" });
   }
-  await prisma.evento_invitaciones.update({ where: { id: inv.id }, data: { sesionId, sesionVistaEn: ahora } });
   const etapa = etapaTransmision(t, t.funcion, ahora);
+  // Calidad que midió su reproductor (solo en vivo y con video propio: la grabación no cuenta).
+  const medir = calidad && esVideoPropio(t) && etapa === "en_vivo";
+  const seCorto = medir && (calidad.cortes > 0 || calidad.pausaSeg > 0);
+  await prisma.evento_invitaciones.update({
+    where: { id: inv.id },
+    data: {
+      sesionId, sesionVistaEn: ahora,
+      ...(medir ? {
+        pausaSeg: { increment: calidad.pausaSeg },
+        vistoSeg: { increment: calidad.vistoSeg },
+        cortes: { increment: calidad.cortes },
+        ...(seCorto ? { ultimoCorteEn: ahora } : {})
+      } : {})
+    }
+  });
   // Minutos vistos estimados (un latido ≈ 30 s de video) para el costo real (R10.3).
   if (esVideoPropio(t) && etapa === "en_vivo") {
     await prisma.evento_transmisiones.update({ where: { id: t.id }, data: { minutosVistos: { increment: 0.5 } } });
@@ -895,6 +925,7 @@ export async function latidoInvitado(token, tiendaIdResuelta, { sesionId, reclam
   return {
     etapa,
     senal: esVideoPropio(t) ? t.senal : null,
+    senalEn: esVideoPropio(t) ? t.senalEn : null,
     terminadaEn: t.terminadaEn
   };
 }

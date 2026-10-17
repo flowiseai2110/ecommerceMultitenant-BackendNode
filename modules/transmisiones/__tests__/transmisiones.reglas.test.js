@@ -247,3 +247,30 @@ describe("resumen con IA a pedido (decisión 2026-10-15)", () => {
     expect(motivo({ resumenEstado: "error", resumenIntentos: reglas.MAX_INTENTOS_RESUMEN })).toBeNull();
   });
 });
+
+describe("calidad que vieron los invitados (cortes)", () => {
+  const ahora = en("2026-10-17T17:00:00-05:00");
+  const inv = (extra) => ({ pausaSeg: 0, vistoSeg: 0, cortes: 0, ultimoCorteEn: null, sesionVistaEn: ahora, ...extra });
+
+  it("porcentaje de tiempo en pausa sobre lo medido, con su nivel", () => {
+    const r = reglas.calidadTransmision([inv({ pausaSeg: 6, vistoSeg: 594, cortes: 2 }), inv({ vistoSeg: 600 })], ahora);
+    expect(r).toMatchObject({ pausaSeg: 6, vistoSeg: 1194, cortes: 2, porcentajeCorte: 0.5, nivel: "bien", invitadosConCortes: 1 });
+    expect(reglas.calidadTransmision([inv({ pausaSeg: 12, vistoSeg: 588 })], ahora)).toMatchObject({ porcentajeCorte: 2, nivel: "regular" });
+    expect(reglas.calidadTransmision([inv({ pausaSeg: 60, vistoSeg: 540 })], ahora)).toMatchObject({ porcentajeCorte: 10, nivel: "mal" });
+  });
+
+  it("con menos de 1 minuto medido todavía no hay porcentaje", () => {
+    expect(reglas.calidadTransmision([inv({ pausaSeg: 5, vistoSeg: 30 })], ahora)).toMatchObject({ porcentajeCorte: null, nivel: null });
+    expect(reglas.calidadTransmision([], ahora).porcentajeCorte).toBeNull();
+  });
+
+  it("cortes ahora: se le cortó hace menos de 2 min y sigue conectado", () => {
+    const r = reglas.calidadTransmision([
+      inv({ cortes: 1, ultimoCorteEn: en("2026-10-17T16:59:00-05:00") }),
+      inv({ cortes: 1, ultimoCorteEn: en("2026-10-17T16:50:00-05:00") }),
+      inv({ cortes: 1, ultimoCorteEn: en("2026-10-17T16:59:30-05:00"), sesionVistaEn: en("2026-10-17T16:55:00-05:00") })
+    ], ahora);
+    expect(r.conCortesAhora).toBe(1);
+    expect(r.invitadosConCortes).toBe(3);
+  });
+});

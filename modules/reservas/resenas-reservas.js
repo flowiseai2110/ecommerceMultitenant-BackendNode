@@ -29,7 +29,7 @@ export async function cicloResenasReservas(ahora = new Date()) {
       tipo: { in: ["hotel", "tour"] },
       resenaPedidaEn: null,
       OR: [{ fin: { gte: desde, lte: hasta } }, { fin: null, inicio: { gte: desde, lte: hasta } }],
-      pedido: { estado: { in: ["confirmada", "completada"] }, clienteEmail: { not: null } }
+      pedido: { estado: { in: ["confirmada", "hospedada", "completada"] }, clienteEmail: { not: null } }
     },
     take: LOTE,
     select: {

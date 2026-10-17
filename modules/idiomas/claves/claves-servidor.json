@@ -1134,6 +1134,15 @@
     ]
   },
   {
+    "clave": "Hospedado",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "sistema/estados-de-la-reserva"
+    ]
+  },
+  {
     "clave": "Importante",
     "grupos": [
       "correos"

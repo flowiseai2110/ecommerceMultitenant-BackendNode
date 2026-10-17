@@ -119,7 +119,7 @@ export async function setModoModeracion(tiendaId, modo, user) {
 export function pedidoResenable(pedido, ahora = new Date()) {
   if (pedido.estado === "entregado") return true;
   const r = pedido.reserva;
-  return !!r && ["confirmada", "completada"].includes(pedido.estado) && (r.fin ?? r.inicio) <= ahora;
+  return !!r && ["confirmada", "hospedada", "completada"].includes(pedido.estado) && (r.fin ?? r.inicio) <= ahora;
 }
 
 export async function verificarCompra(db, { tiendaId, pedidoId, productoId, authUserId, porToken }) {
@@ -316,7 +316,7 @@ export async function listarResenables(tiendaId, filtro) {
     tiendaId,
     OR: [
       { estado: "entregado" },
-      { estado: { in: ["confirmada", "completada"] }, reserva: { is: { inicio: { lte: new Date() }, OR: [{ fin: null }, { fin: { lte: new Date() } }] } } }
+      { estado: { in: ["confirmada", "hospedada", "completada"] }, reserva: { is: { inicio: { lte: new Date() }, OR: [{ fin: null }, { fin: { lte: new Date() } }] } } }
     ]
   };
   if (filtro.pedidoId) where.id = filtro.pedidoId;

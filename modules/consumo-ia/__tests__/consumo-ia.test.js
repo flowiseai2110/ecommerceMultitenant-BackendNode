@@ -15,7 +15,7 @@ jest.unstable_mockModule("../../../services/email.service.js", () => ({ sendCons
 
 const {
   TIPOS, periodoActual, fechaReinicio, calcularLimite, cruzoAviso, sumarUso, conConsulta, guardarAjustes,
-  diaActual, diaSiguiente, calcularLimiteDiario
+  diaActual, diaSiguiente, calcularLimiteDiario, limiteSinPlanDe
 } = await import("../consumo-ia.service.js");
 const { QuotaExceededError, ValidationError } = await import("../../../utils/errors.js");
 
@@ -60,6 +60,22 @@ describe("calcularLimite", () => {
 
   it("tienda sin plan usa el tope por defecto de config", () => {
     expect(calcularLimite(TIPOS.asistente, null, {}).limite).toBe(50);
+  });
+
+  // docs/specs/idiomas: el tope de "Traducir con IA" sin plan es un parámetro de la plataforma.
+  it("traducciones sin plan: el tope es el parámetro de la plataforma (por defecto 20); el dueño solo lo baja", async () => {
+    // Sin la tabla de parámetros (BD simulada), el parámetro vale su valor por defecto.
+    const tope = await limiteSinPlanDe(TIPOS.traducciones);
+    expect(tope).toBe(20);
+    expect(calcularLimite(TIPOS.traducciones, null, {}, tope).limite).toBe(20);
+    expect(calcularLimite(TIPOS.traducciones, null, { limite: 5 }, tope).limite).toBe(5);
+    expect(calcularLimite(TIPOS.traducciones, null, { limite: 50 }, tope).limite).toBe(20);
+    // Otro valor guardado por el administrador de la plataforma manda.
+    expect(calcularLimite(TIPOS.traducciones, null, {}, 40).limite).toBe(40);
+  });
+
+  it("los tipos sin parámetro siguen con el de config", async () => {
+    expect(await limiteSinPlanDe(TIPOS.asesor)).toBe(100);
   });
 });
 

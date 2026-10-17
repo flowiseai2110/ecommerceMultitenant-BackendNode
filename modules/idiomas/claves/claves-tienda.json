@@ -36,6 +36,15 @@
     ]
   },
   {
+    "clave": "¡Entradas apartadas!",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
     "clave": "¡Gracias! Tu opinión se publicará cuando la tienda la revise.",
     "grupos": [
       "productos"
@@ -72,6 +81,15 @@
     ]
   },
   {
+    "clave": "¡Separamos tu horario!",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
     "clave": "¡Solicitud enviada!",
     "grupos": [
       "reservas"
@@ -87,6 +105,15 @@
     ],
     "ubicaciones": [
       "negocio/frases-del-hotel"
+    ]
+  },
+  {
+    "clave": "¡Tu fecha está separada!",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
     ]
   },
   {
@@ -126,12 +153,39 @@
     ]
   },
   {
+    "clave": "¿Compraste sin cuenta?",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "cuenta/invitacion-a-crear-cuenta"
+    ]
+  },
+  {
+    "clave": "¿Cuándo te quedas?",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/buscador-de-fechas"
+    ]
+  },
+  {
     "clave": "¿Difícil de ubicar? Marca el punto exacto",
     "grupos": [
       "productos"
     ],
     "ubicaciones": [
       "compra/envio-a-domicilio"
+    ]
+  },
+  {
+    "clave": "¿Dividir entre los jugadores?",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
     ]
   },
   {
@@ -171,6 +225,15 @@
     ]
   },
   {
+    "clave": "¿Prefieres hablar con una persona?",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/asesor-de-ventas-chat"
+    ]
+  },
+  {
     "clave": "¿Qué pasó?",
     "grupos": [
       "comun"
@@ -195,6 +258,33 @@
     ],
     "ubicaciones": [
       "reclamos/formulario"
+    ]
+  },
+  {
+    "clave": "¿Qué te pareció la calidad, la talla, el empaque?",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "resena/formulario-de-opinion"
+    ]
+  },
+  {
+    "clave": "¿Qué te pareció tu compra?",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "resena/formulario-de-opinion"
+    ]
+  },
+  {
+    "clave": "¿Quiénes viajan?",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/buscador-de-fechas"
     ]
   },
   {
@@ -243,15 +333,6 @@
     ]
   },
   {
-    "clave": ". El costo de envío se confirma por WhatsApp.",
-    "grupos": [
-      "productos"
-    ],
-    "ubicaciones": [
-      "compra/datos-y-entrega"
-    ]
-  },
-  {
     "clave": "· Compra verificada",
     "grupos": [
       "productos"
@@ -270,12 +351,22 @@
     ]
   },
   {
+    "clave": "· Si continúas, verificaremos tu RUC al emitir la factura.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/factura-ruc"
+    ]
+  },
+  {
     "clave": "(opcional)",
     "grupos": [
       "comun",
       "productos"
     ],
     "ubicaciones": [
+      "resena/formulario-de-opinion",
       "compra/envio-a-domicilio",
       "reclamos/formulario"
     ]
@@ -353,6 +444,15 @@
     ]
   },
   {
+    "clave": "{lista} y {ultimo}",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "producto/ficha"
+    ]
+  },
+  {
     "clave": "{mes} {anio}|mes y año",
     "grupos": [
       "comun"
@@ -378,7 +478,6 @@
     ],
     "ubicaciones": [
       "habitaciones/buscador-de-fechas",
-      "habitaciones/disponibilidad-por-fechas",
       "formatos/personas-e-idiomas"
     ]
   },
@@ -390,7 +489,6 @@
     ],
     "ubicaciones": [
       "habitaciones/buscador-de-fechas",
-      "habitaciones/disponibilidad-por-fechas",
       "formatos/personas-e-idiomas"
     ]
   },
@@ -400,6 +498,7 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -409,6 +508,7 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -431,12 +531,21 @@
     ]
   },
   {
+    "clave": "{n} fechas",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "eventos/lista-de-eventos"
+    ]
+  },
+  {
     "clave": "{n} habitación",
     "grupos": [
       "hotel"
     ],
     "ubicaciones": [
-      "habitacion/ficha"
+      "habitaciones/buscador-de-fechas"
     ]
   },
   {
@@ -445,7 +554,7 @@
       "hotel"
     ],
     "ubicaciones": [
-      "habitacion/ficha"
+      "habitaciones/buscador-de-fechas"
     ]
   },
   {
@@ -482,7 +591,7 @@
       "reservas"
     ],
     "ubicaciones": [
-      "habitacion/ficha",
+      "habitaciones/buscador-de-fechas",
       "formatos/personas-e-idiomas"
     ]
   },
@@ -493,7 +602,7 @@
       "reservas"
     ],
     "ubicaciones": [
-      "habitacion/ficha",
+      "habitaciones/buscador-de-fechas",
       "formatos/personas-e-idiomas"
     ]
   },
@@ -513,8 +622,10 @@
       "reservas"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitaciones/lista-de-habitaciones",
       "habitaciones/disponibilidad-por-fechas",
+      "habitacion/ficha",
       "reservar/datos-de-la-reserva"
     ]
   },
@@ -525,8 +636,10 @@
       "reservas"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitaciones/lista-de-habitaciones",
       "habitaciones/disponibilidad-por-fechas",
+      "habitacion/ficha",
       "reservar/datos-de-la-reserva"
     ]
   },
@@ -571,6 +684,7 @@
       "productos"
     ],
     "ubicaciones": [
+      "inicio/productos-destacados",
       "catalogo/catalogo"
     ]
   },
@@ -598,6 +712,7 @@
       "productos"
     ],
     "ubicaciones": [
+      "inicio/productos-destacados",
       "catalogo/catalogo",
       "catalogo/categoria"
     ]
@@ -619,6 +734,24 @@
     ],
     "ubicaciones": [
       "formatos/resenas"
+    ]
+  },
+  {
+    "clave": "{n} resultado",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/buscador"
+    ]
+  },
+  {
+    "clave": "{n} resultados",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/buscador"
     ]
   },
   {
@@ -695,6 +828,15 @@
     ]
   },
   {
+    "clave": "{opcion} (agotado)",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "producto/ficha"
+    ]
+  },
+  {
     "clave": "{pct} % para confirmar, el resto al llegar",
     "grupos": [
       "comun"
@@ -727,6 +869,7 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -740,6 +883,15 @@
     ]
   },
   {
+    "clave": "1 semana",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/buscador-de-fechas"
+    ]
+  },
+  {
     "clave": "1. Paga {monto}",
     "grupos": [
       "reservas"
@@ -749,11 +901,21 @@
     ]
   },
   {
+    "clave": "11 dígitos",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/factura-ruc"
+    ]
+  },
+  {
     "clave": "18 años o más",
     "grupos": [
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -832,6 +994,15 @@
     ]
   },
   {
+    "clave": "Abrir chat con el asesor",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/asesor-de-ventas-chat"
+    ]
+  },
+  {
     "clave": "Abrir en Google Maps",
     "grupos": [
       "comun",
@@ -841,6 +1012,15 @@
     "ubicaciones": [
       "inicio/ubicacion",
       "habitacion/ficha",
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "Acepta el contrato para ver los datos de pago.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
       "seguimiento/seguimiento"
     ]
   },
@@ -881,6 +1061,15 @@
     ]
   },
   {
+    "clave": "Actualizado a las {hora}.",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/disponible-ahora"
+    ]
+  },
+  {
     "clave": "Adelanta los datos de quienes se hospedan y llega directo a tu habitación.",
     "grupos": [
       "hotel"
@@ -913,6 +1102,7 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -932,6 +1122,28 @@
     ],
     "ubicaciones": [
       "formatos/fechas-y-horas"
+    ]
+  },
+  {
+    "clave": "Agotado",
+    "grupos": [
+      "comun",
+      "eventos"
+    ],
+    "ubicaciones": [
+      "general/asesor-de-ventas-chat",
+      "catalogo/tarjetas-de-producto",
+      "eventos/lista-de-eventos",
+      "evento/ficha"
+    ]
+  },
+  {
+    "clave": "agotado|día del calendario",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "habitacion/calendario-de-la-estadia"
     ]
   },
   {
@@ -974,9 +1186,11 @@
   {
     "clave": "Agregar al carrito",
     "grupos": [
+      "comun",
       "productos"
     ],
     "ubicaciones": [
+      "catalogo/tarjetas-de-producto",
       "producto/ficha"
     ]
   },
@@ -1032,6 +1246,15 @@
     ],
     "ubicaciones": [
       "negocio/tipo-de-alojamiento"
+    ]
+  },
+  {
+    "clave": "Al editarla, la tienda la revisará de nuevo antes de publicarla.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "resena/formulario-de-opinion"
     ]
   },
   {
@@ -1117,12 +1340,30 @@
     ]
   },
   {
+    "clave": "Amarillo",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
+    ]
+  },
+  {
     "clave": "Ampliar mapa",
     "grupos": [
       "productos"
     ],
     "ubicaciones": [
       "compra/envio-a-domicilio"
+    ]
+  },
+  {
+    "clave": "Anterior",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/tarjetas-de-producto"
     ]
   },
   {
@@ -1164,6 +1405,15 @@
     ]
   },
   {
+    "clave": "Año",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
     "clave": "Apartar mis entradas y pagar",
     "grupos": [
       "eventos"
@@ -1195,6 +1445,25 @@
     ]
   },
   {
+    "clave": "Asesor de {tienda}",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/asesor-de-ventas-chat"
+    ]
+  },
+  {
+    "clave": "Aumentar cantidad",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "producto/cantidad",
+      "carrito/carrito-lateral"
+    ]
+  },
+  {
     "clave": "Aún no pagas nada. {Negocio} confirma la disponibilidad y luego te pide el pago.",
     "grupos": [
       "hotel"
@@ -1219,6 +1488,24 @@
     ],
     "ubicaciones": [
       "tour/ficha"
+    ]
+  },
+  {
+    "clave": "Aún no tienes pedidos con esta cuenta.",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "cuenta/mis-pedidos-inicio"
+    ]
+  },
+  {
+    "clave": "Aún no tienes reservas con esta cuenta.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "cuenta/mis-reservas"
     ]
   },
   {
@@ -1278,6 +1565,15 @@
     ]
   },
   {
+    "clave": "Azul",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
+    ]
+  },
+  {
     "clave": "Banco",
     "grupos": [
       "reservas"
@@ -1287,12 +1583,30 @@
     ]
   },
   {
+    "clave": "Beige",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
+    ]
+  },
+  {
     "clave": "Billetera digital",
     "grupos": [
       "productos"
     ],
     "ubicaciones": [
       "compra/datos-y-entrega"
+    ]
+  },
+  {
+    "clave": "Blanco",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
     ]
   },
   {
@@ -1311,6 +1625,15 @@
     ],
     "ubicaciones": [
       "formatos/nacionalidades"
+    ]
+  },
+  {
+    "clave": "Borrar",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "habitacion/calendario-de-la-estadia"
     ]
   },
   {
@@ -1344,11 +1667,13 @@
     "clave": "Buscar",
     "grupos": [
       "comun",
+      "eventos",
       "productos"
     ],
     "ubicaciones": [
       "general/menu-superior",
-      "catalogo/catalogo"
+      "catalogo/catalogo",
+      "eventos/buscador"
     ]
   },
   {
@@ -1359,6 +1684,15 @@
     "ubicaciones": [
       "general/menu-superior",
       "general/buscador"
+    ]
+  },
+  {
+    "clave": "Buscar eventos por fecha",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "eventos/buscador"
     ]
   },
   {
@@ -1515,6 +1849,15 @@
     ]
   },
   {
+    "clave": "Cambios y devoluciones:",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "evento/ficha"
+    ]
+  },
+  {
     "clave": "Canadiense",
     "grupos": [
       "comun"
@@ -1555,6 +1898,15 @@
     ]
   },
   {
+    "clave": "Cancelar",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "resena/formulario-de-opinion"
+    ]
+  },
+  {
     "clave": "Cancelar reserva",
     "grupos": [
       "reservas"
@@ -1570,6 +1922,42 @@
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "Cancha",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "Cargando productos...",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/catalogo"
+    ]
+  },
+  {
+    "clave": "Cargando tienda...",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/carga-de-la-tienda"
+    ]
+  },
+  {
+    "clave": "Cargar más productos",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/catalogo"
     ]
   },
   {
@@ -1595,11 +1983,22 @@
   {
     "clave": "Carrito",
     "grupos": [
+      "comun",
       "productos"
     ],
     "ubicaciones": [
       "general/menu-inferior-celular",
-      "carrito/carrito"
+      "carrito/carrito",
+      "carrito/carrito-lateral"
+    ]
+  },
+  {
+    "clave": "Carrito de compras",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/menu-superior"
     ]
   },
   {
@@ -1641,21 +2040,34 @@
   {
     "clave": "Categorías",
     "grupos": [
+      "comun",
       "productos"
     ],
     "ubicaciones": [
+      "general/menu-superior",
       "catalogo/categoria"
     ]
   },
   {
     "clave": "CE",
     "grupos": [
+      "hotel",
       "productos",
       "reservas"
     ],
     "ubicaciones": [
       "compra/datos-y-entrega",
-      "reservar/datos-de-la-reserva"
+      "reservar/datos-de-la-reserva",
+      "seguimiento/antes-de-llegar"
+    ]
+  },
+  {
+    "clave": "Celeste",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
     ]
   },
   {
@@ -1695,15 +2107,28 @@
     ]
   },
   {
+    "clave": "cerrado|día del calendario",
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "tour/ficha"
+    ]
+  },
+  {
     "clave": "Cerrar",
     "grupos": [
       "comun",
       "hotel",
+      "productos",
       "reservas"
     ],
     "ubicaciones": [
+      "inicio/galeria",
+      "inicio/productos-destacados",
       "general/avisos-de-la-tienda",
       "general/efecto-festivo",
+      "habitaciones/buscador-de-fechas",
       "habitaciones/disponibilidad-por-fechas",
       "habitacion/ficha",
       "seguimiento/seguimiento"
@@ -1716,6 +2141,33 @@
     ],
     "ubicaciones": [
       "compra/envio-a-domicilio"
+    ]
+  },
+  {
+    "clave": "Cerrar búsqueda",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/buscador"
+    ]
+  },
+  {
+    "clave": "Cerrar carrito",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "carrito/carrito-lateral"
+    ]
+  },
+  {
+    "clave": "Cerrar chat",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/asesor-de-ventas-chat"
     ]
   },
   {
@@ -1953,7 +2405,7 @@
     ]
   },
   {
-    "clave": "Comprando como",
+    "clave": "Comprando como {email}",
     "grupos": [
       "productos"
     ],
@@ -1976,6 +2428,7 @@
       "eventos"
     ],
     "ubicaciones": [
+      "evento/ficha",
       "negocio/frases-de-los-eventos"
     ]
   },
@@ -1998,12 +2451,12 @@
     ]
   },
   {
-    "clave": "con los datos de arriba",
+    "clave": "Confirmación",
     "grupos": [
-      "productos"
+      "hotel"
     ],
     "ubicaciones": [
-      "compra/datos-y-entrega"
+      "negocio/frases-del-hotel"
     ]
   },
   {
@@ -2040,6 +2493,15 @@
     ],
     "ubicaciones": [
       "cuenta/mis-reservas"
+    ]
+  },
+  {
+    "clave": "Confirmar",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "habitaciones/buscador-de-fechas"
     ]
   },
   {
@@ -2088,6 +2550,15 @@
     ]
   },
   {
+    "clave": "Contactar",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "inicio/portada"
+    ]
+  },
+  {
     "clave": "Contactar por WhatsApp",
     "grupos": [
       "comun"
@@ -2129,12 +2600,32 @@
     ]
   },
   {
-    "clave": "Continuar con el pago",
+    "clave": "Continuar compra",
     "grupos": [
       "productos"
     ],
     "ubicaciones": [
-      "carrito/carrito"
+      "inicio/productos-destacados"
+    ]
+  },
+  {
+    "clave": "Continuar con el pago",
+    "grupos": [
+      "comun",
+      "productos"
+    ],
+    "ubicaciones": [
+      "carrito/carrito",
+      "carrito/carrito-lateral"
+    ]
+  },
+  {
+    "clave": "Contrato",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
     ]
   },
   {
@@ -2263,6 +2754,15 @@
     ],
     "ubicaciones": [
       "reclamos/formulario"
+    ]
+  },
+  {
+    "clave": "Cuéntanos más",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "resena/formulario-de-opinion"
     ]
   },
   {
@@ -2468,10 +2968,8 @@
       "tours"
     ],
     "ubicaciones": [
-      "habitaciones/lista-de-habitaciones",
       "habitaciones/disponibilidad-por-fechas",
       "habitacion/ficha",
-      "tours/lista-de-tours",
       "tour/ficha"
     ]
   },
@@ -2500,6 +2998,17 @@
     ],
     "ubicaciones": [
       "tour/ficha"
+    ]
+  },
+  {
+    "clave": "Desde {precio}",
+    "grupos": [
+      "hotel",
+      "tours"
+    ],
+    "ubicaciones": [
+      "habitaciones/lista-de-habitaciones",
+      "tours/lista-de-tours"
     ]
   },
   {
@@ -2532,10 +3041,14 @@
   {
     "clave": "Destacado",
     "grupos": [
+      "comun",
+      "eventos",
       "tours"
     ],
     "ubicaciones": [
-      "tours/lista-de-tours"
+      "catalogo/tarjetas-de-producto",
+      "tours/lista-de-tours",
+      "eventos/lista-de-eventos"
     ]
   },
   {
@@ -2563,6 +3076,24 @@
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "Detectamos:",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/ubicacion-de-entrega"
+    ]
+  },
+  {
+    "clave": "Día",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
     ]
   },
   {
@@ -2620,6 +3151,16 @@
     ]
   },
   {
+    "clave": "Disminuir cantidad",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "producto/cantidad",
+      "carrito/carrito-lateral"
+    ]
+  },
+  {
     "clave": "Disponibilidad",
     "grupos": [
       "productos"
@@ -2640,12 +3181,14 @@
   {
     "clave": "DNI",
     "grupos": [
+      "hotel",
       "productos",
       "reservas"
     ],
     "ubicaciones": [
       "compra/datos-y-entrega",
-      "reservar/datos-de-la-reserva"
+      "reservar/datos-de-la-reserva",
+      "seguimiento/antes-de-llegar"
     ]
   },
   {
@@ -2727,6 +3270,15 @@
     ]
   },
   {
+    "clave": "Dorado",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
+    ]
+  },
+  {
     "clave": "Duración",
     "grupos": [
       "tours"
@@ -2750,6 +3302,7 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -2763,20 +3316,41 @@
     ]
   },
   {
+    "clave": "Edad de cada niño el día de llegada",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/buscador-de-fechas"
+    ]
+  },
+  {
     "clave": "Edad del niño {n}",
     "grupos": [
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
+    ]
+  },
+  {
+    "clave": "Edad mínima: {n} años",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "evento/ficha"
     ]
   },
   {
     "clave": "Editar",
     "grupos": [
+      "comun",
       "productos"
     ],
     "ubicaciones": [
+      "resena/formulario-de-opinion",
       "compra/datos-y-entrega"
     ]
   },
@@ -2832,6 +3406,15 @@
     ],
     "ubicaciones": [
       "reclamos/formulario"
+    ]
+  },
+  {
+    "clave": "Ej.: Camila Rojas",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
     ]
   },
   {
@@ -2893,6 +3476,15 @@
     ]
   },
   {
+    "clave": "El día va de 1 a 31",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
     "clave": "El DNI debe tener 8 dígitos",
     "grupos": [
       "comun",
@@ -2903,6 +3495,15 @@
       "compra/datos-y-entrega",
       "reservar/datos-de-la-reserva",
       "reclamos/formulario"
+    ]
+  },
+  {
+    "clave": "El evento quedó suspendido por fuerza mayor. Lo que pagaste queda como saldo a favor para elegir una fecha nueva. El local se pondrá en contacto contigo.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
     ]
   },
   {
@@ -2996,6 +3597,15 @@
     ]
   },
   {
+    "clave": "El mes va de 1 a 12",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
     "clave": "El nombre es obligatorio",
     "grupos": [
       "productos"
@@ -3041,6 +3651,24 @@
     ]
   },
   {
+    "clave": "El RUC figura como {estado} en SUNAT",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/factura-ruc"
+    ]
+  },
+  {
+    "clave": "El RUC figura como {estado} en SUNAT. Usa otro RUC o pide boleta.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/factura-ruc"
+    ]
+  },
+  {
     "clave": "El texto legal va en español, como lo exige la norma.",
     "grupos": [
       "comun"
@@ -3061,10 +3689,12 @@
   {
     "clave": "Elegir",
     "grupos": [
-      "hotel"
+      "hotel",
+      "reservas"
     ],
     "ubicaciones": [
-      "habitaciones/disponibilidad-por-fechas"
+      "habitaciones/disponibilidad-por-fechas",
+      "habitacion/calendario-de-la-estadia"
     ]
   },
   {
@@ -3083,6 +3713,15 @@
     ],
     "ubicaciones": [
       "habitacion/ficha"
+    ]
+  },
+  {
+    "clave": "Elegir opción",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/tarjetas-de-producto"
     ]
   },
   {
@@ -3124,7 +3763,7 @@
   {
     "clave": "Elige la fecha de salida",
     "grupos": [
-      "hotel"
+      "reservas"
     ],
     "ubicaciones": [
       "habitacion/calendario-de-la-estadia"
@@ -3155,6 +3794,33 @@
     ],
     "ubicaciones": [
       "compra/envio-a-domicilio"
+    ]
+  },
+  {
+    "clave": "Elige tu habitación y envía tu solicitud: el hotel confirma la disponibilidad.",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/lista-de-habitaciones"
+    ]
+  },
+  {
+    "clave": "Elige tu habitación y reserva al instante.",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/lista-de-habitaciones"
+    ]
+  },
+  {
+    "clave": "Elige tu habitación y reserva directo con nosotros.",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/lista-de-habitaciones"
     ]
   },
   {
@@ -3191,6 +3857,15 @@
     ],
     "ubicaciones": [
       "producto/ficha"
+    ]
+  },
+  {
+    "clave": "Eliminar",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "carrito/carrito-lateral"
     ]
   },
   {
@@ -3329,6 +4004,15 @@
     ]
   },
   {
+    "clave": "EN VIVO",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/aviso-de-transmision-en-vivo"
+    ]
+  },
+  {
     "clave": "Encuentro",
     "grupos": [
       "reservas"
@@ -3365,12 +4049,35 @@
     ]
   },
   {
-    "clave": "Entrada|estadia",
+    "clave": "Entrada libre",
     "grupos": [
-      "hotel"
+      "eventos"
     ],
     "ubicaciones": [
-      "habitacion/ficha"
+      "eventos/lista-de-eventos"
+    ]
+  },
+  {
+    "clave": "Entrada|estadia",
+    "grupos": [
+      "hotel",
+      "reservas"
+    ],
+    "ubicaciones": [
+      "habitacion/ficha",
+      "habitacion/calendario-de-la-estadia"
+    ]
+  },
+  {
+    "clave": "Entradas",
+    "grupos": [
+      "eventos",
+      "reservas"
+    ],
+    "ubicaciones": [
+      "eventos/lista-de-eventos",
+      "evento/ficha",
+      "seguimiento/seguimiento"
     ]
   },
   {
@@ -3427,6 +4134,15 @@
     ],
     "ubicaciones": [
       "seguimiento/antes-de-llegar"
+    ]
+  },
+  {
+    "clave": "Enviar mensaje",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/asesor-de-ventas-chat"
     ]
   },
   {
@@ -3488,6 +4204,15 @@
     ]
   },
   {
+    "clave": "Envío a {distrito}",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/asesor-de-ventas-chat"
+    ]
+  },
+  {
     "clave": "Envío a {distrito}. Escribe la dirección exacta para el repartidor.",
     "grupos": [
       "productos"
@@ -3506,6 +4231,24 @@
     ]
   },
   {
+    "clave": "Envío coordinado",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "general/barra-de-beneficios"
+    ]
+  },
+  {
+    "clave": "Envío gratis desde {monto}",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/asesor-de-ventas-chat"
+    ]
+  },
+  {
     "clave": "Envio y entrega",
     "grupos": [
       "productos"
@@ -3515,12 +4258,57 @@
     ]
   },
   {
+    "clave": "Envíos y entregas",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "general/pie-de-pagina"
+    ]
+  },
+  {
+    "clave": "Esa fecha no existe",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Esa fecha ya no está libre. Elige otra en el salón.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
     "clave": "Escanéalo desde la app de tu celular",
     "grupos": [
       "productos"
     ],
     "ubicaciones": [
       "compra/datos-y-entrega"
+    ]
+  },
+  {
+    "clave": "Escribe el año con 4 cifras",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Escribe tu mensaje...",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/asesor-de-ventas-chat"
     ]
   },
   {
@@ -3542,6 +4330,15 @@
     ]
   },
   {
+    "clave": "Escríbele al local por WhatsApp para coordinar el pago.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
     "clave": "Escríbenos por WhatsApp",
     "grupos": [
       "comun"
@@ -3550,6 +4347,15 @@
       "general/menu-superior",
       "general/pie-de-pagina",
       "general/pagina-no-encontrada-y-mantenimiento"
+    ]
+  },
+  {
+    "clave": "Escríbenos y te esperamos.",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/disponible-ahora"
     ]
   },
   {
@@ -3562,11 +4368,22 @@
     ]
   },
   {
+    "clave": "Escribir a la tienda",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "resena/formulario-de-opinion"
+    ]
+  },
+  {
     "clave": "Escribir por WhatsApp",
     "grupos": [
+      "hotel",
       "reservas"
     ],
     "ubicaciones": [
+      "habitaciones/disponible-ahora",
       "seguimiento/seguimiento"
     ]
   },
@@ -3598,12 +4415,30 @@
     ]
   },
   {
+    "clave": "Espera un momento: estamos verificando el RUC en SUNAT",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/factura-ruc"
+    ]
+  },
+  {
     "clave": "Esta combinación está agotada. Prueba con otra.",
     "grupos": [
       "productos"
     ],
     "ubicaciones": [
       "producto/ficha"
+    ]
+  },
+  {
+    "clave": "Esta habitación es solo para adultos.",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitacion/ficha"
     ]
   },
   {
@@ -3670,6 +4505,33 @@
     ]
   },
   {
+    "clave": "Estas fechas siguen libres:",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Este domingo",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "eventos/buscador"
+    ]
+  },
+  {
+    "clave": "Este fin de semana",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/buscador-de-fechas"
+    ]
+  },
+  {
     "clave": "Este pedido no pertenece a tu cuenta.",
     "grupos": [
       "productos"
@@ -3697,6 +4559,33 @@
     ]
   },
   {
+    "clave": "Este RUC no figura en SUNAT. Revisa el número o pide boleta",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/factura-ruc"
+    ]
+  },
+  {
+    "clave": "Este RUC no figura en SUNAT. Revisa el número o pide boleta.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/factura-ruc"
+    ]
+  },
+  {
+    "clave": "Este sábado",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "eventos/buscador"
+    ]
+  },
+  {
     "clave": "Este tour no está disponible.",
     "grupos": [
       "tours"
@@ -3715,12 +4604,30 @@
     ]
   },
   {
+    "clave": "Evento",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
     "clave": "Eventos",
     "grupos": [
       "eventos"
     ],
     "ubicaciones": [
       "negocio/frases-de-los-eventos"
+    ]
+  },
+  {
+    "clave": "Eventos del {fecha}",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "eventos/lista-de-eventos"
     ]
   },
   {
@@ -3739,15 +4646,6 @@
     ],
     "ubicaciones": [
       "formatos/personas-e-idiomas"
-    ]
-  },
-  {
-    "clave": "Extras",
-    "grupos": [
-      "hotel"
-    ],
-    "ubicaciones": [
-      "habitacion/ficha"
     ]
   },
   {
@@ -3790,12 +4688,14 @@
     "clave": "Fecha",
     "grupos": [
       "hotel",
+      "reservas",
       "tours"
     ],
     "ubicaciones": [
       "habitacion/ficha",
       "habitacion/calendario-de-la-estadia",
-      "tours/buscador"
+      "tours/buscador",
+      "seguimiento/seguimiento"
     ]
   },
   {
@@ -3810,9 +4710,11 @@
   {
     "clave": "Fechas de la estadía",
     "grupos": [
-      "hotel"
+      "hotel",
+      "reservas"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/calendario-de-la-estadia"
     ]
   },
@@ -3834,6 +4736,24 @@
     "ubicaciones": [
       "catalogo/catalogo",
       "tours/lista-de-tours"
+    ]
+  },
+  {
+    "clave": "Foto anterior",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "inicio/galeria"
+    ]
+  },
+  {
+    "clave": "Foto siguiente",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "inicio/galeria"
     ]
   },
   {
@@ -3873,6 +4793,26 @@
     ]
   },
   {
+    "clave": "Función",
+    "grupos": [
+      "eventos",
+      "reservas"
+    ],
+    "ubicaciones": [
+      "evento/ficha",
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "Garantía por daños {monto} (se devuelve después del evento).",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
     "clave": "Gestionar la reserva",
     "grupos": [
       "reservas"
@@ -3884,12 +4824,21 @@
   {
     "clave": "Gratis",
     "grupos": [
-      "hotel",
+      "comun",
       "reservas"
     ],
     "ubicaciones": [
-      "habitacion/ficha",
+      "general/asesor-de-ventas-chat",
       "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Gris",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
     ]
   },
   {
@@ -3904,10 +4853,12 @@
   {
     "clave": "Habitación",
     "grupos": [
+      "hotel",
       "reservas"
     ],
     "ubicaciones": [
-      "seguimiento/seguimiento"
+      "seguimiento/seguimiento",
+      "negocio/frases-del-hotel"
     ]
   },
   {
@@ -3917,9 +4868,37 @@
       "reservas"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitaciones/disponibilidad-por-fechas",
       "habitacion/ficha",
       "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "Hablar con una persona",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/asesor-de-ventas-chat"
+    ]
+  },
+  {
+    "clave": "Hablar por WhatsApp →",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/asesor-de-ventas-chat"
+    ]
+  },
+  {
+    "clave": "Has visto {cargados} de {total} productos",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/catalogo"
     ]
   },
   {
@@ -4013,6 +4992,15 @@
     ]
   },
   {
+    "clave": "Hola 👋 ¿qué producto estás buscando?",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/asesor-de-ventas-chat"
+    ]
+  },
+  {
     "clave": "Hora de ingreso",
     "grupos": [
       "hotel"
@@ -4042,12 +5030,30 @@
     ]
   },
   {
+    "clave": "Horario",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
     "clave": "Horarios",
     "grupos": [
       "hotel"
     ],
     "ubicaciones": [
       "habitacion/ficha"
+    ]
+  },
+  {
+    "clave": "Hoy",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "eventos/buscador"
     ]
   },
   {
@@ -4074,6 +5080,7 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -4086,6 +5093,33 @@
     "ubicaciones": [
       "tour/ficha",
       "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "Idioma / Language",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/menu-superior"
+    ]
+  },
+  {
+    "clave": "Imagen anterior",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "producto/fotos"
+    ]
+  },
+  {
+    "clave": "Imagen siguiente",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "producto/fotos"
     ]
   },
   {
@@ -4170,6 +5204,15 @@
     ],
     "ubicaciones": [
       "compra/envio-a-domicilio"
+    ]
+  },
+  {
+    "clave": "Indica la edad de cada niño para ver precios exactos.",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/buscador-de-fechas"
     ]
   },
   {
@@ -4303,6 +5346,42 @@
     ]
   },
   {
+    "clave": "Ingresa un departamento",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/ubicacion-de-entrega"
+    ]
+  },
+  {
+    "clave": "Ingresa un distrito",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/ubicacion-de-entrega"
+    ]
+  },
+  {
+    "clave": "Ingresa un RUC válido de 11 dígitos",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/factura-ruc"
+    ]
+  },
+  {
+    "clave": "Ingresa una provincia",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/ubicacion-de-entrega"
+    ]
+  },
+  {
     "clave": "Ingreso",
     "grupos": [
       "hotel",
@@ -4329,6 +5408,24 @@
     ],
     "ubicaciones": [
       "compra/datos-y-entrega"
+    ]
+  },
+  {
+    "clave": "Inicia sesión para ver tus pedidos y completar tus datos más rápido al comprar.",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "cuenta/invitacion-a-crear-cuenta"
+    ]
+  },
+  {
+    "clave": "Inicia sesión para ver tus reservas y completar tus datos más rápido al reservar.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "cuenta/invitacion-a-crear-cuenta"
     ]
   },
   {
@@ -4364,6 +5461,24 @@
     ],
     "ubicaciones": [
       "general/pagina-no-encontrada-y-mantenimiento"
+    ]
+  },
+  {
+    "clave": "Invitados",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "Ir a Mi cuenta",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "resena/formulario-de-opinion"
     ]
   },
   {
@@ -4436,6 +5551,15 @@
     ],
     "ubicaciones": [
       "formatos/fechas-y-horas"
+    ]
+  },
+  {
+    "clave": "Jugadores",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
     ]
   },
   {
@@ -4556,6 +5680,15 @@
     ]
   },
   {
+    "clave": "La fecha no puede ser futura",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
     "clave": "la hora de ingreso|voz",
     "grupos": [
       "hotel"
@@ -4638,12 +5771,30 @@
     ]
   },
   {
+    "clave": "Las que hagas con la sesión iniciada aparecerán aquí.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "cuenta/mis-reservas"
+    ]
+  },
+  {
     "clave": "Libre",
     "grupos": [
       "reservas"
     ],
     "ubicaciones": [
       "reservar/fechas-y-cantidades"
+    ]
+  },
+  {
+    "clave": "Libre ahora",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/disponible-ahora"
     ]
   },
   {
@@ -4700,6 +5851,7 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -4710,15 +5862,6 @@
     ],
     "ubicaciones": [
       "seguimiento/antes-de-llegar"
-    ]
-  },
-  {
-    "clave": "llegada",
-    "grupos": [
-      "hotel"
-    ],
-    "ubicaciones": [
-      "habitaciones/lista-de-habitaciones"
     ]
   },
   {
@@ -4744,7 +5887,7 @@
   {
     "clave": "Los días tachados no tienen disponibilidad",
     "grupos": [
-      "hotel"
+      "reservas"
     ],
     "ubicaciones": [
       "habitacion/calendario-de-la-estadia"
@@ -4757,6 +5900,15 @@
     ],
     "ubicaciones": [
       "pedido/seguimiento"
+    ]
+  },
+  {
+    "clave": "Los pedidos que hagas con la sesión iniciada aparecerán aquí.",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "cuenta/mis-pedidos-inicio"
     ]
   },
   {
@@ -4775,6 +5927,15 @@
     ],
     "ubicaciones": [
       "reservar/envio-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Lugar",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
     ]
   },
   {
@@ -4808,11 +5969,13 @@
     "clave": "Mapa",
     "grupos": [
       "comun",
-      "hotel"
+      "hotel",
+      "reservas"
     ],
     "ubicaciones": [
       "inicio/ubicacion",
-      "habitacion/ficha"
+      "habitacion/ficha",
+      "seguimiento/seguimiento"
     ]
   },
   {
@@ -4852,6 +6015,15 @@
     ]
   },
   {
+    "clave": "Marrón",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
+    ]
+  },
+  {
     "clave": "martes|día",
     "grupos": [
       "comun"
@@ -4872,10 +6044,10 @@
   {
     "clave": "Más",
     "grupos": [
-      "hotel"
+      "reservas"
     ],
     "ubicaciones": [
-      "habitacion/ficha"
+      "reservar/datos-de-la-reserva"
     ]
   },
   {
@@ -4893,6 +6065,7 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -4911,6 +6084,7 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -4920,6 +6094,7 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -4966,6 +6141,15 @@
     ],
     "ubicaciones": [
       "habitacion/ficha"
+    ]
+  },
+  {
+    "clave": "Máximo {n} entradas por compra.",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "evento/ficha"
     ]
   },
   {
@@ -5019,10 +6203,10 @@
   {
     "clave": "Menos",
     "grupos": [
-      "hotel"
+      "reservas"
     ],
     "ubicaciones": [
-      "habitacion/ficha"
+      "reservar/datos-de-la-reserva"
     ]
   },
   {
@@ -5040,6 +6224,7 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -5055,7 +6240,7 @@
   {
     "clave": "menos del mínimo de noches|día del calendario",
     "grupos": [
-      "hotel"
+      "reservas"
     ],
     "ubicaciones": [
       "habitacion/calendario-de-la-estadia"
@@ -5067,6 +6252,7 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -5076,6 +6262,7 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -5089,9 +6276,17 @@
     ]
   },
   {
+    "clave": "Mes",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
     "clave": "Mes anterior",
     "grupos": [
-      "hotel",
       "reservas"
     ],
     "ubicaciones": [
@@ -5102,7 +6297,6 @@
   {
     "clave": "Mes siguiente",
     "grupos": [
-      "hotel",
       "reservas"
     ],
     "ubicaciones": [
@@ -5135,6 +6329,15 @@
     ],
     "ubicaciones": [
       "formatos/nacionalidades"
+    ]
+  },
+  {
+    "clave": "Mi carrito",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "general/pie-de-pagina"
     ]
   },
   {
@@ -5191,7 +6394,7 @@
       "hotel"
     ],
     "ubicaciones": [
-      "habitacion/calendario-de-la-estadia"
+      "habitacion/ficha"
     ]
   },
   {
@@ -5201,6 +6404,24 @@
     ],
     "ubicaciones": [
       "tour/ficha"
+    ]
+  },
+  {
+    "clave": "Mis pedidos en {tienda}",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "cuenta/mis-pedidos-inicio"
+    ]
+  },
+  {
+    "clave": "Mis reservas en {tienda}",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "cuenta/mis-reservas"
     ]
   },
   {
@@ -5267,6 +6488,24 @@
     ]
   },
   {
+    "clave": "Morado",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
+    ]
+  },
+  {
+    "clave": "Muestra cada QR en la puerta desde tu celular o impreso. Cada entrada sirve para una persona y una sola vez.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
     "clave": "Mueve el mapa hasta que el pin quede en tu puerta.",
     "grupos": [
       "productos"
@@ -5276,12 +6515,30 @@
     ]
   },
   {
+    "clave": "Multicolor",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
+    ]
+  },
+  {
     "clave": "N° de documento",
     "grupos": [
       "hotel"
     ],
     "ubicaciones": [
       "seguimiento/antes-de-llegar"
+    ]
+  },
+  {
+    "clave": "N° de operación",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
     ]
   },
   {
@@ -5312,12 +6569,30 @@
     ]
   },
   {
+    "clave": "Naranja",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
+    ]
+  },
+  {
     "clave": "Necesito factura",
     "grupos": [
       "reservas"
     ],
     "ubicaciones": [
       "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Negro",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
     ]
   },
   {
@@ -5335,6 +6610,7 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -5441,12 +6717,30 @@
     ]
   },
   {
+    "clave": "No hay productos por el momento.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "inicio/productos-destacados"
+    ]
+  },
+  {
     "clave": "No hay suficiente stock disponible",
     "grupos": [
       "productos"
     ],
     "ubicaciones": [
       "producto/ficha"
+    ]
+  },
+  {
+    "clave": "No hay un límite exacto para este punto, así que elegimos el distrito más cercano. Revisa que {distrito} sea el correcto.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/ubicacion-de-entrega"
     ]
   },
   {
@@ -5470,10 +6764,16 @@
   {
     "clave": "No pudimos calcular el total. Intenta de nuevo.",
     "grupos": [
+      "eventos",
+      "hotel",
+      "locales",
       "tours"
     ],
     "ubicaciones": [
-      "tour/ficha"
+      "habitacion/ficha",
+      "tour/ficha",
+      "evento/ficha",
+      "salon/ficha"
     ]
   },
   {
@@ -5513,6 +6813,60 @@
     ]
   },
   {
+    "clave": "No pudimos dividir el pago.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "No pudimos enviar tu pago. Si la captura no sube, envía solo el número de operación.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "No pudimos enviar tu pedido.",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "seguimiento/antes-de-llegar"
+    ]
+  },
+  {
+    "clave": "No pudimos enviar tu solicitud. Intenta de nuevo en unos minutos.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/avisos-y-errores"
+    ]
+  },
+  {
+    "clave": "No pudimos guardar el check-in.",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "seguimiento/antes-de-llegar"
+    ]
+  },
+  {
+    "clave": "No pudimos guardar la cotización. Intenta de nuevo.",
+    "grupos": [
+      "locales"
+    ],
+    "ubicaciones": [
+      "salon/ficha"
+    ]
+  },
+  {
     "clave": "No pudimos guardar tu opinión. Intenta de nuevo.",
     "grupos": [
       "productos"
@@ -5540,6 +6894,15 @@
     ]
   },
   {
+    "clave": "No pudimos registrar tu aceptación. Intenta de nuevo.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
     "clave": "No pudimos registrar tu hoja. Intenta de nuevo en unos minutos.",
     "grupos": [
       "comun"
@@ -5549,12 +6912,30 @@
     ]
   },
   {
+    "clave": "No pudimos subir la captura. Intenta de nuevo.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
     "clave": "No pudimos validar los datos del pago.",
     "grupos": [
       "comun"
     ],
     "ubicaciones": [
       "pago/pago-con-tarjeta-o-yape"
+    ]
+  },
+  {
+    "clave": "No pudimos verificar en SUNAT.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/factura-ruc"
     ]
   },
   {
@@ -5688,6 +7069,15 @@
     ]
   },
   {
+    "clave": "Nombre del agasajado o de la promoción (opcional)",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
     "clave": "Nombre del producto...",
     "grupos": [
       "productos"
@@ -5811,6 +7201,15 @@
     ]
   },
   {
+    "clave": "Ocultar adorno",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/adornos-de-campana"
+    ]
+  },
+  {
     "clave": "Ocultar aviso",
     "grupos": [
       "comun"
@@ -5826,6 +7225,15 @@
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "Ocupadas ahora",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/disponible-ahora"
     ]
   },
   {
@@ -5865,12 +7273,39 @@
     ]
   },
   {
+    "clave": "Organiza: {organizador}",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "evento/ficha"
+    ]
+  },
+  {
+    "clave": "Otra fecha",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "eventos/buscador"
+    ]
+  },
+  {
     "clave": "Otras habitaciones",
     "grupos": [
       "hotel"
     ],
     "ubicaciones": [
       "habitacion/ficha"
+    ]
+  },
+  {
+    "clave": "Otros eventos",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "evento/ficha"
     ]
   },
   {
@@ -5916,6 +7351,15 @@
     ],
     "ubicaciones": [
       "compra/datos-y-entrega"
+    ]
+  },
+  {
+    "clave": "Pagada",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
     ]
   },
   {
@@ -6186,6 +7630,15 @@
     ]
   },
   {
+    "clave": "Pago seguro garantizado",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "general/barra-de-beneficios"
+    ]
+  },
+  {
     "clave": "Pago seguro: la tienda no ve ni guarda los datos de tu tarjeta.",
     "grupos": [
       "comun"
@@ -6222,7 +7675,16 @@
     ]
   },
   {
-    "clave": "Para",
+    "clave": "Paquete",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "Para {huespedes} · llegada {fecha}",
     "grupos": [
       "hotel"
     ],
@@ -6285,6 +7747,15 @@
     ]
   },
   {
+    "clave": "Partes del pago",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
     "clave": "Pasajeros",
     "grupos": [
       "reservas"
@@ -6307,6 +7778,15 @@
     ]
   },
   {
+    "clave": "Pasos de la reserva",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/pasos-de-la-reserva"
+    ]
+  },
+  {
     "clave": "Pedido",
     "grupos": [
       "comun",
@@ -6324,6 +7804,15 @@
     ],
     "ubicaciones": [
       "cuenta/calificar-compras"
+    ]
+  },
+  {
+    "clave": "Pedido {numero} · Tu opinión ayuda a otros clientes de {tienda}.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "resena/formulario-de-opinion"
     ]
   },
   {
@@ -6399,6 +7888,24 @@
     ]
   },
   {
+    "clave": "Plan de pagos",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "Plateado",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
+    ]
+  },
+  {
     "clave": "Podrás calificar este producto cuando tu pedido sea entregado.",
     "grupos": [
       "productos"
@@ -6435,6 +7942,15 @@
     ]
   },
   {
+    "clave": "Política de devoluciones",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "general/pie-de-pagina"
+    ]
+  },
+  {
     "clave": "Políticas de reserva",
     "grupos": [
       "reservas"
@@ -6450,6 +7966,15 @@
     ],
     "ubicaciones": [
       "seguimiento/antes-de-llegar"
+    ]
+  },
+  {
+    "clave": "Por ahora no hay funciones a la venta.",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "evento/ficha"
     ]
   },
   {
@@ -6486,7 +8011,7 @@
       "hotel"
     ],
     "ubicaciones": [
-      "habitacion/ficha"
+      "reservar/datos-de-la-reserva"
     ]
   },
   {
@@ -6495,7 +8020,7 @@
       "hotel"
     ],
     "ubicaciones": [
-      "habitacion/ficha"
+      "reservar/datos-de-la-reserva"
     ]
   },
   {
@@ -6513,7 +8038,7 @@
       "hotel"
     ],
     "ubicaciones": [
-      "habitacion/ficha"
+      "reservar/datos-de-la-reserva"
     ]
   },
   {
@@ -6522,7 +8047,7 @@
       "hotel"
     ],
     "ubicaciones": [
-      "habitacion/ficha"
+      "reservar/datos-de-la-reserva"
     ]
   },
   {
@@ -6553,12 +8078,49 @@
     ]
   },
   {
+    "clave": "Precios",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/disponible-ahora"
+    ]
+  },
+  {
+    "clave": "precisión {valor}",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/ubicacion-de-entrega"
+    ]
+  },
+  {
+    "clave": "Pregúntame por productos",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/asesor-de-ventas-chat"
+    ]
+  },
+  {
     "clave": "Preguntas frecuentes",
     "grupos": [
+      "productos",
       "reservas"
     ],
     "ubicaciones": [
       "general/pie-de-pagina"
+    ]
+  },
+  {
+    "clave": "Presenta este documento y tu código de compra en el ingreso.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
     ]
   },
   {
@@ -6675,6 +8237,15 @@
     ]
   },
   {
+    "clave": "Proveedores",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
     "clave": "Puedes intentar nuevamente o enviar tu pedido por WhatsApp.",
     "grupos": [
       "productos"
@@ -6695,10 +8266,12 @@
   {
     "clave": "QR de pago",
     "grupos": [
-      "productos"
+      "productos",
+      "reservas"
     ],
     "ubicaciones": [
-      "compra/datos-y-entrega"
+      "compra/datos-y-entrega",
+      "seguimiento/seguimiento"
     ]
   },
   {
@@ -6803,11 +8376,21 @@
     ]
   },
   {
+    "clave": "Rastrea tu pedido con su número",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "cuenta/invitacion-a-crear-cuenta"
+    ]
+  },
+  {
     "clave": "Rastrear mi pedido",
     "grupos": [
       "productos"
     ],
     "ubicaciones": [
+      "general/pie-de-pagina",
       "pedido/seguimiento"
     ]
   },
@@ -6821,7 +8404,7 @@
     ]
   },
   {
-    "clave": "Realiza el pago de",
+    "clave": "Realiza el pago de {monto} con los datos de arriba",
     "grupos": [
       "productos"
     ],
@@ -6994,6 +8577,19 @@
     ]
   },
   {
+    "clave": "Reintentar",
+    "grupos": [
+      "comun",
+      "productos",
+      "reservas"
+    ],
+    "ubicaciones": [
+      "compra/factura-ruc",
+      "cuenta/mis-reservas",
+      "cuenta/mis-pedidos-inicio"
+    ]
+  },
+  {
     "clave": "Requisitos:",
     "grupos": [
       "tours"
@@ -7058,6 +8654,15 @@
     ]
   },
   {
+    "clave": "Revisa el año",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
     "clave": "Revisa el link del correo que te enviamos.",
     "grupos": [
       "reservas"
@@ -7085,6 +8690,33 @@
     ],
     "ubicaciones": [
       "compra/datos-y-entrega"
+    ]
+  },
+  {
+    "clave": "Rojo",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
+    ]
+  },
+  {
+    "clave": "Rosado",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
+    ]
+  },
+  {
+    "clave": "RUC",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/factura-ruc"
     ]
   },
   {
@@ -7178,6 +8810,7 @@
     "ubicaciones": [
       "habitaciones/buscador-de-fechas",
       "habitacion/ficha",
+      "habitacion/calendario-de-la-estadia",
       "seguimiento/seguimiento"
     ]
   },
@@ -7194,6 +8827,15 @@
   },
   {
     "clave": "Salida|tour",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "Salón",
     "grupos": [
       "reservas"
     ],
@@ -7222,12 +8864,23 @@
   {
     "clave": "Seguir comprando",
     "grupos": [
+      "comun",
       "productos"
     ],
     "ubicaciones": [
+      "resena/formulario-de-opinion",
       "carrito/carrito",
       "compra/datos-y-entrega",
       "pedido/seguimiento"
+    ]
+  },
+  {
+    "clave": "Separas la fecha con {monto}; el resto se paga en cuotas.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
     ]
   },
   {
@@ -7296,12 +8949,57 @@
     ]
   },
   {
+    "clave": "Siguiente",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/tarjetas-de-producto"
+    ]
+  },
+  {
     "clave": "sin disponibilidad|día del calendario",
     "grupos": [
-      "hotel"
+      "reservas"
     ],
     "ubicaciones": [
       "habitacion/calendario-de-la-estadia"
+    ]
+  },
+  {
+    "clave": "Sin domicilio fiscal registrado en SUNAT",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/factura-ruc"
+    ]
+  },
+  {
+    "clave": "Sin resultados",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/ubicacion-de-entrega"
+    ]
+  },
+  {
+    "clave": "Sin salida ese día",
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "tour/ficha"
+    ]
+  },
+  {
+    "clave": "Sin stock",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/tarjetas-de-producto"
     ]
   },
   {
@@ -7316,9 +9014,11 @@
   {
     "clave": "Sitio web",
     "grupos": [
-      "comun"
+      "comun",
+      "reservas"
     ],
     "ubicaciones": [
+      "reservar/datos-de-la-reserva",
       "reclamos/formulario"
     ]
   },
@@ -7388,6 +9088,15 @@
     ]
   },
   {
+    "clave": "Sube la captura (imagen o PDF, hasta 5 MB). Si no sube, basta el número de operación.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
     "clave": "Subiendo…",
     "grupos": [
       "reservas"
@@ -7421,6 +9130,15 @@
     ],
     "ubicaciones": [
       "compra/datos-y-entrega"
+    ]
+  },
+  {
+    "clave": "SUNAT lo marca como no habido. La factura es válida, pero verifica el domicilio fiscal.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/factura-ruc"
     ]
   },
   {
@@ -7552,12 +9270,39 @@
     ]
   },
   {
+    "clave": "Tiempo restante de la oferta",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "inicio/oferta"
+    ]
+  },
+  {
     "clave": "Tienda",
     "grupos": [
       "productos"
     ],
     "ubicaciones": [
       "negocio/frases-de-la-tienda"
+    ]
+  },
+  {
+    "clave": "Tienes {productos} en tu carrito",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "inicio/productos-destacados"
+    ]
+  },
+  {
+    "clave": "Tienes una cuota vencida. Págala lo antes posible o escríbele al local.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
     ]
   },
   {
@@ -7653,6 +9398,15 @@
     ]
   },
   {
+    "clave": "Todo",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/menu-superior"
+    ]
+  },
+  {
     "clave": "Todos los derechos reservados.",
     "grupos": [
       "comun"
@@ -7700,11 +9454,13 @@
   {
     "clave": "Total",
     "grupos": [
+      "comun",
       "productos",
       "reservas"
     ],
     "ubicaciones": [
       "carrito/carrito",
+      "carrito/carrito-lateral",
       "compra/datos-y-entrega",
       "pedido/seguimiento",
       "reservar/datos-de-la-reserva",
@@ -7749,6 +9505,15 @@
     ]
   },
   {
+    "clave": "Traes proveedores propios",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
     "clave": "Transferencia bancaria",
     "grupos": [
       "productos"
@@ -7778,10 +9543,12 @@
   {
     "clave": "Tu carrito está vacío",
     "grupos": [
+      "comun",
       "productos"
     ],
     "ubicaciones": [
-      "carrito/carrito"
+      "carrito/carrito",
+      "carrito/carrito-lateral"
     ]
   },
   {
@@ -7821,6 +9588,15 @@
     ]
   },
   {
+    "clave": "Tu navegador ubicó por WiFi o por red, no por GPS: puede errar de distrito. Confirma abajo que {distrito} es el tuyo.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/ubicacion-de-entrega"
+    ]
+  },
+  {
     "clave": "Tu pago está en proceso. Te avisaremos apenas se confirme; no vuelvas a pagar.",
     "grupos": [
       "comun"
@@ -7848,7 +9624,7 @@
     ]
   },
   {
-    "clave": "Tu pedido se entrega por",
+    "clave": "Tu pedido se entrega por {metodo}. El costo de envío se confirma por WhatsApp.",
     "grupos": [
       "productos"
     ],
@@ -7932,19 +9708,23 @@
     "clave": "Tus datos",
     "grupos": [
       "canchas",
-      "comun"
+      "comun",
+      "hotel"
     ],
     "ubicaciones": [
       "reclamos/formulario",
+      "negocio/frases-del-hotel",
       "negocio/frases-de-la-cancha"
     ]
   },
   {
     "clave": "Tus entradas",
     "grupos": [
-      "eventos"
+      "eventos",
+      "reservas"
     ],
     "ubicaciones": [
+      "seguimiento/seguimiento",
       "negocio/frases-de-los-eventos"
     ]
   },
@@ -7964,6 +9744,15 @@
     ],
     "ubicaciones": [
       "compra/envio-a-domicilio"
+    ]
+  },
+  {
+    "clave": "Últimas {n} unidades",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/tarjetas-de-producto"
     ]
   },
   {
@@ -8057,12 +9846,30 @@
     ]
   },
   {
+    "clave": "Ver →",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "inicio/categorias"
+    ]
+  },
+  {
     "clave": "Ver carrito",
     "grupos": [
       "productos"
     ],
     "ubicaciones": [
       "producto/ficha"
+    ]
+  },
+  {
+    "clave": "Ver carrito completo",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "carrito/carrito-lateral"
     ]
   },
   {
@@ -8122,12 +9929,41 @@
   {
     "clave": "Ver en el mapa",
     "grupos": [
+      "eventos",
       "reservas",
       "tours"
     ],
     "ubicaciones": [
       "tour/ficha",
+      "evento/ficha",
       "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "Ver en Facebook",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/aviso-de-transmision-en-vivo"
+    ]
+  },
+  {
+    "clave": "Ver en TikTok",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/aviso-de-transmision-en-vivo"
+    ]
+  },
+  {
+    "clave": "Ver en YouTube",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/aviso-de-transmision-en-vivo"
     ]
   },
   {
@@ -8158,14 +9994,25 @@
     ]
   },
   {
+    "clave": "Ver imagen en pantalla completa",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "producto/fotos"
+    ]
+  },
+  {
     "clave": "Ver las {n} fotos",
     "grupos": [
+      "eventos",
       "hotel",
       "tours"
     ],
     "ubicaciones": [
       "habitacion/ficha",
-      "tour/ficha"
+      "tour/ficha",
+      "evento/ficha"
     ]
   },
   {
@@ -8175,6 +10022,24 @@
     ],
     "ubicaciones": [
       "general/avisos-de-la-tienda"
+    ]
+  },
+  {
+    "clave": "Ver más meses",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "habitacion/calendario-de-la-estadia"
+    ]
+  },
+  {
+    "clave": "Ver opciones",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/tarjetas-de-producto"
     ]
   },
   {
@@ -8189,10 +10054,12 @@
   {
     "clave": "Ver productos",
     "grupos": [
+      "comun",
       "productos"
     ],
     "ubicaciones": [
       "carrito/carrito",
+      "carrito/carrito-lateral",
       "compra/datos-y-entrega"
     ]
   },
@@ -8203,6 +10070,15 @@
     ],
     "ubicaciones": [
       "catalogo/catalogo"
+    ]
+  },
+  {
+    "clave": "Ver seguimiento",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/asesor-de-ventas-chat"
     ]
   },
   {
@@ -8217,10 +10093,12 @@
   {
     "clave": "Ver todos",
     "grupos": [
+      "eventos",
       "tours"
     ],
     "ubicaciones": [
-      "tours/lista-de-tours"
+      "tours/lista-de-tours",
+      "eventos/lista-de-eventos"
     ]
   },
   {
@@ -8230,6 +10108,15 @@
     ],
     "ubicaciones": [
       "catalogo/categoria"
+    ]
+  },
+  {
+    "clave": "Ver todos los resultados",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "general/buscador"
     ]
   },
   {
@@ -8260,12 +10147,30 @@
     ]
   },
   {
+    "clave": "Verde",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/colores"
+    ]
+  },
+  {
     "clave": "Verifica bien los datos del destinatario antes de pagar.",
     "grupos": [
       "productos"
     ],
     "ubicaciones": [
       "compra/datos-y-entrega"
+    ]
+  },
+  {
+    "clave": "Verificando en SUNAT…",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "compra/factura-ruc"
     ]
   },
   {
@@ -8293,6 +10198,15 @@
     ],
     "ubicaciones": [
       "general/videos"
+    ]
+  },
+  {
+    "clave": "vie y sáb {precio}",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/disponible-ahora"
     ]
   },
   {
@@ -8408,12 +10322,32 @@
     ]
   },
   {
+    "clave": "WhatsApp",
+    "grupos": [
+      "comun",
+      "reservas"
+    ],
+    "ubicaciones": [
+      "general/pie-de-pagina",
+      "seguimiento/seguimiento"
+    ]
+  },
+  {
     "clave": "y la próxima vez tus datos se completan solos. Solo se puede antes de confirmar.",
     "grupos": [
       "productos"
     ],
     "ubicaciones": [
       "compra/datos-y-entrega"
+    ]
+  },
+  {
+    "clave": "ya ingresó",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "seguimiento/seguimiento"
     ]
   },
   {

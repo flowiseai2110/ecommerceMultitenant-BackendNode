@@ -24,6 +24,7 @@ import config from "../../config/index.js";
 import logger from "../../config/logger.js";
 import { QuotaExceededError, ValidationError } from "../../utils/errors.js";
 import { sendConsumoIaAvisoEmail } from "../../services/email.service.js";
+import { parametro } from "../parametros/parametros.service.js";
 
 export const TIPOS = {
   asesor: {
@@ -46,13 +47,14 @@ export const TIPOS = {
     }
   },
   // Cada pulsación de "Traducir con IA" en Traducciones (traduce todo lo que falta
-  // de un idioma). Los planes aún no tienen tope propio: sin tope salvo que lo
-  // fije el dueño o CONSUMO_IA_LIMITE_TRADUCCIONES_SIN_PLAN.
+  // de un idioma). Sin plan, el tope es un parámetro de la plataforma (se cambia
+  // sin deploy; docs/specs/idiomas): `parametroSinPlan` manda sobre `sinPlan`.
   traducciones: {
     recurso: "traducciones_ia",
     nombre: "Traducción con IA",
     campoPlan: "limiteTraduccionesIaMes",
-    sinPlan: () => config.consumoIa.limiteTraduccionesSinPlan
+    sinPlan: () => config.consumoIa.limiteTraduccionesSinPlan,
+    parametroSinPlan: "consumo_ia.traducciones_sin_plan"
   }
 };
 
@@ -164,8 +166,8 @@ async function leerAjustesDueno(tiendaId) {
  * @returns {{ limitePlan: number|null, limiteDueno: number|null, limite: number|null, avisoPct: number|null }}
  *   null = ilimitado (limite) / sin ajuste (limiteDueno) / sin aviso (avisoPct)
  */
-export function calcularLimite(def, plan, ajustes = {}) {
-  const limitePlan = plan ? (plan[def.campoPlan] ?? null) : def.sinPlan();
+export function calcularLimite(def, plan, ajustes = {}, limiteSinPlan = def.sinPlan()) {
+  const limitePlan = plan ? (plan[def.campoPlan] ?? null) : limiteSinPlan;
   const limiteDueno = Number.isInteger(ajustes.limite) ? ajustes.limite : null;
   const limite = limiteDueno == null ? limitePlan
     : limitePlan == null ? limiteDueno
@@ -174,15 +176,21 @@ export function calcularLimite(def, plan, ajustes = {}) {
   return { limitePlan, limiteDueno, limite, avisoPct };
 }
 
+/** Tope de una tienda sin plan: el parámetro de la plataforma si el tipo lo declara; si no, el de la configuración. */
+export async function limiteSinPlanDe(def) {
+  return def.parametroSinPlan ? parametro(def.parametroSinPlan) : def.sinPlan();
+}
+
 async function leerContexto(tiendaId) {
-  const [tienda, ajustes] = await Promise.all([
+  const [tienda, ajustes, sinPlan] = await Promise.all([
     prisma.tiendas.findUnique({
       where: { id: tiendaId },
       select: { nombre: true, email: true, logoUrl: true, plan: true }
     }),
-    leerAjustesDueno(tiendaId)
+    leerAjustesDueno(tiendaId),
+    Promise.all(Object.entries(TIPOS).map(async ([tipo, def]) => [tipo, await limiteSinPlanDe(def)])).then(Object.fromEntries)
   ]);
-  return { tienda, ajustes };
+  return { tienda, ajustes, sinPlan };
 }
 
 /**
@@ -192,8 +200,8 @@ async function leerContexto(tiendaId) {
  */
 export async function reservarConsulta(tiendaId, tipo) {
   const def = tipoValido(tipo);
-  const { tienda, ajustes } = await leerContexto(tiendaId);
-  const { limite, avisoPct } = calcularLimite(def, tienda?.plan, ajustes[tipo]);
+  const { tienda, ajustes, sinPlan } = await leerContexto(tiendaId);
+  const { limite, avisoPct } = calcularLimite(def, tienda?.plan, ajustes[tipo], sinPlan[tipo]);
   const periodo = periodoActual();
 
   const agotado = () => {
@@ -337,7 +345,7 @@ export async function obtenerConsumo(tiendaId) {
   const periodo = periodoActual();
   const dia = diaActual();
   const recursosDia = Object.values(TIPOS).filter(t => t.diario).map(t => t.diario.recurso);
-  const [{ tienda, ajustes }, filas] = await Promise.all([
+  const [{ tienda, ajustes, sinPlan }, filas] = await Promise.all([
     leerContexto(tiendaId),
     prisma.tienda_uso_recursos.findMany({
       where: {
@@ -362,7 +370,7 @@ export async function obtenerConsumo(tiendaId) {
       tipo,
       nombre: def.nombre,
       usadas: usadasPor[def.recurso] ?? 0,
-      ...calcularLimite(def, tienda?.plan, ajustes[tipo]),
+      ...calcularLimite(def, tienda?.plan, ajustes[tipo], sinPlan[tipo]),
       // Solo tipos con tope diario. limite null = sin tope diario en el plan.
       diario: def.diario
         ? {
@@ -381,8 +389,8 @@ export async function obtenerConsumo(tiendaId) {
  */
 export async function guardarAjustes(tiendaId, tipo, { limite, avisoPct }, user) {
   const def = tipoValido(tipo);
-  const { tienda, ajustes } = await leerContexto(tiendaId);
-  const { limitePlan } = calcularLimite(def, tienda?.plan, {});
+  const { tienda, ajustes, sinPlan } = await leerContexto(tiendaId);
+  const { limitePlan } = calcularLimite(def, tienda?.plan, {}, sinPlan[tipo]);
 
   if (limite != null && limitePlan != null && limite > limitePlan) {
     const message = `El límite no puede superar el de tu plan (${limitePlan} consultas al mes)`;

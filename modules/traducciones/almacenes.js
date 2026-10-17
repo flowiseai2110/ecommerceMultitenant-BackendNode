@@ -3,6 +3,7 @@ import { getDiseno, upsertClave } from "../../services/tienda-diseno.service.js"
 import { ETIQUETA_GRUPO } from "../idiomas/grupos.js";
 import { clavesDeTienda, invalidarTextos, textoBase } from "../idiomas/textos.service.js";
 import { escribirTextosDeTienda } from "../idiomas/textos.repository.js";
+import { guardarTraduccionesOpciones, leerTraduccionesOpciones, palabrasDeTienda } from "./opciones.js";
 
 /**
  * Dónde guarda sus traducciones cada fuente (docs/specs/idiomas D5, diseno.md B4).
@@ -58,6 +59,31 @@ export function almacenDiseno() {
       if (id !== tiendaId) return false;
       const todas = (await getDiseno(tiendaId)).traducciones ?? {};
       await upsertClave(tiendaId, "traducciones", { ...todas, [codigo]: cambiar(todas[codigo] ?? {}) }, usuario);
+      return true;
+    }
+  };
+}
+
+/**
+ * Opciones de las variantes de la tienda (opciones.js): una sola "fila" por
+ * tienda (id = tiendaId) con las palabras distintas de las opciones de sus
+ * productos; sin opciones, ninguna fila. Las traducciones van en la
+ * configuración de la tienda.
+ */
+export function almacenOpciones() {
+  async function leerUna(tiendaId, id = tiendaId) {
+    if (id !== tiendaId) return null;
+    const [palabras, traducciones] = await Promise.all([palabrasDeTienda(tiendaId), leerTraduccionesOpciones(tiendaId)]);
+    return palabras.length ? { id: tiendaId, palabras, traducciones } : null;
+  }
+  return {
+    leerUna,
+    leer: async (tiendaId) => [await leerUna(tiendaId)].filter(Boolean),
+    idDe: (fila) => fila.id,
+    async guardar(tiendaId, id, codigo, cambiar, usuario) {
+      if (id !== tiendaId) return false;
+      const todas = await leerTraduccionesOpciones(tiendaId);
+      await guardarTraduccionesOpciones(tiendaId, { ...todas, [codigo]: cambiar(todas[codigo] ?? {}) }, usuario);
       return true;
     }
   };

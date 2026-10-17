@@ -30,6 +30,42 @@
         "grupos": [
           "comun"
         ]
+      },
+      {
+        "id": "portada",
+        "nombre": "Portada",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "categorias",
+        "nombre": "Categorías",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "galeria",
+        "nombre": "Galería",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "oferta",
+        "nombre": "Oferta",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "productos-destacados",
+        "nombre": "Productos destacados",
+        "grupos": [
+          "comun",
+          "productos"
+        ]
       }
     ]
   },
@@ -40,6 +76,41 @@
       {
         "id": "menu-superior",
         "nombre": "Menú superior",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "barra-de-beneficios",
+        "nombre": "Barra de beneficios",
+        "grupos": [
+          "productos"
+        ]
+      },
+      {
+        "id": "asesor-de-ventas-chat",
+        "nombre": "Asesor de ventas (chat)",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "aviso-de-transmision-en-vivo",
+        "nombre": "Aviso de transmisión en vivo",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "adornos-de-campana",
+        "nombre": "Adornos de campaña",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "carga-de-la-tienda",
+        "nombre": "Carga de la tienda",
         "grupos": [
           "comun"
         ]
@@ -106,7 +177,15 @@
         "id": "catalogo",
         "nombre": "Catálogo",
         "grupos": [
+          "comun",
           "productos"
+        ]
+      },
+      {
+        "id": "tarjetas-de-producto",
+        "nombre": "Tarjetas de producto",
+        "grupos": [
+          "comun"
         ]
       },
       {
@@ -130,10 +209,37 @@
         ]
       },
       {
+        "id": "fotos",
+        "nombre": "Fotos",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "cantidad",
+        "nombre": "Cantidad",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
         "id": "opiniones",
         "nombre": "Opiniones",
         "grupos": [
           "productos"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "resena",
+    "nombre": "Opinar sobre una compra",
+    "secciones": [
+      {
+        "id": "formulario-de-opinion",
+        "nombre": "Formulario de opinión",
+        "grupos": [
+          "comun"
         ]
       }
     ]
@@ -147,6 +253,13 @@
         "nombre": "Carrito",
         "grupos": [
           "productos"
+        ]
+      },
+      {
+        "id": "carrito-lateral",
+        "nombre": "Carrito lateral",
+        "grupos": [
+          "comun"
         ]
       }
     ]
@@ -181,6 +294,20 @@
         "nombre": "Recojo en tienda",
         "grupos": [
           "productos"
+        ]
+      },
+      {
+        "id": "ubicacion-de-entrega",
+        "nombre": "Ubicación de entrega",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "factura-ruc",
+        "nombre": "Factura (RUC)",
+        "grupos": [
+          "comun"
         ]
       }
     ]
@@ -219,7 +346,8 @@
         "id": "buscador-de-fechas",
         "nombre": "Buscador de fechas",
         "grupos": [
-          "hotel"
+          "hotel",
+          "reservas"
         ]
       },
       {
@@ -232,6 +360,13 @@
       {
         "id": "disponibilidad-por-fechas",
         "nombre": "Disponibilidad por fechas",
+        "grupos": [
+          "hotel"
+        ]
+      },
+      {
+        "id": "disponible-ahora",
+        "nombre": "Disponible ahora",
         "grupos": [
           "hotel"
         ]
@@ -253,7 +388,7 @@
         "id": "calendario-de-la-estadia",
         "nombre": "Calendario de la estadía",
         "grupos": [
-          "hotel"
+          "reservas"
         ]
       },
       {
@@ -299,6 +434,52 @@
     ]
   },
   {
+    "id": "eventos",
+    "nombre": "Eventos",
+    "secciones": [
+      {
+        "id": "buscador",
+        "nombre": "Buscador",
+        "grupos": [
+          "eventos"
+        ]
+      },
+      {
+        "id": "lista-de-eventos",
+        "nombre": "Lista de eventos",
+        "grupos": [
+          "eventos"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "evento",
+    "nombre": "Ficha del evento",
+    "secciones": [
+      {
+        "id": "ficha",
+        "nombre": "Ficha",
+        "grupos": [
+          "eventos"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "salon",
+    "nombre": "Ficha del salón",
+    "secciones": [
+      {
+        "id": "ficha",
+        "nombre": "Ficha",
+        "grupos": [
+          "locales"
+        ]
+      }
+    ]
+  },
+  {
     "id": "reservar",
     "nombre": "Reservar",
     "secciones": [
@@ -306,6 +487,7 @@
         "id": "datos-de-la-reserva",
         "nombre": "Datos de la reserva",
         "grupos": [
+          "hotel",
           "reservas"
         ]
       },
@@ -319,6 +501,13 @@
       {
         "id": "resumen-del-precio",
         "nombre": "Resumen del precio",
+        "grupos": [
+          "reservas"
+        ]
+      },
+      {
+        "id": "pasos-de-la-reserva",
+        "nombre": "Pasos de la reserva",
         "grupos": [
           "reservas"
         ]
@@ -381,6 +570,21 @@
         "id": "mis-reservas",
         "nombre": "Mis reservas",
         "grupos": [
+          "reservas"
+        ]
+      },
+      {
+        "id": "mis-pedidos-inicio",
+        "nombre": "Mis pedidos (inicio)",
+        "grupos": [
+          "productos"
+        ]
+      },
+      {
+        "id": "invitacion-a-crear-cuenta",
+        "nombre": "Invitación a crear cuenta",
+        "grupos": [
+          "productos",
           "reservas"
         ]
       }
@@ -475,6 +679,13 @@
       {
         "id": "nacionalidades",
         "nombre": "Nacionalidades",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "colores",
+        "nombre": "Colores",
         "grupos": [
           "comun"
         ]

@@ -1160,6 +1160,9 @@ model config_reservas {
   apartadoManualMin      Int      @default(120) @map("apartado_manual_min") // minutos que el cupo queda apartado mientras se paga
   apartadoEnLineaMin     Int      @default(15) @map("apartado_en_linea_min") // ídem, si se paga en línea (reserva-directa-hotel RD6)
   cobroEleccion          Boolean  @default(false) @map("cobro_eleccion") // con adelanto: el cliente elige adelanto o total (plantillas-por-rubro C8)
+  // Política de cancelación del hotel (docs/specs/ciclo-reserva-hotel C5)
+  cancelacionGratisHoras Int      @default(48) @map("cancelacion_gratis_horas") // gratis si se cancela con al menos estas horas
+  penalidadNoches        Int      @default(1) @map("penalidad_noches") // si no, se retienen estas noches
   camposFormulario       Json?    @map("campos_formulario") @db.JsonB // modo de cada campo del formulario (reservas/formulario.js)
   maxEntradasPorCompra   Int      @default(10) @map("max_entradas_por_compra")
   umbralUltimasEntradas  Int?     @default(20) @map("umbral_ultimas_entradas") // "Últimas entradas" si quedan menos; null = nunca
@@ -1266,6 +1269,7 @@ model hotel_extras {
   precio       Decimal @db.Decimal(10, 2)
   cobro        String  @default("estadia") @db.VarChar(14) // estadia | noche | persona | persona_noche
   datoPedido   String? @map("dato_pedido") @db.VarChar(80) // lo que se le pide al huésped ("Número de vuelo y hora")
+  horario      String? @db.VarChar(5) // early | late: se pide con hora y el hotel lo aprueba (ciclo-reserva-hotel C7)
   activo       Boolean @default(true)
   orden        Int     @default(0)
   traducciones Json?   @db.JsonB // { en: { nombre, descripcion, datoPedido } } (C3)
@@ -1564,6 +1568,14 @@ model reservas {
   comentarios         String?   @db.Text
   aceptaDatos         Boolean   @map("acepta_datos")
 
+  // Ciclo de la reserva del hotel (docs/specs/ciclo-reserva-hotel)
+  codigoPms           String?   @map("codigo_pms") @db.VarChar(40) // lo escribe recepción para asociarla a su PMS
+  checkinEn           DateTime? @map("checkin_en") @db.Timestamptz
+  checkoutEn          DateTime? @map("checkout_en") @db.Timestamptz
+  notas               Json      @default("[]") @db.JsonB // [{ texto, autor, en }] para el siguiente turno; no se editan
+  cancelacion         Json?     @db.JsonB // { quien, motivo, penalidad, reembolso, en, usuario }
+  retenido            Decimal?  @db.Decimal(10, 2) // lo que se queda el hotel al cancelar o por no-show
+
   // Respuesta del negocio (no hay columnas de plazo: el límite es `inicio`)
   respondidaEn  DateTime? @map("respondida_en") @db.Timestamptz
   motivoRechazo String?   @map("motivo_rechazo") @db.VarChar(200)
@@ -1580,6 +1592,7 @@ model reservas {
   paquete   local_paquetes?    @relation(fields: [paqueteId], references: [id], onDelete: SetNull)
 
   @@index([tiendaId, inicio], name: "idx_reservas_tienda_inicio")
+  @@index([tiendaId, codigoPms], name: "idx_reservas_tienda_codigo_pms")
   @@index([funcionId], name: "idx_reservas_funcion")
   @@index([productoId, inicio], name: "idx_reservas_producto_inicio")
 }
@@ -2143,6 +2156,12 @@ model evento_invitaciones {
   // Una sola sesión por enlace (R4.3): el último dispositivo que la reclama gana.
   sesionId          String?   @map("sesion_id") @db.VarChar(40)
   sesionVistaEn     DateTime? @map("sesion_vista_en") @db.Timestamptz
+  // Calidad que vio este invitado en vivo (lo mide su reproductor y llega con el latido):
+  // segundos en pausa esperando video, segundos viendo y cuántas veces se cortó.
+  pausaSeg          Decimal   @default(0) @map("pausa_seg") @db.Decimal(10, 1)
+  vistoSeg          Decimal   @default(0) @map("visto_seg") @db.Decimal(10, 1)
+  cortes            Int       @default(0)
+  ultimoCorteEn     DateTime? @map("ultimo_corte_en") @db.Timestamptz
 
   // Auditoría
   fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
@@ -2168,6 +2187,18 @@ model transmision_eventos_proveedor {
   fechaRegistro DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
 
   @@unique([proveedor, eventoId], name: "uq_transmision_evento_proveedor")
+}
+
+// Parámetros de la plataforma que su administrador cambia sin deploy
+// (modules/parametros). La lista de claves, su validación y su valor por
+// defecto viven en parametros.registro.js; aquí solo lo que alguien cambió.
+model parametros_plataforma {
+  clave                String    @id @db.VarChar(60)
+  valor                Json      @db.JsonB
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
 }
 
 // Avisos a la plataforma (almacenamiento de video casi lleno o lleno). La clave

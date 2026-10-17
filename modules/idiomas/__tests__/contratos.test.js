@@ -32,7 +32,8 @@ const sinComentarios = (t) => t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:
 describe("contrato 2: cada fuente traducible se muestra traducida en la tienda", () => {
   // Fuentes que la tienda recibe por otra vía, con su motivo.
   const POR_OTRA_VIA = {
-    textos: "los textos fijos llegan armados en GET /store/textos (idiomas/textos.service.js)"
+    textos: "los textos fijos llegan armados en GET /store/textos (idiomas/textos.service.js)",
+    opciones: "Talla, Color y sus valores llegan como diccionario en GET /store/textos (traducciones/opciones.js)"
   };
 
   it.each(Object.keys(FUENTES))("%s se pasa por localizar/localizado fuera de traducciones/", (nombre) => {

@@ -1,4 +1,4 @@
-import { almacenColumna, almacenDiseno, almacenTextosFijos } from "./almacenes.js";
+import { almacenColumna, almacenDiseno, almacenOpciones, almacenTextosFijos } from "./almacenes.js";
 import { textoLocal, vacio } from "./texto-local.js";
 import { textoBase } from "../idiomas/textos.service.js";
 import { ubicaciones } from "../idiomas/ubicaciones.js";
@@ -178,6 +178,7 @@ const CONTENIDO = {
   planes: () => "Planes de tarifa",
   temporadas: () => "Temporadas",
   config: () => "Políticas de reserva",
+  opciones: () => "Opciones de productos",
   diseno: () => "Página de inicio"
 };
 const ORDEN_CONTENIDO = Object.keys(CONTENIDO);
@@ -247,6 +248,17 @@ export const FUENTES = Object.freeze(conLugares({
     textos: (f) => textosDiseno(f.estructura, f.descripcion),
     // La fila es { estructura, descripcion, traducciones }.
     aplicar: (fila, tr) => ({ ...fila, estructura: aplicarDiseno(fila.estructura, tr), descripcion: textoLocal(fila.descripcion, tr["tienda.descripcion"]) })
+  },
+  // Talla, Color y sus valores: una vez por tienda, para todos sus productos
+  // (opciones.js). La tienda los recibe en GET /store/textos, aparte de los fijos.
+  opciones: {
+    etiqueta: "Opciones de productos",
+    lugar: "opciones",
+    almacen: almacenOpciones(),
+    nombre: () => "Talla, color y otras opciones",
+    nombreCampo: () => "Opción o valor",
+    textos: (f) => Object.fromEntries(f.palabras.map((p) => [p, p])),
+    aplicar: (fila, tr) => ({ ...fila, textos: Object.fromEntries(fila.palabras.map((p) => [p, textoLocal(p, tr[p])])) })
   },
   // Botones, títulos y mensajes fijos (docs/specs/idiomas D7). La tienda los
   // recibe ya armados en GET /store/textos (idiomas/textos.service.js).

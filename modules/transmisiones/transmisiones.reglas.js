@@ -180,6 +180,38 @@ export const SESION_VIVA_MS = 75 * 1000;
 export const sesionViva = (inv, ahora = new Date()) =>
   !!inv.sesionVistaEn && ahora.getTime() - inv.sesionVistaEn.getTime() < SESION_VIVA_MS;
 
+// ============================================
+// Calidad que vieron los invitados (docs/specs/transmision-eventos/investigacion-calidad.md, punto 4)
+// ============================================
+
+/** Porcentaje de tiempo en pausa esperando video: meta bajo 1 %, grave sobre 3 % (referencia de Mux). */
+export const CORTE_META_PCT = 1;
+export const CORTE_GRAVE_PCT = 3;
+/** Con menos de 1 minuto medido, el porcentaje no dice nada todavía. */
+export const CALIDAD_MIN_SEG = 60;
+/** Un invitado "tiene cortes ahora" si se le cortó hace menos de 2 min y sigue conectado. */
+export const CORTE_RECIENTE_MS = 2 * MS_MIN;
+
+/**
+ * Resumen de la calidad de una transmisión a partir de lo que midió cada invitado.
+ * @returns {{ pausaSeg: number, vistoSeg: number, cortes: number, porcentajeCorte: number|null,
+ *             nivel: "bien"|"regular"|"mal"|null, invitadosConCortes: number, conCortesAhora: number }}
+ */
+export function calidadTransmision(invitaciones, ahora = new Date()) {
+  let pausaSeg = 0, vistoSeg = 0, cortes = 0, invitadosConCortes = 0, conCortesAhora = 0;
+  for (const inv of invitaciones) {
+    pausaSeg += Number(inv.pausaSeg ?? 0);
+    vistoSeg += Number(inv.vistoSeg ?? 0);
+    cortes += inv.cortes ?? 0;
+    if ((inv.cortes ?? 0) > 0) invitadosConCortes++;
+    if (inv.ultimoCorteEn && ahora.getTime() - inv.ultimoCorteEn.getTime() < CORTE_RECIENTE_MS && sesionViva(inv, ahora)) conCortesAhora++;
+  }
+  const total = pausaSeg + vistoSeg;
+  const porcentajeCorte = total >= CALIDAD_MIN_SEG ? Math.round((pausaSeg / total) * 1000) / 10 : null;
+  const nivel = porcentajeCorte === null ? null : porcentajeCorte < CORTE_META_PCT ? "bien" : porcentajeCorte <= CORTE_GRAVE_PCT ? "regular" : "mal";
+  return { pausaSeg: Math.round(pausaSeg), vistoSeg: Math.round(vistoSeg), cortes, porcentajeCorte, nivel, invitadosConCortes, conCortesAhora };
+}
+
 /** Número para wa.me: 9 dígitos peruanos → con 51 delante. Sin teléfono → null. */
 export function numeroWhatsapp(telefono) {
   const digitos = String(telefono ?? "").replace(/\D/g, "");

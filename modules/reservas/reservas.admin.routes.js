@@ -24,15 +24,21 @@ import {
 } from "./canchas/canchas.service.js";
 import {
   aceptarReserva, agendaReservas, cancelarPorNegocio, detalleReservaAdmin, listarReservasAdmin, marcarNoShow,
-  rechazarPago, rechazarReserva, reenviarCorreo, resumenReservas, verificarPago
+  rechazarPago, rechazarReserva, reenviarCorreo, resumenHotel, resumenReservas, verificarPago
 } from "./reservas.service.js";
 import {
   aceptarSchema, agendaQuerySchema, configSchema, crearCierreSchema, habitacionSchema, idParamSchema,
   listarAdminQuerySchema, motivoSchema, productoParamSchema, rechazarPagoSchema, rechazarSchema, tiendaQuerySchema, tourSchema,
   eventoSchema, funcionParamSchema, temporadaSchema, extraSchema, planSchema, disponibilidadQuerySchema, salonSchema,
   calendarioAdminQuerySchema, bloqueoSchema, cotizacionAdminSchema, listarCotizacionesQuerySchema, cuotaAdminParamSchema, planPagosSchema,
-  canchaSchema, agendaCanchasAdminQuerySchema, bloqueoCanchaSchema, nocheQuerySchema, fijarLibresSchema
+  canchaSchema, agendaCanchasAdminQuerySchema, bloqueoCanchaSchema, nocheQuerySchema, fijarLibresSchema,
+  checkinSchema, checkoutSchema, codigoPmsSchema, notaSchema, modificarSchema, cambiarSalidaSchema, cancelarHotelSchema,
+  responderHorarioSchema, salidaTardiaSchema
 } from "./reservas.schema.js";
+import {
+  agregarNota, cambiarSalida, cancelarHotel, darSalidaTardia, guardarCodigoPms, marcarNoLlego, modificarReserva,
+  registrarCheckin, registrarCheckout, responderHorario
+} from "./hotel/ciclo.service.js";
 
 /**
  * Mini booking — panel del negocio (docs/specs/mini-booking).
@@ -316,6 +322,11 @@ router.put("/canchas/:productoId", ...gestion, validate({ params: productoParamS
 
 // ---------- Bandeja ----------
 
+// Bandeja del hotel: lo de hoy y el contador de cada estado del ciclo (ciclo-reserva-hotel C10).
+router.get("/resumen-hotel", ...lectura, validate({ query: tiendaQuerySchema }), async (req, res, next) => {
+  try { return ok(res, "RESERVAS_RESUMEN_HOTEL", await resumenHotel(req.tiendaId)); } catch (error) { next(error); }
+});
+
 router.get("/resumen", ...lectura, validate({ query: tiendaQuerySchema }), async (req, res, next) => {
   try { return ok(res, "RESERVAS_RESUMEN", await resumenReservas(req.tiendaId)); } catch (error) { next(error); }
 });
@@ -383,6 +394,51 @@ router.post("/:id/reenviar-correo", ...operacion, validate({ params: idParamSche
 
 router.post("/:id/no-show", ...operacion, validate({ params: idParamSchema, body: tiendaQuerySchema }), async (req, res, next) => {
   try { return ok(res, "RESERVA_NO_SHOW", await marcarNoShow(req.tiendaId, req.params.id, req.user)); } catch (error) { next(error); }
+});
+
+// ---------- Hotel: ciclo de la reserva en recepción (docs/specs/ciclo-reserva-hotel) ----------
+
+router.post("/:id/check-in", ...operacion, validate({ params: idParamSchema, body: checkinSchema }), async (req, res, next) => {
+  try { return ok(res, "RESERVA_CHECKIN", await registrarCheckin(req.tiendaId, req.params.id, req.body, req.user)); } catch (error) { next(error); }
+});
+
+router.post("/:id/check-out", ...operacion, validate({ params: idParamSchema, body: checkoutSchema }), async (req, res, next) => {
+  try { return ok(res, "RESERVA_CHECKOUT", await registrarCheckout(req.tiendaId, req.params.id, req.body, req.user)); } catch (error) { next(error); }
+});
+
+router.put("/:id/codigo-pms", ...operacion, validate({ params: idParamSchema, body: codigoPmsSchema }), async (req, res, next) => {
+  try { return ok(res, "RESERVA_CODIGO_PMS", await guardarCodigoPms(req.tiendaId, req.params.id, req.body, req.user)); } catch (error) { next(error); }
+});
+
+router.put("/:id/estadia", ...operacion, validate({ params: idParamSchema, body: modificarSchema }), async (req, res, next) => {
+  try {
+    const { tiendaId, ...cambios } = req.body;
+    return ok(res, "RESERVA_MODIFICADA", await modificarReserva(req.tiendaId, req.params.id, cambios, req.user));
+  } catch (error) { next(error); }
+});
+
+router.post("/:id/cambiar-salida", ...operacion, validate({ params: idParamSchema, body: cambiarSalidaSchema }), async (req, res, next) => {
+  try { return ok(res, "RESERVA_SALIDA_CAMBIADA", await cambiarSalida(req.tiendaId, req.params.id, req.body, req.user)); } catch (error) { next(error); }
+});
+
+router.post("/:id/cancelar-hotel", ...operacion, validate({ params: idParamSchema, body: cancelarHotelSchema }), async (req, res, next) => {
+  try { return ok(res, "RESERVA_CANCELADA", await cancelarHotel(req.tiendaId, req.params.id, req.body, req.user)); } catch (error) { next(error); }
+});
+
+router.post("/:id/horario", ...operacion, validate({ params: idParamSchema, body: responderHorarioSchema }), async (req, res, next) => {
+  try { return ok(res, "RESERVA_HORARIO_RESPONDIDO", await responderHorario(req.tiendaId, req.params.id, req.body, req.user)); } catch (error) { next(error); }
+});
+
+router.post("/:id/salida-tardia", ...operacion, validate({ params: idParamSchema, body: salidaTardiaSchema }), async (req, res, next) => {
+  try { return ok(res, "RESERVA_SALIDA_TARDIA", await darSalidaTardia(req.tiendaId, req.params.id, req.body, req.user)); } catch (error) { next(error); }
+});
+
+router.post("/:id/no-llego", ...operacion, validate({ params: idParamSchema, body: tiendaQuerySchema }), async (req, res, next) => {
+  try { return ok(res, "RESERVA_NO_SHOW", await marcarNoLlego(req.tiendaId, req.params.id, req.user)); } catch (error) { next(error); }
+});
+
+router.post("/:id/notas", ...operacion, validate({ params: idParamSchema, body: notaSchema }), async (req, res, next) => {
+  try { return ok(res, "RESERVA_NOTA", await agregarNota(req.tiendaId, req.params.id, req.body, req.user)); } catch (error) { next(error); }
 });
 
 export default router;

@@ -70,7 +70,8 @@
 | Prueba | Resultado | Notas |
 |---|---|---|
 | Retraso HLS normal (RTMPS) | ≈ 20 s (2026-10-12) | Aceptado: nadie lo nota en una transmisión de una sola vía |
-| Retraso con `preferLowLatency` | Sin mejora visible (2026-10-12) | LL-HLS sigue en beta; se descartó y quedó apagado |
+| Retraso con `preferLowLatency` | Sin mejora visible (2026-10-12) | LL-HLS sigue en beta; se descartó y quedó apagado. **2026-10-16: se reactiva** como parámetro de la plataforma (`transmision.baja_latencia`, [mejoras.md](mejoras.md)) para probarlo con Streamlabs, keyframe de 1–2 s y sin B-frames |
+| Retraso con `preferLowLatency` y Streamlabs (2026-10-16) | | ¿El reproductor muestra "Low Latency"? ¿Sigue funcionando la reproducción firmada y la grabación? |
 | Retraso con SRT | | |
 | Calidad 1080p con datos móviles (Lima) | | |
 | Conexión de Larix Broadcaster por RTMPS | ✅ 2026-10-06 | `status.current.state = connected`, video `live-inprogress`. Ojo: la app es **Larix Broadcaster**; Larix Player no transmite |
@@ -87,6 +88,8 @@
 | MP4: tarda / tamaño de 30 min | | |
 | `borrar-video` deja de verse | | |
 | QR de Larix (Grove) con los datos de Stream | | |
+| **Streamlabs** (app en uso desde el 2026-10-15, reemplaza a Larix, que es de pago) | ✅ Gratis y sin marca de agua (2026-10-16) | Falta: que acepte `rtmps://live.cloudflare.com:443/live/`, si tiene límite de tiempo en 2–3 h y si el keyframe es configurable. Va por RTMP(S): no hay confirmación de SRT ni WHIP |
+| `timeoutSeconds: 0` (valor de Cloudflare): cortar la red más de 1 min y volver. ¿Una grabación o dos? | | Antes, con 60 s, quedaban dos. Comparar después con `CF_STREAM_TIMEOUT_SEG=60` |
 | **Costo de Larix** | ⚠️ No es gratis | La versión gratis transmite 30 min limpios, luego 30 min con un aviso encima, y se corta. Premium: $9.99 al mes o $119 al año. No sirve gratis para un evento de 2–3 h |
 | PRISM Live Studio (Android, gratis): ¿acepta `rtmps://`? ¿tiene límite de tiempo o marca de agua? | | Candidata a app recomendada |
 | IRL Pro (Android, gratis): RTMPS y SRT, límite, marca de agua | | Candidata, sobre todo por SRT |

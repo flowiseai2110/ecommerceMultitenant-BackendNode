@@ -97,6 +97,10 @@ NODE_ENV=development
 - Los roles se verifican en `usuario_tiendas`: `owner`, `admin`, `editor`, `viewer`.
 - **Todas las queries deben filtrar por `tiendaId`.**
 
+### Parámetros de la plataforma
+- Valores que el administrador de la plataforma (`PLATFORM_ADMIN_EMAILS`) cambia sin deploy: `modules/parametros/`, tabla `parametros_plataforma`, pantalla "Parámetros de la plataforma" en el admin.
+- Parámetro nuevo: agregarlo a `parametros.registro.js` (validación Zod + valor por defecto; lo exige un test) y leerlo con `parametro(clave)`. Nunca leer la tabla directo. Una variable de entorno solo sirve como valor por defecto.
+
 ### Formato de respuesta estándar
 ```json
 {

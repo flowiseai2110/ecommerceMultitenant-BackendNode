@@ -1,4 +1,4 @@
-import { cotizarHotel, montoACuenta, textoAviso } from "../hotel/cotizar.js";
+import { cotizarHotel, montoACuenta, plazoLlegadaTardia, textoAviso } from "../hotel/cotizar.js";
 import { estadoEfectivo, transicionar } from "../estados.js";
 import { fechaLima, horaLima, instanteLima } from "../tiempo.js";
 import { readFileSync } from "node:fs";
@@ -78,10 +78,12 @@ describe("cotizarHotel — reglas", () => {
     expect(codigos).toContain("FECHA_PASADA");
   });
 
-  it("por noche, llegar hoy después del check-in no es fecha pasada", () => {
+  it("por noche, llegar hoy después del check-in no es fecha pasada hasta la hora de corte", () => {
     const tarde = instanteLima("2026-09-24", "19:00");
     const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 1, adultos: 1, config, ahora: tarde });
     expect(c.errores).toEqual([]);
+    const pasadoElCorte = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 1, adultos: 1, config, ahora: instanteLima("2026-09-24", "23:00") });
+    expect(pasadoElCorte.errores.map(e => e.codigo)).toContain("FECHA_PASADA");
     const ayer = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-23", noches: 1, adultos: 1, config, ahora: tarde });
     expect(ayer.errores.map(e => e.codigo)).toContain("FECHA_PASADA");
   });
@@ -326,5 +328,25 @@ describe("cotizarHotel — en otro idioma (docs/specs/idiomas B7)", () => {
     const quechuaAMedias = crearTraductor({ "{n} noche": "{n} tuta" });
     const c = cotizarHotel({ tipo, modalidad: noche, fecha: "2026-09-24", noches: 3, adultos: 2, config, ahora, traductor: quechuaAMedias });
     expect(c.lineas.map(l => l.descripcion)).toEqual(["1 tuta × S/ 160 × 1 hab.", "2 noches × S/ 180 × 1 hab."]);
+  });
+});
+
+describe("llegada tardía: vence al terminar el día, no a la hora de ingreso", () => {
+  const inicio = instanteLima("2026-09-24", "14:00");
+  const apartadoHasta = plazoLlegadaTardia("2026-09-24");
+
+  it("el plazo es la medianoche del día de llegada", () => {
+    expect(apartadoHasta).toEqual(instanteLima("2026-09-25", "00:00"));
+  });
+
+  it("pedida a las 19:00 sigue abierta y vence al terminar el día", () => {
+    expect(estadoEfectivo({ estado: "solicitada", inicio, apartadoHasta }, instanteLima("2026-09-24", "19:00"))).toBe("solicitada");
+    expect(estadoEfectivo({ estado: "aceptada", inicio, apartadoHasta }, instanteLima("2026-09-24", "23:59"))).toBe("aceptada");
+    expect(estadoEfectivo({ estado: "solicitada", inicio, apartadoHasta }, instanteLima("2026-09-25", "00:00"))).toBe("vencida");
+  });
+
+  it("sin plazo, lo no atendido sigue venciendo a la hora de ingreso", () => {
+    expect(estadoEfectivo({ estado: "solicitada", inicio }, instanteLima("2026-09-24", "14:00"))).toBe("vencida");
+    expect(estadoEfectivo({ estado: "solicitada", inicio }, instanteLima("2026-09-24", "13:59"))).toBe("solicitada");
   });
 });

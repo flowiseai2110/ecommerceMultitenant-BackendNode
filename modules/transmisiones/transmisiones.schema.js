@@ -105,9 +105,16 @@ export const invitadosSchema = z.object({
 });
 
 // Latido de la página del invitado (R4.3): id de la pestaña y si reclama la sesión.
+// `calidad`: lo que midió el reproductor desde el latido anterior (≈ 30 s). Los topes
+// cubren un latido atrasado (pestaña en segundo plano) sin dejar que un cliente infle los números.
 export const latidoSchema = z.object({
   sesionId: z.string().regex(/^[A-Za-z0-9_-]{8,40}$/, "Sesión inválida"),
-  reclamar: z.boolean().optional().default(false)
+  reclamar: z.boolean().optional().default(false),
+  calidad: z.object({
+    pausaSeg: z.number().min(0).max(300),
+    vistoSeg: z.number().min(0).max(300),
+    cortes: z.number().int().min(0).max(100)
+  }).optional()
 });
 
 // App Transmitir (R11.1): código del QR.

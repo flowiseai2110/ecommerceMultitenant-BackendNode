@@ -351,7 +351,8 @@ export const config = {
     // Tope DIARIO de la Guía sin plan (con plan: planes.limite_consultas_asistente_dia).
     limiteAsistenteDiaSinPlan: parseInt(process.env.CONSUMO_IA_LIMITE_ASISTENTE_DIA_SIN_PLAN) || 40,
     // "Traducir con IA" (docs/specs/idiomas): sin tope por defecto (null); el dueño puede fijarse uno.
-    limiteTraduccionesSinPlan: parseInt(process.env.CONSUMO_IA_LIMITE_TRADUCCIONES_SIN_PLAN) || null
+    // Valor por defecto del parámetro consumo_ia.traducciones_sin_plan (se cambia sin deploy).
+    limiteTraduccionesSinPlan: parseInt(process.env.CONSUMO_IA_LIMITE_TRADUCCIONES_SIN_PLAN) || 20
   },
 
   // Imágenes por defecto por folder

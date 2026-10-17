@@ -122,6 +122,31 @@ describe("llamadas a la API", () => {
     await cf.crearEntrada({ nombre: "Cumple", meta: { tiendaId: "t1" }, habilitada: false });
     const body = JSON.parse(global.fetch.mock.calls[0][1].body);
     expect(body.recording).toEqual({ mode: "automatic", requireSignedURLs: true, timeoutSeconds: 0 });
+    expect(body.preferLowLatency).toBe(false);
+  });
+
+  it("con los parámetros de la plataforma: LL-HLS y el timeout pedidos", async () => {
+    global.fetch = jest.fn(async () => respuesta(200, { uid: "in-1", rtmps: {}, srt: {} }));
+    await cf.crearEntrada({ nombre: "Cumple", meta: {}, habilitada: false, ajustes: { bajaLatencia: true, timeoutSegundos: 60 } });
+    const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+    expect(body.preferLowLatency).toBe(true);
+    expect(body.recording.timeoutSeconds).toBe(60);
+  });
+
+  it("el PUT de cortar conserva LL-HLS y el timeout de la entrada (si no, se apagarían)", async () => {
+    const actual = { uid: "in-1", meta: { name: "x" }, recording: { mode: "automatic", requireSignedURLs: true, timeoutSeconds: 60 }, preferLowLatency: true };
+    global.fetch = jest.fn(async (_url, opts) => respuesta(200, opts.method === "GET" ? actual : {}));
+    await cf.habilitarEntrada("in-1", false, { urgente: true });
+    const put = JSON.parse(global.fetch.mock.calls[1][1].body);
+    expect(put).toMatchObject({ enabled: false, preferLowLatency: true, recording: { timeoutSeconds: 60 }, meta: { name: "x" } });
+  });
+
+  it("al habilitar aplica los parámetros vigentes", async () => {
+    const actual = { uid: "in-1", meta: {}, recording: { timeoutSeconds: 60 }, preferLowLatency: true };
+    global.fetch = jest.fn(async (_url, opts) => respuesta(200, opts.method === "GET" ? actual : {}));
+    await cf.habilitarEntrada("in-1", true, { ajustes: { bajaLatencia: false, timeoutSegundos: 0 } });
+    const put = JSON.parse(global.fetch.mock.calls[1][1].body);
+    expect(put).toMatchObject({ enabled: true, preferLowLatency: false, recording: { timeoutSeconds: 0 } });
   });
 
   it("usoAlmacenamiento normaliza storage-usage", async () => {

@@ -220,7 +220,7 @@ La regla es **avisar con tiempo y no cobrar nada sin confirmación**.
 
 ### El día del evento
 
-1. Quien graba abre la app de transmisión (por ejemplo Larix Broadcaster) con los datos de conexión. Si es posible, los carga escaneando un **QR** desde el admin.
+1. Quien graba abre la app de transmisión (hoy **Streamlabs**; luego la App Transmitir) con los datos de conexión. Si es posible, los carga escaneando un **QR** desde el admin.
 2. Inicia la transmisión. El admin ve **"En vivo"**, el tiempo restante y cuántos invitados están conectados.
 3. Los invitados abren su enlace: antes de la hora ven una **sala de espera** con cuenta regresiva y, a la hora, el video.
 4. **Cuando quedan 15 minutos**, el dueño de la cuenta y el contacto de la transmisión reciben un aviso para **extender** (con el precio a la vista) o terminar a la hora. Si nadie confirma, la transmisión se corta 5 minutos después de acabarse el tiempo. Nunca se cobra un excedente sin confirmación.
@@ -281,7 +281,7 @@ Formato: *Cuando [condición], el sistema debe [comportamiento].*
 - **R4.1** Antes de la hora: muestra el nombre del evento, la fecha y la hora **en la zona horaria del invitado**, una cuenta regresiva y el mensaje "La transmisión empieza pronto".
 - **R4.2** A la hora: el backend entrega una **URL de reproducción firmada de corta duración** y la página muestra el reproductor. No se pide cuenta ni instalar nada.
 - **R4.3** Una sola sesión activa por invitación. Si el mismo enlace se abre en otro dispositivo, la sesión anterior se cierra con el mensaje: "Este enlace se abrió en otro dispositivo".
-- **R4.4** Si la transmisión se corta (señal del local), la página muestra "Estamos reconectando…" y vuelve sola, sin recargar.
+- **R4.4** Si la transmisión se corta (señal del local), la página muestra "Estamos reconectando…" y vuelve sola, sin recargar. Tras **5 minutos sin señal** muestra "La transmisión está en pausa. Si continúa, el video vuelve aquí solo": el sistema no puede saber si quien graba detuvo la app sin apretar "Terminar" (decidido el 2026-10-15). Si a la hora del evento la señal nunca llegó, dice "La transmisión está por empezar", no "reconectando".
 - **R4.5** Al terminar: si hay grabación, muestra el reproductor con la grabación y hasta qué fecha estará disponible. Si no, muestra "La transmisión terminó. ¡Gracias por acompañarnos!".
 - **R4.6** Todos los textos están en **español claro**, con letra grande y botones grandes, pensados para el celular.
 
@@ -378,7 +378,8 @@ Va dentro del admin, en español claro. Mux recibe video por **RTMPS** y **SRT**
 
 ### Con celular (lo más común)
 
-- **App:** **Larix Broadcaster** (iOS y Android, RTMPS y SRT) **no es gratis para eventos reales**. La versión gratis transmite 30 min limpios, luego 30 min con un aviso encima, y después se corta. Larix Premium cuesta $9.99 al mes o $119 al año, y lo paga la tienda (verificado el 2026-10-06). Alternativas gratis por probar en la Fase 0: **PRISM Live Studio** y **IRL Pro** (Android). En una laptop, **OBS Studio** es gratis y sin límite. Ver [fase0.md](fase0.md).
+- **App en uso (decidido el 2026-10-15): Streamlabs**, porque Larix es de pago. La app móvil (iOS y Android) es **gratis y sin marca de agua** (confirmado en uso el 2026-10-16) y acepta un destino **RTMP personalizado** (URL + clave); en una laptop, Streamlabs Desktop también. No hay confirmación pública de que soporte SRT ni WHIP, así que va por RTMP(S). **Por verificar en la prueba** ([fase0.md](fase0.md)): que acepte la URL `rtmps://` de Cloudflare, si tiene límite de tiempo en un evento de 2–3 h, y qué intervalo de keyframe usa (Cloudflare pide de 2 a 10 s; con otro valor llega `ERR_GOP_OUT_OF_RANGE`). La "Protección contra desconexión" es de Streamlabs Ultra (de pago); sin ella, un corte de red puede terminar la transmisión en la app y quien graba tiene que volver a empezarla.
+- **Antes se probó Larix Broadcaster** (iOS y Android, RTMPS y SRT), que **no es gratis para eventos reales**. La versión gratis transmite 30 min limpios, luego 30 min con un aviso encima, y después se corta. Larix Premium cuesta $9.99 al mes o $119 al año, y lo paga la tienda (verificado el 2026-10-06). Alternativas gratis por probar en la Fase 0: **PRISM Live Studio** y **IRL Pro** (Android). En una laptop, **OBS Studio** es gratis y sin límite. Ver [fase0.md](fase0.md).
 - **Celulares:** cualquier gama media-alta de los últimos 3 años con estabilización óptica. Por ejemplo: iPhone 13 o más nuevo, Samsung Galaxy S23 o más nuevo, Galaxy A55/A56, Google Pixel 7 o más nuevo.
 - **Lo que más mejora la transmisión (más que el celular):**
   1. **Micrófono inalámbrico** (DJI Mic, Rode Wireless GO, Hollyland Lark M2). El audio es la queja número uno.
@@ -397,7 +398,7 @@ Va dentro del admin, en español claro. Mux recibe video por **RTMPS** y **SRT**
 
 ## App Transmitir (proyecto aparte)
 
-> Decidido el 2026-10-06. Se desarrolla **en otro repositorio**, en **3 semanas**, empezando ahora. Mientras tanto, las pruebas funcionales y el circuito completo del ecommerce se hacen con **Larix Broadcaster** (versión gratis, 30 min por transmisión).
+> Decidido el 2026-10-06. Se desarrolla **en otro repositorio**, en **3 semanas**, empezando ahora. Mientras tanto, las pruebas funcionales y el circuito completo del ecommerce se hacen con **Streamlabs** (desde el 2026-10-15; antes con Larix Broadcaster, versión gratis de 30 min por transmisión).
 
 ### Por qué
 
@@ -522,4 +523,5 @@ Estos datos salen de búsquedas en la web; las páginas oficiales de Mux y Cloud
 - Grabación: [EventLive, 1 año](https://help.eventlive.pro/en/articles/11592072-how-long-does-an-event-video-stay-online), [OneRoom, 30 días + extensión](https://support.oneroomstreaming.com/knowledge/how-does-revenue-sharing-work-for-extended-access-of-the-recording), [BoxCast, 90 días](https://subger.com/en/service/boxcast), [almacenamiento de Mux](https://www.budgetforge.dev/tools/mux-pricing-2026).
 - Competencia: [EventLive](https://www.eventlive.pro/pricing), [OneRoom](https://www.oneroomstreaming.com/pricing), [Vimeo](https://subger.com/pt/service/vimeo-livestream), [costos de wedding livestream 2026](https://www.weddinglivestreaming.com/guides/wedding-live-streaming-cost-by-state), [Joinnus](https://www.cbinsights.com/company/joinnus).
 - Herramientas gratis: [límite de Google Meet](https://www.avnation.tv/2025/11/04/understanding-the-google-meet-time-limit/), [precios de Zoom](https://tldv.io/blog/zoom-pricing/), [YouTube: chat y "para niños"](https://support.google.com/youtube/answer/2524549).
+- Streamlabs: [app móvil (gratis, un destino)](https://streamlabs.com/mobile-app), [RTMP personalizado en Desktop](https://streamlabs.com/content-hub/post/how-to-stream-new-platform-custom-ingest).
 - Equipo: [Moblin vs IRL Pro vs Larix](https://stream-relay.de/en/guides/mobile-streaming-apps/), [apps de live para iPhone 2026](https://www.dacast.com/blog/live-streaming-apps-for-iphone/), [YoloBox Mini](https://www.productiongear.co.uk/yololiv-yolobox-mini.html).

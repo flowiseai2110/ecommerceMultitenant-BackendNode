@@ -14,7 +14,7 @@ import { ocupaNoche } from "./recepcion.js";
  * ocupa lo vendido fuera de la web (motor-reservas-hotel M2: `hotel_cupo_externo`).
  */
 
-const ESTADOS_QUE_OCUPAN = ["aceptada", "pago_en_revision", "confirmada"];
+const ESTADOS_QUE_OCUPAN = ["aceptada", "pago_en_revision", "confirmada", "hospedada"];
 
 /** Noches ("YYYY-MM-DD") de una estadía que empieza el día `fecha`. */
 export const nochesDe = (fecha, noches) => rangoFechas(fecha, sumarDias(fecha, noches - 1));

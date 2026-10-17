@@ -28,6 +28,7 @@ const prisma = {
   transmision_excedentes: { findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn(), upsert: jest.fn() },
   transmision_grabaciones: { createMany: jest.fn(), findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
   transmision_avisos_plataforma: { create: jest.fn() },
+  parametros_plataforma: { findMany: jest.fn() },
   transmision_cargos: { upsert: jest.fn(), updateMany: jest.fn(), create: jest.fn() },
   transmision_destinos: { create: jest.fn(), findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn(), delete: jest.fn() }
 };
@@ -90,6 +91,7 @@ jest.unstable_mockModule("../../../generated/prisma/client.ts", () => ({ Prisma:
 jest.unstable_mockModule("../../../config/prisma.js", () => ({ prisma, Prisma: PrismaStub, default: prisma }));
 
 const svc = await import("../transmisiones.service.js");
+const parametrosSvc = await import("../../parametros/parametros.service.js");
 const { firmarTokenInvitacion } = await import("../transmisiones.token.js");
 
 const ahora = new Date("2026-10-10T12:00:00-05:00");
@@ -117,6 +119,9 @@ beforeEach(() => {
   prisma.transmision_excedentes.findMany.mockResolvedValue([]);
   prisma.transmision_excedentes.findUnique.mockResolvedValue(null);
   prisma.$queryRaw.mockResolvedValue([]);
+  // Parámetros de la plataforma sin cambios: rigen los valores por defecto (LL-HLS activado, timeout 0).
+  prisma.parametros_plataforma.findMany.mockResolvedValue([]);
+  parametrosSvc?.invalidarParametros();
 });
 
 describe("activar (R1)", () => {
@@ -320,7 +325,8 @@ describe("terminar y corte (R6.3, R7.1, R7.8)", () => {
 
     await envivo.cicloTransmisiones(new Date("2026-10-17T19:05:00-05:00"));
     expect(prisma.evento_transmisiones.updateMany.mock.calls[0][0].where.id).toBe("t-vencida");
-    expect(proveedor.habilitarEntrada).toHaveBeenCalledWith("in-1", true);
+    // Al habilitar se aplican los parámetros de la plataforma vigentes.
+    expect(proveedor.habilitarEntrada).toHaveBeenCalledWith("in-1", true, { ajustes: { bajaLatencia: true, timeoutSegundos: 0 } });
     // Ya en la sala y con señal: marca el inicio real.
     expect(prisma.evento_transmisiones.update).toHaveBeenLastCalledWith(expect.objectContaining({
       data: expect.objectContaining({ senal: "conectada", inicioRealEn: new Date("2026-10-17T19:05:00-05:00") })
@@ -921,5 +927,71 @@ describe("Generar resumen (la IA solo a pedido)", () => {
     prisma.evento_transmisiones.findFirst.mockResolvedValue(terminadaPremium());
     prisma.evento_transmisiones.updateMany.mockResolvedValue({ count: 0 });
     await expect(svc.pedirResumen(TIENDA, TRANSMISION, user, despues)).rejects.toMatchObject({ details: { motivo: "EN_CURSO" } });
+  });
+});
+
+describe("página del invitado al terminar: grabación en proceso", () => {
+  const terminada = new Date("2026-10-17T19:05:00-05:00");
+  const despues = new Date("2026-10-17T19:10:00-05:00");
+  const token = () => firmarTokenInvitacion({ invitacionId: INV, tiendaId: TIENDA, version: 2 });
+  const invitacion = (extra = {}) => ({
+    id: INV, tiendaId: TIENDA, nombre: "Tía Rosa", estado: "activa", version: 2, primeraConexionEn: ahora,
+    transmision: privadoBase({ funcion: funcion3h(), grabar: true, terminadaEn: terminada, ...extra })
+  });
+  beforeEach(() => prisma.tiendas.findUnique.mockResolvedValue({ nombre: "Fiestas Mateo", logoUrl: null }));
+
+  it("avisa mientras Cloudflare la procesa y muestra solo las partes listas", async () => {
+    prisma.evento_invitaciones.findFirst.mockResolvedValue(invitacion({
+      limpiadaEn: terminada,
+      grabaciones: [{ id: "g1", videoId: "v-1", orden: 1, estado: "lista" }, { id: "g2", videoId: "v-2", orden: 2, estado: "procesando" }]
+    }));
+    const r = await svc.paginaInvitado(await token(), TIENDA, despues);
+    expect(r).toMatchObject({ etapa: "terminada", grabacionEnProceso: true, video: { partes: ["https://cf.test/v-1/iframe"] } });
+  });
+
+  it("antes de que el job la registre también está en proceso; sin partes al limpiar, no quedó grabación", async () => {
+    prisma.evento_invitaciones.findFirst.mockResolvedValue(invitacion({ limpiadaEn: null, grabaciones: [] }));
+    expect(await svc.paginaInvitado(await token(), TIENDA, despues)).toMatchObject({ grabacionEnProceso: true, video: null });
+
+    prisma.evento_invitaciones.findFirst.mockResolvedValue(invitacion({ limpiadaEn: terminada, grabaciones: [] }));
+    expect(await svc.paginaInvitado(await token(), TIENDA, despues)).toMatchObject({ grabacionEnProceso: false, video: null });
+
+    // "Solo en vivo": nunca hay grabación que esperar.
+    prisma.evento_invitaciones.findFirst.mockResolvedValue(invitacion({ grabar: false, limpiadaEn: null, grabaciones: [] }));
+    expect((await svc.paginaInvitado(await token(), TIENDA, despues)).grabacionEnProceso).toBe(false);
+  });
+});
+
+describe("latido con la calidad medida por el reproductor", () => {
+  const token = () => firmarTokenInvitacion({ invitacionId: INV, tiendaId: TIENDA, version: 2 });
+  const invitacion = (extra = {}) => ({
+    id: INV, tiendaId: TIENDA, nombre: "Tía Rosa", estado: "activa", version: 2, sesionId: "sesion-abc-123",
+    transmision: privadoBase({ funcion: funcion3h(), ...extra })
+  });
+  const calidad = { pausaSeg: 4.5, vistoSeg: 25.5, cortes: 1 };
+
+  it("en vivo suma pausa, visto y cortes, y anota el corte", async () => {
+    prisma.evento_invitaciones.findFirst.mockResolvedValue(invitacion());
+    const enVivo = new Date("2026-10-17T17:00:00-05:00");
+    await svc.latidoInvitado(await token(), TIENDA, { sesionId: "sesion-abc-123", calidad }, enVivo);
+    expect(prisma.evento_invitaciones.update).toHaveBeenCalledWith({
+      where: { id: INV },
+      data: {
+        sesionId: "sesion-abc-123", sesionVistaEn: enVivo,
+        pausaSeg: { increment: 4.5 }, vistoSeg: { increment: 25.5 }, cortes: { increment: 1 }, ultimoCorteEn: enVivo
+      }
+    });
+  });
+
+  it("sin cortes no anota la hora del corte; fuera del vivo (sala, grabación) no mide", async () => {
+    prisma.evento_invitaciones.findFirst.mockResolvedValue(invitacion());
+    const enVivo = new Date("2026-10-17T17:00:00-05:00");
+    await svc.latidoInvitado(await token(), TIENDA, { sesionId: "sesion-abc-123", calidad: { pausaSeg: 0, vistoSeg: 30, cortes: 0 } }, enVivo);
+    expect(prisma.evento_invitaciones.update.mock.calls[0][0].data).not.toHaveProperty("ultimoCorteEn");
+
+    prisma.evento_invitaciones.update.mockClear();
+    const sala = new Date("2026-10-17T15:30:00-05:00");
+    await svc.latidoInvitado(await token(), TIENDA, { sesionId: "sesion-abc-123", calidad }, sala);
+    expect(prisma.evento_invitaciones.update).toHaveBeenCalledWith({ where: { id: INV }, data: { sesionId: "sesion-abc-123", sesionVistaEn: sala } });
   });
 });
