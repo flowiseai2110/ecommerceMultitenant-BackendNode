@@ -89,7 +89,10 @@ Organización (futuro, opcional) ─ varias marcas de un dueño: usuarios, factu
   - `fotos` (portada + galería), `horario_atencion`;
   - `codigo_establecimiento_sunat` (anexo de 4 dígitos, opcional);
   - `principal` (exactamente una por tienda), `activa`, `orden`, y la auditoría de siempre.
-- **S1.2** Tabla `razones_sociales`: `tienda_id`, `ruc`, `razon_social`, `razon_comercial`, `direccion_fiscal`, `emite_factura`. Estos campos **salen** de `tiendas`: la migración los copia a la razón social por defecto, y los lectores actuales (checkout, comprobante, libro) pasan a leerla en la pieza de S13.
+- **S1.2** Tabla `razones_sociales`: `tienda_id`, `ruc`, `razon_social`, `razon_comercial`, `direccion_fiscal`, `emite_factura`. Estos campos **salen** de `tiendas`:
+  - la migración los copia a la razón social por defecto;
+  - en la **pieza 1**, los lectores actuales (checkout, comprobante, libro) pasan a leer `razones_sociales`, para que haya una sola fuente desde el inicio;
+  - las columnas de `tiendas` **no se borran** hasta comprobar que nadie las usa, para que la reversa (S17.4) no pierda datos.
 - **S1.3** Una sede inactiva no se ve en la tienda ni acepta reservas nuevas. Sus reservas vigentes siguen en Admin y Recepción. No se puede desactivar la única sede activa.
 - **S1.4** Las sedes **nunca se borran**, solo se desactivan (como Square con sus *Locations*): el historial, los reportes y los comprobantes las necesitan.
   - No se puede desactivar una sede con reservas futuras sin antes cancelarlas o derivarlas a otra sede (S9.3).
@@ -131,14 +134,16 @@ Organización (futuro, opcional) ─ varias marcas de un dueño: usuarios, factu
 |---|---|
 | `sede` | `hotel_tipos_habitacion`, `cancha_canchas`, `reservas` (copiada del recurso), `hotel_estadias`, `hotel_cobros`, `hotel_turnos`, `hotel_caja_movimientos`, `hotel_incidencias`, `config_sede` (S5) |
 | `sede:<padre>` | `hotel_modalidades`, `hotel_cupo_externo`, `hotel_habitaciones` (del tipo); `cancha_ocupaciones` (de la cancha); `reserva_partes`, `reserva_cuotas`, `reserva_cambios` (de la reserva); `cierres_fecha` con `producto_id` (del recurso); `resenas` (del producto: si es un recurso, la sede del recurso) |
-| `presencia` | `hotel_temporadas`, `hotel_extras`, `hotel_planes`, `cierres_fecha` sin `producto_id` (cierre de todo el local) |
+| `presencia` | `hotel_temporadas`, `hotel_extras`, `hotel_planes`, `cierres_fecha` sin `producto_id` (cierre de todo el local), `cupones` (S3.6) |
 | `razon_social` | `metodos_pago`, `tienda_pasarela_config`, `libro_reclamaciones` (además guarda la sede si el reclamo es de un local) |
-| `tienda` | `productos` y su catálogo (`categorias`, `marcas`, `producto_atributos`), `clientes`, `pedidos`, `pagos`, `cupones`, `config_reservas` (política comercial), `tienda_textos`, `metodos_envio`, `zonas_envio`, `agente_*`, `tours`, `tour_tipos_pasajero`, `eventos`, `evento_*`, `local_*` |
+| `tienda` | `productos` y su catálogo (`categorias`, `marcas`, `producto_atributos`), `clientes`, `pedidos`, `pagos`, `config_reservas` (política comercial), `tienda_textos`, `metodos_envio`, `zonas_envio`, `agente_*`, `tours`, `tour_tipos_pasajero`, `eventos`, `evento_*`, `local_*` |
 
 - **S3.1** Un `sede:<padre>` pasa a `sede` (con columna) solo si una consulta o restricción lo necesita, y se anota en `ALCANCE`.
 - **S3.2** El producto de un recurso (la vitrina de una habitación o cancha) es de la tienda, y su sede sale del recurso. El slug sigue siendo único por tienda: al crear o clonar, el Admin propone el slug con el nombre de la sede (`doble-matrimonial-ica`).
 - **S3.3** `tours`, `eventos` y `local_*` son `tienda` porque su rubro no tiene la capacidad: el lugar es un dato de cada ítem. Si un rubro activa la capacidad, se reclasifica en su spec.
 - **S3.4** `resenas` ya es por producto, y el producto de una habitación o cancha es de una sede (S3.2). La reseña **hereda la sede del recurso**, sin columna nueva. En retail, la reseña de un producto común sigue siendo de la marca.
+- **S3.5** **Paquetes del hotel** ([paquetes-hotel](../paquetes-hotel/spec.md), en borrador) usan `presencia`: un paquete existe en todas las sedes, en algunas o en todas menos algunas, con override de precio por sede. Se anota también en ese spec.
+- **S3.6** **Cupones con presencia:** un cupón vale en todas las sedes (por defecto, como hoy), solo en algunas ("20 % por la inauguración de Ica") o en todas menos algunas. Al aplicarlo se valida con `enSede()` contra la sede de la reserva.
 
 ### S4. Presencia y override
 
@@ -218,6 +223,15 @@ Organización (futuro, opcional) ─ varias marcas de un dueño: usuarios, factu
   - `/sedes/:sedeSlug` es la URL canónica de cada sede, y las listas con `?sede=` apuntan a ella (`rel=canonical`).
   - Cada sede tiene una **descripción propia obligatoria**, para no tener páginas iguales cambiando solo la ciudad, y el **enlace a su perfil de Google** (Google Business Profile), que a su vez apunta a esa página.
   - El nombre, la dirección y el teléfono (NAP) salen de un solo lugar (`sedes`) para la página, el schema, el pie, los correos y el comprobante, siempre con el mismo formato.
+- **S7.17** **Contacto con la sede:** con una sede elegida o una reserva abierta, todo contacto usa los datos de **esa sede**: el botón flotante de WhatsApp, el pie, el "escríbenos" del seguimiento y los correos al cliente. Sin sede elegida (canchas en "Todas"), se usan los de la tienda.
+- **S7.18** **Idiomas:** los textos de `sedes` y `config_sede` (nombre visible, descripción, cómo llegar, horario) entran al mecanismo de traducciones que ya existe ([idiomas](../idiomas/)). Una tienda publicada en inglés muestra sus sedes en inglés.
+- **S7.19** **Diseño:**
+  - una sección **"Nuestras sedes"** para el home componible (tarjetas con foto, ciudad, nota y "Reservar aquí"), en las dos familias de UI;
+  - el editor de Diseño en vivo muestra la vista previa con la sede elegida, para que el dueño vea cómo se ve cada sede.
+- **S7.20** **Accesibilidad** ([accesibilidad](../accesibilidad/)):
+  - la hoja "¿A qué hotel vas?" atrapa y devuelve el foco, se cierra con Esc y anuncia su título;
+  - la grilla de canchas se navega con teclado (flechas entre celdas), y cada celda se anuncia completa ("La Molina, cancha 2, jueves 8 pm, S/ 90, libre");
+  - el chip de sede tiene nombre accesible ("Sede: Ica, cambiar").
 
 ### S8. Ninguna reserva perdida
 
@@ -234,12 +248,17 @@ Organización (futuro, opcional) ─ varias marcas de un dueño: usuarios, factu
 - **S9.5** Con una sola sede, el selector y los campos de presencia no se ven. Configuración › Sedes muestra solo la principal con "Agregar sede".
 - **S9.6** **Qué difiere entre sedes:** una vista compara las sedes (precios de extras, temporadas, horarios de `config_sede`) y marca lo que tiene override, para que la configuración no se desalinee sin que nadie lo note. Historial de cambios por sede: quién, qué y cuándo.
 - **S9.7** Recepción y Caja muestran siempre la sede en la cabecera, y el turno de caja queda atado a su sede. No se cobra ni se abre caja con "Todas".
+- **S9.8** **Mover una reserva ya pagada a otra sede** (excepción a I3, la hace el personal, con registro según S16.2):
+  - **misma razón social:** se crea la reserva en la sede de destino, el pago pasa a ella y la original queda cancelada como "Movida a Ica";
+  - **distinta razón social:** no se mueve el dinero entre empresas. Se devuelve al medio original (S16.8) y se cobra en la sede de destino, o se mantiene la reserva original.
+  - El cliente recibe un nuevo enlace de seguimiento.
 
 ### S10. Personal por sede
 
 - **S10.1** `usuario_tiendas.sedes` (`UUID[]`): vacío significa todas. Se elige al invitar o editar un usuario.
 - **S10.2** Un usuario con sedes limitadas solo ve esas sedes en el selector del Admin y en Recepción. El backend lo valida (S2.3), no solo la UI.
 - **S10.3** `owner` y `admin` de la tienda ven siempre todas.
+- **S10.4** **Avisos por sede:** los correos y avisos al personal (reserva o solicitud nueva, pago o captura recibida, check-in en línea, cancelación) van a los usuarios con acceso a **esa sede**, además del owner. La recepción de Lima no recibe lo de Ica. Lo mismo vale para el push de las apps cuando exista ([apps-moviles](../apps-moviles/spec.md) B1).
 
 ### S11. Panel consolidado y alta rápida
 
@@ -260,6 +279,8 @@ Organización (futuro, opcional) ─ varias marcas de un dueño: usuarios, factu
 - **S13.5** Con una sola razón social (el caso de hoy), nada cambia para la tienda.
 - **S13.6** Cada pago guarda la razón social que cobró. Las devoluciones y las notas de crédito salen **siempre por esa**, aunque la sede cambie de razón social después.
 - **S13.7** Cuando se emitan comprobantes: series por sede (establecimiento anexo SUNAT, por ejemplo B001 en Lima y B002 en Ica). No se puede dar de baja una sede con series activas, porque SUNAT exige dar de baja primero las series del establecimiento (R.S. 316-2017/SUNAT).
+- **S13.8** **Webhooks de la pasarela:** con varias razones sociales hay varias cuentas de pasarela. Cada una tiene su URL de webhook (`/webhooks/pasarela/:razonSocialId`), o la cuenta se identifica antes de validar la firma, y la firma se valida con el secreto de **esa** cuenta. Un webhook que no coincide con ninguna cuenta se rechaza y queda en el registro.
+- **S13.9** **El contrato es con quien cobra:** los términos, el seguimiento, el correo de confirmación y el comprobante nombran la razón social de la sede ("Servicio prestado por Hoteles del Sur S.A.C., RUC …").
 
 ### S14. Agente IA
 
@@ -333,6 +354,24 @@ Las sedes abren cuatro frentes nuevos: el empleado de una sede, la cuenta del du
   - Cuando la tienda se dibuje en el servidor (tienda-en-ssr), el JSON-LD se serializa escapando `<` como `<`, para que un `</script>` en la descripción no rompa la página.
 - **S16.11** La ubicación del cliente **nunca se envía al servidor** (S15.9). Se dice así en la política de privacidad.
 
+### S17. Despliegue, reversa y operación
+
+- **S17.1** **Requisito previo:** la pieza 1 empieza con los tres repos **sin cambios pendientes**. El trabajo abierto en reservas (motor de reservas M1/M2 con el SQL de `cupo_externo`, ciclo de la reserva, mejoras de la reserva, ocupación del buscador) se prueba, se corren sus SQL y se hace commit por función antes de empezar. Toca los mismos archivos que la pieza 1.
+- **S17.2** **Compatibilidad hacia atrás:** el backend nuevo funciona con el front y las apps de hoy ([apps-moviles](../apps-moviles/spec.md) B3).
+  - Una petición sin `sede` usa la **sede principal** en lecturas y escrituras de una sede, y **todas las sedes permitidas** en las listas del Admin.
+  - `sede` es siempre opcional en la API pública mientras exista una versión que no la mande.
+- **S17.3** **Orden de despliegue:** backend → Admin → tienda. Cada uno funciona con la versión anterior del siguiente. El SQL se corre antes del deploy del backend que lo usa.
+- **S17.4** **Reversa:**
+  - respaldo de la base antes de correr el SQL de cada pieza;
+  - cada SQL tiene su reversa (`multi_sede_fase_N_reversa.sql`), que quita lo nuevo sin tocar lo de antes;
+  - las columnas viejas (S1.2) no se borran mientras se pueda necesitar volver atrás.
+  - Se prueba la ida y la vuelta en una copia de la base antes de producción.
+- **S17.5** **Observabilidad:** los errores, trazas y logs llevan la etiqueta `sedeId` en Sentry, junto a `tiendaId` (como `setContextTiendaId`). Las métricas de rendimiento (`performance.middleware`) también la registran.
+- **S17.6** **Datos demo:** un script crea las dos tiendas demo de dos sedes (hotel Lima/Ica y canchas Surco/La Molina) con recursos, temporadas y reservas. Sirve para la demo de venta, las pruebas en el navegador y la prueba de carga (S15.11).
+- **S17.7** **Sede principal incompleta:** varias tiendas no tienen dirección cargada. La migración crea la sede igual, y el Admin pide completar dirección y ubicación antes de agregar una segunda sede.
+- **S17.8** **Analítica:** los eventos de Meta Pixel y Google Analytics (`tracking.service`) llevan la sede, para medir campañas por local.
+- **S17.9** **Sitemap:** incluye `/sedes` y `/sedes/:sedeSlug` de las sedes activas cuando exista la tienda en SSR ([tienda-en-ssr](../tienda-en-ssr/)).
+
 ## Piezas (en orden; cada una se verifica antes de la siguiente)
 
 | # | Pieza | Repos | Cambia algo visible |
@@ -358,6 +397,8 @@ Las sedes abren cuatro frentes nuevos: el empleado de una sede, la cuenta del du
 
 ## Riesgos
 
+- **Trabajo sin commit en los mismos archivos:** S17.1.
+- **Front o apps viejas contra el backend nuevo:** S17.2 y S17.3.
 - **La migración toca muchas tablas en producción.** Va en un solo SQL idempotente con transacción (como `canchas_fase_1.sql`): crea la sede principal, llena `sede_id` y recién después pone `NOT NULL`. Se prueba antes en una copia de la base.
 - **Consultas que no pasan por el auto-scope** (`$queryRaw` de disponibilidad y cotización): se revisan una por una en la pieza 1 y se cubren con tests de dos sedes.
 - **Presencia y override mal combinados a mano:** se evita con `enSede` (S4.3) como único camino y con tests.
