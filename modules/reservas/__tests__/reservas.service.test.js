@@ -275,6 +275,27 @@ describe("crearSolicitud — tours", () => {
     expect(prisma.pedidos.count.mock.calls[0][0].where.AND[0].tipo).toBe("tour");
   });
 
+  // reserva-hotel-mejoras H4: términos obligatorios si la tienda los tiene; promociones, opcional.
+  it("con términos, pide aceptarlos y guarda los dos consentimientos", async () => {
+    config.terminos = "No se aceptan mascotas.";
+    try {
+      prisma.tiendas.findUnique.mockResolvedValue({ ...tienda, tipoNegocio: "tours" });
+      prisma.pedidos.findFirst.mockResolvedValueOnce(null);
+      await expect(svc.crearSolicitud(datos, { ahora }))
+        .rejects.toMatchObject({ statusCode: 400, details: expect.objectContaining({ motivo: "TERMINOS", field: "aceptaTerminos" }) });
+
+      prisma.pedidos.findFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(pedido({ tipo: "tour" }, { tipo: "tour", modalidad: null, pasajeros: [] }));
+      prisma.pedidos.count.mockResolvedValue(0);
+      prisma.pedidos.create.mockResolvedValue({ id: PEDIDO });
+      await svc.crearSolicitud({ ...datos, aceptaTerminos: true, aceptaPromociones: true }, { ahora });
+      expect(prisma.pedidos.create.mock.calls.at(-1)[0].data.reserva.create).toEqual(expect.objectContaining({ aceptaTerminos: true, aceptaPromociones: true }));
+    } finally {
+      delete config.terminos;
+    }
+  });
+
   it("un lunes sin salida responde 400 con el error de la regla", async () => {
     prisma.tiendas.findUnique.mockResolvedValue({ ...tienda, tipoNegocio: "tours" });
     prisma.pedidos.findFirst.mockResolvedValueOnce(null);

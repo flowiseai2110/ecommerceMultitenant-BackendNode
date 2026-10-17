@@ -161,6 +161,8 @@ function base(pedido, ahora) {
     })) : [],
     edadesNinos: r.edadesNinos ?? [],
     exoneradoIgv: r.exoneradoIgv ?? false,
+    // reserva-hotel-mejoras H2: con o sin impuestos al reservar, y el desglose.
+    impuestos: r.impuestos ?? null,
     // Fase C: habitaciones del mismo tipo, plan de tarifa e idioma del huésped.
     habitaciones: r.habitaciones ?? 1,
     plan: r.plan ?? null,
@@ -337,6 +339,9 @@ export function serializeReservaAdmin(pedido, { urlsCaptura = new Map(), ahora =
     ...base(pedido, ahora),
     ...recepcion(r),
     estadoGuardado: pedido.estado,
+    // H4: aceptó términos y quiere recibir promociones (solo a quien aceptó).
+    aceptaTerminos: r.aceptaTerminos ?? false,
+    aceptaPromociones: r.aceptaPromociones ?? false,
     lineas: lineas(pedido),
     ajuste: ajuste(r),
     motivoRechazo: r.motivoRechazo,

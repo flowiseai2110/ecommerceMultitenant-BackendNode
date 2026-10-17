@@ -24,7 +24,7 @@ import { ubicaciones } from "../idiomas/ubicaciones.js";
 const NOMBRES_CAMPO = {
   nombre: "Nombre", descripcion: "Descripción", descripcionCorta: "Descripción corta", camas: "Camas",
   amenities: "Servicios", datoPedido: "Dato que pides", instrucciones: "Instrucciones de llegada",
-  politicaCancelacion: "Política de cancelación", titulo: "Título", subtitulo: "Subtítulo", texto: "Texto",
+  politicaCancelacion: "Política de cancelación", terminos: "Términos y condiciones", titulo: "Título", subtitulo: "Subtítulo", texto: "Texto",
   kicker: "Antetítulo", textoBoton: "Botón", textoBotonSecundario: "Botón secundario", acento: "Texto destacado",
   campeonato: "Campeonato", nota: "Nota", pregunta: "Pregunta", respuesta: "Respuesta", pie: "Pie de foto",
   duracion: "Duración", incluye: "Incluye", noIncluye: "No incluye", queLlevar: "Qué llevar", requisitos: "Requisitos",
@@ -237,7 +237,7 @@ export const FUENTES = Object.freeze(conLugares({
   planes: fuenteCampos({ etiqueta: "Plan de tarifa", lugar: "planes", tabla: "hotel_planes", campos: ["nombre", "descripcion"], where: deLaTienda }),
   config: fuenteCampos({
     etiqueta: "Configuración de reservas", lugar: "config", tabla: "config_reservas", pk: "tiendaId",
-    campos: ["instrucciones", "politicaCancelacion"], where: deLaTienda, nombre: () => "Reservas"
+    campos: ["instrucciones", "politicaCancelacion", "terminos"], where: deLaTienda, nombre: () => "Reservas"
   }),
   diseno: {
     etiqueta: "Página de inicio",

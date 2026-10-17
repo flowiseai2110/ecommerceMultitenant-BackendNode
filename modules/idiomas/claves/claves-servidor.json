@@ -1143,6 +1143,24 @@
     ]
   },
   {
+    "clave": "IGV ({pct} %)",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "IGV ({pct} %) de los extras",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
     "clave": "Importante",
     "grupos": [
       "correos"
@@ -1879,6 +1897,15 @@
     ],
     "ubicaciones": [
       "correos/reserva-aceptada"
+    ]
+  },
+  {
+    "clave": "Servicio ({pct} %)",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "sistema/disponibilidad-y-precios"
     ]
   },
   {

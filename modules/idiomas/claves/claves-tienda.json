@@ -846,6 +846,15 @@
     ]
   },
   {
+    "clave": "{precio} media por noche",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/disponibilidad-por-fechas"
+    ]
+  },
+  {
     "clave": "{tienda} vuelve en unos minutos",
     "grupos": [
       "comun"
@@ -861,6 +870,15 @@
     ],
     "ubicaciones": [
       "habitacion/ficha"
+    ]
+  },
+  {
+    "clave": "+ impuestos",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "formatos/personas-e-idiomas"
     ]
   },
   {
@@ -2862,6 +2880,15 @@
     ]
   },
   {
+    "clave": "Debes aceptar los términos y condiciones",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
     "clave": "Debes aceptar para enviar la solicitud",
     "grupos": [
       "reservas"
@@ -3009,6 +3036,15 @@
     "ubicaciones": [
       "habitaciones/lista-de-habitaciones",
       "tours/lista-de-tours"
+    ]
+  },
+  {
+    "clave": "desde {precio} por noche",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/buscador-de-fechas"
     ]
   },
   {
@@ -4962,6 +4998,15 @@
     ],
     "ubicaciones": [
       "seguimiento/antes-de-llegar"
+    ]
+  },
+  {
+    "clave": "He leído y acepto los términos y condiciones de {negocio}.",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
     ]
   },
   {
@@ -8078,6 +8123,24 @@
     ]
   },
   {
+    "clave": "Precio por noche",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitacion/ficha"
+    ]
+  },
+  {
+    "clave": "Precio por noche desde",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/buscador-de-fechas"
+    ]
+  },
+  {
     "clave": "Precios",
     "grupos": [
       "hotel"
@@ -8364,6 +8427,15 @@
     ],
     "ubicaciones": [
       "reclamos/formulario"
+    ]
+  },
+  {
+    "clave": "Quiero recibir promociones de {negocio} (opcional).",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
     ]
   },
   {
@@ -9142,6 +9214,15 @@
     ]
   },
   {
+    "clave": "tamaño",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitacion/ficha"
+    ]
+  },
+  {
     "clave": "También puedes confirmar sin cuenta y rastrear tu pedido con su número.",
     "grupos": [
       "productos"
@@ -9176,6 +9257,25 @@
       "hotel"
     ],
     "ubicaciones": [
+      "habitacion/ficha"
+    ]
+  },
+  {
+    "clave": "tarifa más baja",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/buscador-de-fechas"
+    ]
+  },
+  {
+    "clave": "Tarifa más baja",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
     ]
   },
@@ -10079,6 +10179,15 @@
     ],
     "ubicaciones": [
       "general/asesor-de-ventas-chat"
+    ]
+  },
+  {
+    "clave": "Ver términos y condiciones",
+    "grupos": [
+      "reservas"
+    ],
+    "ubicaciones": [
+      "reservar/datos-de-la-reserva"
     ]
   },
   {

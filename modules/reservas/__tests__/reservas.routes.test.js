@@ -120,6 +120,8 @@ const habSvc = {
   guardarFicha: jest.fn(async () => ({ productoId: PRODUCTO }))
 };
 jest.unstable_mockModule("../hotel/habitaciones.service.js", () => habSvc);
+const preciosSvc = { preciosPorNoche: jest.fn(async () => [{ productoId: PRODUCTO, precios: { "2026-11-06": 255, "2026-11-07": null } }]) };
+jest.unstable_mockModule("../hotel/precios-calendario.js", () => preciosSvc);
 
 // Alquiler de locales (alquiler-locales L1.15): servicios simulados.
 const localesSvc = {
@@ -209,6 +211,21 @@ const solicitud = (extra = {}) => ({
   whatsapp: "957 625 308", email: "DIEGO@test.com", aceptaDatos: true,
   idempotencyKey: "99999999-9999-4999-8999-999999999999",
   ...extra
+});
+
+// reserva-hotel-mejoras H1: precio por noche para el calendario de la tienda.
+describe("GET /store/reservas/habitaciones-precios", () => {
+  it("devuelve el precio por noche de cada tipo, con caché pública", async () => {
+    const r = await request("GET", `/store/reservas/habitaciones-precios?tiendaId=${TIENDA}&desde=2026-11-01&hasta=2026-11-30`);
+    expect(r.status).toBe(200);
+    expect(r.json.data[0].precios["2026-11-06"]).toBe(255);
+    expect(preciosSvc.preciosPorNoche).toHaveBeenCalledWith(TIENDA, "2026-11-01", "2026-11-30");
+  });
+
+  it("rechaza un rango de más de 62 días", async () => {
+    const r = await request("GET", `/store/reservas/habitaciones-precios?tiendaId=${TIENDA}&desde=2026-11-01&hasta=2027-02-01`);
+    expect(r.status).toBe(400);
+  });
 });
 
 describe("POST /store/reservas (solicitud)", () => {

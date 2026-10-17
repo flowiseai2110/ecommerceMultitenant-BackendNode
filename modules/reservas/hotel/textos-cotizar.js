@@ -27,6 +27,10 @@ const K = {
     persona_noche: clave("por persona y noche")
   },
   igv: clave("Exoneración de IGV (turista extranjero)"),
+  // Precios sin impuestos (reserva-hotel-mejoras H2): se suman como líneas.
+  lineaIgv: clave("IGV ({pct} %)"),
+  lineaIgvExtras: clave("IGV ({pct} %) de los extras"),
+  lineaServicio: clave("Servicio ({pct} %)"),
   err: {
     extraInvalido: clave("Uno de los extras ya no está disponible"),
     modalidadInactiva: clave("Esta modalidad ya no está disponible"),
@@ -73,6 +77,8 @@ export function textosCotizar(t = TRADUCTOR_BASE) {
       persona_noche: t(K.unidad.persona_noche)
     },
     igv: t(K.igv),
+    lineaIgv: (pct, soloExtras) => t(soloExtras ? K.lineaIgvExtras : K.lineaIgv, { pct }),
+    lineaServicio: (pct) => t(K.lineaServicio, { pct }),
     err: {
       extraInvalido: t(K.err.extraInvalido),
       modalidadInactiva: t(K.err.modalidadInactiva),

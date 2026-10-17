@@ -4,6 +4,7 @@ import { aplicarAccion, detalleReservaAdmin, efectivoDe, pedidoDeReserva } from 
 import { obtenerConfig } from "../reservas.config.service.js";
 import { fechaLima, horaLima, instanteLima } from "../tiempo.js";
 import { verticalHotel } from "./vertical.js";
+import { factorImpuestos } from "./cotizar.js";
 
 /**
  * Ciclo de la reserva del hotel en recepción (docs/specs/ciclo-reserva-hotel):
@@ -307,6 +308,16 @@ export async function cambiarSalida(tiendaId, pedidoId, { fechaSalida }, user, a
 const NOMBRE_HORARIO = { early: "Early check-in", late: "Late check-out" };
 
 /**
+ * Lo que un extra de la reserva suma al total: con precios sin impuestos
+ * (reserva-hotel-mejoras H2) el extra se guardó neto y paga IGV y servicio
+ * (el extranjero solo se exonera del alojamiento). El del mostrador ya es final.
+ */
+export function totalFinalExtra(x, impuestos) {
+  const neto = num(x.total);
+  return impuestos && !impuestos.incluidos && x.origen !== "mostrador" ? redondear(neto * factorImpuestos(impuestos)) : neto;
+}
+
+/**
  * El hotel responde un early/late que pidió el huésped. Aprobado queda como
  * está (ya suma al total); rechazado se descuenta, y si ya estaba pagado el
  * historial dice cuánto devolver.
@@ -331,13 +342,14 @@ export async function responderHorario(tiendaId, pedidoId, { extraId, aprobar },
     ]);
     return detalleReservaAdmin(tiendaId, pedidoId, ahora);
   }
-  const total = redondear(num(pedido.total) - num(x.total));
+  const monto = totalFinalExtra(x, r.impuestos);
+  const total = redondear(num(pedido.total) - monto);
   const devolver = Math.max(0, redondear(num(pedido.montoPagado) - total));
   await prisma.$transaction(async (tx) => {
     await aplicarTotal(tx, pedido, total, null, { extras: lista, saldoDestino: Math.max(0, redondear(total - num(pedido.montoPagado))) },
-      `${nombre} rechazado · −${soles(x.total)}${devolver ? ` · devolver ${soles(devolver)}` : ""}`, usuario, ahora);
+      `${nombre} rechazado · −${soles(monto)}${devolver ? ` · devolver ${soles(devolver)}` : ""}`, usuario, ahora);
     await tx.pedido_detalles.create({
-      data: { pedidoId, productoId: r.productoId, productoNombre: r.producto?.nombre ?? "Habitación", varianteNombre: `${nombre} (rechazado)`.slice(0, 100), cantidad: 1, precioUnitario: -num(x.total), total: -num(x.total) }
+      data: { pedidoId, productoId: r.productoId, productoNombre: r.producto?.nombre ?? "Habitación", varianteNombre: `${nombre} (rechazado)`.slice(0, 100), cantidad: 1, precioUnitario: -monto, total: -monto }
     });
   });
   return detalleReservaAdmin(tiendaId, pedidoId, ahora);
@@ -374,7 +386,7 @@ export async function darSalidaTardia(tiendaId, pedidoId, { hora, precio }, user
 export function tarifaPorNoche(pedido) {
   const r = pedido.reserva;
   // Un early/late rechazado ya se descontó del total.
-  const extras = (Array.isArray(r.extras) ? r.extras : []).filter(x => x.estado !== "rechazado").reduce((s, x) => s + num(x.total), 0);
+  const extras = (Array.isArray(r.extras) ? r.extras : []).filter(x => x.estado !== "rechazado").reduce((s, x) => s + totalFinalExtra(x, r.impuestos), 0);
   return r.noches ? redondear((num(pedido.total) - extras) / r.noches) : num(pedido.total);
 }
 

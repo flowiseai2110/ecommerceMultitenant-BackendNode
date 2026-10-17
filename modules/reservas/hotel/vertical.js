@@ -32,7 +32,7 @@ export const verticalHotel = {
       producto, c,
       detalle: {
         modalidadId: modalidad.id, noches: c.noches, horas: c.horas, adultos: datos.adultos, ninos: datos.ninos,
-        edadesNinos: c.edadesNinos, exoneradoIgv: c.exoneradoIgv, habitaciones: c.habitaciones,
+        edadesNinos: c.edadesNinos, exoneradoIgv: c.exoneradoIgv, habitaciones: c.habitaciones, impuestos: c.impuestos,
         ...(c.extras.length ? { extras: c.extras } : {}), ...(c.plan ? { plan: c.plan } : {}),
         // Llegada tardía (ya pasó el check-in de hoy): no vence a la hora de ingreso
         // sino al terminar el día, para que el hotel alcance a atenderla.

@@ -34,6 +34,7 @@ function serializarFicha(t) {
     capacidadNinos: t.capacidadNinos,
     capacidadMax: t.capacidadMax,
     camas: t.camas,
+    metros: t.metros ?? null,
     amenities: t.amenities
   };
 }
@@ -180,6 +181,7 @@ export async function guardarFicha(tiendaId, productoId, data, user) {
     capacidadMax: data.capacidadMax,
     ...(fisicas ? {} : { unidades: data.unidades ?? null }),
     camas: data.camas,
+    metros: data.metros ?? null,
     amenities: data.amenities
   };
 

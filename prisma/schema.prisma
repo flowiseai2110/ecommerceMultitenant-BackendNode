@@ -1153,6 +1153,7 @@ model config_reservas {
   maxSolicitudesAbiertas Int      @default(3) @map("max_solicitudes_abiertas")
   instrucciones          String?  @db.Text
   politicaCancelacion    String?  @map("politica_cancelacion") @db.Text
+  terminos               String?  @db.Text // reserva-hotel-mejoras H4.1: si hay, la solicitud pide aceptarlos
   horaCheckin            String   @default("14:00") @map("hora_checkin") @db.VarChar(5)
   horaCheckout           String   @default("12:00") @map("hora_checkout") @db.VarChar(5)
   comprobanteEn          String   @default("al_pagar") @map("comprobante_en") @db.VarChar(14) // al_pagar | en_el_servicio
@@ -1172,6 +1173,8 @@ model config_reservas {
   ninosGratisHasta       Int?     @map("ninos_gratis_hasta") // edad hasta la que un niño no paga; null = no aplica cargo
   cargoNinoNoche         Decimal? @map("cargo_nino_noche") @db.Decimal(10, 2) // por niño mayor a esa edad, por noche
   exoneraIgvExtranjeros  Boolean  @default(false) @map("exonera_igv_extranjeros") // turista extranjero: total sin IGV
+  preciosConImpuestos    Boolean  @default(true) @map("precios_con_impuestos") // reserva-hotel-mejoras H2: false = se suman IGV y servicio
+  recargoServicioPct     Int      @default(0) @map("recargo_servicio_pct") // H2.2: 0 … 13
   // Fase C
   tipoCambioUsd          Decimal? @map("tipo_cambio_usd") @db.Decimal(6, 3) // "≈ US$" en la vitrina; null = no se muestra
   resenasExternas        Json?    @map("resenas_externas") @db.JsonB // [{ fuente, puntaje, cantidad, url }] (hasta 3)
@@ -1320,6 +1323,7 @@ model hotel_tipos_habitacion {
   unidades         Int?
   traducciones     Json?    @db.JsonB // { en: { camas, amenities } } (C3)
   camas            String?  @db.VarChar(100)
+  metros           Int? // reserva-hotel-mejoras H5.1: tamaño en m²
   amenities        String[] @default([])
 
   producto    productos           @relation(fields: [productoId], references: [id], onDelete: Cascade)
@@ -1532,6 +1536,7 @@ model reservas {
   extras         Json?     @db.JsonB // [{ id, nombre, cobro, precio, cantidad, total, dato }] (snapshot)
   edadesNinos    Int[]     @default([]) @map("edades_ninos")
   exoneradoIgv   Boolean   @default(false) @map("exonerado_igv")
+  impuestos      Json?     @db.JsonB // H2.6: { incluidos, igvPct, servicioPct, neto, igv, servicio } al reservar
   // Fase C
   habitaciones   Int       @default(1) // cuántas habitaciones del mismo tipo
   plan           Json?     @db.JsonB // { id, nombre, ajustePct, reembolsable } (snapshot)
@@ -1567,6 +1572,8 @@ model reservas {
   cambioSolicitado    Json?     @map("cambio_solicitado") @db.JsonB
   comentarios         String?   @db.Text
   aceptaDatos         Boolean   @map("acepta_datos")
+  aceptaTerminos      Boolean   @default(false) @map("acepta_terminos") // H4.1
+  aceptaPromociones   Boolean   @default(false) @map("acepta_promociones") // H4.2: opcional, aparte de los datos (Ley 29733)
 
   // Ciclo de la reserva del hotel (docs/specs/ciclo-reserva-hotel)
   codigoPms           String?   @map("codigo_pms") @db.VarChar(40) // lo escribe recepción para asociarla a su PMS

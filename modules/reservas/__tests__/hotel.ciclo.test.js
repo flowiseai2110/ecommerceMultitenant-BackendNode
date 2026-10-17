@@ -44,7 +44,7 @@ jest.unstable_mockModule("../hotel/vertical.js", () => ({ verticalHotel: vertica
 
 const {
   registrarCheckin, registrarCheckout, guardarCodigoPms, agregarNota,
-  modificarReserva, cambiarSalida, cancelarHotel, marcarNoLlego, penalidadCancelacion, tarifaPorNoche, responderHorario, darSalidaTardia
+  modificarReserva, cambiarSalida, cancelarHotel, marcarNoLlego, penalidadCancelacion, tarifaPorNoche, totalFinalExtra, responderHorario, darSalidaTardia
 } = await import("../hotel/ciclo.service.js");
 
 const ahora = instanteLima("2026-10-16", "16:45");
@@ -175,6 +175,15 @@ describe("política de cancelación (C5)", () => {
 
   it("la tarifa por noche no cuenta los extras", () => {
     expect(tarifaPorNoche({ total: 460, reserva: { noches: 2, extras: [{ total: 60 }] } })).toBe(200);
+  });
+
+  it("sin impuestos, el extra se descuenta con su IGV y servicio; el del mostrador ya es final (reserva-hotel-mejoras H2)", () => {
+    const impuestos = { incluidos: false, igvPct: 18, servicioPct: 10 };
+    expect(totalFinalExtra({ total: 50 }, impuestos)).toBe(64);
+    expect(totalFinalExtra({ total: 50, origen: "mostrador" }, impuestos)).toBe(50);
+    expect(totalFinalExtra({ total: 50 }, { ...impuestos, incluidos: true })).toBe(50);
+    // 2 noches de 273 + extra 50, todo con 28 %: (698.88 + 64) − 64 = 349.44 por noche.
+    expect(tarifaPorNoche({ total: 762.88, reserva: { noches: 2, impuestos, extras: [{ total: 50 }] } })).toBe(349.44);
   });
 
   it("cancelar guarda quién, motivo, retenido y reembolso", async () => {

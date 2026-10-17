@@ -350,3 +350,48 @@ describe("llegada tardía: vence al terminar el día, no a la hora de ingreso", 
     expect(estadoEfectivo({ estado: "solicitada", inicio }, instanteLima("2026-09-24", "13:59"))).toBe("solicitada");
   });
 });
+
+// docs/specs/reserva-hotel-mejoras H2 — caso Viñas Queirolo: Doble, 2 noches a 273 sin
+// impuestos; en el pago IGV 98.28 y servicio (10 %) 54.60 = 698.88.
+describe("cotizarHotel — precios con o sin impuestos", () => {
+  const doble = { ...noche, precio: 273, precioVieSab: null };
+  const base = { tipo, modalidad: doble, fecha: "2026-10-21", noches: 2, adultos: 2, ahora };
+
+  it("sin impuestos: suma el IGV y el servicio como líneas", () => {
+    const c = cotizarHotel({ ...base, config: { ...config, preciosConImpuestos: false, recargoServicioPct: 10 } });
+    expect(c.lineas.slice(1)).toEqual([
+      { descripcion: "IGV (18 %)", cantidad: 1, precioUnitario: 98.28, total: 98.28 },
+      { descripcion: "Servicio (10 %)", cantidad: 1, precioUnitario: 54.6, total: 54.6 }
+    ]);
+    expect(c.total).toBe(698.88);
+    expect(c.impuestos).toEqual({ incluidos: false, igvPct: 18, servicioPct: 10, neto: 546, igv: 98.28, servicio: 54.6 });
+  });
+
+  it("con impuestos incluidos: el mismo total, y el desglose solo se informa", () => {
+    const c = cotizarHotel({ ...base, modalidad: { ...doble, precio: 349.44 }, config: { ...config, recargoServicioPct: 10 } });
+    expect(c.lineas).toHaveLength(1);
+    expect(c.total).toBe(698.88);
+    expect(c.impuestos).toEqual({ incluidos: true, igvPct: 18, servicioPct: 10, neto: 546, igv: 98.28, servicio: 54.6 });
+  });
+
+  it("al extranjero se le quita el IGV del alojamiento y se mantiene el servicio, en los dos modos", () => {
+    const sin = { ...config, preciosConImpuestos: false, recargoServicioPct: 10, exoneraIgvExtranjeros: true };
+    const a = cotizarHotel({ ...base, config: sin, nacionalidad: "US" });
+    expect(a.exoneradoIgv).toBe(true);
+    expect(a.lineas.map(l => l.descripcion)).toEqual(["2 noches × S/ 273 × 1 hab.", "Servicio (10 %)"]);
+    expect(a.total).toBe(600.6);
+    // Sin la nacionalidad (la ficha): cuánto pagaría un extranjero.
+    expect(cotizarHotel({ ...base, config: sin }).totalExtranjero).toBe(600.6);
+
+    const con = cotizarHotel({ ...base, modalidad: { ...doble, precio: 349.44 }, nacionalidad: "US",
+      config: { ...config, recargoServicioPct: 10, exoneraIgvExtranjeros: true } });
+    expect(con.total).toBe(600.6);
+    expect(con.impuestos.igv).toBe(0);
+  });
+
+  it("por defecto la tienda sigue como siempre: precios con impuestos y sin servicio", () => {
+    const c = cotizarHotel({ ...base, config });
+    expect(c.total).toBe(546);
+    expect(c.impuestos).toEqual({ incluidos: true, igvPct: 18, servicioPct: 0, neto: 462.71, igv: 83.29, servicio: 0 });
+  });
+});

@@ -31,6 +31,7 @@ const BASE = {
   maxSolicitudesAbiertas: 3,
   instrucciones: null,
   politicaCancelacion: null,
+  terminos: null,
   horaCheckin: "14:00",
   horaCheckout: "12:00",
   avisoProximoTexto: null,
@@ -39,6 +40,9 @@ const BASE = {
   ninosGratisHasta: null,
   cargoNinoNoche: null,
   exoneraIgvExtranjeros: false,
+  // Precios con o sin impuestos y recargo por servicio (reserva-hotel-mejoras H2)
+  preciosConImpuestos: true,
+  recargoServicioPct: 0,
   // Fase C
   tipoCambioUsd: null,
   resenasExternas: [],
@@ -91,9 +95,9 @@ const BASE = {
 
 export const CAMPOS_CONFIG = [
   "modoConfirmacion", "cobro", "adelantoPct", "cobroEleccion", "cancelacionGratisHoras", "penalidadNoches", "camposFormulario", "anticipacionMinHoras", "avisoProximoHoras", "avisoProximoTexto",
-  "maxSolicitudesAbiertas", "instrucciones", "politicaCancelacion", "horaCheckin", "horaCheckout", "comprobanteEn",
+  "maxSolicitudesAbiertas", "instrucciones", "politicaCancelacion", "terminos", "horaCheckin", "horaCheckout", "comprobanteEn",
   "apartadoManualMin", "apartadoEnLineaMin", "maxEntradasPorCompra", "umbralUltimasEntradas", "cierrePagoManualHoras",
-  "tipoAlojamiento", "ninosGratisHasta", "cargoNinoNoche", "exoneraIgvExtranjeros",
+  "tipoAlojamiento", "ninosGratisHasta", "cargoNinoNoche", "exoneraIgvExtranjeros", "preciosConImpuestos", "recargoServicioPct",
   "tipoCambioUsd", "resenasExternas", "recepcionDocumento", "vitrinaAlPaso",
   "separacionTipo", "separacionMonto", "respuestaHoras", "apartadoHoras", "saldoDiasAntes", "maxCuotas", "garantiaMonto",
   "garantiaDevolucionDias", "invitadosConfirmarDias", "reprogramacionesMax", "reprogramacionMinDias", "cargoReprogramacion",
@@ -171,6 +175,8 @@ export function configPublica(config, lang = IDIOMA_BASE) {
     avisoProximoHoras: config.avisoProximoHoras,
     instrucciones: local.instrucciones,
     politicaCancelacion: local.politicaCancelacion,
+    // H4.1: con términos, la solicitud pide aceptarlos.
+    terminos: local.terminos ?? null,
     horaCheckin: config.horaCheckin,
     horaCheckout: config.horaCheckout,
     // Hasta qué hora se reserva por noche para hoy (llegada tardía).
@@ -186,6 +192,9 @@ export function configPublica(config, lang = IDIOMA_BASE) {
     ninosGratisHasta: config.ninosGratisHasta,
     cargoNinoNoche: config.cargoNinoNoche,
     exoneraIgvExtranjeros: config.exoneraIgvExtranjeros,
+    // H2: la vitrina muestra el neto con "+ impuestos" o el precio final.
+    preciosConImpuestos: config.preciosConImpuestos,
+    recargoServicioPct: config.recargoServicioPct,
     // Fase C: "≈ US$" en la vitrina y puntaje en otros sitios.
     tipoCambioUsd: config.tipoCambioUsd,
     resenasExternas: config.resenasExternas,

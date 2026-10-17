@@ -239,6 +239,8 @@ const serializarCotizacion = (c) => ({
   total: c.total, montoAPagar: c.montoAPagar, saldoDestino: c.saldoDestino, aviso: c.aviso, errores: c.errores,
   // Hotel (hospedaje-completo B5): IGV exonerado o cuánto pagaría un extranjero.
   exoneradoIgv: c.exoneradoIgv ?? false, totalExtranjero: c.totalExtranjero ?? null,
+  // reserva-hotel-mejoras H2: desglose de IGV y servicio (null en los rubros que no lo calculan).
+  impuestos: c.impuestos ?? null,
   // Fase C: habitaciones, plan y cupo ("Quedan 2").
   habitaciones: c.habitaciones ?? 1, plan: c.plan ?? null, quedan: c.quedan ?? null,
   // Adelanto o total para elegir (C8); null si la tienda no lo ofrece.
@@ -287,6 +289,10 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
   if (existente) return resultadoSolicitud(tienda, existente.id, false);
 
   const config = await obtenerConfig(tienda.id);
+  // Con términos y condiciones, aceptarlos es obligatorio (reserva-hotel-mejoras H4.1).
+  if (config.terminos && !datos.aceptaTerminos) {
+    throw new ValidationError("Debes aceptar los términos y condiciones", { message: "Debes aceptar los términos y condiciones", field: "aceptaTerminos", motivo: "TERMINOS" });
+  }
   // Lo obligatorio del formulario de la tienda, y fuera lo que no pide.
   aplicarFormulario(datos, config.formulario ?? formularioDe(tienda.tipoNegocio, null));
   const cotizado = await vertical.cotizar({ tiendaId: tienda.id, datos, config, ahora });
@@ -397,6 +403,8 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
                 : undefined,
               comentarios: datos.comentarios,
               aceptaDatos: true,
+              aceptaTerminos: !!config.terminos && !!datos.aceptaTerminos,
+              aceptaPromociones: !!datos.aceptaPromociones,
               montoAPagar: c.montoAPagar,
               saldoDestino: c.saldoDestino
             }

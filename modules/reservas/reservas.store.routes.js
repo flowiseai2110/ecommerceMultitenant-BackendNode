@@ -12,6 +12,7 @@ import { cierresPublicos } from "./cierres.service.js";
 import { listarHabitacionesStore, obtenerHabitacionStore } from "./hotel/habitaciones.service.js";
 import { extrasPublicos, planesPublicos, temporadasPublicas } from "./hotel/tarifas.service.js";
 import { disponibilidadTienda } from "./hotel/disponibilidad.service.js";
+import { preciosPorNoche } from "./hotel/precios-calendario.js";
 import { listarToursStore, obtenerTourStore } from "./tours/tours.service.js";
 import { listarEventosStore, obtenerEventoStore } from "./eventos/eventos.service.js";
 import { listarSalonesStore, obtenerSalonStore } from "./locales/salones.service.js";
@@ -136,6 +137,16 @@ router.get("/habitaciones-disponibilidad", validate({ query: disponibilidadQuery
       productoId: t.productoId,
       libres: Object.fromEntries(Object.entries(t.fechas).map(([f, v]) => [f, v.libres]))
     })));
+  } catch (error) { next(error); }
+});
+
+// GET /habitaciones-precios?tiendaId=&desde=&hasta= — precio por noche de cada tipo
+// para el calendario (reserva-hotel-mejoras H1); null = cerrado.
+router.get("/habitaciones-precios", validate({ query: disponibilidadQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
+  try {
+    const { tiendaId, desde, hasta } = req.validatedQuery;
+    res.set("Cache-Control", "public, max-age=60");
+    return ok(res, "PRECIOS_NOCHE", await preciosPorNoche(tiendaId, desde, hasta));
   } catch (error) { next(error); }
 });
 

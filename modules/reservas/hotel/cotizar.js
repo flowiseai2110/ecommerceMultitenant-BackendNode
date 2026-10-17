@@ -82,6 +82,17 @@ export function temporadaDe(fecha, temporadas) {
   return elegida;
 }
 
+/**
+ * Precio de una habitación por noche: base o de viernes y sábado, con el ajuste
+ * de la temporada que la contiene. Lo usan las líneas de precio y el calendario
+ * de la tienda (reserva-hotel-mejoras H1), así nunca muestran precios distintos.
+ */
+export function precioNoche(modalidad, fecha, temporadas = []) {
+  const base = esVieSab(fecha) && modalidad.precioVieSab != null ? Number(modalidad.precioVieSab) : Number(modalidad.precio);
+  const temporada = temporadaDe(fecha, temporadas);
+  return { precio: temporada ? redondear(base * (1 + temporada.ajustePct / 100)) : base, temporada };
+}
+
 /** "160" o "162.50": el precio unitario de la línea, sin decimales si no los tiene. */
 const montoCorto = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
 
@@ -105,9 +116,7 @@ export function lineasPrecio({ modalidad, fechas, temporadas = [], habitaciones 
 
   const grupos = new Map();
   for (const f of fechas) {
-    const base = esVieSab(f) && modalidad.precioVieSab != null ? Number(modalidad.precioVieSab) : Number(modalidad.precio);
-    const temporada = temporadaDe(f, temporadas);
-    const precio = temporada ? redondear(base * (1 + temporada.ajustePct / 100)) : base;
+    const { precio, temporada } = precioNoche(modalidad, f, temporadas);
     const clave = `${precio}|${temporada?.nombre ?? ""}`;
     if (!grupos.has(clave)) grupos.set(clave, { precio, temporada: temporada?.nombre ?? null, dias: [] });
     grupos.get(clave).dias.push(f);
@@ -180,12 +189,57 @@ export function lineasExtras({ catalogo, elegidos, noches, personas, esHoras, t 
 }
 
 /**
- * Exoneración del IGV al turista extranjero (B5): los precios incluyen IGV y
- * el extranjero paga el alojamiento sin él. Los extras no se exoneran.
+ * Cómo trata la tienda los impuestos (reserva-hotel-mejoras H2): sus precios
+ * ya los incluyen (como siempre) o se suman al cotizar; y el recargo por
+ * servicio, que en los dos casos es parte del precio final.
+ */
+export function impuestosDe(config) {
+  return { incluidos: config.preciosConImpuestos !== false, igvPct: IGV * 100, servicioPct: Number(config.recargoServicioPct ?? 0) };
+}
+
+/** Precio final ÷ esto = neto (sin IGV ni servicio). */
+export const factorImpuestos = ({ servicioPct = 0 } = {}) => 1 + IGV + servicioPct / 100;
+
+/**
+ * Exoneración del IGV al turista extranjero (B5): el extranjero paga el
+ * alojamiento sin IGV; el servicio se mantiene. Los extras no se exoneran.
+ * @param {number} montoAlojamiento - con impuestos incluidos
  * @returns {number} monto a descontar (positivo)
  */
-export function descuentoIgv(montoAlojamiento) {
-  return redondear(montoAlojamiento - montoAlojamiento / (1 + IGV));
+export function descuentoIgv(montoAlojamiento, servicioPct = 0) {
+  return redondear(montoAlojamiento * IGV / factorImpuestos({ servicioPct }));
+}
+
+/**
+ * IGV, servicio y exoneración sobre las líneas (H2). Con impuestos incluidos las
+ * líneas ya son el precio final: el desglose solo se informa y el extranjero
+ * descuenta el IGV de su alojamiento. Sin impuestos las líneas son netas y se
+ * agregan el IGV (del extranjero, solo el de los extras) y el servicio.
+ * Pura, para testearla.
+ * @returns {{ lineas: Array, exoneradoIgv: boolean, descuento: number, impuestos: object }}
+ */
+export function aplicarImpuestos({ alojamiento, extras, imp, exonera, nacionalidad, t }) {
+  const suma = (ls) => redondear(ls.reduce((s, l) => s + l.total, 0));
+  const montoAlojamiento = suma(alojamiento);
+  const base = redondear(montoAlojamiento + suma(extras));
+  const exoneradoIgv = exonera && !!nacionalidad && nacionalidad !== "PE";
+  const lineas = [...alojamiento, ...extras];
+  const s = imp.servicioPct / 100;
+  if (imp.incluidos) {
+    const descuento = exonera ? descuentoIgv(montoAlojamiento, imp.servicioPct) : 0;
+    if (exoneradoIgv && descuento > 0) lineas.push({ descripcion: t.igv, cantidad: 1, precioUnitario: -descuento, total: -descuento });
+    const neto = redondear(base / factorImpuestos(imp));
+    const servicio = redondear(neto * s);
+    const igv = redondear(suma(lineas) - neto - servicio);
+    return { lineas, exoneradoIgv: exoneradoIgv && descuento > 0, descuento, impuestos: { ...imp, neto, igv, servicio } };
+  }
+  const descuento = exonera ? redondear(montoAlojamiento * IGV) : 0;
+  const conExoneracion = exoneradoIgv && descuento > 0;
+  const igv = redondear((conExoneracion ? base - montoAlojamiento : base) * IGV);
+  const servicio = redondear(base * s);
+  if (igv > 0) lineas.push({ descripcion: t.lineaIgv(imp.igvPct, conExoneracion), cantidad: 1, precioUnitario: igv, total: igv });
+  if (servicio > 0) lineas.push({ descripcion: t.lineaServicio(imp.servicioPct), cantidad: 1, precioUnitario: servicio, total: servicio });
+  return { lineas, exoneradoIgv: conExoneracion, descuento, impuestos: { ...imp, neto: base, igv, servicio } };
 }
 
 /** Cuánto se paga al reservar según el cobro configurado. */
@@ -340,15 +394,11 @@ export function cotizarHotel({
   const extras = lineasExtras({ catalogo: extrasCatalogo, elegidos: extrasElegidos, noches, personas, esHoras, t });
   errores.push(...extras.errores);
 
-  // IGV (B5): con la nacionalidad, se aplica; sin ella (la ficha), se informa
-  // cuánto pagaría un extranjero.
-  const montoAlojamiento = redondear(alojamiento.reduce((s, l) => s + l.total, 0));
-  const descuento = config.exoneraIgvExtranjeros ? descuentoIgv(montoAlojamiento) : 0;
-  const exoneradoIgv = descuento > 0 && !!nacionalidad && nacionalidad !== "PE";
-  const lineas = [...alojamiento, ...extras.lineas];
-  if (exoneradoIgv) {
-    lineas.push({ descripcion: t.igv, cantidad: 1, precioUnitario: -descuento, total: -descuento });
-  }
+  // IGV y servicio (H2) y exoneración del extranjero (B5): con la nacionalidad
+  // se aplica; sin ella (la ficha), se informa cuánto pagaría un extranjero.
+  const { lineas, exoneradoIgv, descuento, impuestos } = aplicarImpuestos({
+    alojamiento, extras: extras.lineas, imp: impuestosDe(config), exonera: !!config.exoneraIgvExtranjeros, nacionalidad, t
+  });
   const total = redondear(lineas.reduce((s, l) => s + l.total, 0));
   const aPagar = montoACuenta(total, config, pago);
   const opcionesPago = opcionesDePago(total, config);
@@ -377,6 +427,7 @@ export function cotizarHotel({
     quedan: modalidad.tipo === "noche" && cupo ? cupo.libres : null,
     edadesNinos: ninos > 0 ? edadesNinos.slice(0, ninos) : [],
     exoneradoIgv,
+    impuestos,
     // Solo cuando no se sabe la nacionalidad: "Extranjeros: S/ X sin IGV".
     totalExtranjero: descuento > 0 && !nacionalidad ? redondear(total - descuento) : null
   };

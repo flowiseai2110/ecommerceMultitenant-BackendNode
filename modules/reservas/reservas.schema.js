@@ -138,6 +138,9 @@ export const crearSolicitudSchema = z.object({
   aceptaDatos: z.literal(true, {
     errorMap: () => ({ message: "Debes aceptar el tratamiento de tus datos para enviar la solicitud" })
   }),
+  // reserva-hotel-mejoras H4: términos (obligatorios si la tienda los tiene) y promociones (opcional).
+  aceptaTerminos: z.boolean().optional().default(false),
+  aceptaPromociones: z.boolean().optional().default(false),
   // Un doble clic o un reintento con mala señal devuelve la misma reserva.
   idempotencyKey: uuid("idempotencyKey"),
   // Honeypot: una persona nunca llena este campo. Se valida en la ruta.
@@ -361,6 +364,7 @@ export const configSchema = z.object({
   maxSolicitudesAbiertas: z.coerce.number().int().min(1).max(20).optional(),
   instrucciones: textoParcial(1000),
   politicaCancelacion: textoParcial(2000),
+  terminos: textoParcial(10000),
   horaCheckin: hora.optional(),
   horaCheckout: hora.optional(),
   comprobanteEn: z.enum(["al_pagar", "en_el_servicio"]).optional(),
@@ -376,6 +380,9 @@ export const configSchema = z.object({
   ninosGratisHasta: z.coerce.number().int().min(0).max(17).nullable().optional(),
   cargoNinoNoche: monto.nullable().optional(),
   exoneraIgvExtranjeros: z.boolean().optional(),
+  // reserva-hotel-mejoras H2
+  preciosConImpuestos: z.boolean().optional(),
+  recargoServicioPct: z.coerce.number().int().min(0).max(13).optional(),
   // Fase C
   tipoCambioUsd: z.coerce.number().min(0.5, "Tipo de cambio inválido").max(20, "Tipo de cambio inválido").nullable().optional(),
   resenasExternas: z.array(z.object({
@@ -475,6 +482,8 @@ export const habitacionSchema = z.object({
   unidades: z.coerce.number({ invalid_type_error: "Indica el total de habitaciones" })
     .int().min(1, "Indica el total de habitaciones (al menos 1)").max(500),
   camas: textoOpcional(100),
+  // H5.1: tamaño en m² (opcional).
+  metros: z.coerce.number().int().min(1).max(2000).nullable().optional(),
   amenities: z.array(z.string().trim().min(1).max(40)).max(30).optional().default([]),
   modalidades: z.array(modalidadSchema).min(1, "Agrega al menos una modalidad (noche o por horas)").max(10)
 }).superRefine((d, ctx) => {
