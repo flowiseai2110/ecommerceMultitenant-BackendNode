@@ -1,0 +1,11 @@
+{
+  "name": "ecommerce-local",
+  "owner": { "name": "Diego Armando" },
+  "plugins": [
+    {
+      "name": "ecommerce-proceso",
+      "source": "./ecommerce-proceso",
+      "description": "Agentes por etapa (rubros, requerimientos, diseño, arquitectura, desarrollo, QA, despliegue) y hooks que hacen cumplir el proceso"
+    }
+  ]
+}

@@ -15,9 +15,11 @@
 
 ## Los agentes
 
-Viven en `~/.claude/agents/ecommerce/` (carpeta de usuario: se ven desde los tres repos; la carpeta padre `repositorios/ecommerce/`
-no sirve porque Claude Code deja de buscar en la raíz de cada repo git). La coordinación está en `repositorios/ecommerce/CLAUDE.md`,
-que sí se carga desde los tres. Se llaman con `@agente-<nombre>` o "usa el agente X para …".
+Viven en el plugin [`herramientas/claude-plugin/`](../../herramientas/claude-plugin/README.md) de este repo, instalado a nivel
+de usuario (se ven desde los tres repos), junto con hooks que hacen cumplir las reglas de abajo. Se llaman
+`ecommerce-proceso:<nombre>`: con `@` y el nombre, o "usa el agente X para …". La coordinación (cuándo pasar
+por cada etapa y detenerse a pedir aprobación) está en `herramientas/claude-plugin/ecommerce-proceso/coordinacion.md`, que el
+plugin agrega a toda sesión abierta en los tres repos.
 
 | Etapa | Agente | Produce | Toca código |
 |---|---|---|---|
