@@ -3,7 +3,7 @@
 > Estado: **implementada, probada y con commit** (2026-10-12). Solo falta el pase a producción: [editor-diseno-en-vivo/pase-a-produccion.md](../editor-diseno-en-vivo/pase-a-produccion.md).
 > Repos involucrados: BackendNode, FrontendStore, FrontendAdmin.
 > Base: [alquiler-canchas](../alquiler-canchas/spec.md) (rubro y secciones) y [editor-diseno-en-vivo](../editor-diseno-en-vivo/spec.md) (plantillas desde el editor).
-> Propuesta aprobada: "Tres plantillas para canchas" (claude.ai/artifact/7KTkVF44E3cDRpZAarfNXw) más la idea "Liga y equipos".
+> Propuesta aprobada: "Tres plantillas para canchas" (claude.ai/artifact/7KTkVF44E3cDRpZAarfNXw) más la idea "Liga y equipos". Copia en el repo: [docs/disenos/plantillas-canchas/](../../disenos/plantillas-canchas/).
 
 ## Objetivo
 

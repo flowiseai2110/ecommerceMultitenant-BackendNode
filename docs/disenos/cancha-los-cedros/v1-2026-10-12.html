@@ -1,0 +1,516 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Cancha Los Cedros</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: tienda de un complejo de canchas. Hero = cancha vista desde arriba;
+   el reservador (día → hora → cancha → duración) es el centro de la página. */
+:root {
+  --bg: #f2f4ef;
+  --surface: #ffffff;
+  --ink: #13241a;
+  --muted: #5b6b60;
+  --line: #d8ded5;
+  --pitch: #1d6b3c;
+  --pitch-deep: #134a29;
+  --chalk: #f7faf5;
+  --flood: #f0a81c;       /* tarifa noche (reflectores) */
+  --flood-soft: #fdf1d6;
+  --taken: #e6e9e3;
+  --taken-ink: #9aa69d;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1913; --surface: #16231b; --ink: #e7efe8; --muted: #9fb1a4; --line: #27382d;
+    --pitch: #2f9a58; --pitch-deep: #0f3a21; --chalk: #eef5ef;
+    --flood: #f5b941; --flood-soft: #3a2f14; --taken: #1c2a21; --taken-ink: #5c6e61;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1913; --surface: #16231b; --ink: #e7efe8; --muted: #9fb1a4; --line: #27382d;
+  --pitch: #2f9a58; --pitch-deep: #0f3a21; --chalk: #eef5ef;
+  --flood: #f5b941; --flood-soft: #3a2f14; --taken: #1c2a21; --taken-ink: #5c6e61;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.05; letter-spacing: .01em; }
+h2 { font-size: clamp(28px, 4vw, 38px); text-transform: uppercase; }
+.eyebrow { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--pitch); }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--flood); outline-offset: 2px; }
+section { padding-block: 56px; }
+
+/* Demo banner */
+.demo { background: var(--ink); color: var(--bg); font-size: 12px; text-align: center; padding: 6px 16px; }
+
+/* Header */
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 800; font-size: 22px; text-transform: uppercase; }
+.brand svg { flex: none; }
+nav.links { display: flex; gap: 24px; font-weight: 600; font-size: 14px; }
+nav.links a { color: var(--ink); text-decoration: none; }
+nav.links a:hover { color: var(--pitch); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 999px; padding: 12px 22px; font-weight: 700; text-decoration: none; }
+.btn-primary { background: var(--pitch); color: #fff; }
+.btn-primary:hover { background: var(--pitch-deep); }
+.btn-ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+@media (max-width: 760px) { nav.links, header.top .btn { display: none; } }
+
+/* Hero */
+.hero { padding-block: 40px 56px; }
+.hero .wrap { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center; }
+.hero h1 { font-size: clamp(44px, 7vw, 84px); font-weight: 800; text-transform: uppercase; }
+.hero h1 em { font-style: normal; color: var(--pitch); }
+.hero p.lead { font-size: 17px; color: var(--muted); max-width: 46ch; margin: 18px 0 24px; }
+.hero .ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+.rates { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 28px; }
+.rate small { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+.rate b { font-family: var(--font-data); font-size: 22px; }
+.rate.night b { color: var(--flood); }
+.pitch-art { position: relative; border-radius: 14px; overflow: hidden; background: var(--pitch); aspect-ratio: 4 / 3; max-width: 100%; }
+.pitch-art svg { display: block; width: 100%; height: 100%; }
+.pitch-art .tag { position: absolute; left: 14px; bottom: 14px; background: var(--surface); color: var(--ink); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px color-mix(in srgb, #22c55e 30%, transparent); }
+@media (max-width: 860px) { .hero .wrap { grid-template-columns: 1fr; } .pitch-art { order: -1; } }
+
+/* Canchas */
+.head-row { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+.head-row p { color: var(--muted); margin: 6px 0 0; max-width: 52ch; }
+.courts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.court { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+.court .img { aspect-ratio: 16 / 9; background: var(--pitch); position: relative; }
+.court .img svg { width: 100%; height: 100%; display: block; }
+.court .size { position: absolute; top: 12px; left: 12px; background: var(--ink); color: var(--bg); font-family: var(--font-display); font-weight: 700; font-size: 16px; padding: 2px 10px; border-radius: 6px; }
+.court .body { padding: 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.court h3 { font-size: 24px; text-transform: uppercase; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); color: var(--muted); }
+.court .prices { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); margin-top: auto; }
+.court .prices div { padding: 12px 0 0; }
+.court .prices div + div { padding-left: 14px; border-left: 1px solid var(--line); }
+.court .prices small { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.court .prices b { font-family: var(--font-data); font-size: 18px; }
+.court .prices .n b { color: var(--flood); }
+.court .btn { margin: 0 16px 16px; }
+@media (max-width: 900px) { .courts { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .courts { grid-template-columns: 1fr; } }
+
+/* Reservador */
+#reservar { background: var(--surface); border-block: 1px solid var(--line); }
+.booker { display: grid; grid-template-columns: 1fr 340px; gap: 32px; align-items: start; }
+.step { margin-bottom: 28px; }
+.step-label { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.step-label span { font-family: var(--font-data); font-size: 12px; color: var(--pitch); font-weight: 700; }
+.step-label h3 { font-size: 20px; text-transform: uppercase; }
+.scroller { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
+.day { flex: none; width: 64px; border: 1.5px solid var(--line); background: var(--bg); border-radius: var(--r); padding: 8px 0; text-align: center; }
+.day small { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+.day b { font-family: var(--font-display); font-size: 26px; line-height: 1; }
+.day[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.day[aria-pressed="true"] small { color: inherit; opacity: .75; }
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg button { border: 1.5px solid var(--line); background: var(--bg); border-radius: 999px; padding: 8px 16px; font-weight: 600; font-size: 14px; }
+.seg button[aria-pressed="true"] { border-color: var(--pitch); background: var(--pitch); color: #fff; }
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.slot { border: 1.5px solid var(--line); background: var(--bg); border-radius: var(--r); padding: 8px 6px; text-align: center; }
+.slot b { display: block; font-family: var(--font-data); font-size: 15px; }
+.slot small { font-family: var(--font-data); font-size: 12px; color: var(--muted); }
+.slot.night { background: var(--flood-soft); border-color: color-mix(in srgb, var(--flood) 45%, var(--line)); }
+.slot:disabled { background: var(--taken); border-color: var(--taken); color: var(--taken-ink); cursor: not-allowed; text-decoration: line-through; }
+.slot:disabled small { color: var(--taken-ink); }
+.slot[aria-pressed="true"] { background: var(--pitch); border-color: var(--pitch); color: #fff; }
+.slot[aria-pressed="true"] small { color: #fff; opacity: .85; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--muted); margin-top: 10px; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; border: 1px solid var(--line); }
+
+.summary { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 76px); background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.summary h3 { font-size: 22px; text-transform: uppercase; }
+.summary dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; font-size: 14px; }
+.summary dt { color: var(--muted); }
+.summary dd { margin: 0; text-align: right; font-weight: 600; }
+.total { border-top: 1px dashed var(--line); padding-top: 12px; display: grid; gap: 6px; }
+.total div { display: flex; justify-content: space-between; align-items: baseline; }
+.total .big { font-family: var(--font-data); font-size: 26px; font-weight: 700; }
+.total .dep { font-family: var(--font-data); color: var(--pitch); font-weight: 700; }
+.summary .note { font-size: 12px; color: var(--muted); margin: 0; }
+.summary .btn { width: 100%; padding: 14px; font-size: 16px; }
+.summary .btn:disabled { opacity: .45; cursor: not-allowed; }
+.ok { background: color-mix(in srgb, var(--pitch) 12%, var(--surface)); border: 1px solid var(--pitch); border-radius: var(--r); padding: 12px; font-size: 14px; }
+@media (max-width: 900px) { .booker { grid-template-columns: 1fr; } .summary { position: static; } }
+
+/* Cómo funciona */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 28px; counter-reset: s; }
+.steps li { list-style: none; border-top: 3px solid var(--ink); padding-top: 14px; }
+.steps li::before { counter-increment: s; content: "0" counter(s); font-family: var(--font-data); font-size: 13px; font-weight: 700; color: var(--pitch); }
+.steps h3 { font-size: 22px; text-transform: uppercase; margin: 6px 0; }
+.steps p { margin: 0; color: var(--muted); }
+.steps { padding: 0; }
+@media (max-width: 700px) { .steps { grid-template-columns: 1fr; gap: 20px; } }
+
+/* Servicios */
+.amen { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 24px; }
+.amen div { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: flex; gap: 12px; align-items: center; font-weight: 600; font-size: 14px; }
+.amen svg { flex: none; color: var(--pitch); }
+@media (max-width: 800px) { .amen { grid-template-columns: 1fr 1fr; } }
+
+/* Fijo semanal */
+.fijo { background: var(--pitch-deep); color: var(--chalk); border-radius: 16px; padding: 32px; display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: center; }
+.fijo h2 { color: var(--chalk); }
+.fijo p { opacity: .85; margin: 10px 0 0; max-width: 52ch; }
+.fijo .btn { background: var(--flood); color: #1d1503; justify-self: end; }
+@media (max-width: 760px) { .fijo { grid-template-columns: 1fr; padding: 24px; } .fijo .btn { justify-self: start; } }
+
+/* FAQ / políticas */
+.faq { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 32px; margin-top: 24px; }
+details { border-bottom: 1px solid var(--line); padding-block: 14px; }
+summary { font-weight: 700; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+summary::after { content: "+"; font-family: var(--font-data); color: var(--pitch); }
+details[open] summary::after { content: "–"; }
+details p { color: var(--muted); margin: 8px 0 0; max-width: 60ch; }
+@media (max-width: 760px) { .faq { grid-template-columns: 1fr; } }
+
+/* Ubicación */
+.place { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch; }
+.mapbox { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); min-height: 240px; background: var(--surface); }
+.mapbox svg { width: 100%; height: 100%; display: block; }
+.contact { display: flex; flex-direction: column; gap: 14px; }
+.contact .row { display: flex; gap: 10px; align-items: baseline; }
+.contact .row b { min-width: 86px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.hours { display: grid; grid-template-columns: auto auto; gap: 4px 16px; font-size: 14px; }
+@media (max-width: 760px) { .place { grid-template-columns: 1fr; } }
+
+footer { border-top: 1px solid var(--line); padding-block: 24px 96px; font-size: 13px; color: var(--muted); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+
+/* Barra inferior móvil */
+.mbar { display: none; }
+@media (max-width: 760px) {
+  .mbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; gap: 10px; align-items: center; justify-content: space-between;
+    background: var(--surface); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .mbar small { display: block; color: var(--muted); font-size: 11px; }
+  .mbar b { font-family: var(--font-data); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .slot, .day, .seg button, .btn { transition: background .15s, border-color .15s, color .15s; }
+  html { scroll-behavior: smooth; }
+}
+</style>
+
+<div class="demo">Maqueta de la vista del cliente · datos de ejemplo</div>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="1" y="4" width="26" height="20" rx="3" fill="var(--pitch)"/><path d="M14 4v20M1 9h4v10H1M27 9h-4v10h4" stroke="#fff" stroke-width="1.5" fill="none"/><circle cx="14" cy="14" r="3.5" stroke="#fff" stroke-width="1.5" fill="none"/></svg>
+      Los Cedros
+    </div>
+    <nav class="links" aria-label="Principal">
+      <a href="#canchas">Canchas</a><a href="#tarifas">Tarifas</a><a href="#preguntas">Preguntas</a><a href="#ubicacion">Ubicación</a>
+    </nav>
+    <a class="btn btn-primary" href="#reservar">Reservar</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Grass sintético · San Juan de Lurigancho</div>
+      <h1>Arma tu pichanga <em>en 1 minuto</em></h1>
+      <p class="lead">Elige día y hora, ve la cancha libre al instante y separa con un adelanto por Yape. Sin llamar ni esperar respuesta.</p>
+      <div class="ctas">
+        <a class="btn btn-primary" href="#reservar">Ver horarios libres</a>
+        <a class="btn btn-ghost" href="#canchas">Conocer las canchas</a>
+      </div>
+      <div class="rates" id="tarifas">
+        <div class="rate"><small>Día · 7:00 a 18:00</small><b>desde S/ 70</b></div>
+        <div class="rate night"><small>Noche · 18:00 a 23:00</small><b>desde S/ 100</b></div>
+      </div>
+    </div>
+    <div class="pitch-art">
+      <svg viewBox="0 0 400 300" aria-label="Cancha vista desde arriba" role="img">
+        <defs>
+          <pattern id="mow" width="50" height="300" patternUnits="userSpaceOnUse"><rect width="25" height="300" fill="#1d6b3c"/><rect x="25" width="25" height="300" fill="#22783f"/></pattern>
+          <radialGradient id="light" cx="0.15" cy="0" r="0.9"><stop offset="0" stop-color="#fff6d8" stop-opacity=".35"/><stop offset="1" stop-color="#fff6d8" stop-opacity="0"/></radialGradient>
+        </defs>
+        <rect width="400" height="300" fill="url(#mow)"/>
+        <rect width="400" height="300" fill="url(#light)"/>
+        <g fill="none" stroke="#f7faf5" stroke-width="2.5" opacity=".9">
+          <rect x="24" y="24" width="352" height="252" rx="2"/>
+          <line x1="200" y1="24" x2="200" y2="276"/>
+          <circle cx="200" cy="150" r="38"/>
+          <rect x="24" y="90" width="52" height="120"/><rect x="324" y="90" width="52" height="120"/>
+          <rect x="12" y="128" width="12" height="44"/><rect x="376" y="128" width="12" height="44"/>
+        </g>
+        <circle cx="200" cy="150" r="3.5" fill="#f7faf5"/>
+        <circle cx="262" cy="118" r="7" fill="#fff" stroke="#13241a" stroke-width="1.5"/>
+      </svg>
+      <div class="tag"><span class="dot"></span><span id="hero-tag">Hoy quedan horarios libres</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="canchas" style="padding-top:0">
+  <div class="wrap">
+    <div class="head-row">
+      <div><div class="eyebrow">3 canchas</div><h2>Nuestras canchas</h2><p>Grass de 50 mm con caucho, arcos con red y reflectores LED en todas.</p></div>
+    </div>
+    <div class="courts" id="courts"></div>
+  </div>
+</section>
+
+<section id="reservar">
+  <div class="wrap">
+    <div class="head-row"><div><div class="eyebrow">Disponibilidad en tiempo real</div><h2>Reserva tu horario</h2></div></div>
+    <div class="booker">
+      <div>
+        <div class="step"><div class="step-label"><span>1</span><h3>Día</h3></div><div class="scroller" id="days" role="group" aria-label="Día"></div></div>
+        <div class="step"><div class="step-label"><span>2</span><h3>Cancha</h3></div><div class="seg" id="court-seg" role="group" aria-label="Cancha"></div></div>
+        <div class="step"><div class="step-label"><span>3</span><h3>Duración</h3></div><div class="seg" id="dur-seg" role="group" aria-label="Duración"></div></div>
+        <div class="step"><div class="step-label"><span>4</span><h3>Hora de inicio</h3></div>
+          <div class="slots" id="slots" role="group" aria-label="Hora"></div>
+          <div class="legend"><span><i style="background:var(--bg)"></i>Libre, tarifa día</span><span><i style="background:var(--flood-soft)"></i>Libre, tarifa noche</span><span><i style="background:var(--taken)"></i>Ocupado</span></div>
+        </div>
+      </div>
+      <aside class="summary" aria-live="polite">
+        <h3>Tu reserva</h3>
+        <dl>
+          <dt>Día</dt><dd id="s-day">—</dd>
+          <dt>Cancha</dt><dd id="s-court">—</dd>
+          <dt>Horario</dt><dd id="s-time" class="num">Elige una hora</dd>
+        </dl>
+        <div class="total">
+          <div><span>Total</span><span class="big" id="s-total">S/ 0</span></div>
+          <div><span>Adelanto 50% por Yape</span><span class="dep" id="s-dep">S/ 0</span></div>
+        </div>
+        <p class="note">El resto se paga en caja al llegar. Cambios gratis hasta 24 h antes.</p>
+        <button class="btn btn-primary" id="s-btn" disabled>Separar horario</button>
+        <div class="ok" id="s-ok" hidden></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Cómo funciona</div><h2>Tres pasos y a jugar</h2>
+    <ol class="steps">
+      <li><h3>Elige horario</h3><p>Ves solo las horas libres de cada cancha, con el precio ya calculado.</p></li>
+      <li><h3>Paga el adelanto</h3><p>Yapea el 50% y sube la captura. Tu horario queda separado 15 minutos mientras lo validamos.</p></li>
+      <li><h3>Llega y juega</h3><p>Te llega la confirmación por WhatsApp. Muestra tu código en caja y paga el saldo.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="eyebrow">Servicios</div><h2>Todo para el partido</h2>
+    <div class="amen">
+      <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M4.9 4.9l2.8 2.8M2 12h4M19.1 4.9l-2.8 2.8M22 12h-4"/><circle cx="12" cy="14" r="4"/></svg>Reflectores LED</div>
+      <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3v18M17 3v18M7 8h10M7 16h10"/></svg>Vestuarios y duchas</div>
+      <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>Estacionamiento</div>
+      <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l-1 7a3 3 0 0 1-6 0zM12 12v8M8 22h8"/></svg>Kiosko y bebidas</div>
+      <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3l2.5 5.5L20 9M12 3L9.5 8.5 4 9M9.5 8.5l1 6h3l1-6M10.5 14.5 7 19M13.5 14.5 17 19"/></svg>Pelotas y chalecos</div>
+      <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V10l7-6 7 6v11M10 21v-6h4v6"/></svg>Cancha techada</div>
+      <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H5.2L4 17.5z"/></svg>Tribuna para 40</div>
+      <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Yape, Plin y tarjeta</div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="fijo">
+      <div>
+        <div class="eyebrow" style="color:var(--flood)">Alquiler fijo semanal</div>
+        <h2>Tu equipo, el mismo día cada semana</h2>
+        <p>Separa la misma hora todas las semanas por 1 o 3 meses y paga 10% menos. Ideal para la pichanga de la oficina o la liga del barrio.</p>
+      </div>
+      <a class="btn" href="#preguntas">Pedir horario fijo</a>
+    </div>
+  </div>
+</section>
+
+<section id="preguntas" style="padding-top:0">
+  <div class="wrap">
+    <div class="eyebrow">Políticas</div><h2>Preguntas frecuentes</h2>
+    <div class="faq">
+      <details open><summary>¿Cuánto tengo que adelantar?</summary><p>El 50% del total por Yape o Plin. El saldo se paga en caja antes de entrar a la cancha.</p></details>
+      <details><summary>¿Puedo cambiar o cancelar?</summary><p>Hasta 24 horas antes cambias de día o te devolvemos el adelanto. Con menos de 24 horas el adelanto no se devuelve, pero puedes pasarlo a otra fecha del mismo mes.</p></details>
+      <details><summary>¿Y si llueve?</summary><p>El grass drena rápido y se juega igual. Si hay tormenta eléctrica reprogramamos sin costo.</p></details>
+      <details><summary>¿Desde qué hora es tarifa noche?</summary><p>De lunes a viernes desde las 18:00. Sábados, domingos y feriados se cobra tarifa noche todo el día.</p></details>
+      <details><summary>¿Qué zapatillas puedo usar?</summary><p>Zapatillas de grass sintético (tachos cortos) o de futsal. No se permiten chimpunes de aluminio.</p></details>
+      <details><summary>¿Cuántos jugadores entran?</summary><p>Fútbol 7: hasta 16 personas. Fútbol 6: hasta 14. Fútbol 5 techada: hasta 12.</p></details>
+    </div>
+  </div>
+</section>
+
+<section id="ubicacion" style="padding-top:0">
+  <div class="wrap place">
+    <div class="mapbox">
+      <svg viewBox="0 0 400 260" role="img" aria-label="Mapa de referencia">
+        <rect width="400" height="260" fill="var(--bg)"/>
+        <g stroke="var(--line)" stroke-width="14"><line x1="0" y1="80" x2="400" y2="80"/><line x1="0" y1="190" x2="400" y2="190"/><line x1="120" y1="0" x2="120" y2="260"/><line x1="290" y1="0" x2="290" y2="260"/></g>
+        <rect x="140" y="98" width="130" height="74" rx="4" fill="var(--pitch)"/>
+        <path d="M205 60c-11 0-20 9-20 20 0 15 20 34 20 34s20-19 20-34c0-11-9-20-20-20z" fill="var(--flood)"/>
+        <circle cx="205" cy="80" r="7" fill="var(--surface)"/>
+        <text x="300" y="72" font-family="Figtree, sans-serif" font-size="12" fill="var(--muted)">Av. Próceres</text>
+      </svg>
+    </div>
+    <div class="contact">
+      <div class="eyebrow">Ubicación</div><h2>Cómo llegar</h2>
+      <div class="row"><b>Dirección</b><span>Av. Los Próceres 1240, a 2 cuadras del paradero Los Cedros</span></div>
+      <div class="row"><b>WhatsApp</b><span class="num">987 654 321</span></div>
+      <div class="row"><b>Horario</b><div class="hours"><span>Lun a vie</span><span class="num">07:00 – 23:00</span><span>Sáb, dom y feriados</span><span class="num">07:00 – 23:00</span></div></div>
+      <div><a class="btn btn-ghost" href="https://maps.google.com" target="_blank" rel="noopener">Abrir en Google Maps</a></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap"><span>© 2026 Complejo Deportivo Los Cedros</span><span>Libro de Reclamaciones · Términos · Privacidad</span></div>
+</footer>
+
+<div class="mbar">
+  <div><small>Noche desde</small><b>S/ 100/h</b></div>
+  <a class="btn btn-primary" href="#reservar">Reservar</a>
+</div>
+
+<script>
+(function () {
+  const COURTS = [
+    { id: 'c1', name: 'Cancha 1', size: 'F7', day: 120, night: 160, chips: ['Fútbol 7', '45 × 25 m', 'Hasta 16'] },
+    { id: 'c2', name: 'Cancha 2', size: 'F6', day: 90, night: 130, chips: ['Fútbol 6', '38 × 20 m', 'Hasta 14'] },
+    { id: 'c3', name: 'Cancha 3', size: 'F5', day: 70, night: 100, chips: ['Fútbol 5', 'Techada', 'Hasta 12'] }
+  ];
+  const OPEN = 7, CLOSE = 23, NIGHT = 18;
+  const DURS = [{ h: 1, l: '1 hora' }, { h: 1.5, l: '1 h 30' }, { h: 2, l: '2 horas' }];
+  const DOW = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const MON = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'set', 'oct', 'nov', 'dic'];
+  const today = new Date(2026, 9, 11);
+  const days = Array.from({ length: 10 }, (_, i) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + i));
+  const st = { day: 0, court: 'c1', dur: 1, start: null };
+
+  const $ = (id) => document.getElementById(id);
+  const soles = (n) => 'S/ ' + (Number.isInteger(n) ? n : n.toFixed(2));
+  const hhmm = (h) => String(Math.floor(h)).padStart(2, '0') + ':' + (h % 1 ? '30' : '00');
+  const isWeekend = (d) => d.getDay() === 0 || d.getDay() === 6;
+
+  // Ocupación de ejemplo, estable por día y cancha (media hora = 1 bloque).
+  function taken(dayIdx, courtId) {
+    let seed = dayIdx * 31 + courtId.charCodeAt(1) * 7 + 3;
+    const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+    const set = new Set();
+    for (let h = OPEN; h < CLOSE; h++) {
+      const busy = rnd() < (h >= 19 && h <= 21 ? 0.7 : h >= NIGHT ? 0.45 : 0.22);
+      if (busy) { set.add(h); set.add(h + 0.5); }
+    }
+    return set;
+  }
+  function rateAt(d, court, h) { return isWeekend(d) || h >= NIGHT ? court.night : court.day; }
+  function priceFor(d, court, start, dur) {
+    let t = 0;
+    for (let h = start; h < start + dur; h += 0.5) t += rateAt(d, court, h) / 2;
+    return t;
+  }
+  function fits(set, start, dur) {
+    if (start + dur > CLOSE) return false;
+    for (let h = start; h < start + dur; h += 0.5) if (set.has(h)) return false;
+    return true;
+  }
+
+  function courtArt(variant) {
+    const roof = variant === 'F5' ? '<rect x="0" y="0" width="320" height="18" fill="#13241a" opacity=".35"/>' : '';
+    return `<svg viewBox="0 0 320 180" aria-hidden="true"><rect width="320" height="180" fill="#1d6b3c"/>
+      <g fill="#22783f">${[0, 80, 160, 240].map((x) => `<rect x="${x}" width="40" height="180"/>`).join('')}</g>${roof}
+      <g fill="none" stroke="#f7faf5" stroke-width="2" opacity=".85"><rect x="18" y="26" width="284" height="136"/><line x1="160" y1="26" x2="160" y2="162"/>
+      <circle cx="160" cy="94" r="22"/><rect x="18" y="62" width="34" height="64"/><rect x="268" y="62" width="34" height="64"/></g></svg>`;
+  }
+
+  $('courts').innerHTML = COURTS.map((c) => `
+    <article class="court">
+      <div class="img">${courtArt(c.size)}<span class="size">${c.size}</span></div>
+      <div class="body">
+        <h3>${c.name}</h3>
+        <div class="chips">${c.chips.map((x) => `<span class="chip">${x}</span>`).join('')}</div>
+        <div class="prices"><div><small>Día / hora</small><b>${soles(c.day)}</b></div><div class="n"><small>Noche / hora</small><b>${soles(c.night)}</b></div></div>
+      </div>
+      <a class="btn btn-ghost" href="#reservar" data-court="${c.id}">Ver horarios</a>
+    </article>`).join('');
+  $('courts').addEventListener('click', (e) => {
+    const a = e.target.closest('[data-court]');
+    if (a) { st.court = a.dataset.court; st.start = null; render(); }
+  });
+
+  function render() {
+    const d = days[st.day];
+    const court = COURTS.find((c) => c.id === st.court);
+
+    $('days').innerHTML = days.map((x, i) => `<button class="day" data-i="${i}" aria-pressed="${i === st.day}">
+      <small>${i === 0 ? 'Hoy' : DOW[x.getDay()]}</small><b>${x.getDate()}</b></button>`).join('');
+    $('court-seg').innerHTML = COURTS.map((c) => `<button data-c="${c.id}" aria-pressed="${c.id === st.court}">${c.name} · ${c.size}</button>`).join('');
+    $('dur-seg').innerHTML = DURS.map((x) => `<button data-d="${x.h}" aria-pressed="${x.h === st.dur}">${x.l}</button>`).join('');
+
+    const set = taken(st.day, st.court);
+    let html = '';
+    let free = 0;
+    for (let h = OPEN; h < CLOSE; h += 1) {
+      const ok = fits(set, h, st.dur);
+      if (ok) free++;
+      const night = isWeekend(d) || h >= NIGHT;
+      html += `<button class="slot${night ? ' night' : ''}" data-h="${h}" ${ok ? '' : 'disabled'} aria-pressed="${st.start === h}">
+        <b>${hhmm(h)}</b><small>${ok ? soles(priceFor(d, court, h, st.dur)) : 'Ocupado'}</small></button>`;
+    }
+    $('slots').innerHTML = html;
+    if (st.day === 0) $('hero-tag').textContent = `Hoy quedan ${free} horarios libres en ${court.name}`;
+
+    $('s-day').textContent = `${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`;
+    $('s-court').textContent = `${court.name} · ${court.size}`;
+    if (st.start !== null && fits(set, st.start, st.dur)) {
+      const total = priceFor(d, court, st.start, st.dur);
+      $('s-time').textContent = `${hhmm(st.start)} – ${hhmm(st.start + st.dur)}`;
+      $('s-total').textContent = soles(total);
+      $('s-dep').textContent = soles(total / 2);
+      $('s-btn').disabled = false;
+      $('s-btn').textContent = `Separar con ${soles(total / 2)}`;
+    } else {
+      st.start = null;
+      $('s-time').textContent = 'Elige una hora';
+      $('s-total').textContent = 'S/ 0';
+      $('s-dep').textContent = 'S/ 0';
+      $('s-btn').disabled = true;
+      $('s-btn').textContent = 'Separar horario';
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    if (t.dataset.i !== undefined) { st.day = +t.dataset.i; st.start = null; }
+    else if (t.dataset.c) { st.court = t.dataset.c; st.start = null; }
+    else if (t.dataset.d) { st.dur = +t.dataset.d; }
+    else if (t.dataset.h) { st.start = +t.dataset.h; }
+    else if (t.id === 's-btn') {
+      $('s-ok').hidden = false;
+      $('s-ok').textContent = `Ejemplo: aquí pasarías al pago del adelanto por Yape. Tu horario ${$('s-time').textContent} queda separado 15 minutos.`;
+      return;
+    } else return;
+    $('s-ok').hidden = true;
+    render();
+  });
+
+  render();
+})();
+</script>
+
+</body></html>

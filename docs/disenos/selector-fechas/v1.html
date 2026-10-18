@@ -1,0 +1,691 @@
+<!doctype html><html><head><!-- frame-runtime --><script>window.__FRAME_PREAMBLE={"v":1,"cred":"query","capabilities":{"artifact":"artifact.C83eZcTi.js","assets":"assets.DOAjpBS9.js","comments":"comments.CFMy0ayq.js","db":"db.zFlAA4qL.js","dictation":"dictation.f3j7VXQ8.js","downloads":"downloads.axDW2QAi.js","embed":"embed.SWCZLzn6.js","endpoints":"endpoints.BPfoKaE1.js","files":"files.IkpCjcgM.js","mcp":"mcp.kl0G36TA.js","network":"network.B5UA9Su4.js","paste":"paste.DeKNLIxx.js","permissions":"permissions.6yWoDecA.js","reads":"reads.Bgov9hIw.js","room":"room.CBw289Md.js","sample":"sample.D5wHJkl_.js","self":"artifact.C83eZcTi.js","tts":"tts.iS74i_mi.js","user":"user.uKicftX-.js"},"transforms":"_transforms.3wKICe4-.js","comments":"_comments.D8v6wTdi.js","translate":"_translate.DqxC5ek1.js","ldx":"_ldx.B4FSryPi.js"}                                                                                                                                                                                                                                                                                                                                                                  </script><script>(function(){"use strict";function dr(t){return t==="cookie"||t==="query"?t:void 0}function hr(t){return typeof t=="number"&&Number.isSafeInteger(t)&&t>0?t:void 0}var to=3e5;function pr(t,e){try{const r=t("navigation")[0],n=[r.responseStart,r.redirectEnd-r.redirectStart,r.domContentLoadedEventStart,e(),r.connectEnd-r.domainLookupStart,r.responseStart-r.requestStart];r.requestStart>0||(n.length=4);for(let a=0;a<n.length;a++)if(n[a]>=0&&n[a]<=3e5)n[a]=n[a]|0;else{if(a<4)return;n.length=4}return n}catch{return}}var mr=["light","dark","system"],vr=/^[A-Za-z0-9_-]{1,64}$/,Mt=/^[a-zA-Z_:][a-zA-Z0-9_:.-]{0,127}$/,_r=new Set(["class","hidden","value","checked","style","title","alt","placeholder","lang","dir","role","tabindex","disabled","readonly","contenteditable","open","colspan","rowspan"]);function yr(t){const e=t.toLowerCase();return e.startsWith("data-")||e.startsWith("aria-")||_r.has(e)}var Pt="data-ldx-props";function gr(t,e){if(e.toLowerCase()===Pt)return!0;const r=t.getAttribute(Pt);if(r===null)return!1;try{const n=JSON.parse(r);if(n===null||typeof n!="object"||Array.isArray(n))return!0;const a=e.toLowerCase();return Object.keys(n).some(s=>s.toLowerCase()===a)}catch{return!0}}var ro="http://www.w3.org/1999/xhtml",wr="http://www.w3.org/2000/svg",br=new Set(["script","style","iframe","noscript","noframes","noembed","xmp","plaintext","template","title","textarea","object","embed"]),Er=new Set(["script","style"]);function Sr(t){const e=t.localName.toLowerCase();return t.namespaceURI==="http://www.w3.org/1999/xhtml"?!br.has(e):t.namespaceURI===wr?!Er.has(e):!1}function ot(t,e){return t===e||(t===160||t===32)&&(e===160||e===32)}function kr(t,e){const r=t.length,n=e.length;let a=0;for(;a<r&&a<n&&ot(t.charCodeAt(a),e.charCodeAt(a));)a++;let s=0;for(;s<r-a&&s<n-a&&ot(t.charCodeAt(r-1-s),e.charCodeAt(n-1-s));)s++;return{p:a,s}}function Ar(t,e){const r=t.firstChild;if(t.childNodes.length!==1||r===null||r.nodeType!==Node.TEXT_NODE){t.textContent=e;return}const n=r.data,a=n.length,s=e.length,{p:l,s:u}=kr(n,e);l===a&&u===0&&a===s||r.replaceData(l,a-l-u,e.slice(l,s-u));const R=r.data,b=t.ownerDocument.getSelection?.()??null,y=b!==null&&b.rangeCount>0&&(b.anchorNode===r||b.focusNode===r)?{anchor:b.anchorNode,anchorOffset:b.anchorOffset,focus:b.focusNode,focusOffset:b.focusOffset}:null;let p=-1,k=-1;for(let m=0;m<R.length&&m<e.length;m++){const j=R.charCodeAt(m),A=e.charCodeAt(m);j!==A&&ot(j,A)&&(p<0&&(p=m),k=m)}const L=p>=0;if(L&&r.replaceData(p,k-p+1,e.slice(p,k+1)),L&&y!==null&&y.anchor!==null&&y.focus!==null)try{b.setBaseAndExtent(y.anchor,y.anchorOffset,y.focus,y.focusOffset)}catch{}}var Rr=new Set(["html","head","body","frameset"]);function Tr(t){return t.namespaceURI==="http://www.w3.org/1999/xhtml"&&Rr.has(t.localName)}function Lr(t){if(t===null||typeof t!="object")return!1;const e=t;if(typeof e.target!="string"||!vr.test(e.target)||e.text!==void 0&&typeof e.text!="string")return!1;if(e.attrsSet!==void 0){if(e.attrsSet===null||typeof e.attrsSet!="object")return!1;for(const[r,n]of Object.entries(e.attrsSet))if(!Mt.test(r)||typeof n!="string")return!1}if(e.attrsRemoved!==void 0){if(!Array.isArray(e.attrsRemoved))return!1;for(const r of e.attrsRemoved)if(typeof r!="string"||!Mt.test(r))return!1}return!0}function Or(t,e){if(t===null||typeof t!="object")return!1;const{seq:r,elements:n}=t;if(typeof r!="number"||!Number.isSafeInteger(r)||!Array.isArray(n)||n.length===0||n.length>64)return!1;for(let a=0;a<n.length;a++)if(!e(n[a]))return!1;return!0}function Mr(t){return t===null||typeof t!="object"?!1:Or(t.__frame_patch,Lr)}function Pr(t){if(t===null||typeof t!="object")return!1;const e=t.__frame_init;return e!==null&&typeof e=="object"}function Nr(t){return t!==null&&typeof t=="object"&&t.__frame_size_poke===!0}function Cr(t){if(t===null||typeof t!="object")return!1;const e=t.__frame_host_visible;return e!==null&&typeof e=="object"&&typeof e.visible=="boolean"}function Fr(t){if(t===null||typeof t!="object")return!1;const e=t.__frame_theme;if(e===null||typeof e!="object")return!1;const r=e.theme;return typeof r=="string"&&mr.includes(r)}var xr=["ok","empty","snapshot_error","snapshot_timeout","unclonable","oversize","unavailable","restore_error","withheld"],jr=["TypeError","RangeError","ReferenceError","SyntaxError","DataCloneError","QuotaExceededError","AbortError","TimeoutError","SecurityError","Error","other"];function Ir(t){return typeof t=="string"&&jr.includes(t)?t:"other"}var Dr=Object.freeze({until:null,now:!1}),Hr="__claude_hot",Br="__claude_hot_in",qr=/^__claude_hot(?:_in)?(?::|$)/,Nt=/^[0-9a-z]{1,32}$/,at=t=>t===void 0?Hr:"__claude_hot:"+t,Oe=t=>t===void 0?Br:"__claude_hot_in:"+t;function Ur(t,e){const r=[];for(let n=0;n<t.length;n++){const a=t.key(n);a!==null&&a!==e&&qr.test(a)&&r.push(a)}for(const n of r)t.removeItem(n)}function Kr(t){let e=null;try{e=U(JSON.parse(t)?.hot)}catch{return null}return e===null||typeof e.k!="string"||!Nt.test(e.k)?null:he(e.g)?{k:e.k,g:e.g}:{k:e.k}}var no=262144,Gr=3e3,$r=5e3,Ct=/^[a-z0-9._:-]{1,64}$/,zr=["none","hot-restart","hard-reload"],Wr=["asset","doc","added","removed"],Vr=1500,Xr=/^[0-9a-f]{64}$/;function U(t){return t!==null&&typeof t=="object"?t:null}function he(t){return typeof t=="number"&&Number.isInteger(t)&&t>=0&&t<2**31}function Ft(t){return t===void 0||typeof t=="number"&&Number.isFinite(t)}function Yr(t){return t===void 0||typeof t=="string"&&Ct.test(t)}function xt(t){const e=U(t);return e!==null&&(e.until===null||typeof e.until=="number"&&Number.isFinite(e.until))&&typeof e.now=="boolean"}function st(t){const e=U(t);return e!==null&&typeof e.ver=="string"&&e.ver.length<=128&&Ft(e.seq)&&typeof e.handoff=="string"&&xr.includes(e.handoff)&&Yr(e.note)}function jt(t){const e=U(t);return e!==null&&he(e.gen)&&(e.phase==="final"||e.phase==="pending")&&(e.from===null||st(e.from))}function Jr(t){const e=U(t);return e!==null&&e.kv===1&&he(e.gen)&&st(e.from)&&Object.hasOwn(e,"data")}function Zr(t){const e=U(t);return e!==null&&e.__frame_hot_snapshot===!0&&he(e.gen)&&typeof e.timeoutMs=="number"&&e.timeoutMs>=0&&e.timeoutMs<=6e4&&(e.handoff===void 0||typeof e.handoff=="boolean")&&(e.deadline===void 0||xt(e.deadline))&&Ft(e.seq)&&(e.note===void 0||typeof e.note=="string")&&(e.key===void 0||typeof e.key=="string")}function Qr(t){const e=U(t);return e!==null&&e.__frame_hot_start===!0&&he(e.gen)&&st(e.from)}function en(t){return typeof t=="string"&&t.length>=1&&t.length<=128}function It(t){return U(t)!==null&&!Array.isArray(t)}function tn(t){const e=U(t);return e!==null&&e.__frame_cap_grant===!0&&typeof e.cap=="string"&&en(e.ver)&&(e.grant===void 0||It(e.grant))&&(e.budgets===void 0||It(e.budgets)&&Object.values(e.budgets).every(Number.isFinite))&&(e.brokerGen===void 0||he(e.brokerGen))}function rn(t){const e=U(t);return e!==null&&e.__frame_cap_rewired===!0&&(e.caps===void 0||Array.isArray(e.caps)&&e.caps.every(r=>typeof r=="string"))&&(e.brokerGen===void 0||he(e.brokerGen))}function Ge(t){const e=U(t);return e!==null&&typeof e.ver=="string"&&e.ver.length<=128&&Number.isFinite(e.seq)}function Dt(t){if(t==null||typeof t=="string")return!0;const e=U(t);return e!==null&&typeof e.doc=="string"&&typeof e.profile=="string"}function nn(t){const e=U(t);return e!==null&&typeof e.path=="string"&&Wr.includes(e.kind)&&Dt(e.from)&&Dt(e.to)}function on(t){return t===null?null:Object.freeze(t.filter(nn))}function an(t){const e=U(t);return e!==null&&e.__frame_hot_update===!0&&Number.isFinite(e.id)&&Ge(e.from)&&Ge(e.to)&&(e.changed===null||Array.isArray(e.changed))&&zr.includes(e.required)&&xt(e.deadline)&&typeof e.verdictTimeoutMs=="number"&&e.verdictTimeoutMs>=0&&e.verdictTimeoutMs<=6e4&&(e.preflight===void 0||typeof e.preflight=="string"&&Xr.test(e.preflight))}function sn(t){const e=U(t);return e!==null&&e.__frame_hot_readdress===!0&&Ge(e.from)&&Ge(e.to)}var pe=/^[\w.-]+\.js$/;function ln(t,e,r){return r?"inert":typeof e=="string"&&pe.test(e)?t?[e]:"inert":t?"inert":"framed"}var Ht=Object.freeze({[Symbol("claude.hot.restart")]:!0});function Bt(t,e){let r;try{r=t??sessionStorage}catch{return null}const n=at(e?.k),a=Oe(e?.k);let s=null;try{s=r.getItem(n)}catch{}try{r.removeItem(n)}catch{}try{Ur(r,a)}catch{}let l=null;if(s!==null&&!(e!==null&&e.g===void 0))try{const u=JSON.parse(s);Jr(u)&&(e===null||u.gen===e.g)&&(l=u)}catch{}if(l===null)try{r.removeItem(a)}catch{}return l}function qt(){const t=/^\/_f\/([^/]{1,128})\//.exec(location.pathname);return t?t[1]:""}var cn=/^[^/\\?#]{1,128}$/,it=t=>cn.test(t)&&t!=="."&&t!=="..";function Ut(t,e,r){const n=new URL(t),a="/_f/"+e+"/";if(!e||!n.pathname.startsWith(a)||!it(r))return null;const s=n.search.slice(1).split("&").filter(l=>!/^__frame_t(?:=|$)/.test(l)).join("&");return n.origin+"/_f/"+r+"/"+n.pathname.slice(a.length)+(s?"?"+s:"")+n.hash}var $e="{}";function Me(t){if(!t)return null;const e={ver:t.ver,handoff:t.handoff};return t.seq!==void 0&&(e.seq=t.seq),t.note!==void 0&&(e.note=t.note),e}function Kt(t,e){return t!==null&&t.note===void 0&&e?.note!==void 0?{...t,note:e.note}:t}function Gt(t){const e=t?.k;return e!==null&&typeof e=="object"?e:void 0}function un(t,e,r,n=null){const a=setTimeout,s=clearTimeout,l=queueMicrotask,u=performance.now.bind(performance),R=new TextEncoder;let b=null,y=null;try{b=history,y=b.replaceState.bind(b)}catch{}const p=(...o)=>{try{console.warn(...o)}catch{}};let k=qt(),L=null;try{L=sessionStorage}catch{}const m={storage:L,fetch:typeof fetch=="function"?fetch.bind(globalThis):null,entry:location.origin+location.pathname+location.search,ver:k,priors:[],key:n?.k};let j=n?.k;const A=typeof requestAnimationFrame=="function"?requestAnimationFrame:o=>a(()=>o(u()),16);let _=e?.data??{},E=Me(e?.from),I=e?.gen??0,D=e!==null,q=!1,$=!1,H=null,xe=!1;const be=new AbortController;let je=null,K=null,Ee=null,Ie=!1,le=()=>{};const te=new Promise(o=>{le=o});let ve=!1,Je=!1,Se=!1,c,h=null,g=!1,C=!1,O=!1,z=!1,B=!1,J=!1;const ce=o=>{for(const f of[at(o),Oe(o)])try{L?.removeItem(f)}catch{}},G=(o,f)=>{try{f!==null&&r.post(o,f)}catch{}},_e=()=>B||=O&&(K===null||z),Q=()=>{const o={__frame_hot:!0,ready:K!==null,accept:Ee!==null,demand:!0};J=!B,J&&(o.booting=!0),ve&&(o.readData=!0),Se&&(o.threw=!0),h?.assess&&(o.preflight=!0),G(o,H)};let De=!1,He=!1,ue=!1,re=!1;const Be=()=>{De||!xe||ue||(De=!0,G({__frame_reveal_hold:!0},"*"))},ke=()=>new Promise(o=>{let f,d=0;const v=P=>{if(f===void 0)f=P;else if(P!==f||++d>=8){o();return}try{A(v)}catch{o()}};try{A(v)}catch{o()}}),Ze=()=>{ue=!0,G({__frame_reveal_ready:!0},"*")},ye=o=>{He||(He=!0,o.then(f=>{if(f===!1)return;let d=null;try{d=h?.settle?.()??null}catch{}return(d===null?ke():new Promise(v=>{a(v,50),Promise.resolve(d).then(v,v)}).then(ke)).then(Ze)}))},Qe=()=>{if(re||!ue)return;re=!0;const o=()=>{try{h?.afterReveal?.()}catch{}};o(),ke().then(()=>{o(),Ze()})},ge=(o=!1)=>{if(Ie||K===null||!D||!$)return;Ie=!0;const f=K,d=_;l(()=>{let v;try{v=f(d)}catch(N){throw le(!1),N}let P=!1;try{P=typeof v?.then=="function"}catch{}if(!P){le(!0);return}Promise.resolve(v).then(()=>le(!0),N=>{le(!1),l(()=>{throw N})})}),ye(o?te:r.dcl.then(()=>te))},Ae=o=>typeof o=="string"&&Ct.test(o)?o:void 0,qe=o=>{const f={__frame_hot_restart:!0},d=Ae(o?.note);d!==void 0&&(f.note=d),o?.required==="hard-reload"&&(f.required="hard-reload"),G(f,H)},fe=Object.freeze({get data(){return $||(Je=!0),!D&&!ve&&(ve=!0,$&&Q()),_},get from(){return E},get gen(){return I},signal:be.signal,snapshot(o){typeof o=="function"&&(je=o)},ready(o){typeof o!="function"||K!==null||(K=o,Be(),Q(),q&&G({__frame_hot_ready:!0,gen:I},H),ge())},accept(o){typeof o=="function"&&(Ee=o,Q())},restart(o){const f={note:o?.note,required:o?.required};if($){qe(f);return}const d=c;c={note:Ae(d?.note)??f.note,required:d?.required==="hard-reload"||f.required==="hard-reload"?"hard-reload":void 0}}});let de=null,Ue=()=>{};const et=new Promise(o=>{Ue=o});let i=null;const S=()=>i??=r.dcl.then(()=>{let o=!1;try{o=de!==null&&de.expect()}catch{}if(!o)return;const f=de.maxMs;return new Promise(d=>{et.then(d),a(d,f)})}),w=()=>{if(!g||C||h===null)return;C=!0;const o=h;S().then(()=>{try{ue||o.afterStart(Gt(e),!1)}catch{}})},M=o=>{e!==null&&Je&&(ve=!0),_={},E=null,I=0;try{L?.removeItem(Oe(n?.k))}catch{}e!==null&&!o&&ye(r.dcl.then(()=>K!==null?te:void 0))},ee=()=>{g=!0,ye(S().then(()=>K!==null?te:void 0)),w()};try{addEventListener("error",()=>{Se||K!==null||(Se=!0,Q())})}catch{}const Z=()=>{a(()=>{!B&&_e()&&J&&Q()},0)};try{O=document.readyState==="complete",O||addEventListener("load",()=>{O=!0,Z()},{once:!0})}catch{O=!0}_e(),te.then(()=>{z=!0,Z()});let W=-1,Et,St,Ke=!0,kt=!1,At,tt=null;const Rt=o=>{const f=tt===null;tt=Ke&&o[0]!=="withheld"?o:["withheld",o[1],$e];let d=o[0];if(Ke&&d!=="withheld"){const P={ver:k,handoff:d};Et!==void 0&&(P.seq=Et),St!==void 0&&(P.note=St);try{if(L===null)throw new Error("no storage");L.setItem(at(j),'{"kv":1,"gen":'+W+',"from":'+JSON.stringify(P)+(At!==void 0?',"k":'+JSON.stringify(At):"")+',"data":'+(d==="ok"?o[2]:$e)+"}")}catch{d="unavailable"}}else{d="withheld",ce(j);try{h?.release?.()}catch{}}const v={__frame_hot_snapshotted:!0,gen:W,handoff:d,bytes:o[1]};o[3]!==void 0&&(v.errName=o[3]),G(v,H),f&&(d==="snapshot_error"||d==="unclonable"||d==="oversize")&&p("claude.hot: snapshot",d,o[3])},Re=o=>{try{return Ir(o?.name)}catch{return"other"}},Te=(o,f,d=0)=>Rt(f===void 0?[o,d,$e]:[o,d,$e,Re(f)]),zn=o=>{if(o.gen<=W)return;const f=W>=0;if(W=o.gen,Et=o.seq,St=Ae(o.note),typeof o.key=="string"&&Nt.test(o.key)&&o.key!==j&&(ce(j),j=o.key),Ke&&=o.handoff!==!1,f){tt!==null?Rt(tt):kt&&G({__frame_hot_held:!0,gen:W},H);return}be.abort();const d=Object.freeze({handoff:Ke,timeoutMs:o.timeoutMs,deadline:o.deadline??Dr}),v=je,P=()=>{if(Ke)try{At=h?.capture()}catch{}if(v===null){Te("empty");return}let T=!1;const V=a(()=>{T||(T=!0,Te("snapshot_timeout"))},Math.max(0,d.timeoutMs));Promise.resolve().then(()=>v(d)).then(Le=>{if(T)return;T=!0,s(V);let ne;try{ne=JSON.stringify(Le)}catch(Tt){Te("unclonable",Tt);return}if(typeof ne!="string"){Te("unclonable");return}let oe=ne.length;try{oe=R.encode(ne).length}catch{}if(oe>262144){Te("oversize",void 0,oe);return}Rt(["ok",oe,ne])},Le=>{T||(T=!0,s(V),Te("snapshot_error",Le))})};let N=null;try{N=h?.holdForIme()??null}catch{}if(N===null)P();else{kt=!0,G({__frame_hot_held:!0,gen:W},H);const T=()=>{kt=!1,P()};N.then(T,T)}},Wn=o=>{if(!q||D||K===null||o.gen!==I)return;let f=null;try{f=Bt(L,n&&{k:n.k,g:o.gen})}catch{}if(f!==null&&f.gen!==o.gen){f=null;try{L?.removeItem(Oe(n?.k))}catch{}}_=f?.data??{},E=Kt(Me(f?.from??o.from),Me(o.from)),f!==null&&(I=f.gen),D=!0,q=!1;const d=Gt(f);te.then(v=>{try{v&&h?.afterStart(d,!0)}catch{}}),ge(!0)},lr=o=>{const f=k,d=m.entry;let v="",P,N=null;try{if(v=location.href,P=b.state,N=Ut(v,f,o),N!==null)if(y(P,"",N),location.pathname.startsWith("/_f/"+o+"/"))N=location.href;else return{failed:"navigate event canceled"}}catch(T){return{failed:Re(T)}}k=m.ver=o,m.priors.push(f)>8&&m.priors.splice(1,1);try{m.entry=Ut(d,f,o)??d}catch{}return[N,f,d,v,P]},Vn=({from:o,to:f})=>{let d,v;if(!it(f.ver))d="adopt_failed",v="not a version path segment";else if(f.ver===k)d="adopted";else if(!k||o.ver!==k)d="stale";else{const N=lr(f.ver);"failed"in N?(d="adopt_failed",v=N.failed):d=N[0]===null?"adopt_skipped":"adopted"}v!==void 0&&p(`claude.hot: could not move this page's URL to its new version folder /_f/${f.ver}/ (${v})`);const P={__frame_hot_readdressed:!0,to:f.ver,at:k,outcome:d};G(P,H)};let rt=0;const Xn=o=>{const f=Ee;if(f===null||o.id<=rt)return;rt=o.id;const d=h?.assess;if(o.preflight===void 0||d===void 0){cr(o,f);return}let v=!1;const P=V=>{v||(v=!0,s(T),o.id===rt&&cr(o,f,V))},N=()=>P(d.timeout(o)),T=a(N,Vr+100);d.run(o,window).then(P,N)},cr=(o,f,d)=>{let v,P=!1,N=!1,T,V,Le=null;const ne=F=>{if(N)return!1;if(T!==void 0&&T!==F)return p(`claude.hot: u.${F}() ignored - u.${T}() was called first`),!1;const ae=T===void 0;return T=F,ae},oe=F=>{T="restart",p(`claude.hot: ${F} - restarting`)},Tt=()=>{if(!ne("adopt")||o.id!==rt)return;const F=o.to.ver;if(nt.required!=="none"){oe(`u.adopt() needs required 'none', it is '${nt.required}'`);return}if(!it(F)){oe("u.adopt() cannot address this version");return}if(!k||F===k)return;const ae=lr(F);if("failed"in ae){V="adopt_failed",oe(`adopt_failed ${ae.failed}; URL not changed`);return}const[Y,Ot,Zn,fr,Qn]=ae;Y===null?(V="adopt_skipped",p(`claude.hot: adopt_skipped - page already left /_f/${Ot}/; URL not changed, update still applied`)):V="adopted",Le=()=>{if(k===F){if(Y!==null)try{if(location.href!==Y)p("claude.hot: adopt_revert_skipped - update not applied; URL left where the page navigated");else{if(y(Qn,"",fr),location.href!==fr){p("claude.hot: adopt_revert_failed navigate event canceled - URL still at the new version");return}V="adopt_reverted",p("claude.hot: adopt_reverted - adopt() was called but the handler threw; URL restored")}}catch(eo){p(`claude.hot: adopt_revert_failed ${Re(eo)} - URL still at the new version`);return}k=m.ver=Ot,m.entry=Zn,m.priors[m.priors.length-1]===Ot&&m.priors.pop(),Y===null&&(V=void 0)}}},nt=Object.freeze({from:{ver:o.from.ver,seq:o.from.seq},to:{ver:o.to.ver,seq:o.to.seq},changed:on(o.changed),required:o.required,deadline:o.deadline,adopt:Tt,defer(){return ne("defer")&&nt.deadline.now&&oe("u.defer() past the deadline"),Ht},restart(F){return ne("restart"),T==="restart"&&!N&&(v??=Ae(F?.note),P||=F?.required==="hard-reload"),Ht},...d?.update}),Yn=(F,ae)=>{N=!0,F==="threw"?(Le?.(),v??=Re(ae).toLowerCase()):T===void 0&&p(F==="timeout"?"claude.hot: accept handler did not answer in time - restarting":"claude.hot: accept handler settled without defer/restart/adopt - restarting");const Y={__frame_hot_verdict:!0,id:o.id};Y.verdict=F==="threw"||T===void 0||T==="restart"?"restart":T==="adopt"?"applied":"deferred",Y.verdict==="restart"&&(P&&(Y.required="hard-reload"),v!==void 0&&(Y.note=v)),V!==void 0&&(Y.verdict==="applied"||V!=="adopted")&&(Y.adopt=V),G(Object.assign(Y,d?.verdict),H)};let ur=!1;const Lt=(F,ae)=>ur?!1:(ur=!0,s(Jn),Yn(F,ae),!0),Jn=a(()=>Lt("timeout"),o.verdictTimeoutMs);Promise.resolve().then(()=>f(nt)).then(()=>Lt("settled"),F=>{!Lt("threw",F)&&T==="adopt"&&qe({note:Re(F).toLowerCase()}),p("claude.hot: accept",Re(F))})};try{t.hot===void 0&&Object.defineProperty(t,"hot",{value:fe,writable:!1,configurable:!1,enumerable:!1})}catch{}return{hot:fe,boot:m,afterConnect(){xe=!0,(e!==null||K!==null)&&Be()},onInit(o,f){H=f,$=!0;const d=jt(o)?o:null;d?.phase==="final"&&e!==null&&e.gen===d.gen?(D=!0,E=Kt(E,Me(d.from)),ee()):(q=d?.phase==="pending",M(q),D=!q,I=d?.gen??0,E=Me(d?.from)),Q(),J&&a(()=>{B||(B=!0,Q())},$r),q&&K!==null&&G({__frame_hot_ready:!0,gen:I},f),c!==void 0&&(qe(c),c=void 0),ge()},onNoInit(){$=!0,M(!1),D=!0,ge()},onShell(o){return o?.__frame_revealed===!0?(Qe(),!1):Zr(o)?(zn(o),!0):Qr(o)?(Wn(o),!0):an(o)?(Xn(o),!0):sn(o)?(Vn(o),!0):!1},attachExtras(o){h=o,w(),o.assess&&Q()},inSlot:()=>Oe(j),hydration(o,f){de??={expect:o,maxMs:f}},hydrated(){Ue()},carried(){return D?_:{}},presented:()=>ue}}var oo="frame_ldx_runtime",fn="frame_ldx_build",ao="script#an-form",dn=256;function lt(t,e,r){for(const n of t)r(n)&&t.delete(n);t.size>=dn&&!t.has(e)&&t.delete(t.values().next().value),t.add(e)}function Pe(t,e,r,n){try{const a=t[e];if(typeof a!="function")return;t[e]=function(...s){if(n){let u;try{u=n(this)}catch{}if(u!==void 0)return u}const l=a.apply(this,s);try{r?.(this)}catch{}return l}}catch{}}var hn=()=>{},ct;function pn(){if(ct)return ct;const t={media:new Set,contexts:new Set,wakeLocks:new Set,gate:null,refuse:null,onStart:null,onStop:null};ct=t;const e=l=>t.gate?.(l),r=l=>{t.onStop?.(l)},n=window.HTMLMediaElement?.prototype;n&&(Pe(n,"play",l=>{lt(t.media,l,u=>u.paused),t.onStart?.(l)},e),Pe(n,"pause",r));const a=window.AudioContext,s=window.AudioNode?.prototype;a&&s&&(Pe(s,"connect",l=>{const u=l.context;u instanceof a&&(lt(t.contexts,u,R=>R.state==="closed"),t.onStart?.(u))}),Pe(a.prototype,"resume",void 0,e),Pe(a.prototype,"suspend",r));try{const l=window.WakeLock?.prototype,u=l?.request;l&&typeof u=="function"&&(l.request=function(...R){if(t.refuse)return t.refuse();const b=u.apply(this,R);return Promise.resolve(b).then(y=>{lt(t.wakeLocks,y,p=>p.released),t.onStart?.(y)},hn),b})}catch{}return t}function mn(t){let e=window;for(let r=0;e.parent&&e.parent!==e&&r<8;r++)if(e=e.parent,t(e))return!0;return!1}function vn(){let t=null;const e=()=>t??parent,r=n=>t?n===t:mn(a=>a===n);return{post(n,a){if(t){e().postMessage(n,a);return}let s=parent;for(let l=0;l<8&&(s.postMessage(n,a),!(!s.parent||s.parent===s));l++)s=s.parent},on(n){const a=s=>{const l=s.source;r(l)&&n(s.data,s.origin,s.isTrusted,()=>{t??=l})};return addEventListener("message",a),()=>removeEventListener("message",a)},port:n=>({post(a,s){if(s?.activation){e().postMessage(a,{targetOrigin:n,includeUserActivation:!0});return}if(s?.transfer){e().postMessage(a,n,s.transfer);return}e().postMessage(a,n)},on(a,s){const l=u=>{r(u.source)&&u.origin===n&&a(u.data,u)};return addEventListener("message",l,s),()=>removeEventListener("message",l,s)}})}}function _n(){const t={post:()=>{},on:()=>()=>{}};return{...t,port:()=>t}}var yn=500,gn=2e4,wn="data-token-reads",bn="data-frame-refused-watch",En="data-frame-unsupported",Sn=/(?:^|\s)stylesheet(?:\s|$)/i;function kn(t,e){let r="";if(t instanceof HTMLScriptElement?r=t.src:t instanceof HTMLLinkElement&&Sn.test(t.rel)&&(r=t.href),!r)return null;try{const n=new URL(r);return n.origin===location.origin&&n.pathname.startsWith(e)?n.origin+n.pathname:null}catch{return null}}function An(t,e,r){if(!t||e!=="query")return;const n="/_f/"+t+"/";document.documentElement.setAttribute(bn,"");const a=location.href,s=fetch,l=setTimeout,u={method:"HEAD",cache:"no-store",credentials:"same-origin"},R=m=>m.ok||m.status===304;let b=!1,y=!1;const p=()=>removeEventListener("error",L,!0),k=async m=>{const j=await s(m,u);if(R(j))y=!0;else if(j.status===403){const A=await s(a,u);if(R(A)){const _=(await s(m,u)).status;_===403?(y=!0,document.documentElement.setAttribute(En,""),r()):_<500&&(y=!0)}else A.status>=400&&A.status<500&&(y=!0)}},L=m=>{if(y||b)return;if(document.documentElement.hasAttribute(wn)){y=!0,p();return}const j=kn(m.target,n);j&&(b=!0,l(()=>{k(j).catch(()=>{}).finally(()=>{b=!1,y&&p()})},yn))};addEventListener("error",L,!0),addEventListener("load",p,{once:!0}),l(p,gn)}var ut="__frame_scroll",Rn=150,Tn=310,Ln=160,On=3e4,$t="p,h1,h2,h3,h4,h5,h6,li,pre,blockquote,tr,dt,dd,figcaption,summary",zt=()=>innerWidth<=Tn&&innerHeight<=Ln,Wt=t=>{const e=document.createTreeWalker(t,NodeFilter.SHOW_TEXT);let r="";for(;r.length<600&&e.nextNode();)r+=e.currentNode.nodeValue.slice(0,600-r.length);const n=r.replace(/\s+/g," ").trim().slice(0,120);let a=2166136261;for(let s=0;s<n.length;s++)a=Math.imul(a^n.charCodeAt(s),16777619);return n.length>11?a>>>0||1:0},Vt=t=>{for(let e=t;e&&e!==document.scrollingElement;e=e.parentElement){const r=getComputedStyle(e).position;if(r==="fixed"||r==="sticky"||e!==t&&e.scrollTop)return!1}return!0},Mn=()=>{const t=[],e=[];try{for(let r=0;r<16;r++){const n=document.elementFromPoint(innerWidth/(r%2?4:2),innerHeight*(r>>1)/8+1);let a=n?.closest($t)??n;for(;a&&!a.matches($t)&&![...a.childNodes].some(l=>l.nodeType===3&&l.nodeValue?.trim());)a=a.parentElement;const s=a&&!e.includes(a)?Wt(a):0;s&&!t.some(l=>l[0]===s&&l[2]===a.tagName)&&Vt(a)&&(e.push(a),t.push([s,Math.round(a.getBoundingClientRect().top),a.tagName]))}}catch{}return t.sort((r,n)=>+(r[1]<0)-+(n[1]<0)),t.length?t.slice(0,3):void 0},Pn=t=>{try{for(const[e,r,n]of t.a??[]){const a=document.getElementsByTagName(n);let s;for(let u=0;u<a.length&&a.length<5e3;u++)Wt(a[u])===e&&(s=s===void 0||s?.contains(a[u])?a[u]:null);const l=s?.getBoundingClientRect();if(l?.height&&s.checkVisibility?.()!==!1&&Vt(s)&&isFinite(r))return Math.max(0,Math.round(scrollY+l.top-r))}}catch{}return t.y};function Nn(){let t=0,e=!1,r=!1,n=!1,a={y:0},s=null;const l=E=>{try{sessionStorage.setItem(ut,JSON.stringify(E))}catch{}},u=E=>{if(clearTimeout(t),s===null)return;const I=s;s=null,l({y:I,a:E&&I>0?Mn():void 0})},R=()=>{if(e){e=!1;return}r=!0,s=scrollY,clearTimeout(t),t=setTimeout(u,Rn,!0)};try{addEventListener("scroll",R,{passive:!0}),addEventListener("pagehide",()=>u())}catch{}const b=()=>{let E;try{E=sessionStorage.getItem(ut)}catch{return null}if(E===null)return null;let I;try{I=JSON.parse(E)}catch{I=null}const{y:D,a:q}=I??{};if(!(typeof D=="number"&&Number.isFinite(D)&&D>=0)){try{sessionStorage.removeItem(ut)}catch{}return null}const $=H=>Array.isArray(H)&&typeof H[0]=="number"&&Number.isFinite(H[1])&&typeof H[2]=="string";return{y:D,a:Array.isArray(q)&&q.length<4&&q.every($)?q:void 0}};let y=!1,p=-1;const k=E=>{try{const I=scrollY,D=Pn(E);scrollTo({top:D,left:0,behavior:"instant"}),a=zt()?E:{y:D,a:E.a},n=!0,clearTimeout(t),s=null,l(a),p=scrollY,p!==I&&(e=!0);const q=D!==E.y&&document.readyState!=="complete";(p!==D||q)&&!y&&(y=!0,addEventListener("load",()=>{try{scrollY===p&&k(b()??a)}catch{}},{once:!0}))}catch{}},L=()=>{try{return!!location.hash}catch{return!0}};let m=!1;const j=()=>{try{if(m||!zt())return;m=!0;const E=Date.now(),I=()=>{try{removeEventListener("resize",I)}catch{}Date.now()-E>On||r||L()||k(b()??a)};addEventListener("resize",I)}catch{}};let A=!1,_=!1;return{restore(){if(A||(A=!0,L()))return;const E=b();E!==null&&(k(E),j())},promoted(){if(_||(_=!0,L()))return;const E=b();E!==null?(k(E),j()):n&&k(a)}}}function Cn(t,e,r,n){let a=null;try{a=window.trustedTypes?.createPolicy("frame-runtime",{createScriptURL:R=>R})??null}catch{}const s=window.Worker,l=s?.prototype,u=Object.freeze({Worker:s,workerOn:l?.addEventListener,workerPost:l?.postMessage,workerTerminate:l?.terminate,fetch:window.fetch.bind(window),preventDefault:Event.prototype.preventDefault,now:Date.now,policy:a,origins:e});r(t).then(R=>R?.bootTopLevel?R.bootTopLevel(u,n):n.settle()).catch(()=>n.settle())}var so="modulepreload",io=function(t){return"/"+t},lo={},Fn=function(e,r,n){let a=Promise.resolve();function s(l){const u=new Event("vite:preloadError",{cancelable:!0});if(u.payload=l,window.dispatchEvent(u),!u.defaultPrevented)throw l}return a.then(l=>{for(const u of l||[])u.status==="rejected"&&s(u.reason);return e().catch(s)})},xn=window===top,Xt=Object.getOwnPropertyDescriptor(window,"claude"),ze=ln(xn,window.__FRAME_PREAMBLE?.topLevel,Xt?.writable===!1),ft=typeof ze=="object"&&ze[0],x=ft?_n():vn();(function(){const t=Object.defineProperty,e=globalThis,r=["RTCPeerConnection","webkitRTCPeerConnection","RTCDataChannel","RTCIceCandidate","RTCSessionDescription","RTCRtpSender","RTCRtpReceiver"];let n=0;for(let a=0;a<r.length;a++){const s=r[a];try{t(e,s,{value:void 0,writable:!1,configurable:!1})}catch{try{delete e[s]}catch{}try{t(e,s,{value:void 0,writable:!1,configurable:!0})}catch{}}typeof e[s]=="function"&&n++}if(n&&ze==="framed")try{x.post({__frame_rtc_lockdown_failed:n},"*")}catch{}})();var Yt=1e4,jn=2e3,dt=2e3,ht=Object.freeze([...window.__FRAME_PREAMBLE?.origins??["https://claude.ai","https://preview.claude.ai"]]);function Jt(t){for(const e of ht)if(e.endsWith(":*"))try{const r=new URL(t);if(`${r.protocol}//${r.hostname}:*`===e)return!0}catch{}else if(t===e)return!0;return!1}var Ne=Object.freeze({...window.__FRAME_PREAMBLE?.capabilities}),Ce=window.__FRAME_PREAMBLE?.transforms,pt=window.__FRAME_PREAMBLE?.comments,mt=window.__FRAME_PREAMBLE?.translate,me=window.__FRAME_PREAMBLE?.ldx,We=dr(window.__FRAME_PREAMBLE?.cred),Zt=(()=>{try{const[t]=performance.getEntriesByType("navigation"),e=t?.serverTiming?.find(r=>r.name==="frame-cred-exp");return e!==void 0&&/^\d{1,15}$/.test(e.description)?hr(Number(e.description)):void 0}catch{return}})();function Qt(t){return Fn(()=>import("/_runtime/"+t),void 0)}var Fe=new Set,er=setTimeout,In=fetch,Dn=AbortController,Hn=800+800*Math.random(),Bn=3e3,Ve=null,tr=new Map;function qn(t,e){let r=tr.get(t);return r||tr.set(t,r=Un(t,e)),r}function Un(t,e){if(Ve?.has(t))return Promise.resolve("csp");if(navigator.onLine===!1)return Promise.resolve("offline");const r=new Dn;let n=!1;return er(()=>{n=!0,r.abort()},Bn),In("/_runtime/"+t,{signal:r.signal}).then(a=>(r.abort(),a.ok?/javascript/i.test(a.headers.get("content-type")??"")?e instanceof Error&&/:\d+:\d+\)?$/m.test(e.stack??"")?"eval":"served":"mime":"http"),()=>n?"timeout":Ve?.has(t)?"csp":"net")}function se(t){if(!Ve){const e=Ve=new Set;try{document.addEventListener("securitypolicyviolation",r=>{const n=/\/_runtime\/([^/?#]+)/.exec(r.blockedURI);n&&r.disposition!=="report"&&e.add(n[1])})}catch{}}return Qt(t).catch(()=>new Promise(e=>er(e,Hn)).then(()=>Qt(t+"?r=1")).then(e=>(e!==void 0&&Fe.add(t),e)))}function rr(t,e,r){return{contract:t.contract,changes:new Set(t.changes??[]),flags:new Set(t.flags??[]),capabilities:t.capabilities??{},capBudgets:t.capBudgets??{},brokerGen:t.brokerGen,transforms:new Map,shellOrigin:e,shell:r,mount:bt,hooks:Xe,pipe:()=>({wrap:(n,a)=>(...s)=>{try{return a(...s)}catch(l){return Promise.reject(l)}}})}}var we=null,X=null;function nr(t,e,r){try{Object.defineProperty(t,e,{value:r,writable:!1,configurable:!1,enumerable:!0})}catch{try{Object.defineProperty(t,e,{value:r,writable:!1,configurable:!0,enumerable:!0})}catch{}}}var vt=!1,Xe={editBefore:null,edit:null};function Kn(t,e,r=!1){const n=[];let a;if(r)try{Xe.editBefore?.(t)}catch{}for(const s of t.elements){const l=document.querySelector(`[data-id="${s.target}"]`);if(!l){a=s.target;break}if([...Object.keys(s.attrsSet??{}),...s.attrsRemoved??[]].some(u=>!yr(u)||gr(l,u))){a=s.target;break}if(s.text!==void 0&&(!Sr(l)||Tr(l))){a=s.target;break}for(const[u,R]of Object.entries(s.attrsSet??{}))if(!ar(l,u)){try{l.setAttribute(u,R)}catch{}or(l,u,R)}for(const u of s.attrsRemoved??[])ar(l,u)||(l.removeAttribute(u),or(l,u,null));typeof s.text=="string"&&Ar(l,s.text),n.push(s.target)}if(r)try{Xe.edit?.(t.seq,n,a)}catch{}if(a!==void 0){x.post({__frame_patch_miss:{seq:t.seq}},e);return}try{document.dispatchEvent(new CustomEvent("claude:edit",{detail:{seq:t.seq,targets:n}}))}catch{}}function or(t,e,r){if(!(t instanceof HTMLInputElement))return;const n=e.toLowerCase();n==="checked"?t.checked=r!==null:n==="value"&&t.type!=="file"&&(t.value=r??"")}function ar(t,e){const r=e.toLowerCase(),n=t;return r==="data-id"||(r==="value"||r==="checked")&&(n.__artifactSecret===!0||/^(password|hidden|file)$/.test(n.type??"")||/(^|\s)(cc-|one-time-code|current-password|new-password)/i.test(`${t.getAttribute("autocomplete")??""} ${n.autocomplete??""}`))}function sr(t){const e=document.documentElement;t==="light"||t==="dark"?(e.dataset.theme=t,e.style.colorScheme=t,vt=!0):vt&&(delete e.dataset.theme,e.style.colorScheme="",vt=!1)}var ie=new Map,_t=null;function yt(){let t;const e={u:new Promise(r=>{t=r}),r:r=>{e.done=!0,t(r)},done:!1,nulled:!1};return e}function Ye(t,e){t.nulled=!0,t.ver=e,t.r(null)}function gt(t,e){for(const[r,n]of ie)n.done||(e&&n.asked?e(r,n):Ye(n,t))}function Gn(){for(const t of ie.values())if(t.asked&&!t.done)return!0;return!1}var $n=Object.freeze(Object.assign(Object.create(null),{call:Function.prototype.call,apply:Function.prototype.apply,bind:Function.prototype.bind})),wt=!1,bt=(t,e)=>{let r=ie.get(t);if(r?.nulled&&wt)r=yt(),ie.set(t,r);else if(!r||r.done){r?.nulled&&X&&x.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:t,phase:"install"}},X);return}const n=typeof e=="function"?Object.setPrototypeOf(e,$n):Object.assign(Object.create(null),e);typeof n.then=="function"&&delete n.then,r.want=void 0,r.r(Object.freeze(n))};function ir(){const t=Xt?.value??{};nr(window,"claude",t);for(const e of Object.keys(Ne)){if(t[e]!==void 0){nr(t,e,t[e]);continue}ie.set(e,yt())}if(t.use===void 0){const e=r=>{if(typeof r!="string"||!Object.hasOwn(Ne,r))return Promise.resolve(null);let n=ie.get(r);return n?(_t&&(n.nulled||n.want!==void 0)&&(n=_t(r,n)),n.asked=!0,n.u):Promise.resolve(t[r]??null)};try{Object.defineProperty(t,"use",{value:e,writable:!0,configurable:!0,enumerable:!1})}catch{}}return t}if(ze==="framed"){let t;const e=Ce&&pe.test(Ce)?se(Ce).catch(c=>{t={f:Ce,e:c}}):Promise.resolve(void 0),r=c=>{if(c.type==="auxclick"&&c.button!==1)return;const h=c.target,g=h&&h.closest?h.closest("a[href],area[href]"):null;if(!g)return;const C=g.getAttribute("href");if(!C)return;let O;try{O=new URL(C,document.baseURI)}catch{return}if((O.protocol==="http:"||O.protocol==="https:")&&O.origin!==location.origin){c.preventDefault();const z=(g.getAttribute("target")??"").toLowerCase(),B=c.type==="auxclick"||c.metaKey||c.ctrlKey||c.shiftKey||c.altKey||!["","_self","_top","_parent"].includes(z);x.post({__frame_nav:!0,url:O.href,newTab:B},"*")}};addEventListener("click",r,!0),addEventListener("auxclick",r,!0);const n={},a=c=>{c.isTrusted&&(n.pointer=!0)},s=c=>{c.isTrusted&&(n.click=!0)};addEventListener("pointermove",a,{capture:!0,passive:!0}),addEventListener("click",s,{capture:!0,passive:!0});const l={cb:null};addEventListener("keydown",c=>l.cb?.(c),!0);const u={cb:null};addEventListener("keydown",c=>u.cb?.(c));const R=pn();e.then(c=>c?.installEscapeForward?.(l,h=>{X&&x.post(h,X)})),e.then(c=>{try{c?.installFocusKeep?.()}catch{}}),e.then(c=>{if(!c?.wireNav)return;const h=x.port("*");c.wireNav(h),removeEventListener("click",r,!0),removeEventListener("auxclick",r,!0),removeEventListener("pointermove",a,!0),removeEventListener("click",s,!0),c.wireEngagement?.(n,h,R)});let b=null;try{b=Nn()}catch{}const y=document.readyState==="loading"?new Promise(c=>document.addEventListener("DOMContentLoaded",()=>c(),{once:!0})):Promise.resolve();let p="dcl",k=!1;y.then(()=>{k=!0});let L=null,m=null;try{m=Kr(window.name),L=Bt(null,m)}catch{}const j=ir();let A=null;try{A=un(j,L,{post:(c,h)=>x.post(c,h),dcl:y},m)}catch{}e.then(c=>{try{A&&c?.installHotExtras?.(A)}catch{}});let _=null;const E=()=>Array.isArray(_?.flags)&&_.flags.includes("frame_ldx_runtime")&&!!me&&pe.test(me)&&document.querySelector("script#an-form")!==null;try{A?.hydration(E,Gr)}catch{}let I=null,D=0;const q=x.on((c,h,g,C)=>{Jt(h)&&Pr(c)&&(C(),_=c.__frame_init,X=h,q(),clearTimeout(D),I?.())});if(We){const c=Zt===void 0?{__frame_cred:We}:{__frame_cred:We,exp:Zt};for(const h of ht)try{h.endsWith(":*")||x.post(c,h)}catch{}}x.post({__frame_connect:!0},"*");try{A?.afterConnect()}catch{}const $=setTimeout,H=clearTimeout,xe=()=>new Promise(c=>$(c,0));let be=()=>NaN,je=()=>[];try{be=performance.now.bind(performance),je=performance.getEntriesByType.bind(performance)}catch{}let K=0;const Ee=()=>{try{x.post({__frame_alive:!0},"*")}catch{}K=$(Ee,jn)},Ie=()=>H(K);Ee(),addEventListener("load",Ie,{once:!0});const le=new Promise(c=>{I=c,D=setTimeout(()=>{q(),c()},Yt)}),te=new WeakSet;addEventListener("error",c=>{c.target&&te.add(c.target)},!0);try{An(qt(),We,()=>{e.then(c=>{try{c?.drawRefusedNotice?.()}catch{}})})}catch{}const ve=()=>{let c=[];try{c=[...document.querySelectorAll("link[rel~=stylesheet]:not([rel~=alternate])")].filter(g=>!g.sheet&&!g.disabled&&!te.has(g)&&g.getAttribute("href")&&URL.canParse(g.href)&&(!g.media||matchMedia(g.media).matches))}catch{}let h=c.length;return h===0?Promise.resolve():new Promise(g=>{try{const C=dt-be();C>0&&(p="sheets");const O=$(g,C>0?C<dt?C:dt:0),z=()=>{--h===0&&(H(O),g())};for(const B of c)B.addEventListener("load",z,{once:!0}),B.addEventListener("error",z,{once:!0})}catch{g()}})};y.then(()=>{try{b?.restore()}catch{}});const Je=Promise.all([le,y,e]).then(c=>{if(_?.hostOverlays!==!0||!X)return;const h=c[2],g=B=>{try{return B?.()===!0}catch{return!1}},C=g(h?.declaresCover),O=_.hostSides===!0?{cover:C,sides:g(h?.declaresSides)}:{cover:C};if(x.post({__frame_layout:O},X),_.hostBackground!==!0)return;const z=X;return xe().then(ve).then(()=>{try{h?.watchBackground?.(B=>x.post({__frame_layout:{...O,background:B}},z))}catch{}})}),Se={cb:null};x.on((c,h)=>{if(Jt(h)&&Nr(c)){try{b?.promoted()}catch{}Se.cb?.()}}),le.then(async()=>{if(!_||!X){gt();try{A?.onNoInit()}catch{}return}if(sr(_.theme),_.hostVisible===!1&&e.then(i=>i?.applyHostVisible?.(!1,R)),_.hostKeys!==void 0){const i=X,S=_.hostKeys;e.then(w=>w?.installHostKeyForward?.(u,S,M=>x.post(M,i)))}try{A?.onInit(_.hot,X)}catch{}let c;const h=()=>{try{!c&&me&&E()&&(c=se(me),c.then(i=>i?.prefetch?.()).catch(()=>{}))}catch{}};h(),y.then(h);const g=X,C=x.port(g),O=(i,S)=>x.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:i,phase:S}},g),z=(i,S,w)=>{new Promise(M=>M(qn(S,w))).then(M=>O(i,M),()=>O(i))},B=i=>x.post({__frame_cap_recovered:{cap:i}},g);let J=_.brokerGen;const ce=()=>A?.boot.ver??"",G=ce(),_e=(i,S)=>{const w=ce();H(S.t),S.want=w,S.t=$(()=>{S.done||Ye(S,w)},Yt),x.post({__frame_cap_want:!0,cap:i,ver:w},g)},Q=(i,S)=>{const w=ie.get(i.cap),M=Ne[i.cap];if(!S||!w||w.done||w.want!==i.ver||!pe.test(M))return;if(H(w.t),w.want=void 0,J=i.brokerGen??J,i.ver!==ce()){_e(i.cap,w);return}if(!i.grant||i.cap==="network"){Ye(w,i.ver);return}const ee=we,Z=we={...ee,capabilities:{...ee.capabilities,[i.cap]:i.grant},capBudgets:{...ee.capBudgets,[i.cap]:{...ee.capBudgets[i.cap],...i.budgets}}};se(M).then(W=>{Fe.has(M)&&B(i.cap),Z.brokerGen=J,wt=!0;try{W?.install?.(Z)}catch{O(i.cap,"install")}finally{wt=!1}},W=>z(i.cap,M,W)).then(()=>{w.done||Ye(w,i.ver)})};let De=!1,He=!1;x.on((i,S,w)=>{if(S!==g)return;try{if(A?.onShell(i))return}catch{}if(Fr(i)&&sr(i.__frame_theme.theme),tn(i)&&Q(i,w),w&&rn(i)&&(J=i.brokerGen??J),Cr(i)){const Z=i.__frame_host_visible.visible;e.then(W=>W?.applyHostVisible?.(Z,R))}Mr(i)&&Kn(i.__frame_patch,g,w);const M=i?.__fc_mode;M&&typeof M=="object"&&!De&&pt&&pe.test(pt)&&(De=!0,se(pt).then(Z=>Z.install?.(g,M.on===!0,C)).catch(()=>{}));const ee=i?.__ft_cmd;ee&&typeof ee=="object"&&!He&&mt&&pe.test(mt)&&(He=!0,se(mt).then(Z=>Z.install?.(g,ee,C)).catch(()=>{}))});const ue=Object.keys(_.capabilities??{}).filter(i=>Object.hasOwn(Ne,i)).map(i=>[i,Ne[i]]).filter(i=>typeof i[1]=="string"&&pe.test(i[1])),re=g;let Be=!1,ke=()=>{};const Ze=new Promise(i=>{ke=()=>{Be=!0,i()}}),ye=()=>(Be||(p="caps"),Ze),Qe=L!==null||jt(_.hot)||_.hostVisible===!1||_.hostOverlays===!0;k&&(p="init");const ge=_.hostBackground===!0,Ae=y.then(()=>(ge&&ye(),ge?Je:void 0)).then(()=>Qe?ye():xe()).then(ve).then(()=>{let i=!0;try{i=Qe||Gn()}catch{}return i?ye():void 0}).then(()=>{Ie();const i=pr(je,be);x.post(i?{__frame_ready:!0,nav:i,gate:p}:{__frame_ready:!0,gate:p},re),e.then(S=>{S?.installSizeReporter?.(re,Se,C),S?.installPaintReporter?.(C)})}),qe=await Promise.allSettled(ue.map(([,i])=>se(i))),fe=await e;if(fe?.buildBoot||(t?z("_transforms",t.f,t.e):O("_transforms")),fe?.buildBoot)try{we=fe.buildBoot(_,fe.TRANSFORMS??{},{shellOrigin:re,mount:bt,hooks:Xe,shell:C},i=>x.post({__frame_cap_telemetry:i},re))}catch{O("_transforms","install"),we=rr(_,re,C)}else we=rr(_,re,C);fe?.buildBoot&&Fe.has(Ce??"")&&B("_transforms");const de=we;de.brokerGen=J,qe.forEach((i,S)=>{const[w,M]=ue[S];if(i.status!=="fulfilled"){z(w,M,i.reason);return}Fe.has(M)&&B(w);try{i.value?.install?.(de)}catch{O(w,"install")}});const Ue=_.capWants===!0;Ue&&(_t=(i,S)=>{const w=ce();if(!w)return S;if(!S.nulled)return S.want!==w&&_e(i,S),S;if(w===S.ver)return S;const M=yt();return ie.set(i,M),_e(i,M),M}),gt(G,Ue&&ce()!==G?_e:void 0),ke(),await Ae;let et=!1;try{et=E()}catch{}me&&et?(c??se(me)).then(i=>i?.boot?.({shellOrigin:g,build:de.flags.has(fn),hot:A?.hot??null,carried:A?.carried(),presented:()=>A?.presented()??!0})).catch(()=>!1).then(i=>{A?.hydrated(),i!==!0?O("_ldx"):Fe.has(me)&&B("_ldx")}):A?.hydrated()})}else ft&&(ir(),Cn(ft,ht,se,{settle:gt,mount:bt}))})();</script><!-- /frame-runtime --><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Propuestas de calendario</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: columna de lectura con una "mesa" por propuesta; cada mesa = demo viva + notas al costado (apiladas en móvil) */
+:root {
+  --bg: #f6f7f5;
+  --surface: #ffffff;
+  --fg: #1b1f1d;
+  --muted: #66706b;
+  --line: #e2e6e3;
+  --primary: #0f766e;          /* simula el color de marca de la tienda (--primary) */
+  --primary-fg: #ffffff;
+  --tint: #ccfbf1;
+  --tint-strong: #99f6e4;
+  --warn: #b45309;
+  --warn-bg: #fef3c7;
+  --off: #c3c9c5;
+  --low: #fef3c7;
+  --ok: #dcfce7;
+  --ok-fg: #166534;
+  --shadow: 0 1px 2px rgb(16 24 20 / .06), 0 8px 24px rgb(16 24 20 / .06);
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Figtree", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111413; --surface: #1a1e1c; --fg: #e8ece9; --muted: #9aa49f; --line: #2c3330;
+  --primary: #2dd4bf; --primary-fg: #06201d; --tint: #123a35; --tint-strong: #17524b;
+  --warn: #fbbf24; --warn-bg: #3a2c0b; --off: #4a524e; --low: #3a2c0b; --ok: #12331f; --ok-fg: #86efac;
+  --shadow: 0 1px 2px rgb(0 0 0 / .4); color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #111413; --surface: #1a1e1c; --fg: #e8ece9; --muted: #9aa49f; --line: #2c3330;
+  --primary: #2dd4bf; --primary-fg: #06201d; --tint: #123a35; --tint-strong: #17524b;
+  --warn: #fbbf24; --warn-bg: #3a2c0b; --off: #4a524e; --low: #3a2c0b; --ok: #12331f; --ok-fg: #86efac;
+  --shadow: 0 1px 2px rgb(0 0 0 / .4); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+}
+.wrap { max-width: 1040px; margin: 0 auto; display: grid; gap: 40px; }
+header h1 { font-family: var(--display); font-size: clamp(28px, 5vw, 40px); line-height: 1.1; margin: 0 0 10px; text-wrap: balance; letter-spacing: -.01em; }
+header p { margin: 0; color: var(--muted); max-width: 64ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.chip { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
+
+section.mesa { display: grid; gap: 20px; grid-template-columns: 1fr; padding-top: 28px; border-top: 1px solid var(--line); }
+@media (min-width: 860px) { section.mesa { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; } }
+.etq { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; color: var(--primary); }
+.notas h2 { font-family: var(--display); font-size: 24px; margin: 4px 0 8px; line-height: 1.2; text-wrap: balance; }
+.notas p { margin: 0 0 12px; color: var(--muted); max-width: 60ch; }
+.notas ul { margin: 0 0 12px; padding-left: 18px; display: grid; gap: 4px; }
+.notas li { max-width: 58ch; }
+.notas .uso { font-size: 13px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.notas .uso b { color: var(--fg); }
+.ref { font-size: 13px; color: var(--muted); }
+.ref a { color: var(--primary); }
+
+.demo { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); min-width: 0; }
+.demo-out { margin-top: 12px; font-size: 13px; color: var(--muted); min-height: 20px; }
+.demo-out b { color: var(--fg); }
+
+/* ---------- Grid base ---------- */
+.cab { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cab span { font-weight: 700; text-transform: capitalize; }
+.nav { width: 36px; height: 36px; border-radius: 999px; border: 0; background: transparent; color: var(--fg); font-size: 20px; cursor: pointer; }
+.nav:hover { background: var(--bg); }
+.nav:disabled { opacity: .3; cursor: default; }
+.grid7 { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; text-align: center; }
+.dow { font-size: 12px; font-weight: 600; color: var(--muted); padding: 4px 0; }
+.d { position: relative; border: 0; background: transparent; color: var(--fg); font: inherit; font-weight: 500; height: 40px; border-radius: 10px; cursor: pointer; font-variant-numeric: tabular-nums; }
+.d:hover:not(:disabled) { background: var(--tint); }
+.d:disabled { color: var(--off); cursor: not-allowed; }
+.d.tach { text-decoration: line-through; }
+.d.sel { background: var(--primary); color: var(--primary-fg); font-weight: 700; }
+.d.hoy::after { content: ""; position: absolute; left: 50%; bottom: 4px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--primary); }
+.d.sel.hoy::after { background: var(--primary-fg); }
+.d:focus-visible, .nav:focus-visible, button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* ---------- 1. Actual ---------- */
+.actual .d.marca::before { content: ""; position: absolute; left: 50%; bottom: 4px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: #f59e0b; }
+
+/* ---------- 2. Disponibilidad con precio ---------- */
+.dispo .d { height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; border-radius: 12px; }
+.dispo .d small { font-size: 10.5px; font-weight: 600; color: var(--muted); line-height: 1; }
+.dispo .d.low { background: var(--low); }
+.dispo .d.low small { color: var(--warn); }
+.dispo .d.barato small { color: var(--ok-fg); }
+.dispo .d.sel small { color: var(--primary-fg); }
+.dispo .d.sel { background: var(--primary); }
+.leyenda { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; font-size: 12px; color: var(--muted); }
+.leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+/* ---------- 3. Rango dos meses ---------- */
+.rango-top { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
+.rango-top div { padding: 8px 12px; }
+.rango-top div + div { border-left: 1px solid var(--line); }
+.rango-top label { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: var(--muted); }
+.rango-top strong { font-size: 15px; }
+.rango-top .act { box-shadow: inset 0 -2px 0 var(--primary); }
+.meses { display: grid; gap: 20px; grid-template-columns: 1fr; }
+@media (min-width: 640px) { .meses { grid-template-columns: 1fr 1fr; } }
+.meses .mes2:nth-child(2) { display: none; }
+@media (min-width: 640px) { .meses .mes2:nth-child(2) { display: block; } }
+.mes2 .t { text-align: center; font-weight: 700; text-transform: capitalize; margin-bottom: 6px; }
+.rng .grid7 { gap: 2px 0; }
+.rng .d { border-radius: 999px; }
+.rng .d.en { background: var(--tint); border-radius: 0; }
+.rng .d.ini, .rng .d.fin { background: var(--primary); color: var(--primary-fg); font-weight: 700; border-radius: 999px; box-shadow: 0 0 0 0 transparent; }
+.rng .d.ini.conFin { border-radius: 999px 0 0 999px; }
+.rng .d.fin { border-radius: 0 999px 999px 0; }
+.rng .d.prev { background: var(--tint); border-radius: 0; opacity: .7; }
+.rng-nav { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.pie { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.pill:hover { border-color: var(--primary); }
+.pill.on { background: var(--primary); color: var(--primary-fg); border-color: var(--primary); }
+.link { border: 0; background: none; color: var(--fg); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+
+/* ---------- 4. Tira de días + horarios ---------- */
+.tira { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; scrollbar-width: thin; }
+.tira button { flex: 0 0 64px; scroll-snap-align: start; border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 14px; padding: 8px 0; font: inherit; cursor: pointer; display: grid; gap: 0; }
+.tira button span { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+.tira button strong { font-family: var(--display); font-size: 22px; line-height: 1.2; }
+.tira button em { font-style: normal; font-size: 10.5px; color: var(--ok-fg); font-weight: 600; }
+.tira button.lleno { opacity: .45; cursor: not-allowed; }
+.tira button.lleno em { color: var(--muted); }
+.tira button.sel { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+.tira button.sel span, .tira button.sel em { color: var(--primary-fg); }
+.tira-cab { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.tira-cab b { text-transform: capitalize; }
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; margin-top: 14px; }
+.slots button { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 10px; padding: 10px 0; font: inherit; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; }
+.slots button:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.slots button:disabled { text-decoration: line-through; color: var(--off); cursor: not-allowed; }
+.slots button.sel { background: var(--primary); color: var(--primary-fg); border-color: var(--primary); }
+.slots-t { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-top: 16px; }
+
+/* ---------- 5. Hoja inferior móvil ---------- */
+.telefono { max-width: 340px; margin: 0 auto; height: 560px; border: 8px solid var(--fg); border-radius: 36px; overflow: hidden; position: relative; background: var(--bg); }
+.fondo-ficha { padding: 18px 16px; display: grid; gap: 10px; }
+.fondo-ficha .img { height: 130px; border-radius: 14px; background: linear-gradient(135deg, var(--tint-strong), var(--tint)); }
+.fondo-ficha .lin { height: 10px; border-radius: 6px; background: var(--line); }
+.campo { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 12px; padding: 10px 12px; font: inherit; text-align: left; cursor: pointer; display: grid; }
+.campo small { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.velo { position: absolute; inset: 0; background: rgb(0 0 0 / .35); opacity: 0; pointer-events: none; transition: opacity .2s; }
+.hoja { position: absolute; left: 0; right: 0; bottom: 0; height: 86%; background: var(--surface); border-radius: 20px 20px 0 0; transform: translateY(100%); transition: transform .28s cubic-bezier(.2,.8,.2,1); display: flex; flex-direction: column; }
+.telefono.abierta .velo { opacity: 1; pointer-events: auto; }
+.telefono.abierta .hoja { transform: none; }
+.asa { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 8px auto 4px; }
+.hoja-cab { padding: 4px 16px 8px; display: flex; justify-content: space-between; align-items: center; }
+.hoja-cab b { font-family: var(--display); font-size: 18px; }
+.hoja .dow-fija { padding: 0 16px; border-bottom: 1px solid var(--line); }
+.scroll { overflow-y: auto; padding: 8px 16px; flex: 1; display: grid; gap: 18px; align-content: start; }
+.scroll .t { font-weight: 700; text-transform: capitalize; margin: 4px 0 6px; }
+.hoja-pie { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.btn { border: 0; background: var(--primary); color: var(--primary-fg); font: inherit; font-weight: 700; padding: 10px 18px; border-radius: 12px; cursor: pointer; }
+.btn:disabled { opacity: .4; cursor: default; }
+
+/* ---------- Tabla comparativa ---------- */
+.tabla-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+.s { font-weight: 700; color: var(--ok-fg); }
+.n { color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) { .hoja, .velo { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="etq">Vitrina · reservas</div>
+    <h1>Propuestas para el selector de fechas</h1>
+    <p>Cinco patrones, todos interactivos. El primero es el calendario que hoy usan las fichas de tours, eventos, canchas y locales (<code>app-calendario-mes</code>). Los demás son mejoras tomadas de Airbnb, Booking, Cal.com y las guías de accesibilidad de W3C. Prueba cada uno; los datos son de ejemplo (octubre–noviembre 2026).</p>
+    <div class="meta"><a class="chip" href="#mapa" style="color:var(--primary);border-color:var(--primary);text-decoration:none">↓ Ir al mapa de uso en los dos repos</a><span class="chip">Semana empieza en lunes</span><span class="chip">Mobile-first</span><span class="chip">Navegable con flechas</span><span class="chip">Color de marca = var(--primary)</span></div>
+  </header>
+
+  <!-- 1. ACTUAL -->
+  <section class="mesa">
+    <div class="demo actual" id="d1"></div>
+    <div class="notas">
+      <div class="etq">0 · Hoy</div>
+      <h2>Calendario de un mes (actual)</h2>
+      <p>Réplica del componente actual: días tachados si no hay cupo y un punto ámbar si queda poco.</p>
+      <ul>
+        <li>No muestra precio ni cuántos cupos quedan: el cliente tiene que tocar un día para saberlo.</li>
+        <li>El punto ámbar no se explica en ninguna leyenda.</li>
+        <li>Sin navegación por teclado dentro del grid (solo Tab día por día).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 2. DISPONIBILIDAD -->
+  <section class="mesa">
+    <div class="demo dispo" id="d2"></div>
+    <div class="notas">
+      <div class="etq">1 · Tours, eventos, canchas</div>
+      <h2>Mes con precio o cupos en cada día</h2>
+      <p>Cada celda dice algo útil debajo del número: el precio "desde" o los cupos que quedan. Es lo que hacen Booking y las aerolíneas: el cliente compara sin tocar.</p>
+      <ul>
+        <li>Fondo ámbar para "quedan pocos", texto verde para el día más barato.</li>
+        <li>Leyenda fija debajo del grid.</li>
+        <li>Flechas ← → ↑ ↓ mueven el foco, Inicio/Fin van a los extremos de la semana (patrón WAI-ARIA).</li>
+      </ul>
+      <div class="uso"><b>Cambio en código:</b> agregar <code>sub?: string</code> y <code>tono?: 'pocos' | 'barato'</code> a <code>DiaCalendario</code>. La estrategia de cada rubro lo llena; el componente no pregunta por el rubro.</div>
+    </div>
+  </section>
+
+  <!-- 3. RANGO -->
+  <section class="mesa">
+    <div class="demo rng" id="d3"></div>
+    <div class="notas">
+      <div class="etq">2 · Hotel, alquiler de locales por días</div>
+      <h2>Rango con dos meses y vista previa</h2>
+      <p>Entrada y salida arriba como dos campos, dos meses lado a lado en escritorio (uno en móvil) y una banda continua entre las fechas.</p>
+      <ul>
+        <li>Al pasar el mouse después de elegir la entrada se ve el rango antes del segundo clic.</li>
+        <li>Pie con número de noches, atajos ("Este fin de semana", "1 semana") y "Borrar".</li>
+        <li>Los rangos que cruzan de mes se eligen sin cambiar de pantalla.</li>
+      </ul>
+      <div class="uso"><b>Cambio en código:</b> <code>calendario-estadia</code> ya tiene la lógica de rango (<code>tocarDia</code>); faltan el segundo mes, el hover y el pie.</div>
+    </div>
+  </section>
+
+  <!-- 4. TIRA -->
+  <section class="mesa">
+    <div class="demo" id="d4"></div>
+    <div class="notas">
+      <div class="etq">3 · Canchas, servicios por hora</div>
+      <h2>Tira de días y horarios (estilo Cal.com)</h2>
+      <p>Para reservas de "hoy o esta semana" no hace falta un mes completo. Una tira horizontal de 14 días y debajo los horarios del día elegido: se reserva con dos toques.</p>
+      <ul>
+        <li>Cada día dice cuántos turnos libres tiene; los días llenos se atenúan.</li>
+        <li>Horarios agrupados en mañana / tarde / noche.</li>
+        <li>Un enlace "Ver mes" abre el calendario completo si el cliente busca más lejos.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 5. HOJA -->
+  <section class="mesa">
+    <div class="demo" id="d5"></div>
+    <div class="notas">
+      <div class="etq">4 · Cualquier rubro, en celular</div>
+      <h2>Hoja inferior con meses en scroll</h2>
+      <p>En móvil, el calendario no ocupa espacio en la ficha: el campo "Fechas" abre una hoja desde abajo con los meses uno debajo de otro (como Airbnb en su app). Los días de la semana quedan fijos arriba.</p>
+      <ul>
+        <li>Se desplaza con el pulgar, sin flechas de mes.</li>
+        <li>Botón "Confirmar" siempre visible abajo.</li>
+        <li>En escritorio se combina con la propuesta 1 o 2 como popover.</li>
+      </ul>
+      <p class="ref">Toca el campo "Fechas" dentro del teléfono.</p>
+    </div>
+  </section>
+
+  <!-- COMPARATIVA -->
+  <section style="display:grid;gap:14px;padding-top:28px;border-top:1px solid var(--line)">
+    <div class="etq">Resumen</div>
+    <h2 style="font-family:var(--display);font-size:24px;margin:0">Qué resuelve cada una</h2>
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr><th>Propuesta</th><th>Precio/cupos visibles</th><th>Rango</th><th>Horarios</th><th>Mejor en</th><th>Esfuerzo</th></tr></thead>
+        <tbody>
+          <tr><td>0 · Actual</td><td class="n">No</td><td class="n">No</td><td class="n">Aparte</td><td>—</td><td>—</td></tr>
+          <tr><td>1 · Mes con precio</td><td class="s">Sí</td><td class="n">No</td><td class="n">Aparte</td><td>Tours, eventos</td><td>Bajo</td></tr>
+          <tr><td>2 · Rango dos meses</td><td class="s">Opcional</td><td class="s">Sí</td><td class="n">No</td><td>Hotel, locales</td><td>Medio</td></tr>
+          <tr><td>3 · Tira + horarios</td><td class="s">Cupos</td><td class="n">No</td><td class="s">Sí</td><td>Canchas</td><td>Medio</td></tr>
+          <tr><td>4 · Hoja inferior</td><td class="s">Hereda</td><td class="s">Hereda</td><td class="n">No</td><td>Móvil, todos</td><td>Medio</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="ref">Fuentes: <a href="https://www.setproduct.com/blog/date-picker-ui-design" target="_blank" rel="noopener">Setproduct – Date picker UI design</a> · <a href="https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/" target="_blank" rel="noopener">W3C ARIA – Date picker dialog</a> · <a href="https://baymard.com/ecommerce-design-examples/date-picker" target="_blank" rel="noopener">Baymard – Date picker examples</a> · <a href="https://21st.dev/blog/react-date-picker-components" target="_blank" rel="noopener">21st.dev – Date picker components</a> · <a href="https://vzero.nicelydone.club/examples/components/datepicker" target="_blank" rel="noopener">Galería de date pickers SaaS</a></p>
+  </section>
+
+  <!-- MAPA -->
+  <style>
+    #mapa { display: grid; gap: 18px; padding-top: 28px; border-top: 1px solid var(--line); scroll-margin-top: 16px; }
+    #mapa h2 { font-family: var(--display); font-size: 28px; margin: 0; line-height: 1.15; text-wrap: balance; }
+    #mapa h3 { font-family: var(--display); font-size: 20px; margin: 12px 0 0; }
+    #mapa > p { margin: 0; color: var(--muted); max-width: 70ch; }
+    .cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+    .cifras div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+    .cifras b { display: block; font-family: var(--display); font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .cifras span { font-size: 13px; color: var(--muted); }
+    .catalogo { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+    .catalogo div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 14px; color: var(--muted); min-width: 0; }
+    .catalogo div b { color: var(--fg); }
+    .pt { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; white-space: nowrap; background: var(--tint); color: var(--fg); }
+    .pt.nat { background: var(--bg); border: 1px solid var(--line); color: var(--muted); }
+    .pt.ok { background: var(--ok); color: var(--ok-fg); }
+    .pr { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+    .pr.alta { background: var(--warn-bg); color: var(--warn); }
+    .pr.media { background: var(--tint); color: var(--fg); }
+    .pr.baja { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+    .mapa-t table { min-width: 860px; }
+    .mapa-t td:first-child { font-weight: 600; }
+    .mapa-t td small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; font-family: ui-monospace, Consolas, monospace; word-break: break-all; }
+    .mapa-t td.porque { color: var(--muted); font-size: 13.5px; max-width: 34ch; }
+    .filtros { display: flex; flex-wrap: wrap; gap: 6px; }
+  </style>
+  <section id="mapa">
+    <div class="etq">Mapa de uso</div>
+    <h2>Dónde se elige una fecha hoy y qué patrón le corresponde</h2>
+    <p>Revisé todos los campos de fecha y hora de la vitrina (FrontendStore) y del panel (FrontendAdmin). La regla que ordena el mapa: el cliente final que <b>reserva</b> necesita ver disponibilidad antes de tocar; el admin que <b>registra</b> una fecha que ya conoce está bien con el campo nativo; los <b>filtros</b> de listas piden atajos ("Últimos 7 días") antes que calendario.</p>
+
+    <div class="cifras">
+      <div><b>53</b><span>campos de fecha u hora en total</span></div>
+      <div><b>17</b><span>en la vitrina (cliente final)</span></div>
+      <div><b>36</b><span>en el panel admin</span></div>
+      <div><b>8</b><span>pantallas con prioridad alta</span></div>
+    </div>
+
+    <h3>Patrones de referencia</h3>
+    <div class="catalogo">
+      <div><span class="pt">P1 · Mes con disponibilidad</span><br><b>Elegir un día en el que importa si hay cupo o precio.</b> Propuesta 1 de esta página.</div>
+      <div><span class="pt">P2 · Rango dos meses</span><br><b>Elegir entrada y salida, o un periodo que cruza meses.</b> Propuesta 2. En admin sin precios.</div>
+      <div><span class="pt">P3 · Tira + horarios</span><br><b>Reservar en los próximos días con turnos por hora.</b> Propuesta 3.</div>
+      <div><span class="pt">P4 · Hoja inferior</span><br><b>Contenedor en celular para P1 o P2.</b> Propuesta 4.</div>
+      <div><span class="pt">Lista de fechas</span><br><b>Cuando hay pocas fechas posibles</b> (funciones de un evento). Un calendario casi vacío obliga a buscar.</div>
+      <div><span class="pt">Atajos + rango</span><br><b>Filtros de listas y reportes:</b> "Hoy · 7 días · Este mes · Personalizado". El personalizado abre P2.</div>
+      <div><span class="pt">Fecha memorable</span><br><b>Fechas que la persona ya sabe</b> (nacimiento): tres campos día / mes / año. Recorrer 30 años con flechas es la peor experiencia posible.</div>
+      <div><span class="pt nat">Nativo</span><br><b><code>input type="date|time|datetime-local"</code>.</b> Correcto para el admin cuando la fecha es puntual y conocida. Mejora barata: atajos "Hoy", "+7 días" al lado.</div>
+    </div>
+
+    <h3>Vitrina · FrontendStore</h3>
+    <div class="tabla-wrap mapa-t">
+      <table>
+        <thead><tr><th>Pantalla</th><th>Qué elige</th><th>Hoy</th><th>Recomendado</th><th>Por qué</th><th>Prioridad</th></tr></thead>
+        <tbody>
+          <tr><td>Buscador de hotel (barra y formulario)<small>hotel/buscador-hotel.component.ts:31-56</small></td><td>Llegada y salida</td><td><span class="pt nat">2 nativos</span></td><td><span class="pt">P2</span> + <span class="pt">P4</span> en móvil</td><td class="porque">Dos campos sueltos para un rango es el error más citado en las guías: no se ve el rango ni las noches, y la salida puede quedar antes de la llegada.</td><td><span class="pr alta">Alta</span></td></tr>
+          <tr><td>Ficha de habitación<small>hotel/habitacion-page.component.html:146</small></td><td>Estadía (o día por horas)</td><td><span class="pt">calendario-estadia</span></td><td><span class="pt">P2</span> con precio por noche</td><td class="porque">Ya tiene la lógica de rango. Faltan el segundo mes, la vista previa del rango y el total de noches.</td><td><span class="pr alta">Alta</span></td></tr>
+          <tr><td>Ficha de tour<small>tours/tour-page.component.html:99</small></td><td>Día de salida</td><td><span class="pt">calendario-mes</span></td><td><span class="pt">P1</span> con precio o cupos</td><td class="porque">El cliente compara días por precio y cupos. Hoy solo ve tachado o un punto sin explicar.</td><td><span class="pr alta">Alta</span></td></tr>
+          <tr><td>Ficha de salón<small>locales/salon-page.component.html:118, 133</small></td><td>Día y hora del evento</td><td><span class="pt">calendario-mes</span> + hora nativa</td><td><span class="pt">P1</span> con turnos libres + botones de hora</td><td class="porque">La hora nativa con paso de 30 min deja escribir horas fuera del turno. Botones con los horarios válidos evitan el error.</td><td><span class="pr alta">Alta</span></td></tr>
+          <tr><td>Solicitud de reserva<small>reserva/solicitud-page.component.html:155</small></td><td>Fecha de nacimiento</td><td><span class="pt nat">Nativo</span></td><td><span class="pt">Fecha memorable</span></td><td class="porque">En celular el calendario nativo abre en el mes actual y obliga a retroceder décadas. Tres campos se completan en segundos.</td><td><span class="pr alta">Alta</span></td></tr>
+          <tr><td>Buscador de tours<small>tours/buscador-tours.component.ts:25</small></td><td>Fecha del paseo</td><td><span class="pt nat">Nativo</span></td><td><span class="pt">P1</span> simple + atajos "Hoy · Mañana · Este finde"</td><td class="porque">Busca en todos los tours, así que no hay precio por día. Los atajos cubren la mayoría de búsquedas.</td><td><span class="pr media">Media</span></td></tr>
+          <tr><td>Buscador de eventos<small>eventos/buscador-eventos.component.ts:29</small></td><td>Fecha</td><td><span class="pt nat">Nativo</span></td><td><span class="pt">Atajos + rango</span></td><td class="porque">Quien busca eventos piensa en "este fin de semana" o "este mes", no en un día exacto.</td><td><span class="pr media">Media</span></td></tr>
+          <tr><td>Buscador de locales y grilla de salones<small>locales/buscador-locales.component.ts:29 · salones-grid.component.ts:48</small></td><td>Fecha del evento</td><td><span class="pt nat">Nativo</span></td><td><span class="pt">P1</span> simple en popover, <span class="pt">P4</span> en móvil</td><td class="porque">Se planifica con meses de anticipación. El nativo de iOS y Android cambia de aspecto según el teléfono y no sigue la marca de la tienda.</td><td><span class="pr media">Media</span></td></tr>
+          <tr><td>Reservador de canchas<small>canchas/reservador.component.ts:50</small></td><td>Día y turno</td><td><span class="pt ok">Tira de 10 días</span></td><td><span class="pt ok">P3 (ya lo es)</span> + enlace "Ver mes"</td><td class="porque">Ya sigue el patrón correcto. Solo falta una salida para quien reserva con más anticipación.</td><td><span class="pr baja">Baja</span></td></tr>
+          <tr><td>Ficha de evento<small>eventos/evento-page.component.html:57</small></td><td>Función</td><td><span class="pt ok">Lista de funciones</span></td><td><span class="pt ok">Mantener</span></td><td class="porque">Pocas fechas discretas: una lista es más clara que un calendario.</td><td><span class="pr baja">Baja</span></td></tr>
+          <tr><td>Antes de llegar (hotel)<small>hotel/antes-de-llegar.component.ts:86</small></td><td>Fecha puntual</td><td><span class="pt nat">Nativo</span></td><td><span class="pt nat">Nativo</span></td><td class="porque">Dato secundario después de reservar. No justifica un componente propio.</td><td><span class="pr baja">Baja</span></td></tr>
+          <tr><td>Cambiar plantilla (vista del dueño)<small>shared/plantilla-switcher.component.ts:70</small></td><td>Fecha simulada</td><td><span class="pt nat">Nativo</span></td><td><span class="pt nat">Nativo</span></td><td class="porque">Herramienta interna del dueño, no la ve el cliente.</td><td><span class="pr baja">Baja</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Panel · FrontendAdmin</h3>
+    <div class="tabla-wrap mapa-t">
+      <table>
+        <thead><tr><th>Pantalla</th><th>Qué elige</th><th>Hoy</th><th>Recomendado</th><th>Por qué</th><th>Prioridad</th></tr></thead>
+        <tbody>
+          <tr><td>Cotizaciones de salón<small>reservas/cotizaciones/cotizaciones.component.ts:91-95</small></td><td>Fecha y hora del evento cotizado</td><td><span class="pt nat">Nativo</span> + hora</td><td><span class="pt">P1</span> con estado de turnos</td><td class="porque">Hoy se puede cotizar una fecha que ya está vendida. Ver libre, apartado u ocupado al elegir evita prometer lo que no hay.</td><td><span class="pr alta">Alta</span></td></tr>
+          <tr><td>Tarifas por temporada<small>reservas/tarifas/tarifas.component.html:38-40</small></td><td>Inicio y fin de temporada</td><td><span class="pt nat">2 nativos</span></td><td><span class="pt">P2</span> sin precios</td><td class="porque">Las temporadas cruzan meses (diciembre a marzo). Ver el rango completo evita solapes entre temporadas.</td><td><span class="pr alta">Alta</span></td></tr>
+          <tr><td>Bloqueo de disponibilidad<small>reservas/disponibilidad/disponibilidad.component.html:41-45</small></td><td>Rango a bloquear</td><td><span class="pt nat">2 nativos</span></td><td><span class="pt">P2</span> con reservas existentes marcadas</td><td class="porque">Al bloquear hay que ver qué reservas caen dentro. Con dos campos sueltos no se ve.</td><td><span class="pr alta">Alta</span></td></tr>
+          <tr><td>Cierres de la tienda<small>reservas/reservas-config.component.html:530-532</small></td><td>Desde y hasta</td><td><span class="pt nat">2 nativos</span></td><td><span class="pt">P2</span> sin precios</td><td class="porque">Mismo caso que el bloqueo: es un rango y se entiende mejor dibujado.</td><td><span class="pr media">Media</span></td></tr>
+          <tr><td>Cupón: vigencia<small>cupones/cupon-form.component.html:152-165</small></td><td>Inicio y fin</td><td><span class="pt nat">2 nativos</span></td><td><span class="pt">P2</span> + atajos "1 semana · Fin de mes"</td><td class="porque">Las promos suelen durar periodos estándar. Los atajos ahorran casi todos los clics.</td><td><span class="pr media">Media</span></td></tr>
+          <tr><td>Campaña: vigencia<small>campanas/campanas.component.html:105-109</small></td><td>Inicio y fin</td><td><span class="pt nat">2 nativos</span></td><td><span class="pt">P2</span> + atajos</td><td class="porque">Igual que cupones. Conviene que ambos usen el mismo componente.</td><td><span class="pr media">Media</span></td></tr>
+          <tr><td>Agenda de canchas<small>reservas/canchas-agenda.component.ts:48</small></td><td>Día a ver</td><td><span class="pt nat">Nativo</span></td><td>"‹ Hoy ›" + <span class="pt">P3</span> (solo la tira)</td><td class="porque">El encargado salta entre hoy, mañana y ayer. Flechas y un botón "Hoy" son más rápidos que abrir un calendario.</td><td><span class="pr media">Media</span></td></tr>
+          <tr><td>Lista de reservas: filtro<small>reservas/reservas-list.component.html:54-56</small></td><td>Rango de búsqueda</td><td><span class="pt nat">2 nativos</span></td><td><span class="pt">Atajos + rango</span></td><td class="porque">Las consultas típicas son "hoy", "esta semana" o "próximos 30 días". Cambian al primer toque.</td><td><span class="pr media">Media</span></td></tr>
+          <tr><td>Libro de reclamaciones: filtro<small>libro-reclamaciones/libro-list.component.html:85-87</small></td><td>Rango de búsqueda</td><td><span class="pt nat">2 nativos</span></td><td><span class="pt">Atajos + rango</span></td><td class="porque">El plazo legal de respuesta (15 días hábiles) se revisa mejor con "Últimos 30 días".</td><td><span class="pr media">Media</span></td></tr>
+          <tr><td>Comunicados: rango de envío por email<small>comunicados/comunicados.component.html:123-126</small></td><td>Reservas entre dos fechas</td><td><span class="pt nat">2 nativos</span></td><td><span class="pt">Atajos + rango</span></td><td class="porque">"Reservas de esta semana" o "de mañana" cubre los avisos habituales (cierre, cambio de horario).</td><td><span class="pr media">Media</span></td></tr>
+          <tr><td>Comunicados: vigencia<small>comunicados/comunicados.component.html:273-282</small></td><td>Inicio y fin con hora</td><td><span class="pt nat">datetime-local</span></td><td><span class="pt nat">Nativo</span> + atajos "Ahora · Sin fin"</td><td class="porque">Es una programación precisa con hora. El nativo funciona; los atajos resuelven el caso común.</td><td><span class="pr baja">Baja</span></td></tr>
+          <tr><td>Sección con cuenta regresiva<small>diseno/seccion-form.component.ts:216</small></td><td>Fecha y hora de término</td><td><span class="pt nat">datetime-local</span></td><td><span class="pt nat">Nativo</span></td><td class="porque">Fecha exacta y conocida.</td><td><span class="pr baja">Baja</span></td></tr>
+          <tr><td>Ficha de evento: funciones y venta<small>reservas/evento-ficha.component.html:87-137</small></td><td>Inicio, fin y cierre de venta</td><td><span class="pt nat">datetime-local</span></td><td><span class="pt nat">Nativo</span> + "Duplicar función"</td><td class="porque">Las fechas las define el organizador. Lo que ahorra tiempo es copiar una función a otro día, no el calendario.</td><td><span class="pr baja">Baja</span></td></tr>
+          <tr><td>Detalle de reserva: vencimiento de cuota<small>reservas/reserva-detail.component.html:228</small></td><td>Fecha límite de pago</td><td><span class="pt nat">Nativo</span> con min/max</td><td><span class="pt nat">Nativo</span> + atajos "7 días antes del evento"</td><td class="porque">Ya acota bien con mín. y máx. Los atajos evitan contar días a mano.</td><td><span class="pr baja">Baja</span></td></tr>
+          <tr><td>Libro de reclamaciones: entrega de carta<small>libro-reclamaciones/libro-detail.component.html:160</small></td><td>Fecha pasada cercana</td><td><span class="pt nat">Nativo</span> con min/max</td><td><span class="pt nat">Nativo</span> + botón "Hoy"</td><td class="porque">Casi siempre es hoy o ayer.</td><td><span class="pr baja">Baja</span></td></tr>
+          <tr><td>Horarios (check-in, turnos, horas de tour, hora tope)<small>reservas-config · salon-ficha · tour-ficha (9 campos)</small></td><td>Hora sin fecha</td><td><span class="pt nat">type="time"</span></td><td><span class="pt nat">Nativo</span></td><td class="porque">Configuración que se toca una vez. El nativo es accesible y suficiente.</td><td><span class="pr baja">Baja</span></td></tr>
+          <tr><td>Calendario por salón y widget del dashboard<small>reservas/local-calendario · dashboard/widgets/calendario</small></td><td>Vista de ocupación</td><td><span class="pt ok">Mes propio</span></td><td><span class="pt ok">Mantener</span>, compartir estilos con P1</td><td class="porque">Son vistas de agenda, no selectores. Conviene que usen la misma celda que P1 para que se vean iguales.</td><td><span class="pr baja">Baja</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Orden sugerido</h3>
+    <div class="catalogo">
+      <div><b>1. Un componente de rango (P2) para los dos repos.</b><br>Cubre el buscador y la ficha de hotel en la vitrina, y tarifas, bloqueos, cierres, cupones y campañas en el admin: 7 pantallas con una sola pieza.</div>
+      <div><b>2. Precio y cupos en calendario-mes (P1).</b><br>Es un cambio pequeño en <code>DiaCalendario</code> y mejora tours, salones y cotizaciones.</div>
+      <div><b>3. Fecha de nacimiento en tres campos.</b><br>Es poco trabajo y quita la fricción más grande del formulario de solicitud.</div>
+      <div><b>4. Atajos en los filtros del admin.</b><br>Reservas, libro de reclamaciones y comunicados. Se puede hacer sin calendario propio: botones que llenan los dos nativos.</div>
+    </div>
+    <p class="ref">Referencias adicionales: <a href="https://design-system.service.gov.uk/patterns/dates/" target="_blank" rel="noopener">GOV.UK Design System – Dates</a> (fechas memorables en tres campos) · <a href="https://www.nngroup.com/articles/date-input/" target="_blank" rel="noopener">Nielsen Norman Group – Date input</a> · <a href="https://www.setproduct.com/blog/date-picker-ui-design" target="_blank" rel="noopener">Setproduct</a> (rangos y presets)</p>
+  </section>
+</div>
+
+<script>
+(() => {
+  const HOY = '2026-10-16';
+  const DIAS = ['L','M','X','J','V','S','D'];
+  const DIAS_LARGO = ['lun','mar','mié','jue','vie','sáb','dom'];
+  const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const iso = d => d.toISOString().slice(0,10);
+  const mk = s => new Date(s + 'T00:00:00Z');
+  const add = (s, n) => { const d = mk(s); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
+  const dow = s => (mk(s).getUTCDay() + 6) % 7; // 0 = lunes
+  const titulo = s => MESES[+s.slice(5,7)-1] + ' ' + s.slice(0,4);
+  const largo = s => DIAS_LARGO[dow(s)] + ' ' + (+s.slice(8)) + ' ' + MESES[+s.slice(5,7)-1].slice(0,3);
+  const addMes = (s, n) => { const d = mk(s.slice(0,8)+'01'); d.setUTCMonth(d.getUTCMonth()+n); return iso(d); };
+  // hash simple y estable para datos de ejemplo
+  const h = s => { let x = 0; for (const c of s) x = (x * 31 + c.charCodeAt(0)) % 9973; return x; };
+
+  /** Datos de ejemplo por día. */
+  function info(f) {
+    if (f < HOY) return { ok: false };
+    const k = h(f);
+    if (dow(f) === 0 && k % 2) return { ok: false, tach: true }; // algunos lunes cerrado
+    if (k % 11 === 0) return { ok: false, tach: true };
+    const cupos = k % 9;
+    const precio = 80 + (k % 6) * 10 + (dow(f) >= 4 ? 30 : 0);
+    return { ok: true, cupos, pocos: cupos > 0 && cupos <= 2, precio };
+  }
+
+  function grid(mes, celda, opts = {}) {
+    const g = document.createElement('div');
+    g.className = 'grid7'; g.setAttribute('role', 'grid');
+    if (!opts.sinDow) DIAS.forEach(d => { const s = document.createElement('span'); s.className = 'dow'; s.textContent = d; g.append(s); });
+    for (let i = 0; i < dow(mes); i++) g.append(document.createElement('span'));
+    for (let f = mes; f.slice(0,7) === mes.slice(0,7); f = add(f,1)) g.append(celda(f));
+    teclado(g);
+    return g;
+  }
+
+  /** Flechas dentro del grid (patrón WAI-ARIA). */
+  function teclado(g) {
+    g.addEventListener('keydown', e => {
+      const btns = [...g.querySelectorAll('button.d')];
+      const i = btns.indexOf(document.activeElement);
+      if (i < 0) return;
+      const salto = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
+      let j = null;
+      if (salto) j = i + salto;
+      if (e.key === 'Home') j = i - dow(btns[i].dataset.f);
+      if (e.key === 'End') j = i + 6 - dow(btns[i].dataset.f);
+      if (j === null) return;
+      e.preventDefault();
+      btns[Math.max(0, Math.min(btns.length - 1, j))].focus();
+    });
+  }
+
+  function boton(f, clases, html, disabled) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'd ' + clases; b.dataset.f = f;
+    b.innerHTML = html; b.disabled = !!disabled;
+    b.setAttribute('aria-label', largo(f));
+    return b;
+  }
+
+  function cabecera(mes, alCambiar, min, max) {
+    const c = document.createElement('div'); c.className = 'cab';
+    c.innerHTML = `<button class="nav" type="button" aria-label="Mes anterior">‹</button><span>${titulo(mes)}</span><button class="nav" type="button" aria-label="Mes siguiente">›</button>`;
+    const [a, , b] = c.children;
+    a.disabled = mes <= min; b.disabled = mes >= max;
+    a.onclick = () => alCambiar(-1); b.onclick = () => alCambiar(1);
+    return c;
+  }
+
+  // ---------- 1. Actual ----------
+  (() => {
+    const el = document.getElementById('d1');
+    let mes = '2026-10-01', sel = null;
+    const pintar = () => {
+      el.innerHTML = '';
+      el.append(cabecera(mes, d => { mes = addMes(mes, d); pintar(); }, '2026-10-01', '2026-12-01'));
+      el.append(grid(mes, f => {
+        const i = info(f);
+        const b = boton(f, [sel === f && 'sel', i.tach && 'tach', i.pocos && 'marca', f === HOY && 'hoy'].filter(Boolean).join(' '), +f.slice(8), !i.ok);
+        b.onclick = () => { sel = f; pintar(); el.querySelector(`[data-f="${f}"]`).focus(); };
+        return b;
+      }));
+      const o = document.createElement('div'); o.className = 'demo-out';
+      o.innerHTML = sel ? `Elegido: <b>${largo(sel)}</b>` : 'Elige un día';
+      el.append(o);
+    };
+    pintar();
+  })();
+
+  // ---------- 2. Disponibilidad ----------
+  (() => {
+    const el = document.getElementById('d2');
+    let mes = '2026-10-01', sel = '2026-10-23';
+    const pintar = () => {
+      el.innerHTML = '';
+      el.append(cabecera(mes, d => { mes = addMes(mes, d); pintar(); }, '2026-10-01', '2026-12-01'));
+      // precio mínimo del mes visible
+      let min = Infinity;
+      for (let f = mes; f.slice(0,7) === mes.slice(0,7); f = add(f,1)) { const i = info(f); if (i.ok && i.cupos && i.precio < min) min = i.precio; }
+      el.append(grid(mes, f => {
+        const i = info(f);
+        const lleno = i.ok && i.cupos === 0;
+        const ok = i.ok && !lleno;
+        let sub = '';
+        if (ok) sub = i.pocos ? `quedan ${i.cupos}` : `S/${i.precio}`;
+        else if (lleno) sub = 'agotado';
+        else if (i.tach) sub = 'cerrado';
+        const cl = [sel === f && 'sel', (i.tach || lleno) && 'tach', ok && i.pocos && 'low', ok && !i.pocos && i.precio === min && 'barato', f === HOY && 'hoy'].filter(Boolean).join(' ');
+        const b = boton(f, cl, `${+f.slice(8)}${sub ? `<small>${sub}</small>` : ''}`, !ok);
+        b.setAttribute('aria-label', largo(f) + (sub ? ', ' + sub : ''));
+        b.onclick = () => { sel = f; pintar(); el.querySelector(`[data-f="${f}"]`).focus(); };
+        return b;
+      }));
+      const ley = document.createElement('div'); ley.className = 'leyenda';
+      ley.innerHTML = `<span><i style="background:var(--low)"></i>Quedan pocos cupos</span><span><i style="background:var(--ok)"></i>Precio más bajo del mes</span><span><i style="background:var(--off)"></i>Cerrado o agotado</span>`;
+      el.append(ley);
+      const o = document.createElement('div'); o.className = 'demo-out';
+      const i = sel && info(sel);
+      o.innerHTML = sel ? `Elegido: <b>${largo(sel)}</b> · desde S/${i.precio} por persona` : 'Elige un día';
+      el.append(o);
+    };
+    pintar();
+  })();
+
+  // ---------- 3. Rango ----------
+  (() => {
+    const el = document.getElementById('d3');
+    let mes = '2026-10-01', ini = '2026-10-23', fin = '2026-10-26', hover = null, preset = null;
+    const ocupado = f => { const i = info(f); return !i.ok; };
+    const fmt = f => f ? `${+f.slice(8)} ${MESES[+f.slice(5,7)-1].slice(0,3)}` : 'Agregar fecha';
+    const noches = (a, b) => Math.round((mk(b) - mk(a)) / 864e5);
+    const tocar = f => {
+      preset = null;
+      if (!ini || fin || f <= ini) { ini = f; fin = null; }
+      else {
+        for (let x = ini; x < f; x = add(x,1)) if (ocupado(x)) { ini = f; fin = null; pintar(); return; }
+        fin = f;
+      }
+      pintar();
+      el.querySelector(`[data-f="${f}"]`)?.focus();
+    };
+    const pintar = () => {
+      el.innerHTML = '';
+      const top = document.createElement('div'); top.className = 'rango-top';
+      top.innerHTML = `<div class="${!ini || fin ? 'act' : ''}"><label>Entrada</label><strong>${fmt(ini)}</strong></div><div class="${ini && !fin ? 'act' : ''}"><label>Salida</label><strong>${fmt(fin)}</strong></div>`;
+      el.append(top);
+      const nav = document.createElement('div'); nav.className = 'rng-nav';
+      nav.innerHTML = `<button class="nav" type="button" aria-label="Mes anterior" ${mes <= '2026-10-01' ? 'disabled' : ''}>‹</button><button class="nav" type="button" aria-label="Mes siguiente" ${mes >= '2027-01-01' ? 'disabled' : ''}>›</button>`;
+      nav.children[0].onclick = () => { mes = addMes(mes, -1); pintar(); };
+      nav.children[1].onclick = () => { mes = addMes(mes, 1); pintar(); };
+      el.append(nav);
+      const ms = document.createElement('div'); ms.className = 'meses';
+      [mes, addMes(mes, 1)].forEach(m => {
+        const box = document.createElement('div'); box.className = 'mes2';
+        box.innerHTML = `<div class="t">${titulo(m)}</div>`;
+        box.append(grid(m, f => {
+          const fin2 = fin || (ini && hover && hover > ini ? hover : null);
+          const cl = [];
+          if (f === ini) { cl.push('ini'); if (fin2) cl.push('conFin'); }
+          if (fin && f === fin) cl.push('fin');
+          if (ini && fin2 && f > ini && f < fin2) cl.push(fin ? 'en' : 'prev');
+          if (!fin && hover && f === hover && f > ini) cl.push('prev');
+          const i = info(f);
+          if (i.tach) cl.push('tach');
+          const b = boton(f, cl.join(' '), +f.slice(8), !i.ok && f !== HOY && f < HOY || i.tach);
+          b.onclick = () => tocar(f);
+          b.onmouseenter = () => { if (ini && !fin && hover !== f) { hover = f; pintarGrid(); } };
+          return b;
+        }));
+        ms.append(box);
+      });
+      el.append(ms);
+      const pie = document.createElement('div'); pie.className = 'pie';
+      const n = ini && fin ? noches(ini, fin) : 0;
+      pie.innerHTML = `<div class="presets"><button type="button" class="pill ${preset==='fds'?'on':''}" data-p="fds">Este fin de semana</button><button type="button" class="pill ${preset==='sem'?'on':''}" data-p="sem">1 semana</button></div><div><b>${n ? n + (n === 1 ? ' noche' : ' noches') : 'Elige la salida'}</b> · <button type="button" class="link">Borrar</button></div>`;
+      pie.querySelector('[data-p="fds"]').onclick = () => { ini = '2026-10-16'; fin = '2026-10-18'; preset = 'fds'; mes = '2026-10-01'; pintar(); };
+      pie.querySelector('[data-p="sem"]').onclick = () => { ini = '2026-10-19'; fin = '2026-10-26'; preset = 'sem'; mes = '2026-10-01'; pintar(); };
+      pie.querySelector('.link').onclick = () => { ini = fin = hover = preset = null; pintar(); };
+      el.append(pie);
+      const o = document.createElement('div'); o.className = 'demo-out';
+      o.textContent = ini && !fin ? 'Pasa el mouse por los días para ver el rango antes de elegir la salida.' : 'Los días tachados no tienen habitaciones libres.';
+      el.append(o);
+    };
+    // repinta solo las clases para que el hover no pierda el foco
+    let raf = 0;
+    const pintarGrid = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => {
+      el.querySelectorAll('button.d').forEach(b => {
+        const f = b.dataset.f;
+        b.classList.remove('prev', 'conFin');
+        if (f === ini && hover > ini) b.classList.add('conFin');
+        if (ini && !fin && hover && f > ini && f <= hover) b.classList.add('prev');
+      });
+    }); };
+    el.addEventListener('mouseleave', () => { hover = null; pintarGrid(); });
+    pintar();
+  })();
+
+  // ---------- 4. Tira ----------
+  (() => {
+    const el = document.getElementById('d4');
+    let sel = HOY, hora = null;
+    const HORAS = ['07:00','08:00','09:00','10:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00'];
+    const libres = f => HORAS.filter((x, i) => (h(f + x) + i) % 3 !== 0);
+    const pintar = () => {
+      el.innerHTML = '';
+      const cab = document.createElement('div'); cab.className = 'tira-cab';
+      cab.innerHTML = `<b>${titulo(sel)}</b><button type="button" class="link">Ver mes</button>`;
+      el.append(cab);
+      const t = document.createElement('div'); t.className = 'tira'; t.setAttribute('role', 'listbox'); t.setAttribute('aria-label', 'Día');
+      for (let k = 0; k < 14; k++) {
+        const f = add(HOY, k);
+        const n = (h(f) % 5 === 0) ? 0 : libres(f).length;
+        const b = document.createElement('button'); b.type = 'button';
+        b.className = (n ? '' : 'lleno') + (f === sel ? ' sel' : '');
+        b.disabled = !n;
+        b.setAttribute('aria-label', largo(f) + ', ' + (n ? n + ' turnos libres' : 'sin turnos'));
+        b.innerHTML = `<span>${k === 0 ? 'hoy' : DIAS_LARGO[dow(f)]}</span><strong>${+f.slice(8)}</strong><em>${n ? n + ' libres' : 'lleno'}</em>`;
+        b.onclick = () => { sel = f; hora = null; pintar(); };
+        t.append(b);
+      }
+      el.append(t);
+      const grupos = [['Mañana', x => x < '12:00'], ['Tarde', x => x >= '12:00' && x < '19:00'], ['Noche', x => x >= '19:00']];
+      const lib = libres(sel);
+      grupos.forEach(([nom, fn]) => {
+        const hs = HORAS.filter(fn);
+        const tt = document.createElement('div'); tt.className = 'slots-t'; tt.textContent = nom;
+        const s = document.createElement('div'); s.className = 'slots';
+        hs.forEach(x => {
+          const b = document.createElement('button'); b.type = 'button'; b.textContent = x;
+          b.disabled = !lib.includes(x); if (hora === x) b.className = 'sel';
+          b.onclick = () => { hora = x; pintar(); };
+          s.append(b);
+        });
+        s.style.marginTop = '6px';
+        el.append(tt, s);
+      });
+      const o = document.createElement('div'); o.className = 'demo-out';
+      o.innerHTML = hora ? `Reservando <b>${largo(sel)} · ${hora}</b> · Cancha 1 · S/60 la hora` : 'Elige un horario';
+      el.append(o);
+      t.querySelector('.sel')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    };
+    pintar();
+  })();
+
+  // ---------- 5. Hoja ----------
+  (() => {
+    const el = document.getElementById('d5');
+    let sel = null, tmp = null;
+    el.innerHTML = `
+      <div class="telefono" id="tel">
+        <div class="fondo-ficha">
+          <div class="img"></div>
+          <strong style="font-family:var(--display);font-size:18px">Full day Paracas e Islas Ballestas</strong>
+          <div class="lin" style="width:80%"></div><div class="lin" style="width:60%"></div>
+          <button type="button" class="campo" id="abrir"><small>Fechas</small><span id="valor">Elige el día de salida</span></button>
+          <div class="lin" style="width:70%"></div>
+        </div>
+        <div class="velo" id="velo"></div>
+        <div class="hoja" role="dialog" aria-modal="true" aria-label="Elegir fecha">
+          <div class="asa"></div>
+          <div class="hoja-cab"><b>¿Cuándo vas?</b><button type="button" class="nav" id="cerrar" aria-label="Cerrar">✕</button></div>
+          <div class="dow-fija"><div class="grid7">${DIAS.map(d => `<span class="dow">${d}</span>`).join('')}</div></div>
+          <div class="scroll" id="meses"></div>
+          <div class="hoja-pie"><span id="resumen" style="font-size:13px;color:var(--muted)">Ningún día elegido</span><button type="button" class="btn" id="ok" disabled>Confirmar</button></div>
+        </div>
+      </div>`;
+    const tel = el.querySelector('#tel');
+    const cont = el.querySelector('#meses');
+    const pintar = () => {
+      const top = cont.scrollTop;
+      cont.innerHTML = '';
+      ['2026-10-01','2026-11-01','2026-12-01'].forEach(m => {
+        const box = document.createElement('div');
+        box.innerHTML = `<div class="t">${titulo(m)}</div>`;
+        box.append(grid(m, f => {
+          const i = info(f);
+          const b = boton(f, [tmp === f && 'sel', i.tach && 'tach', f === HOY && 'hoy'].filter(Boolean).join(' '), +f.slice(8), !i.ok);
+          b.onclick = () => { tmp = f; pintar(); };
+          return b;
+        }, { sinDow: true }));
+        cont.append(box);
+      });
+      cont.scrollTop = top;
+      el.querySelector('#resumen').innerHTML = tmp ? `<b style="color:var(--fg)">${largo(tmp)}</b>` : 'Ningún día elegido';
+      el.querySelector('#ok').disabled = !tmp;
+    };
+    const abrir = () => { tmp = sel; pintar(); tel.classList.add('abierta'); };
+    const cerrar = () => tel.classList.remove('abierta');
+    el.querySelector('#abrir').onclick = abrir;
+    el.querySelector('#cerrar').onclick = cerrar;
+    el.querySelector('#velo').onclick = cerrar;
+    el.querySelector('#ok').onclick = () => { sel = tmp; el.querySelector('#valor').textContent = largo(sel); cerrar(); };
+    pintar();
+  })();
+})();
+</script>
+
+</body></html>

@@ -1,0 +1,800 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Nuevo editor de Diseño</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600;700&family=Poppins:wght@400;600&family=Playfair+Display:wght@600;700&family=Nunito:wght@400;800&display=swap">
+<style>
+/* Layout: documento de lectura (diagnóstico → investigación) que se abre a un banco de pruebas con 3 editores vivos lado a lado en pestañas. */
+:root{
+  --bg:#f3f4f1; --surface:#ffffff; --sunk:#e9ebe6; --fg:#1b1f1c; --muted:#5d655f; --line:#d9ddd6;
+  --accent:#136f53; --accent-soft:#dcefe7; --on-accent:#ffffff; --warn:#a1560b; --warn-soft:#fbecd9; --bad:#a33a2c;
+  --display:'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --body:'Figtree', 'Segoe UI', system-ui, sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121513; --surface:#1b1f1c; --sunk:#232824; --fg:#e8ebe7; --muted:#9ea69f; --line:#2f3530;
+  --accent:#4cc39a; --accent-soft:#1d3a30; --on-accent:#0b1f17; --warn:#f0a95a; --warn-soft:#3a2a17; --bad:#f08a7a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121513; --surface:#1b1f1c; --sunk:#232824; --fg:#e8ebe7; --muted:#9ea69f; --line:#2f3530;
+  --accent:#4cc39a; --accent-soft:#1d3a30; --on-accent:#0b1f17; --warn:#f0a95a; --warn-soft:#3a2a17; --bad:#f08a7a; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.55 var(--body);padding-inline:16px;padding-block:0 64px}
+.wrap{max-width:1180px;margin:0 auto}
+.read{max-width:760px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(2rem,5vw,3.1rem);line-height:1.05;font-weight:700}
+h2{font-size:1.7rem;line-height:1.15;font-weight:700}
+h3{font-size:1.15rem;font-weight:700}
+p{margin:0}
+a{color:var(--accent)}
+.eyebrow{font-size:.75rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+section.block{padding-block:48px 8px;display:grid;gap:20px}
+.lede{font-size:1.15rem;color:var(--muted);max-width:62ch}
+header.top{padding-block:40px 8px;display:grid;gap:16px}
+
+/* Diagnóstico */
+.diag{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.diag article{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;gap:6px;align-content:start}
+.diag .q{font-size:.85rem;color:var(--muted);font-style:italic;border-left:2px solid var(--line);padding-left:10px}
+.diag h3{font-size:1rem}
+
+/* Voces */
+.voces{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.voz{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:grid;gap:10px;align-content:start}
+.voz blockquote{margin:0;font-family:var(--display);font-size:1.12rem;line-height:1.3;font-weight:500}
+.voz .src{font-size:.8rem;color:var(--muted)}
+.voz .leccion{font-size:.9rem;background:var(--accent-soft);border-radius:6px;padding:8px 10px}
+.voz .leccion b{color:var(--accent)}
+.principios{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px 24px;padding:0;margin:0;list-style:none}
+.principios li{padding:10px 0;border-top:1px solid var(--line);font-size:.95rem}
+.principios b{display:block;font-family:var(--display);font-size:1.02rem}
+.nota{font-size:.85rem;color:var(--muted)}
+
+/* Pestañas */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--bg);padding-block:10px}
+.tabs button{font:600 .95rem var(--body);border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:9px 16px;cursor:pointer;display:flex;gap:8px;align-items:center}
+.tabs button[aria-selected="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.tabs .k{font-family:var(--display);font-weight:700}
+.prop-head{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:start}
+.prop-head .meta{display:grid;gap:10px;font-size:.92rem}
+.pc{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pc div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px}
+.pc ul{margin:6px 0 0;padding-left:18px}
+.pc .t{font-weight:700;font-size:.85rem}
+.pc .pro .t{color:var(--accent)} .pc .con .t{color:var(--warn)}
+@media (max-width:820px){.prop-head{grid-template-columns:1fr}.pc{grid-template-columns:1fr}}
+button:focus-visible,input:focus-visible,textarea:focus-visible,[contenteditable]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ===== Marco de editor (común) ===== */
+.demo{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 10px 30px -18px rgba(0,0,0,.35)}
+.ed-top{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.ed-top .tienda{font-weight:700;font-family:var(--display)}
+.ed-top .sep{flex:1}
+.estado{font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.estado::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.estado.sucio::before{background:var(--warn)}
+.btn{font:600 .88rem var(--body);border-radius:8px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.pri{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.ghost{border-color:transparent;background:transparent}
+.seg{display:inline-flex;background:var(--sunk);border-radius:8px;padding:3px}
+.seg button{border:0;background:transparent;color:var(--muted);font:600 .82rem var(--body);padding:6px 10px;border-radius:6px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.toast{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:.9rem;z-index:50;white-space:nowrap}
+
+/* Controles del panel */
+.pnl{display:grid;gap:18px;padding:16px}
+.pnl h4{margin:0;font:700 1rem var(--display)}
+.pnl .ayuda{font-size:.82rem;color:var(--muted)}
+.fld{display:grid;gap:6px}
+.fld label,.fld .lbl{font-size:.82rem;font-weight:600}
+.fld input[type=text],.fld textarea{font:inherit;font-size:.92rem;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);width:100%}
+.fld textarea{resize:vertical;min-height:64px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.card{border:1.5px solid var(--line);border-radius:10px;padding:8px;background:var(--surface);cursor:pointer;text-align:left;color:var(--fg);font:inherit;display:grid;gap:6px}
+.card[aria-checked="true"]{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.card .nm{font-size:.82rem;font-weight:600}
+.chips4{display:flex;height:26px;border-radius:6px;overflow:hidden}
+.chips4 span{flex:1}
+.aa{font-size:1.6rem;line-height:1.1}
+.mini{height:54px;border-radius:6px;background:var(--sunk);position:relative;overflow:hidden}
+.mini i{position:absolute;display:block;border-radius:2px}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.switch{width:42px;height:24px;border-radius:999px;background:var(--line);border:0;position:relative;cursor:pointer;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{transform:translateX(18px)}
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:14px;font-size:.85rem;color:var(--muted);text-align:center}
+.acciones{display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px}
+.acciones .rojo{color:var(--bad)}
+
+/* ===== Propuesta A: lienzo con panel ===== */
+.a-grid{display:grid;grid-template-columns:230px minmax(0,1fr) 300px;height:640px}
+.a-tree{border-right:1px solid var(--line);overflow:auto;padding:10px 8px;display:grid;gap:14px;align-content:start}
+.a-grp{display:grid;gap:2px}
+.a-grp .g{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:0 8px 4px;display:flex;justify-content:space-between}
+.a-grp .g small{text-transform:none;letter-spacing:0;font-weight:500}
+.row{display:flex;align-items:center;gap:4px;border-radius:7px;padding:2px 4px 2px 8px;font-size:.88rem}
+.row:hover{background:var(--sunk)}
+.row.on{background:var(--accent-soft)}
+.row .nm{flex:1;min-width:0;text-align:left;background:none;border:0;font:inherit;color:inherit;padding:6px 0;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row.off .nm{color:var(--muted);text-decoration:line-through}
+.ib{width:26px;height:26px;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:6px;display:grid;place-items:center;flex:none}
+.ib:hover{background:var(--line);color:var(--fg)}
+.row .mv{display:none}
+.row:hover .mv,.row.on .mv,.row:focus-within .mv{display:grid}
+.add{border:1.5px dashed var(--line);background:none;color:var(--accent);font:600 .85rem var(--body);border-radius:8px;padding:8px;cursor:pointer;margin:4px 4px 0}
+.a-canvas{background:var(--sunk);overflow:auto;padding:18px;position:relative}
+.a-canvas .st{border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,.12);max-width:900px;margin:0 auto}
+.a-panel{border-left:1px solid var(--line);overflow:auto}
+.a-chips{display:none}
+@media (max-width:900px){
+  .a-grid{grid-template-columns:1fr;height:auto}
+  .a-tree{display:none}
+  .a-canvas{height:430px;padding:10px}
+  .a-chips{display:flex;gap:6px;overflow-x:auto;padding:10px;border-top:1px solid var(--line);background:var(--surface)}
+  .a-chips button{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 12px;font:600 .82rem var(--body);cursor:pointer}
+  .a-chips button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+  .a-panel{border-left:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0;box-shadow:0 -6px 18px -12px rgba(0,0,0,.4);max-height:none}
+  .a-panel::before{content:"";display:block;width:40px;height:4px;border-radius:4px;background:var(--line);margin:8px auto 0}
+}
+
+/* ===== Propuesta B: edición directa ===== */
+.b-canvas{background:var(--sunk);height:640px;overflow:auto;padding:18px 18px 40px;position:relative}
+.b-canvas .st{max-width:900px;margin:0 auto;border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,.12)}
+.b-drawer{position:absolute;top:0;right:0;bottom:0;width:min(330px,92%);background:var(--surface);border-left:1px solid var(--line);box-shadow:-10px 0 30px -18px rgba(0,0,0,.5);overflow:auto;z-index:20}
+.b-drawer .cerrar{position:absolute;top:10px;right:10px}
+.pop{position:absolute;z-index:25;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px -10px rgba(0,0,0,.35);padding:12px;width:min(320px,90%);display:grid;gap:10px;color:var(--fg)}
+.pop .t{font:700 .95rem var(--display)}
+.b-rel{position:relative}
+.b-stage{position:relative}
+
+/* ===== Propuesta C: paso a paso ===== */
+.c-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:660px}
+.c-steps{padding:18px;display:grid;gap:16px;align-content:start;border-right:1px solid var(--line)}
+.c-prog{display:flex;gap:6px;flex-wrap:wrap}
+.c-prog button{border:0;background:var(--sunk);color:var(--muted);font:600 .8rem var(--body);border-radius:999px;padding:6px 12px;cursor:pointer;display:flex;gap:6px;align-items:center}
+.c-prog button .n{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:var(--line);font-size:.7rem;color:var(--fg)}
+.c-prog button.hecho .n{background:var(--accent);color:var(--on-accent)}
+.c-prog button[aria-current="step"]{background:var(--fg);color:var(--bg)}
+.c-step{display:grid;gap:16px}
+.c-step h3{font-size:1.5rem}
+.c-step .big{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.c-step .big .card{padding:12px}
+.c-nav{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:14px}
+.c-side{background:var(--sunk);display:grid;place-items:start center;padding:22px 10px}
+.phone{width:300px;max-width:100%;height:610px;border-radius:38px;background:#0e0f10;padding:12px;box-shadow:0 18px 40px -20px rgba(0,0,0,.6)}
+.screen{height:100%;border-radius:28px;overflow:auto;background:#fff;scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.lista{display:grid;gap:8px}
+.it{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface)}
+.it .nm{flex:1;font-weight:600;font-size:.92rem}
+.it.off .nm{color:var(--muted)}
+.check{display:grid;gap:8px;list-style:none;padding:0;margin:0}
+.check li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-size:.92rem}
+.check .ok{color:var(--accent);font-weight:700} .check .no{color:var(--warn);font-weight:700}
+@media (max-width:900px){
+  .c-grid{grid-template-columns:1fr}
+  .c-side{order:-1;padding:12px}
+  .phone{height:420px;width:260px}
+  .c-steps{border-right:0}
+}
+
+/* Comparación */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:.92rem}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--display);font-size:.95rem}
+tbody th{font-family:var(--body);font-weight:600;color:var(--muted);width:24%}
+tr:last-child td,tr:last-child th{border-bottom:0}
+.dots{letter-spacing:2px;color:var(--accent);font-size:.8rem;display:block}
+.reco{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:var(--r);padding:20px;display:grid;gap:12px}
+.reco ol{margin:0;padding-left:20px;display:grid;gap:8px}
+.fuentes{font-size:.85rem;color:var(--muted);columns:2 300px;padding-left:18px}
+.fuentes li{break-inside:avoid;margin-bottom:4px}
+
+/* ===== Tienda de muestra (sus colores vienen de la paleta elegida) ===== */
+.st{container-type:inline-size;background:var(--bg-s);color:var(--fg-s);font-family:var(--fb);font-size:14px;line-height:1.5;overflow:hidden;text-align:left}
+.st *{box-sizing:border-box}
+.st-b{position:relative;outline:2px solid transparent;outline-offset:-2px;transition:outline-color .12s;cursor:pointer}
+.st-b:hover{outline-color:color-mix(in oklab,#2b7de9 55%,transparent)}
+.st-b.sel{outline-color:#2b7de9}
+.st-b::after{content:attr(data-label);position:absolute;top:0;left:0;background:#2b7de9;color:#fff;font:600 11px/1 var(--body);padding:4px 7px;border-radius:0 0 6px 0;opacity:0;pointer-events:none;z-index:3}
+.st-b:hover::after,.st-b.sel::after{opacity:1}
+.st-ann{background:var(--ann);color:var(--annfg);text-align:center;font-size:12px;padding:7px 12px;font-weight:600}
+.st-hd{display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--ln-s)}
+.st-hd.c{display:grid;grid-template-columns:1fr auto 1fr}
+.st-hd.c .st-logo{grid-column:2;grid-row:1}
+.st-hd.c nav{grid-column:1;grid-row:1}
+.st-hd.c .st-cart{grid-column:3;grid-row:1;justify-self:end}
+.st-logo{font-family:var(--fd);font-weight:var(--fw);font-size:19px;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.st-logo .m{width:22px;height:22px;border-radius:50%;background:var(--p);box-shadow:inset -6px -4px 0 color-mix(in oklab,var(--p) 60%,#000)}
+.st-hd nav{display:flex;gap:16px;font-size:13px;color:var(--mu-s)}
+.st-hd:not(.c) nav{flex:1}
+.st-cart{font-size:13px;font-weight:600;white-space:nowrap}
+.st h1,.st h2{font-family:var(--fd);font-weight:var(--fw);margin:0;line-height:1.1;letter-spacing:-.01em;text-wrap:balance}
+.st h1{font-size:clamp(26px,5cqi,44px)}
+.st h2{font-size:22px}
+.st-btn{display:inline-block;background:var(--p);color:var(--on);padding:10px 18px;border-radius:999px;font-weight:600;font-size:13px}
+.hero{position:relative;padding:44px 28px;display:grid;gap:12px}
+.hero p{color:var(--mu-s);max-width:42ch;font-size:15px}
+.hero.img{background:linear-gradient(115deg,var(--sf-s) 45%,color-mix(in oklab,var(--p) 30%,var(--sf-s)));min-height:280px;align-content:center}
+.hero.img .tx{max-width:54%;display:grid;gap:12px;position:relative;z-index:1}
+.hero.img .art{position:absolute;right:6%;bottom:0;height:85%;width:40%}
+.hero.div{grid-template-columns:1fr 1fr;align-items:center;gap:24px}
+.hero.div .tx{display:grid;gap:12px}
+.hero.div .art{height:230px;background:var(--sf-s);border-radius:14px}
+.hero.min{padding:56px 28px 36px;border-bottom:1px solid var(--ln-s)}
+.hero.min h1{font-size:clamp(30px,6.5cqi,58px);max-width:16ch}
+.art{position:relative}
+.v{position:absolute;bottom:8%;border-radius:46% 46% 40% 40% / 34% 34% 66% 66%;background:linear-gradient(100deg,color-mix(in oklab,var(--p) 85%,#fff),var(--p) 55%,color-mix(in oklab,var(--p) 65%,#000))}
+.v::before{content:"";position:absolute;left:30%;right:30%;top:-7%;height:12%;border-radius:4px;background:inherit;filter:brightness(.85)}
+.v::after{content:"";position:absolute;left:12%;right:12%;top:38%;height:8%;background:repeating-linear-gradient(90deg,color-mix(in oklab,var(--p) 30%,#fff) 0 6px,transparent 6px 12px);opacity:.8}
+.v1{left:8%;width:34%;height:62%}
+.v2{left:40%;width:26%;height:84%;filter:hue-rotate(-8deg) saturate(.8)}
+.v3{left:68%;width:24%;height:46%;filter:brightness(1.15)}
+.sec{padding:32px 28px;display:grid;gap:16px}
+.sec .hd{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.sec .hd span{font-size:12px;color:var(--mu-s);text-decoration:underline}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.tile{display:grid;gap:8px}
+.tile .ph{aspect-ratio:1;border-radius:10px;background:var(--sf-s);position:relative;overflow:hidden;max-width:100%}
+.tile .ph .v{bottom:10%}
+.tile b{font-size:13px;font-weight:600}
+.tile .pr{font-size:13px;color:var(--mu-s)}
+.cat .ph{aspect-ratio:4/3}
+.ben{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;background:var(--sf-s)}
+.ben div{display:grid;gap:4px;font-size:13px;color:var(--mu-s)}
+.ben b{color:var(--fg-s);font-size:14px}
+.ben svg{width:22px;height:22px;color:var(--p)}
+.tes{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tes figure{margin:0;border:1px solid var(--ln-s);border-radius:12px;padding:16px;display:grid;gap:8px}
+.tes blockquote{margin:0;font-family:var(--fd);font-size:16px}
+.tes figcaption{font-size:12px;color:var(--mu-s)}
+.it2{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center}
+.it2 .art{height:200px;background:var(--sf-s);border-radius:14px}
+.it2 p{color:var(--mu-s)}
+.faq div{border-bottom:1px solid var(--ln-s);padding:10px 0;display:flex;justify-content:space-between;font-weight:600;font-size:14px}
+.ofe{background:var(--p);color:var(--on);display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+.ofe h2{color:var(--on)}
+.ofe .cd{display:flex;gap:8px;font-variant-numeric:tabular-nums}
+.ofe .cd span{background:color-mix(in oklab,var(--on) 18%,transparent);border-radius:8px;padding:6px 10px;font-weight:700}
+.st-ft{background:var(--fg-s);color:var(--bg-s);padding:26px 28px;display:grid;grid-template-columns:2fr 1fr 1fr;gap:16px;font-size:12px}
+.st-ft b{font-size:13px;display:block;margin-bottom:4px}
+.st-ft .lr{display:inline-block;border:1px solid currentColor;border-radius:6px;padding:4px 8px;margin-top:6px;opacity:.85}
+@container (max-width:560px){
+  .st-hd nav{display:none}
+  .st-hd{padding:12px 16px}
+  .hero{padding:30px 18px}
+  .hero.img{min-height:340px;align-content:start}
+  .hero.img .tx{max-width:100%}
+  .hero.img .art{height:44%;width:70%;right:4%}
+  .hero.div{grid-template-columns:1fr}
+  .hero.div .art{height:170px;order:-1}
+  .sec{padding:24px 16px}
+  .g4{grid-template-columns:1fr 1fr}
+  .ben{grid-template-columns:1fr}
+  .tes,.it2{grid-template-columns:1fr}
+  .st-ft{grid-template-columns:1fr}
+}
+
+/* Edición directa (B) sobre la tienda */
+.st.edit .st-b{cursor:default}
+.st.edit .st-b::after{display:none}
+.tb{position:absolute;top:8px;right:8px;z-index:4;display:none;gap:2px;background:#1b1f1c;color:#fff;border-radius:8px;padding:3px;font:600 12px var(--body);align-items:center;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.tb .lb{padding:0 8px;opacity:.8}
+.tb button{background:none;border:0;color:#fff;width:28px;height:26px;border-radius:5px;cursor:pointer;display:grid;place-items:center}
+.tb button:hover{background:rgba(255,255,255,.18)}
+.tb button.txt{width:auto;padding:0 8px;font:600 12px var(--body)}
+.st.edit .st-b:hover .tb,.st.edit .st-b.sel .tb,.st.edit .st-b:focus-within .tb{display:flex}
+.st [contenteditable]{border-radius:4px;outline:1.5px dashed transparent;outline-offset:3px;cursor:text}
+.st [contenteditable]:hover{outline-color:color-mix(in oklab,#2b7de9 70%,transparent)}
+.st [contenteditable]:focus{outline:2px solid #2b7de9}
+.ins{display:flex;justify-content:center;height:0;position:relative;z-index:5}
+.ins button{transform:translateY(-50%);background:#2b7de9;color:#fff;border:3px solid var(--bg-s);border-radius:999px;font:700 12px var(--body);padding:5px 12px;cursor:pointer;opacity:.9}
+.ins button:hover{opacity:1}
+.oculta{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 18px;background:repeating-linear-gradient(-45deg,var(--sf-s) 0 8px,var(--bg-s) 8px 16px);color:var(--mu-s);font:600 12px var(--body);border-block:1px dashed var(--ln-s)}
+.oculta button{background:var(--bg-s);border:1px solid var(--ln-s);color:var(--fg-s);border-radius:6px;padding:4px 10px;font:600 12px var(--body);cursor:pointer}
+.c-screen .st-b::after{display:none}
+.c-screen .st-b:hover{outline-color:transparent}
+.c-screen .st-b.sel{outline-color:transparent}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <span class="eyebrow">Admin · Diseño de la tienda</span>
+  <h1>Tres formas de que el dueño vea su tienda mientras la diseña</h1>
+  <p class="lede">El editor de hoy pide imaginar el resultado. Estas tres propuestas parten de lo que los vendedores elogian y critican de Shopify, Wix, Squarespace y Tiendanube. Las tres funcionan: cambia colores, letras, portada y secciones, y la tienda de muestra se actualiza.</p>
+</header>
+
+<section class="block read" style="max-width:none">
+  <span class="eyebrow">Diagnóstico</span>
+  <h2>Por qué el editor actual se siente mal</h2>
+  <div class="diag">
+    <article><h3>Se edita a ciegas</h3><p>No hay vista previa de la tienda. Para ver un cambio hay que guardar y abrir «Ver mi tienda ↗» en otra pestaña. Solo la barra de anuncios tiene vista previa.</p></article>
+    <article><h3>Se elige leyendo, no viendo</h3><p>El estilo de la portada es un desplegable de frases. Las plantillas son bloques grises que no muestran colores ni letras.</p><p class="q">«Imagen grande con el texto encima»</p></article>
+    <article><h3>Jerga del sistema</h3><p>Plantilla, estructura, personalizar, restaurar. Hay pantallas bloqueadas hasta «personalizar» la plantilla.</p><p class="q">«Para elegir cómo se ve el encabezado, primero elige una plantilla o personaliza la tuya.»</p></article>
+    <article><h3>Dos formas de guardar</h3><p>El logo y el banner se guardan al subirlos; el resto espera a «Guardar cambios». Deshacer solo existe después de aplicar una plantilla.</p></article>
+    <article><h3>En el celular se pierde el hilo</h3><p>El esquema y el formulario se reemplazan uno al otro. Nunca se ven juntos con el resultado.</p></article>
+  </div>
+</section>
+
+<section class="block">
+  <span class="eyebrow">Investigación</span>
+  <h2>Qué dicen los vendedores de otras plataformas</h2>
+  <div class="voces">
+    <div class="voz">
+      <blockquote>«You have to hover with your mouse over at the end of the section and if you hit the right pixel the "+" appears.»</blockquote>
+      <span class="src">Vendedor en la comunidad de Shopify, sobre agregar secciones</span>
+      <p class="leccion"><b>Lección:</b> el botón de agregar tiene que estar siempre a la vista.</p>
+    </div>
+    <div class="voz">
+      <blockquote>«…giving you more horizontal space to see your storefront as you edit.»</blockquote>
+      <span class="src">Shopify, rediseño del editor de temas (marzo 2026)</span>
+      <p class="leccion"><b>Lección:</b> la vista previa va al centro. En pantallas chicas los ajustes suben desde abajo para que se vean la estructura y los ajustes a la vez.</p>
+    </div>
+    <div class="voz">
+      <blockquote>«…overcomplicating merchants lives… isn't even usable on smaller screens / mobile devices.»</blockquote>
+      <span class="src">Respuesta en la comunidad de Shopify al nuevo editor</span>
+      <p class="leccion"><b>Lección:</b> el dueño de una tienda pequeña administra desde el celular. El editor tiene que funcionar ahí.</p>
+    </div>
+    <div class="voz">
+      <blockquote>«The theme editor has changed multiple times, and it can feel confusing compared to older versions.»</blockquote>
+      <span class="src">Comunidad de Shopify, hilo «la interfaz de Shopify está mal diseñada a propósito»</span>
+      <p class="leccion"><b>Lección:</b> pocas ideas, siempre en el mismo lugar. Cada cambio de diseño cuesta volver a aprender.</p>
+    </div>
+    <div class="voz">
+      <blockquote>«Its intuitive drag-and-drop interface allows users to effortlessly design… without the need for coding knowledge.»</blockquote>
+      <span class="src">Reseña de Squarespace en Capterra</span>
+      <p class="leccion"><b>Lección:</b> lo que se elogia es mover cosas y verlas al instante. Squarespace usa secciones prearmadas que se acomodan solas; Wix deja poner cualquier cosa en cualquier lado y los análisis lo llaman «fiddly».</p>
+    </div>
+    <div class="voz">
+      <blockquote>«If you choose a template on Wix, you cannot change it later.»</blockquote>
+      <span class="src">Comparativa Wix vs Squarespace (Style Factory)</span>
+      <p class="leccion"><b>Lección:</b> cambiar de estilo nunca debe borrar textos ni fotos. Squarespace se elogia justo porque permite cambiar de plantilla sin perder contenido.</p>
+    </div>
+  </div>
+  <ul class="principios">
+    <li><b>Ver mientras editas</b>La tienda real al centro, actualizándose con cada tecla.</li>
+    <li><b>Tocar lo que ves</b>Hacer clic en una parte de la tienda abre sus ajustes.</li>
+    <li><b>Elegir viendo</b>Miniaturas con los colores y letras reales, no frases.</li>
+    <li><b>Secciones que se acomodan solas</b>Prearmadas y ordenables, sin diseño libre píxel a píxel.</li>
+    <li><b>Un solo guardado</b>Borrador automático, Deshacer siempre, un botón Publicar.</li>
+    <li><b>Primero el celular</b>Panel que sube desde abajo y vista previa siempre visible.</li>
+  </ul>
+  <p class="nota">Las búsquedas no devolvieron hilos de Reddit ni reseñas de Tiendanube en Trustpilot. Las citas vienen de foros oficiales, agregadores de reseñas y comparativas. Las fuentes están al final.</p>
+</section>
+
+<section class="block" id="propuestas">
+  <span class="eyebrow">Propuestas</span>
+  <h2>Pruébalas con la tienda de muestra</h2>
+  <p class="nota">Los cambios se comparten entre las tres pestañas, así puedes comparar el mismo diseño en cada editor. Los enlaces de la tienda no navegan.</p>
+  <div class="tabs" role="tablist" aria-label="Propuestas">
+    <button role="tab" id="tab-a" aria-controls="p-a" aria-selected="true" data-tab="a"><span class="k">A</span> Lienzo con panel</button>
+    <button role="tab" id="tab-b" aria-controls="p-b" aria-selected="false" data-tab="b"><span class="k">B</span> Edición directa</button>
+    <button role="tab" id="tab-c" aria-controls="p-c" aria-selected="false" data-tab="c"><span class="k">C</span> Paso a paso</button>
+  </div>
+
+  <div id="p-a" role="tabpanel" aria-labelledby="tab-a" class="block" style="padding-top:8px">
+    <div class="prop-head">
+      <div class="meta">
+        <h3>A · Lienzo con panel</h3>
+        <p>La tienda al centro. A la izquierda la estructura de la página; a la derecha los ajustes de lo que seleccionaste. Haz clic en cualquier parte de la tienda o en la lista para editarla. En el celular la lista se vuelve una fila de pestañas y los ajustes suben desde abajo.</p>
+        <p class="nota">Inspirado en: el editor de temas de Shopify (2026) y Tiendanube.</p>
+      </div>
+      <div class="pc">
+        <div class="pro"><span class="t">A favor</span><ul><li>Reutiliza el esquema y los formularios que ya tienes.</li><li>Escala bien a la ficha de producto, habitación o tour.</li><li>Patrón conocido para quien viene de Shopify.</li></ul></div>
+        <div class="con"><span class="t">En contra</span><ul><li>Tres zonas en pantalla; en laptops chicas se siente apretado.</li><li>Los textos se editan en el panel, no sobre la tienda.</li></ul></div>
+      </div>
+    </div>
+    <div class="demo b-rel" id="demo-a"></div>
+  </div>
+
+  <div id="p-b" role="tabpanel" aria-labelledby="tab-b" class="block" style="padding-top:8px" hidden>
+    <div class="prop-head">
+      <div class="meta">
+        <h3>B · Edición directa</h3>
+        <p>La tienda es el editor. Haz clic en el título de la portada y escribe. Al pasar sobre una sección aparece su barra: subir, bajar, ocultar y opciones. Entre secciones hay un «+ Agregar sección» siempre visible. Colores y letras viven en el botón Estilo.</p>
+        <p class="nota">Inspirado en: Squarespace (secciones prearmadas) y Wix (edición en el lugar).</p>
+      </div>
+      <div class="pc">
+        <div class="pro"><span class="t">A favor</span><ul><li>Cero traducción mental: lo que tocas es lo que cambia.</li><li>Lo más rápido para textos y orden.</li><li>Se siente moderno y «propio».</li></ul></div>
+        <div class="con"><span class="t">En contra</span><ul><li>Lo más caro de construir: el storefront tiene que aceptar edición.</li><li>Las barras flotantes cuestan en pantallas táctiles.</li><li>Opciones finas (columnas, cantidad de productos) quedan escondidas.</li></ul></div>
+      </div>
+    </div>
+    <div class="demo b-rel" id="demo-b"></div>
+  </div>
+
+  <div id="p-c" role="tabpanel" aria-labelledby="tab-c" class="block" style="padding-top:8px" hidden>
+    <div class="prop-head">
+      <div class="meta">
+        <h3>C · Paso a paso</h3>
+        <p>Cinco pasos con opciones grandes y un celular al lado que salta solo a la parte que estás editando. Termina con una revisión que avisa qué falta antes de publicar. Se puede volver a cualquier paso.</p>
+        <p class="nota">Inspirado en: el armado inicial de Tiendanube y Shopify, y en asistentes de configuración.</p>
+      </div>
+      <div class="pc">
+        <div class="pro"><span class="t">A favor</span><ul><li>El más fácil para quien nunca diseñó nada.</li><li>Pensado para el celular, donde trabaja tu cliente.</li><li>La revisión final evita tiendas a medio armar.</li></ul></div>
+        <div class="con"><span class="t">En contra</span><ul><li>Lento para un cambio puntual («solo quiero cambiar el título»).</li><li>No muestra la tienda en escritorio.</li></ul></div>
+      </div>
+    </div>
+    <div class="demo b-rel" id="demo-c"></div>
+  </div>
+</section>
+
+<section class="block">
+  <span class="eyebrow">Comparación</span>
+  <h2>Cuál conviene</h2>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th></th><th>A · Lienzo con panel</th><th>B · Edición directa</th><th>C · Paso a paso</th></tr></thead>
+    <tbody>
+      <tr><th>Ver mientras editas</th><td><span class="dots">●●●</span>Siempre, al centro</td><td><span class="dots">●●●</span>Es la misma tienda</td><td><span class="dots">●●○</span>Solo en celular</td></tr>
+      <tr><th>Fácil la primera vez</th><td><span class="dots">●●○</span>Hay que entender la lista</td><td><span class="dots">●●○</span>Hay que descubrir las barras</td><td><span class="dots">●●●</span>Te lleva de la mano</td></tr>
+      <tr><th>Rápido para un cambio puntual</th><td><span class="dots">●●●</span>Clic y listo</td><td><span class="dots">●●●</span>Clic y escribir</td><td><span class="dots">●○○</span>Hay que buscar el paso</td></tr>
+      <tr><th>En el celular</th><td><span class="dots">●●○</span>Panel desde abajo</td><td><span class="dots">●○○</span>Barras flotantes incómodas</td><td><span class="dots">●●●</span>Diseñado para eso</td></tr>
+      <tr><th>Esfuerzo con tu código</th><td><span class="dots">●●○</span>Iframe del storefront + postMessage; reutiliza los formularios actuales</td><td><span class="dots">●○○</span>Lo de A + modo edición dentro del storefront</td><td><span class="dots">●●●</span>Formularios nuevos sobre el mismo modelo</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="reco">
+    <h3>Mi recomendación: A como editor, C como primer armado</h3>
+    <ol>
+      <li><b>A es el editor de todos los días.</b> Ya tienes el esquema (Estilo, Encabezado, Inicio, Pie) y los formularios por sección y por ficha. Lo que falta es la vista previa en vivo: el storefront en un iframe que recibe el borrador por postMessage. Es la fase 4 del plan de personalización que ya estaba previsto.</li>
+      <li><b>Un solo guardado.</b> Borrador automático, Deshacer y Rehacer siempre, y un botón Publicar. El logo y el banner pasan a ser parte del borrador como todo lo demás.</li>
+      <li><b>Elegir viendo.</b> Cambia el desplegable de la portada y las plantillas grises por miniaturas con la paleta y la letra reales. Quita «Personalizar / Restaurar»: elegir otro estilo cambia colores, letras y orden, pero conserva los textos y las fotos.</li>
+      <li><b>C para tiendas nuevas.</b> El paso a paso escribe el mismo diseño que A, así que es una puerta de entrada y no un segundo editor. Al terminar, el dueño cae en A.</li>
+      <li><b>De B, solo editar textos tocando la tienda,</b> y más adelante. Es lo que más se nota y lo que más cuesta; tiene sentido cuando A ya funciona.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block read">
+  <span class="eyebrow">Fuentes</span>
+  <ol class="fuentes">
+    <li><a href="https://community.shopify.com/t/theme-editor-add-section-missing/382370" target="_blank" rel="noopener">Shopify Community: Theme Editor «Add Section» missing</a></li>
+    <li><a href="https://changelog.shopify.com/posts/redesigned-theme-editor-navigation" target="_blank" rel="noopener">Shopify Changelog: redesigned theme editor navigation</a></li>
+    <li><a href="https://community.shopify.com/t/new-theme-editor-inquiry-not-for-beginners-like-me/552662/2" target="_blank" rel="noopener">Shopify Community: New theme editor, not for beginners like me</a></li>
+    <li><a href="https://community.shopify.com/t/i-am-convinced-the-shopify-user-interface-is-poorly-designed-on-purpose/300104" target="_blank" rel="noopener">Shopify Community: UI poorly designed on purpose</a></li>
+    <li><a href="https://www.capterra.com/p/143461/Squarespace/reviews/?page=20" target="_blank" rel="noopener">Capterra: reseñas de Squarespace</a></li>
+    <li><a href="https://www.stylefactoryproductions.com/blog/squarespace-vs-wix" target="_blank" rel="noopener">Style Factory: Wix vs Squarespace</a></li>
+    <li><a href="https://www.g2.com/compare/shopify-vs-squarespace" target="_blank" rel="noopener">G2: Shopify vs Squarespace</a></li>
+    <li><a href="https://www.g2.com/compare/squarespace-vs-wix-studio" target="_blank" rel="noopener">G2: Squarespace vs Wix Studio</a></li>
+    <li><a href="https://ayuda.tiendanube.com/es_AR/diseno/guia-personalizar-el-diseno-de-tu-tiendanube" target="_blank" rel="noopener">Tiendanube: guía para personalizar el diseño</a></li>
+    <li><a href="https://neowyze.tech/blog/tienda-nube-vs-empretienda" target="_blank" rel="noopener">Neowyze: Tienda Nube vs Empretienda</a></li>
+  </ol>
+</section>
+</div>
+
+<script>
+(() => {
+const PALETAS = {
+  arcilla:{n:'Arcilla',p:'#a4442a',on:'#fff',bg:'#ffffff',sf:'#f6eee8',fg:'#2a1d17',mu:'#76655b',ln:'#ebdfd6',ann:'#2a1d17',annfg:'#fff'},
+  oliva:{n:'Oliva',p:'#55652b',on:'#fff',bg:'#fbfbf6',sf:'#eceee0',fg:'#20251a',mu:'#646b57',ln:'#dde0cd',ann:'#55652b',annfg:'#fff'},
+  indigo:{n:'Índigo',p:'#2f3f8f',on:'#fff',bg:'#ffffff',sf:'#eef0f8',fg:'#151a33',mu:'#5d6382',ln:'#dde0ee',ann:'#151a33',annfg:'#fff'},
+  noche:{n:'Noche',p:'#e3ad48',on:'#1a1408',bg:'#15171c',sf:'#20232a',fg:'#f1ede4',mu:'#a7a296',ln:'#2f333c',ann:'#e3ad48',annfg:'#1a1408'},
+};
+const TIPOS = {
+  moderna:{n:'Moderna',d:"'Poppins',sans-serif",b:"'Poppins',sans-serif",w:600},
+  editorial:{n:'Editorial',d:"'Playfair Display',Georgia,serif",b:"'Figtree',sans-serif",w:700},
+  amigable:{n:'Amigable',d:"'Nunito',sans-serif",b:"'Nunito',sans-serif",w:800},
+};
+const SEC = {
+  categorias:{n:'Categorías',t:'Compra por categoría'},
+  productos:{n:'Productos destacados',t:'Lo más pedido'},
+  beneficios:{n:'Beneficios',t:''},
+  testimonios:{n:'Testimonios',t:'Lo que dicen nuestros clientes'},
+  'imagen-texto':{n:'Imagen y texto',t:'Del taller de Chulucanas a tu mesa'},
+  faq:{n:'Preguntas frecuentes',t:'Preguntas frecuentes'},
+  oferta:{n:'Oferta con cuenta regresiva',t:'20% en tazas por el Día de la Madre'},
+};
+const VARIANTES = {img:'Imagen de fondo',div:'Texto e imagen',min:'Solo texto'};
+
+let S = {
+  paleta:'arcilla', tipo:'editorial', logo:'izquierda',
+  anuncio:{on:true,texto:'Envío gratis en Lima desde S/ 150'},
+  hero:{v:'img',titulo:'Cerámica hecha a mano en Chulucanas',sub:'Piezas únicas de taller familiar para tu mesa y tu casa.',boton:'Ver la colección'},
+  secs:[{id:'s1',t:'categorias',on:true,titulo:SEC.categorias.t},{id:'s2',t:'productos',on:true,titulo:SEC.productos.t},{id:'s3',t:'beneficios',on:true,titulo:''},{id:'s4',t:'testimonios',on:false,titulo:SEC.testimonios.t}],
+};
+let hist = [], fut = [], ultimaClave = null, ultimaVez = 0, sucio = false, seq = 5, activa = 'a';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// Cambia el estado. Teclear en el mismo campo se agrupa en un solo paso de Deshacer.
+function cambiar(fn, {clave = null, sinRender = false} = {}) {
+  const ahora = Date.now();
+  if (!(clave && clave === ultimaClave && ahora - ultimaVez < 1500)) {
+    hist.push(JSON.stringify(S)); if (hist.length > 80) hist.shift(); fut = [];
+  }
+  ultimaClave = clave; ultimaVez = ahora;
+  fn(S); sucio = true;
+  sinRender ? refrescarEstado() : render();
+}
+function deshacer(){ if(!hist.length) return; fut.push(JSON.stringify(S)); S = JSON.parse(hist.pop()); ultimaClave=null; sucio=true; render(); }
+function rehacer(){ if(!fut.length) return; hist.push(JSON.stringify(S)); S = JSON.parse(fut.pop()); ultimaClave=null; sucio=true; render(); }
+function publicar(demo){ sucio=false; hist=[]; fut=[]; refrescarEstado(); toast(demo,'Publicado. Tu tienda ya muestra estos cambios.'); }
+function toast(demo,msg){ const t=document.createElement('div'); t.className='toast'; t.setAttribute('role','status'); t.textContent=msg; demo.appendChild(t); setTimeout(()=>t.remove(),2400); }
+function refrescarEstado(){
+  document.querySelectorAll('.estado').forEach(e=>{ e.classList.toggle('sucio',sucio); e.textContent = sucio ? 'Borrador guardado · sin publicar' : 'Publicado'; });
+  document.querySelectorAll('[data-a="undo"]').forEach(b=>b.disabled=!hist.length);
+  document.querySelectorAll('[data-a="redo"]').forEach(b=>b.disabled=!fut.length);
+  document.querySelectorAll('[data-a="publicar"]').forEach(b=>b.disabled=!sucio);
+}
+
+/* ---------- Tienda de muestra ---------- */
+function vars(){ const p=PALETAS[S.paleta], t=TIPOS[S.tipo];
+  return `--p:${p.p};--on:${p.on};--bg-s:${p.bg};--sf-s:${p.sf};--fg-s:${p.fg};--mu-s:${p.mu};--ln-s:${p.ln};--ann:${p.ann};--annfg:${p.annfg};--fd:${t.d};--fb:${t.b};--fw:${t.w}`; }
+const art = (cls='') => `<div class="art ${cls}"><span class="v v1"></span><span class="v v2"></span><span class="v v3"></span></div>`;
+const vas = (w,h,l) => `<span class="v" style="left:${l}%;width:${w}%;height:${h}%"></span>`;
+const ICON = {
+  camion:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h11v9H3zM14 9h4l3 3v3h-7"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>',
+  pago:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/></svg>',
+  mano:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 11V5a1.5 1.5 0 0 1 3 0v5M10 10V4a1.5 1.5 0 0 1 3 0v6M13 10V5a1.5 1.5 0 0 1 3 0v7M16 12V8a1.5 1.5 0 0 1 3 0v6a7 7 0 0 1-7 7h-1a6 6 0 0 1-5-3l-3-5a1.5 1.5 0 0 1 2.5-1.6L7 14"/></svg>',
+};
+function tituloSec(s, edit){ return s.titulo ? `<h2 ${ce(edit,'sec:'+s.id)}>${esc(s.titulo)}</h2>` : ''; }
+const ce = (edit,k) => edit ? `contenteditable="true" spellcheck="false" data-edit="${k}"` : '';
+const RENDER = {
+  categorias:(s,e)=>`<div class="sec"><div class="hd">${tituloSec(s,e)}<span>Ver todo</span></div><div class="g4 cat">${['Jarrones','Tazas','Platos','Decoración'].map((n,i)=>`<div class="tile"><div class="ph">${vas(28+i*6,50+i*8,34-i*3)}</div><b>${n}</b></div>`).join('')}</div></div>`,
+  productos:(s,e)=>`<div class="sec"><div class="hd">${tituloSec(s,e)}<span>Ver todo</span></div><div class="g4">${[['Jarrón Ñandú','S/ 120'],['Taza Paqcha','S/ 38'],['Plato Inti','S/ 65'],['Cuenco Killa','S/ 45']].map(([n,p],i)=>`<div class="tile"><div class="ph">${vas([34,30,46,40][i],[70,48,26,36][i],[33,35,27,30][i])}</div><b>${n}</b><span class="pr">${p}</span></div>`).join('')}</div></div>`,
+  beneficios:()=>`<div class="sec ben"><div>${ICON.camion}<b>Envío a todo el Perú</b>Lima en 48 h, provincias en 3 a 5 días.</div><div>${ICON.pago}<b>Paga con Yape o Plin</b>También tarjeta o transferencia.</div><div>${ICON.mano}<b>Hecho a mano en Piura</b>Cada pieza es distinta.</div></div>`,
+  testimonios:(s,e)=>`<div class="sec">${tituloSec(s,e)}<div class="tes"><figure><blockquote>«Llegó perfecto a Arequipa y es más bonito en persona.»</blockquote><figcaption>Rocío M. · Jarrón Ñandú</figcaption></figure><figure><blockquote>«Regalé las tazas por el Día del Padre y fueron un éxito.»</blockquote><figcaption>Luis A. · Taza Paqcha</figcaption></figure></div></div>`,
+  'imagen-texto':(s,e)=>`<div class="sec it2">${art()}<div style="display:grid;gap:10px">${tituloSec(s,e)}<p>Tres generaciones de la familia Ñañez trabajan la arcilla con la técnica de paleteado. Cada pieza pasa dos semanas en el taller antes de llegar a tu casa.</p></div></div>`,
+  faq:(s,e)=>`<div class="sec faq">${tituloSec(s,e)}<div>¿Hacen envíos a provincia?<span>+</span></div><div>¿Las piezas van al microondas?<span>+</span></div><div>¿Puedo pedir un diseño personalizado?<span>+</span></div></div>`,
+  oferta:(s,e)=>`<div class="sec ofe">${tituloSec(s,e)}<div class="cd"><span>02 d</span><span>14 h</span><span>30 m</span></div></div>`,
+};
+function hero(edit){
+  const h=S.hero, txt=`<div class="tx"><h1 ${ce(edit,'titulo')}>${esc(h.titulo)}</h1><p ${ce(edit,'sub')}>${esc(h.sub)}</p><div><span class="st-btn" ${ce(edit,'boton')}>${esc(h.boton)}</span></div></div>`;
+  if(h.v==='img') return `<section class="hero img">${txt}${art()}</section>`;
+  if(h.v==='div') return `<section class="hero div">${txt}${art()}</section>`;
+  return `<section class="hero min">${txt}</section>`;
+}
+// Barra de herramientas de un bloque en la edición directa (B).
+function tb(id,label,mov){
+  return `<div class="tb" role="toolbar" aria-label="${esc(label)}"><span class="lb">${esc(label)}</span>`+
+    (mov?`<button data-b="up" data-id="${id}" aria-label="Subir">↑</button><button data-b="down" data-id="${id}" aria-label="Bajar">↓</button>`:'')+
+    (id!=='encabezado'&&id!=='portada'&&id!=='pie'?`<button data-b="hide" data-id="${id}" aria-label="Ocultar">${OJO}</button>`:'')+
+    (id==='portada'||id==='encabezado'?`<button class="txt" data-b="opts" data-id="${id}">Opciones</button>`:'')+
+    (mov?`<button data-b="del" data-id="${id}" aria-label="Quitar">✕</button>`:'')+`</div>`;
+}
+function tienda({edit=false, sel=null}={}){
+  const blk=(id,label,inner,mov=false)=>`<div class="st-b${sel===id?' sel':''}" data-sec="${id}" data-label="${esc(label)}" tabindex="${edit?-1:0}">${edit?tb(id,label,mov):''}${inner}</div>`;
+  const ins=(after)=>edit?`<div class="ins"><button data-b="ins" data-after="${after}">+ Agregar sección</button></div>`:'';
+  const oculta=(id,label)=>edit?`<div class="oculta"><span>${esc(label)} · oculta</span><button data-b="show" data-id="${id}">Mostrar</button></div>`:'';
+  let h=`<div class="st${edit?' edit':''}" style="${vars()}">`;
+  h += S.anuncio.on ? blk('anuncio','Barra de anuncios',`<div class="st-ann" ${ce(edit,'anuncio')}>${esc(S.anuncio.texto)}</div>`) : oculta('anuncio','Barra de anuncios');
+  h += blk('encabezado','Encabezado',`<div class="st-hd ${S.logo==='centro'?'c':''}"><span class="st-logo"><span class="m"></span>Qori Cerámica</span><nav><span>Tienda</span><span>Colecciones</span><span>Nosotros</span></nav><span class="st-cart">Carrito (2)</span></div>`);
+  h += blk('portada','Portada',hero(edit)) + ins('portada');
+  for(const s of S.secs){ h += s.on ? blk(s.id,SEC[s.t].n,RENDER[s.t](s,edit),true) : oculta(s.id,SEC[s.t].n); h += ins(s.id); }
+  h += blk('pie','Pie de página',`<footer class="st-ft"><div><b>Qori Cerámica</b>Jr. Lima 214, Chulucanas, Piura<br>WhatsApp 987 654 321<br><span class="lr">Libro de Reclamaciones</span></div><div><b>Ayuda</b>Envíos<br>Cambios y devoluciones</div><div><b>Pagos</b>Yape · Plin · Visa</div></footer>`);
+  return h+'</div>';
+}
+
+/* ---------- Paneles compartidos ---------- */
+const OJO='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const OJO_NO='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.9M6.6 6.6C3.9 8.3 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 4.4-1.1"/></svg>';
+function radioCards(grupo, opciones, actual, pinta, cls=''){
+  return `<div class="cards ${cls}" role="radiogroup">${Object.entries(opciones).map(([id,o])=>`<button type="button" class="card" role="radio" aria-checked="${id===actual}" data-set="${grupo}" data-val="${id}">${pinta(id,o)}</button>`).join('')}</div>`;
+}
+const pintaPaleta=(id,p)=>`<span class="chips4"><span style="background:${p.bg}"></span><span style="background:${p.sf}"></span><span style="background:${p.p}"></span><span style="background:${p.fg}"></span></span><span class="nm">${p.n}</span>`;
+const pintaTipo=(id,t)=>`<span class="aa" style="font-family:${t.d};font-weight:${t.w}">Aa</span><span class="nm">${t.n}</span>`;
+function pintaVariante(id){
+  const p=PALETAS[S.paleta]; const c=p.p, sf=p.sf, fg=p.fg;
+  const m = id==='img' ? `<i style="inset:0;background:linear-gradient(115deg,${sf} 45%,${c}55)"></i><i style="left:8%;top:30%;width:40%;height:9%;background:${fg}"></i><i style="left:8%;top:48%;width:30%;height:6%;background:${fg}66"></i><i style="right:12%;bottom:0;width:18%;height:62%;background:${c};border-radius:40% 40% 30% 30%"></i>`
+    : id==='div' ? `<i style="left:6%;top:30%;width:38%;height:9%;background:${fg}"></i><i style="left:6%;top:48%;width:30%;height:6%;background:${fg}66"></i><i style="right:6%;top:12%;width:42%;height:76%;background:${sf};border-radius:4px"></i><i style="right:20%;bottom:16%;width:14%;height:50%;background:${c};border-radius:40% 40% 30% 30%"></i>`
+    : `<i style="left:8%;top:28%;width:70%;height:14%;background:${fg}"></i><i style="left:8%;top:52%;width:50%;height:12%;background:${fg}"></i><i style="left:8%;top:74%;width:22%;height:8%;background:${c};border-radius:99px"></i>`;
+  return `<span class="mini" style="background:${p.bg}">${m}</span><span class="nm">${VARIANTES[id]}</span>`;
+}
+const panelEstilo = () => `<div class="fld"><span class="lbl">Colores</span>${radioCards('paleta',PALETAS,S.paleta,pintaPaleta)}</div>
+  <div class="fld"><span class="lbl">Letras</span>${radioCards('tipo',TIPOS,S.tipo,pintaTipo)}</div>
+  <p class="ayuda">Cambiar colores o letras nunca borra tus textos ni tus fotos.</p>`;
+const panelPortada = () => `<div class="fld"><span class="lbl">Cómo se ve</span>${radioCards('variante',VARIANTES,S.hero.v,pintaVariante)}</div>
+  <div class="fld"><label for="f-tit-${activa}">Título</label><input type="text" id="f-tit-${activa}" data-in="titulo" maxlength="100" value="${esc(S.hero.titulo)}"></div>
+  <div class="fld"><label for="f-sub-${activa}">Subtítulo</label><textarea id="f-sub-${activa}" data-in="sub" maxlength="300">${esc(S.hero.sub)}</textarea></div>
+  <div class="fld"><label for="f-bot-${activa}">Texto del botón</label><input type="text" id="f-bot-${activa}" data-in="boton" maxlength="50" value="${esc(S.hero.boton)}"></div>
+  ${S.hero.v!=='min'?'<div class="drop">Arrastra la foto de portada aquí o <u>elige un archivo</u></div>':''}`;
+const panelAnuncio = () => `<div class="sw"><span class="lbl" style="font-weight:600;font-size:.9rem">Mostrar la barra</span><button class="switch" role="switch" aria-checked="${S.anuncio.on}" data-toggle="anuncio" aria-label="Mostrar la barra de anuncios"></button></div>
+  <div class="fld"><label for="f-ann-${activa}">Texto</label><input type="text" id="f-ann-${activa}" data-in="anuncio" maxlength="200" value="${esc(S.anuncio.texto)}"></div>`;
+const LOGOS={izquierda:'A la izquierda',centro:'Al centro'};
+const pintaLogo=(id)=>`<span class="mini" style="height:34px"><i style="top:40%;height:22%;width:30%;background:currentColor;${id==='centro'?'left:35%':'left:8%'};opacity:.6"></i></span><span class="nm">${LOGOS[id]}</span>`;
+const panelEncabezado = () => `<div class="drop">Arrastra tu logo aquí o <u>elige un archivo</u></div><div class="fld"><span class="lbl">Posición del logo</span>${radioCards('logo',LOGOS,S.logo,pintaLogo)}</div>`;
+function panelSeccion(s){
+  return `<p class="ayuda">${s.t==='beneficios'?'Tres razones para comprarte. Se arman con tus datos de envío y pago.':'Se llena sola con lo que tienes en tu catálogo.'}</p>
+  ${s.t!=='beneficios'?`<div class="fld"><label for="f-st-${activa}">Título de la sección</label><input type="text" id="f-st-${activa}" data-in="sec:${s.id}" value="${esc(s.titulo)}"></div>`:''}
+  <div class="acciones"><button class="btn" data-a="dup" data-id="${s.id}">Duplicar</button><button class="btn ghost rojo" data-a="quitar" data-id="${s.id}">Quitar sección</button></div>`;
+}
+function pintaTipoSec(t){
+  const p=PALETAS[S.paleta];
+  const b = {categorias:4,productos:4,beneficios:3,testimonios:2,'imagen-texto':2,faq:0,oferta:0}[t];
+  let m='';
+  if(t==='faq') m=[0,1,2].map(i=>`<i style="left:8%;right:8%;top:${18+i*26}%;height:2px;background:${p.fg}44"></i>`).join('');
+  else if(t==='oferta') m=`<i style="inset:18% 6%;background:${p.p};border-radius:4px"></i>`;
+  else m=Array.from({length:b},(_,i)=>`<i style="top:22%;bottom:22%;left:${6+i*(88/b)}%;width:${88/b-4}%;background:${i===0&&t==='imagen-texto'?p.p:p.sf};border:1px solid ${p.ln}"></i>`).join('');
+  return `<span class="mini" style="background:${p.bg}">${m}</span><span class="nm">${SEC[t].n}</span>`;
+}
+const panelAgregar = () => `<p class="ayuda">Elige qué agregar. Puedes moverla después.</p><div class="cards">${Object.keys(SEC).map(t=>`<button class="card" data-add="${t}">${pintaTipoSec(t)}</button>`).join('')}</div>`;
+
+function agregar(t, despuesDe){
+  const id='s'+(seq++);
+  cambiar(st=>{ const i = despuesDe==='portada' ? 0 : st.secs.findIndex(x=>x.id===despuesDe)+1; st.secs.splice(i<0?st.secs.length:i,0,{id,t,on:true,titulo:SEC[t].t}); });
+  return id;
+}
+function mover(id,d){ cambiar(st=>{ const i=st.secs.findIndex(x=>x.id===id), j=i+d; if(i<0||j<0||j>=st.secs.length) return; [st.secs[i],st.secs[j]]=[st.secs[j],st.secs[i]]; }); }
+function alternar(id){ cambiar(st=>{ if(id==='anuncio') st.anuncio.on=!st.anuncio.on; else { const s=st.secs.find(x=>x.id===id); if(s) s.on=!s.on; } }); }
+function quitar(id){ cambiar(st=>{ st.secs=st.secs.filter(x=>x.id!==id); }); }
+function duplicar(id){ cambiar(st=>{ const i=st.secs.findIndex(x=>x.id===id); st.secs.splice(i+1,0,{...st.secs[i],id:'s'+(seq++)}); }); }
+function escribir(k,v){
+  cambiar(st=>{ if(k==='anuncio') st.anuncio.texto=v; else if(k.startsWith('sec:')){ const s=st.secs.find(x=>x.id===k.slice(4)); if(s) s.titulo=v; } else st.hero[k]=v; },{clave:k,sinRender:true});
+}
+// Clics comunes de los paneles: tarjetas de opción, interruptores, agregar.
+function manejarPanel(e, alAgregar){
+  const c=e.target.closest('[data-set]');
+  if(c){ const g=c.dataset.set, v=c.dataset.val; cambiar(st=>{ if(g==='variante') st.hero.v=v; else st[g]=v; }); return true; }
+  const t=e.target.closest('[data-toggle]'); if(t){ alternar(t.dataset.toggle); return true; }
+  const a=e.target.closest('[data-add]'); if(a){ alAgregar(a.dataset.add); return true; }
+  return false;
+}
+const barraTop = (extra='') => `<div class="ed-top"><span class="tienda">Qori Cerámica</span>${extra}<span class="sep"></span><span class="estado" role="status"></span>
+  <button class="btn ghost" data-a="undo" aria-label="Deshacer" title="Deshacer">↶</button><button class="btn ghost" data-a="redo" aria-label="Rehacer" title="Rehacer">↷</button><button class="btn pri" data-a="publicar">Publicar</button></div>`;
+
+/* ---------- A: lienzo con panel ---------- */
+const A = { sel:'portada', el:document.getElementById('demo-a') };
+A.el.innerHTML = barraTop(`<span class="seg" aria-label="Página que editas"><button aria-pressed="true">Inicio</button><button aria-pressed="false" title="En esta muestra solo se edita el inicio">Producto</button></span>`)
+  + `<div class="a-grid"><aside class="a-tree" aria-label="Estructura de la página"></aside><div class="a-canvas"></div><div class="a-chips" role="toolbar" aria-label="Partes de la página"></div><aside class="a-panel"></aside></div>`;
+function nombreDe(id){ return ({estilo:'Estilo de la tienda',anuncio:'Barra de anuncios',encabezado:'Encabezado',portada:'Portada',pie:'Pie de página',agregar:'Agregar sección'})[id] || SEC[S.secs.find(s=>s.id===id)?.t]?.n; }
+function renderA(soloCanvas){
+  if(A.sel!=='estilo'&&A.sel!=='agregar'&&!nombreDe(A.sel)) A.sel='portada';
+  const canvas=A.el.querySelector('.a-canvas');
+  canvas.innerHTML = tienda({sel:A.sel});
+  if(soloCanvas) return;
+  const fila=(id,label,{ojo=null,mov=false,lock=false}={})=>`<div class="row${A.sel===id?' on':''}${ojo===false?' off':''}"><button class="nm" data-sel="${id}">${esc(label)}</button>`+
+    (mov?`<button class="ib mv" data-mv="-1" data-id="${id}" aria-label="Subir ${esc(label)}">↑</button><button class="ib mv" data-mv="1" data-id="${id}" aria-label="Bajar ${esc(label)}">↓</button>`:'')+
+    (ojo!==null?`<button class="ib" data-eye="${id}" aria-label="${ojo?'Ocultar':'Mostrar'} ${esc(label)}">${ojo?OJO:OJO_NO}</button>`:'')+
+    (lock?`<span class="ib" title="Siempre primera" aria-hidden="true">⌂</span>`:'')+`</div>`;
+  A.el.querySelector('.a-tree').innerHTML =
+    `<div class="a-grp">${fila('estilo',`Estilo · ${PALETAS[S.paleta].n}, ${TIPOS[S.tipo].n}`)}</div>`+
+    `<div class="a-grp"><span class="g">Encabezado <small>todas las páginas</small></span>${fila('anuncio','Barra de anuncios',{ojo:S.anuncio.on})}${fila('encabezado','Encabezado')}</div>`+
+    `<div class="a-grp"><span class="g">Inicio <small>${S.secs.filter(s=>s.on).length+1} visibles</small></span>${fila('portada','Portada',{lock:true})}${S.secs.map(s=>fila(s.id,SEC[s.t].n,{ojo:s.on,mov:true})).join('')}<button class="add" data-sel="agregar">+ Agregar sección</button></div>`+
+    `<div class="a-grp"><span class="g">Pie <small>todas las páginas</small></span>${fila('pie','Pie de página')}</div>`;
+  const ids=['estilo','anuncio','encabezado','portada',...S.secs.map(s=>s.id),'agregar','pie'];
+  A.el.querySelector('.a-chips').innerHTML = ids.map(id=>`<button aria-pressed="${A.sel===id}" data-sel="${id}">${esc(id==='agregar'?'+ Agregar':nombreDe(id))}</button>`).join('');
+  const s=S.secs.find(x=>x.id===A.sel);
+  const cuerpo = A.sel==='estilo'?panelEstilo():A.sel==='anuncio'?panelAnuncio():A.sel==='encabezado'?panelEncabezado():A.sel==='portada'?panelPortada():A.sel==='agregar'?panelAgregar():A.sel==='pie'?
+    `<p>El pie se arma con los datos de tu tienda: dirección, WhatsApp, medios de pago y el Libro de Reclamaciones.</p><button class="btn" type="button">Editar datos de la tienda</button>`:panelSeccion(s);
+  A.el.querySelector('.a-panel').innerHTML = `<div class="pnl"><h4>${esc(nombreDe(A.sel))}</h4>${cuerpo}</div>`;
+}
+function irA(id){
+  A.sel=id; renderA();
+  const canvas=A.el.querySelector('.a-canvas'), el=canvas.querySelector(`[data-sec="${id}"]`);
+  if(el) canvas.scrollTo({top: canvas.scrollTop + el.getBoundingClientRect().top - canvas.getBoundingClientRect().top - 12, behavior:'smooth'});
+}
+A.el.addEventListener('click', e=>{
+  const ac=e.target.closest('[data-a]');
+  if(ac){ const a=ac.dataset.a; if(a==='undo') deshacer(); else if(a==='redo') rehacer(); else if(a==='publicar') publicar(A.el); else if(a==='quitar'){ quitar(ac.dataset.id); A.sel='portada'; render(); } else if(a==='dup') duplicar(ac.dataset.id); return; }
+  if(manejarPanel(e, t=>{ const id=agregar(t, S.secs.at(-1)?.id ?? 'portada'); irA(id); })) return;
+  const sl=e.target.closest('[data-sel]'); if(sl){ irA(sl.dataset.sel); return; }
+  const ey=e.target.closest('[data-eye]'); if(ey){ alternar(ey.dataset.eye); return; }
+  const mv=e.target.closest('[data-mv]'); if(mv){ mover(mv.dataset.id, +mv.dataset.mv); return; }
+  const b=e.target.closest('.a-canvas [data-sec]'); if(b){ irA(b.dataset.sec); }
+});
+A.el.addEventListener('keydown', e=>{ const b=e.target.closest('.a-canvas [data-sec]'); if(b&&(e.key==='Enter'||e.key===' ')){ e.preventDefault(); irA(b.dataset.sec); } });
+A.el.addEventListener('input', e=>{ const k=e.target.dataset.in; if(!k) return; escribir(k,e.target.value); renderA(true); });
+
+/* ---------- B: edición directa ---------- */
+const B = { sel:null, drawer:false, pop:null, el:document.getElementById('demo-b') };
+B.el.innerHTML = barraTop(`<span class="nota" style="margin-left:6px">Toca un texto para cambiarlo</span><button class="btn" data-a="estilo" style="margin-left:8px">Estilo</button>`) + `<div class="b-stage"><div class="b-canvas"></div><div class="b-host"></div></div>`;
+function renderB(){
+  const c=B.el.querySelector('.b-canvas');
+  c.innerHTML = tienda({edit:true, sel:B.sel}) + popB();
+  B.el.querySelector('.b-host').innerHTML = B.drawer?`<div class="b-drawer"><button class="btn ghost cerrar" data-a="cerrar" aria-label="Cerrar">✕</button><div class="pnl"><h4>Estilo de la tienda</h4>${panelEstilo()}</div></div>`:'';
+  if(B.pop){ const p=c.querySelector('.pop'); const top=Math.min(B.pop.y, c.scrollHeight - p.offsetHeight - 10); p.style.top=Math.max(8,top)+'px'; p.style.left=Math.max(8,Math.min(B.pop.x, c.clientWidth - p.offsetWidth - 8))+'px'; }
+}
+function popB(){
+  if(!B.pop) return '';
+  if(B.pop.tipo==='ins') return `<div class="pop" role="dialog" aria-label="Agregar sección"><span class="t">Agregar sección</span><div class="cards">${Object.keys(SEC).map(t=>`<button class="card" data-add="${t}">${pintaTipoSec(t)}</button>`).join('')}</div></div>`;
+  if(B.pop.tipo==='portada') return `<div class="pop" role="dialog" aria-label="Opciones de la portada"><span class="t">Portada</span>${radioCards('variante',VARIANTES,S.hero.v,pintaVariante)}</div>`;
+  return `<div class="pop" role="dialog" aria-label="Opciones del encabezado"><span class="t">Encabezado</span>${radioCards('logo',LOGOS,S.logo,pintaLogo)}</div>`;
+}
+B.el.addEventListener('click', e=>{
+  const c=B.el.querySelector('.b-canvas');
+  const ac=e.target.closest('[data-a]');
+  if(ac){ const a=ac.dataset.a; if(a==='undo') deshacer(); else if(a==='redo') rehacer(); else if(a==='publicar') publicar(B.el); else if(a==='estilo'){ B.drawer=!B.drawer; B.pop=null; renderB(); } else if(a==='cerrar'){ B.drawer=false; renderB(); } return; }
+  if(manejarPanel(e, t=>{ const after=B.pop?.after; B.pop=null; const id=agregar(t, after); B.sel=id; render(); })) { if(e.target.closest('.pop [data-set]')){ B.pop=null; renderB(); } return; }
+  const bt=e.target.closest('[data-b]');
+  if(bt){
+    const {b,id}=bt.dataset; const r=bt.getBoundingClientRect(), cr=c.getBoundingClientRect();
+    const pos={x:r.left-cr.left-120, y:r.bottom-cr.top+c.scrollTop+6};
+    if(b==='up') mover(id,-1); else if(b==='down') mover(id,1); else if(b==='hide'||b==='show') alternar(id); else if(b==='del') quitar(id);
+    else if(b==='ins'){ B.pop={tipo:'ins',after:bt.dataset.after,...pos}; renderB(); }
+    else if(b==='opts'){ B.pop={tipo:id,...pos}; renderB(); }
+    return;
+  }
+  if(B.pop && !e.target.closest('.pop')){ B.pop=null; renderB(); return; }
+  const blk=e.target.closest('[data-sec]');
+  if(blk && B.sel!==blk.dataset.sec && !e.target.closest('[contenteditable]')){ B.sel=blk.dataset.sec; B.el.querySelectorAll('.st-b.sel').forEach(x=>x.classList.remove('sel')); blk.classList.add('sel'); }
+});
+B.el.addEventListener('input', e=>{ const k=e.target.dataset?.edit; if(k) escribir(k, e.target.textContent); });
+B.el.addEventListener('keydown', e=>{ if(e.target.dataset?.edit && e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
+
+/* ---------- C: paso a paso ---------- */
+const PASOS=[
+  {n:'Tu marca', foco:'encabezado'},
+  {n:'Tus letras', foco:'portada'},
+  {n:'Tu portada', foco:'portada'},
+  {n:'Tus secciones', foco:null},
+  {n:'Revisar', foco:'anuncio'},
+];
+const C={paso:0, visto:new Set([0]), el:document.getElementById('demo-c')};
+C.el.innerHTML = barraTop() + `<div class="c-grid"><div class="c-steps"></div><div class="c-side"><div class="phone"><div class="screen c-screen"></div></div></div></div>`;
+function pasoC(){
+  const t=TIPOS;
+  switch(C.paso){
+    case 0: return `<h3>¿De qué color es tu marca?</h3><p class="ayuda">Elige la combinación que más se parezca a tu logo o a tus productos.</p>${radioCards('paleta',PALETAS,S.paleta,pintaPaleta,'big')}
+      <div class="fld"><span class="lbl">Tu logo</span><div class="drop">Sube tu logo (PNG o JPG). Si no tienes, usamos el nombre de tu tienda.</div></div>
+      <div class="fld"><span class="lbl">¿Dónde va el logo?</span>${radioCards('logo',LOGOS,S.logo,pintaLogo)}</div>`;
+    case 1: return `<h3>¿Cómo quieres que se lean tus textos?</h3><p class="ayuda">Mira cómo queda el nombre de tu tienda con cada estilo.</p>
+      <div class="cards big" role="radiogroup">${Object.entries(t).map(([id,o])=>`<button class="card" role="radio" aria-checked="${id===S.tipo}" data-set="tipo" data-val="${id}"><span style="font-family:${o.d};font-weight:${o.w};font-size:1.35rem;line-height:1.15">Qori Cerámica</span><span style="font-family:${o.b};font-size:.85rem;color:var(--muted)">Piezas únicas para tu mesa</span><span class="nm">${o.n}</span></button>`).join('')}</div>`;
+    case 2: return `<h3>Tu portada</h3><p class="ayuda">Es lo primero que ven tus clientes. Di qué vendes en pocas palabras.</p>${panelPortada()}`;
+    case 3: return `<h3>¿Qué más quieres mostrar?</h3><p class="ayuda">Prende, apaga y ordena. La portada siempre va primero.</p>
+      <div class="lista">${S.secs.map((s,i)=>`<div class="it${s.on?'':' off'}"><span class="nm">${SEC[s.t].n}</span><button class="ib" data-mv="-1" data-id="${s.id}" aria-label="Subir" ${i===0?'disabled':''}>↑</button><button class="ib" data-mv="1" data-id="${s.id}" aria-label="Bajar" ${i===S.secs.length-1?'disabled':''}>↓</button><button class="switch" role="switch" aria-checked="${s.on}" data-toggle="${s.id}" aria-label="Mostrar ${SEC[s.t].n}"></button></div>`).join('')}</div>
+      <div class="fld"><span class="lbl">Agregar</span><div class="cards">${Object.keys(SEC).filter(k=>!S.secs.some(s=>s.t===k)).map(k=>`<button class="card" data-add="${k}">${pintaTipoSec(k)}</button>`).join('')||'<p class="ayuda">Ya agregaste todas.</p>'}</div></div>`;
+    default: {
+      const vis=S.secs.filter(s=>s.on).length;
+      const items=[
+        [true,`Colores «${PALETAS[S.paleta].n}» y letras «${TIPOS[S.tipo].n}»`,0],
+        [S.hero.titulo.trim().length>0,S.hero.titulo.trim()?'La portada tiene título':'A la portada le falta un título',2],
+        [false,'Falta subir tu logo. Mientras tanto se muestra el nombre de tu tienda.',0],
+        [vis>=2,`${vis} secciones visibles debajo de la portada`,3],
+      ];
+      return `<h3>Revisa y publica</h3><ul class="check">${items.map(([ok,txt,p])=>`<li><span class="${ok?'ok':'no'}">${ok?'✓':'!'}</span><span style="flex:1">${esc(txt)}</span>${ok?'':`<button class="btn" data-ir="${p}">Resolver</button>`}</li>`).join('')}</ul>
+        <div class="sw" style="justify-content:flex-start"><button class="switch" role="switch" aria-checked="${S.anuncio.on}" data-toggle="anuncio" aria-label="Mostrar barra de anuncios"></button><span>Barra de anuncios: «${esc(S.anuncio.texto)}»</span></div>`;
+    }
+  }
+}
+function renderC(soloPantalla){
+  const sc=C.el.querySelector('.c-screen'), top=sc.scrollTop;
+  sc.innerHTML = tienda();
+  sc.scrollTop = top;
+  if(soloPantalla) return;
+  C.el.querySelector('.c-steps').innerHTML =
+    `<nav class="c-prog" aria-label="Pasos">${PASOS.map((p,i)=>`<button data-ir="${i}" class="${C.visto.has(i)&&i!==C.paso?'hecho':''}" ${i===C.paso?'aria-current="step"':''}><span class="n">${C.visto.has(i)&&i!==C.paso?'✓':i+1}</span>${p.n}</button>`).join('')}</nav>
+    <div class="c-step">${pasoC()}</div>
+    <div class="c-nav"><button class="btn" data-c="atras" ${C.paso===0?'disabled':''}>Atrás</button>${C.paso<PASOS.length-1?`<button class="btn pri" data-c="sig">Siguiente: ${PASOS[C.paso+1].n}</button>`:`<button class="btn pri" data-a="publicar">Publicar mi tienda</button>`}</div>`;
+}
+function irPaso(i){
+  C.paso=i; C.visto.add(i); renderC();
+  const sc=C.el.querySelector('.c-screen'); const f=PASOS[i].foco ?? S.secs.find(s=>s.on)?.id;
+  const el=f&&sc.querySelector(`[data-sec="${f}"]`);
+  sc.scrollTo({top: el ? Math.max(0, sc.scrollTop + el.getBoundingClientRect().top - sc.getBoundingClientRect().top - 8) : 0, behavior:'smooth'});
+}
+C.el.addEventListener('click', e=>{
+  const ac=e.target.closest('[data-a]');
+  if(ac){ const a=ac.dataset.a; if(a==='undo') deshacer(); else if(a==='redo') rehacer(); else if(a==='publicar') publicar(C.el); return; }
+  if(manejarPanel(e, t=>agregar(t, S.secs.at(-1)?.id ?? 'portada'))) return;
+  const ir=e.target.closest('[data-ir]'); if(ir){ irPaso(+ir.dataset.ir); return; }
+  const nv=e.target.closest('[data-c]'); if(nv){ irPaso(C.paso + (nv.dataset.c==='sig'?1:-1)); return; }
+  const mv=e.target.closest('[data-mv]'); if(mv){ mover(mv.dataset.id,+mv.dataset.mv); }
+});
+C.el.addEventListener('input', e=>{ const k=e.target.dataset.in; if(!k) return; escribir(k,e.target.value); renderC(true); });
+
+/* ---------- Pestañas ---------- */
+function render(){ ({a:renderA,b:renderB,c:renderC})[activa](); refrescarEstado(); }
+const tabs=[...document.querySelectorAll('[data-tab]')];
+function abrir(k, foco){
+  activa=k;
+  tabs.forEach(t=>{ const on=t.dataset.tab===k; t.setAttribute('aria-selected',on); t.tabIndex=on?0:-1; document.getElementById('p-'+t.dataset.tab).hidden=!on; if(on&&foco) t.focus(); });
+  B.pop=null; render();
+  try{ localStorage.setItem('editor-propuesta',k); }catch(_){}
+}
+tabs.forEach((t,i)=>{
+  t.addEventListener('click',()=>abrir(t.dataset.tab));
+  t.addEventListener('keydown',e=>{ if(e.key==='ArrowRight'||e.key==='ArrowLeft'){ const n=tabs[(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length]; abrir(n.dataset.tab,true); } });
+});
+let inicial='a';
+const h=location.hash.replace('#','');
+if(['a','b','c'].includes(h)) inicial=h; else { try{ const g=localStorage.getItem('editor-propuesta'); if(['a','b','c'].includes(g)) inicial=g; }catch(_){} }
+// Pinta las tres para que cada pestaña esté lista al abrirla.
+activa='b'; renderB(); activa='c'; renderC(); abrir(inicial);
+})();
+</script>
+
+</body></html>

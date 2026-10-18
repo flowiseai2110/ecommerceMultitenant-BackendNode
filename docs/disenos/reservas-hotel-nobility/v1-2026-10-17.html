@@ -1,0 +1,769 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Reservas Hotel Nobility</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: mostrador de recepción — resumen del día, ciclo de estados como filtro, tabla de reservas, ficha lateral con las acciones de cada etapa. */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --sunk: #f1f3f6; --line: #e3e6eb; --line-strong: #cfd4dc;
+  --fg: #151a22; --muted: #5d6675; --faint: #8b93a1; --accent: #2457d6; --accent-soft: #e9effd; --on-accent: #ffffff;
+  --s-confirmar: #b45309; --s-confirmar-bg: #fef3e2;
+  --s-reservada: #1d4ed8; --s-reservada-bg: #e8effe;
+  --s-ocupada: #047857; --s-ocupada-bg: #e3f6ee;
+  --s-finalizada: #4b5563; --s-finalizada-bg: #eef0f3;
+  --s-noshow: #c2410c; --s-noshow-bg: #fdece4;
+  --s-anulada: #9f1239; --s-anulada-bg: #fbe8ee;
+  --s-horario: #6d28d9; --s-horario-bg: #f1ebfe;
+  --font: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --shadow: 0 1px 2px rgb(16 24 40 / .06), 0 8px 24px rgb(16 24 40 / .08);
+  --veil: rgb(10 14 20 / .38);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1218; --surface: #171b23; --sunk: #12161d; --line: #262c37; --line-strong: #353c49;
+  --fg: #e8ebf0; --muted: #a2aab7; --faint: #6f7886; --accent: #7aa2ff; --accent-soft: #1c2742; --on-accent: #0f1218;
+  --s-confirmar: #fbbf6a; --s-confirmar-bg: #3a2a12; --s-reservada: #8fb0ff; --s-reservada-bg: #1b2645;
+  --s-ocupada: #5fd4a6; --s-ocupada-bg: #12322a; --s-finalizada: #b3bac6; --s-finalizada-bg: #242a34;
+  --s-noshow: #fb9a6c; --s-noshow-bg: #3a2016; --s-anulada: #f58fac; --s-anulada-bg: #3a1622;
+  --s-horario: #c4a8ff; --s-horario-bg: #2a1f45;
+  --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); --veil: rgb(0 0 0 / .55); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f1218; --surface: #171b23; --sunk: #12161d; --line: #262c37; --line-strong: #353c49;
+  --fg: #e8ebf0; --muted: #a2aab7; --faint: #6f7886; --accent: #7aa2ff; --accent-soft: #1c2742; --on-accent: #0f1218;
+  --s-confirmar: #fbbf6a; --s-confirmar-bg: #3a2a12; --s-reservada: #8fb0ff; --s-reservada-bg: #1b2645;
+  --s-ocupada: #5fd4a6; --s-ocupada-bg: #12322a; --s-finalizada: #b3bac6; --s-finalizada-bg: #242a34;
+  --s-noshow: #fb9a6c; --s-noshow-bg: #3a2016; --s-anulada: #f58fac; --s-anulada-bg: #3a1622;
+  --s-horario: #c4a8ff; --s-horario-bg: #2a1f45;
+  --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); --veil: rgb(0 0 0 / .55); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.45 var(--font); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 18px; }
+.ejemplo { font-size: 12px; color: var(--muted); background: var(--surface); border: 1px dashed var(--line-strong); border-radius: 8px; padding: 8px 12px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+header.top h1 { margin: 0; font-size: 22px; font-weight: 700; text-wrap: balance; }
+header.top .sub { color: var(--muted); font-size: 13px; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface); font-weight: 600; font-size: 13px; }
+.btn:hover { border-color: var(--faint); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.peligro { color: var(--s-anulada); }
+.btn.mini { min-height: 28px; padding: 0 10px; font-size: 12px; }
+
+.hoy { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tile { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.tile:hover { border-color: var(--line-strong); }
+.tile[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.tile .k { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.tile .n { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.tile .d { font-size: 12.5px; color: var(--muted); }
+.tile .d b { color: var(--s-confirmar); font-weight: 600; }
+.tile .d i { font-style: normal; color: var(--s-horario); font-weight: 600; }
+
+.ciclo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 13px; color: var(--muted); }
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--faint)); }
+.chip .c { font-variant-numeric: tabular-nums; font-weight: 500; color: var(--faint); }
+.chip[aria-pressed="true"] { background: var(--cbg); border-color: var(--c); color: var(--c); }
+.chip[aria-pressed="true"] .c { color: inherit; }
+.chip.todas[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.flecha { color: var(--faint); font-size: 13px; }
+.sep { width: 1px; height: 22px; background: var(--line-strong); margin: 0 4px; }
+
+.barra { display: flex; flex-wrap: wrap; gap: 8px; }
+.barra .buscar { flex: 1 1 260px; min-width: 0; position: relative; }
+.barra .buscar svg { position: absolute; left: 11px; top: 50%; translate: 0 -50%; width: 16px; color: var(--faint); }
+.filtros { display: contents; }
+.barra input, .barra select { height: 38px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); padding: 0 10px; }
+.barra input { width: 100%; padding-left: 34px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.tabla-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 960px; }
+th { text-align: left; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); padding: 10px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+tbody tr { cursor: pointer; }
+tbody tr:hover td { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+tbody tr.sel td { background: var(--accent-soft); }
+tbody tr:last-child td { border-bottom: 0; }
+.num { font-variant-numeric: tabular-nums; }
+.huesped b { display: block; font-weight: 600; }
+.codigo { display: block; font: 600 13.5px var(--mono); letter-spacing: .02em; color: var(--fg); }
+.pms { display: inline-block; margin-top: 3px; font: 500 11.5px var(--mono); color: var(--muted); }
+.pms.falta { font-family: var(--font); font-weight: 600; color: var(--s-confirmar); }
+.barra .solo { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); font-size: 13px; font-weight: 600; color: var(--muted); }
+.barra .solo input { width: auto; height: auto; padding: 0; accent-color: var(--accent); }
+.cabecera { display: flex; flex-direction: column; gap: 4px; }
+.codigo-grande { display: flex; align-items: center; gap: 8px; font: 700 20px var(--mono); letter-spacing: .03em; }
+.pms-campo { display: flex; gap: 8px; }
+.nota-tag { display: inline-flex; align-items: center; gap: 4px; margin-top: 3px; font-size: 11.5px; font-weight: 600; color: var(--s-horario); }
+.nota-tag svg { width: 13px; height: 13px; }
+.notas { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.notas li { background: var(--s-horario-bg); border-radius: 10px; padding: 9px 12px; font-size: 13.5px; }
+.notas li small { display: block; margin-bottom: 2px; font-size: 11.5px; font-weight: 600; color: var(--s-horario); }
+.nota-nueva { display: flex; flex-direction: column; gap: 8px; }
+.nota-nueva textarea { min-height: 64px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); padding: 8px 10px; resize: vertical; }
+.nota-nueva .btn { align-self: flex-end; }
+.pms-campo input { flex: 1; min-width: 0; height: 38px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); padding: 0 10px; font: 500 14px var(--mono); }
+.cod { font: 500 11.5px var(--mono); color: var(--faint); }
+.fecha b { font-weight: 600; }
+.fecha span { display: block; font-size: 12px; color: var(--muted); }
+.fecha .hoytag { color: var(--accent); font-weight: 600; }
+.horario { display: inline-block; margin-top: 2px; font-size: 11.5px; font-weight: 600; color: var(--s-horario); background: var(--s-horario-bg); border-radius: 6px; padding: 1px 6px; }
+.horario.pedido { color: var(--s-confirmar); background: var(--s-confirmar-bg); }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--c); background: var(--cbg); }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill small { font-weight: 500; opacity: .85; }
+.gar { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--line-strong); color: var(--muted); }
+.gar.pagado { border-color: transparent; background: var(--s-ocupada-bg); color: var(--s-ocupada); }
+.gar.adelanto { border-color: transparent; background: var(--s-reservada-bg); color: var(--s-reservada); }
+.pago span { display: block; font-size: 12px; margin-top: 2px; }
+.saldo-0 { color: var(--s-ocupada); font-weight: 600; }
+.saldo { color: var(--s-confirmar); font-weight: 600; }
+.accion { height: 30px; padding: 0 12px; border-radius: 7px; border: 1px solid var(--line-strong); background: var(--surface); font-size: 12.5px; font-weight: 600; }
+.accion.go { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.vacio { padding: 40px 16px; text-align: center; color: var(--muted); }
+
+.velo { position: fixed; inset: 0; background: var(--veil); z-index: 20; }
+.ficha { position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 100%); background: var(--surface); z-index: 21; box-shadow: var(--shadow);
+  padding-block: calc(18px + env(safe-area-inset-top, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)); padding-left: 20px; padding-right: max(20px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+.ficha h2 { margin: 0; font-size: 19px; }
+.cerrar { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-size: 18px; }
+.pasos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.paso { border-top: 3px solid var(--line); padding-top: 6px; font-size: 12px; color: var(--faint); font-weight: 600; }
+.paso.hecho { border-color: var(--s-ocupada); color: var(--muted); }
+.paso.actual { border-color: var(--accent); color: var(--fg); }
+.bloque { display: flex; flex-direction: column; gap: 8px; }
+.bloque h3 { margin: 0; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); }
+dl { margin: 0; display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 7px 12px; font-size: 13.5px; }
+dt { color: var(--muted); }
+dd { margin: 0; font-weight: 500; min-width: 0; }
+.solicitud { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--s-confirmar-bg); color: var(--fg); font-size: 13px; }
+.solicitud b { color: var(--s-confirmar); }
+.acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.nota { margin: 0; font-size: 12.5px; color: var(--muted); }
+.historial { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.historial li b { color: var(--fg); font-weight: 600; }
+
+.modal { position: fixed; z-index: 31; left: 50%; top: 50%; translate: -50% -50%; width: min(520px, calc(100% - 32px)); max-height: calc(100% - 48px); overflow-y: auto;
+  background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.modal-velo { position: fixed; inset: 0; background: var(--veil); z-index: 30; }
+.modal h2 { margin: 0; font-size: 18px; }
+.modal .sub { margin: -8px 0 0; color: var(--muted); font-size: 13px; }
+.campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.campo { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--muted); min-width: 0; }
+.campo.ancho { grid-column: 1 / -1; }
+.campo input, .campo select, .campo textarea { height: 38px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); padding: 0 10px; font-weight: 500; min-width: 0; }
+.campo textarea { height: 64px; padding: 8px 10px; resize: vertical; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.resumen { background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; }
+.resumen .fila { display: flex; justify-content: space-between; gap: 12px; }
+.resumen .fila b { font-variant-numeric: tabular-nums; }
+.resumen .total { border-top: 1px solid var(--line); padding-top: 6px; font-weight: 700; }
+.ok { color: var(--s-ocupada); font-weight: 600; }
+.mal { color: var(--s-anulada); font-weight: 600; }
+.pie { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.opciones { display: flex; flex-wrap: wrap; gap: 6px; }
+.opciones label { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.opciones input { accent-color: var(--accent); }
+
+.toast { position: fixed; left: 50%; translate: -50% 0; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600; z-index: 40; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
+
+/* Celular: tarjetas por reserva, filtros que se deslizan, ficha a pantalla completa y acciones como hoja inferior. */
+@media (max-width: 720px) {
+  .wrap { gap: 14px; padding-block: 12px 32px; }
+  header.top h1 { font-size: 20px; }
+  header.top .btns { width: 100%; }
+  header.top .btn { flex: 1; }
+  .hoy { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .tile { padding: 10px 12px; }
+  .tile .n { font-size: 24px; }
+  .tile .d { font-size: 12px; }
+  .ciclo, .filtros { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; padding-bottom: 2px; }
+  .ciclo::-webkit-scrollbar, .filtros::-webkit-scrollbar { display: none; }
+  .chip, .filtros > * { flex: none; scroll-snap-align: start; }
+  .sep { display: none; }
+  .barra { flex-direction: column; }
+  .barra .buscar { flex: none; width: 100%; }
+  .filtros { display: flex; gap: 8px; width: 100%; }
+  .barra input, .barra select, .campo input, .campo select, .campo textarea, .pms-campo input, .nota-nueva textarea { font-size: 16px; }
+  .barra .solo { font-size: 13px; }
+
+  .panel { background: transparent; border: 0; border-radius: 0; overflow: visible; }
+  .tabla-wrap { overflow: visible; }
+  table, thead, tbody, tr, td { display: block; min-width: 0; }
+  thead { display: none; }
+  tbody { display: flex; flex-direction: column; gap: 10px; }
+  tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; padding: 12px 14px 12px 16px;
+    background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--c, var(--line)); border-radius: 12px;
+    grid-template-areas: "codigo estado" "huesped huesped" "hab hab" "fechas fechas" "pago accion"; }
+  tbody tr:hover td, tbody tr.sel td { background: transparent; }
+  tbody tr.sel { box-shadow: 0 0 0 2px var(--accent); }
+  td { padding: 0; border: 0; white-space: normal; }
+  td[data-c="codigo"] { grid-area: codigo; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; }
+  td[data-c="codigo"] .codigo { font-size: 15px; }
+  td[data-c="codigo"] .pms { margin: 0; }
+  td[data-c="estado"] { grid-area: estado; justify-self: end; }
+  td[data-c="huesped"] { grid-area: huesped; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 15px; }
+  td[data-c="huesped"] .nota-tag { margin: 0; }
+  td[data-c="hab"] { grid-area: hab; color: var(--muted); }
+  td[data-c="fechas-m"] { grid-area: fechas; font-size: 13px; color: var(--fg); }
+  td[data-c="fechas-m"] .horario { margin-left: 4px; }
+  td[data-c="noches"], td[data-c="pax"], td[data-c="llegada"], td[data-c="salida"] { display: none; }
+  td[data-c="pago"] { grid-area: pago; align-self: center; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  td[data-c="pago"] span { margin: 0; }
+  td[data-c="accion"] { grid-area: accion; align-self: center; padding-top: 8px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; }
+  td[data-c="accion"]:empty { border-top: 1px solid var(--line); }
+  .accion { height: 40px; padding: 0 16px; font-size: 14px; }
+  .vacio { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+
+  .ficha { width: 100%; gap: 14px; padding-top: 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .ficha .cabecera { position: sticky; top: 0; z-index: 2; margin-inline: -16px; padding: calc(12px + env(safe-area-inset-top, 0px)) 60px 10px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .ficha h2 { font-size: 17px; }
+  .codigo-grande { font-size: 18px; }
+  .cerrar { position: fixed; z-index: 3; width: 40px; height: 40px; }
+  .acciones .btn { flex: 1 1 auto; min-height: 44px; font-size: 14px; }
+  .solicitud .acciones .btn { min-height: 36px; }
+  dl { grid-template-columns: 100px minmax(0, 1fr); }
+
+  .modal { left: 0; right: 0; top: auto; bottom: 0; translate: none; width: 100%; max-height: 92%; border-radius: 16px 16px 0 0;
+    padding: 8px max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); gap: 12px; }
+  .modal::before { content: ""; align-self: center; width: 40px; height: 4px; border-radius: 4px; background: var(--line-strong); margin-bottom: 4px; }
+  .modal .pie { position: sticky; bottom: 0; margin-inline: -16px; padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--line); }
+  .modal .pie .btn { flex: 1; min-height: 46px; font-size: 15px; }
+  .opciones label { flex: 1 1 auto; justify-content: center; min-height: 44px; }
+  .toast { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (min-width: 721px) { td[data-c="fechas-m"] { display: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .ficha { animation: entra .18s ease-out; } @keyframes entra { from { translate: 24px 0; opacity: .6; } }
+  .modal { animation: sube .16s ease-out; } @keyframes sube { from { opacity: 0; translate: -50% -46%; } }
+  @media (max-width: 720px) { .modal { animation: hoja .22s ease-out; } @keyframes hoja { from { transform: translateY(100%); } } }
+}
+</style>
+
+<div class="wrap">
+  <p class="ejemplo">Prototipo para aprobar el diseño. Usa tus reservas de Hotel Nobility y algunas de ejemplo; las acciones funcionan solo dentro de esta página. Política de ejemplo: cancelación gratis hasta 48 h antes, después se cobra la primera noche; la tarifa no reembolsable no devuelve nada.</p>
+
+  <header class="top">
+    <div>
+      <h1>Reservas</h1>
+      <div class="sub">Hotel Nobility · hoy vie 16 oct, 16:45 · check-in 14:00 · check-out 12:00</div>
+    </div>
+    <div class="btns">
+      <button class="btn" type="button">Hoy y mañana</button>
+      <button class="btn" type="button">Disponibilidad</button>
+    </div>
+  </header>
+
+  <section class="hoy" aria-label="Hoy en recepción" id="hoy"></section>
+  <nav class="ciclo" aria-label="Estado de la reserva" id="ciclo"></nav>
+
+  <div class="barra">
+    <label class="buscar"><span hidden>Buscar</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M21 21l-4.3-4.3M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+      <input id="q" type="search" placeholder="Código, código PMS, huésped o documento">
+    </label>
+    <div class="filtros">
+    <select id="fecha" aria-label="Fecha de llegada">
+      <option value="">Cualquier llegada</option>
+      <option value="hoy">Llegan hoy</option>
+      <option value="man">Llegan mañana</option>
+      <option value="7">Próximos 7 días</option>
+    </select>
+    <select id="tipo" aria-label="Tipo de habitación"></select>
+    <label class="solo"><input id="sinpms" type="checkbox"> Sin código PMS</label>
+    <label class="solo"><input id="connotas" type="checkbox"> Con notas</label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr>
+          <th>Código</th><th>Huésped</th><th>Habitación</th><th>Llegada</th><th>Salida</th><th>Noches</th><th>Huéspedes</th><th>Estado</th><th>Pago</th><th></th>
+        </tr></thead>
+        <tbody id="filas"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="velo" class="velo" hidden></div>
+<aside id="ficha" class="ficha" hidden aria-label="Ficha de la reserva"></aside>
+<div id="modal-velo" class="modal-velo" hidden></div>
+<form id="modal" class="modal" hidden role="dialog" aria-modal="true" novalidate></form>
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script>
+const HOY = '2026-10-16', MAN = '2026-10-17', AHORA = '16:45';
+const TIPOS = {
+  'TWIN': { tarifa: 100, libres: 3 },
+  'Habitación Matrimonial': { tarifa: 180, libres: 2 },
+  'Habitación Deluxe': { tarifa: 200, libres: 1 },
+  'Suite': { tarifa: 320, libres: 0 }
+};
+const ESTADOS = {
+  confirmar:  { t: 'Por confirmar', c: '--s-confirmar' },
+  reservada:  { t: 'Reservada',     c: '--s-reservada' },
+  ocupada:    { t: 'Ocupada',       c: '--s-ocupada' },
+  finalizada: { t: 'Finalizada',    c: '--s-finalizada' },
+  noshow:     { t: 'No llegó',      c: '--s-noshow' },
+  anulada:    { t: 'Anulada',       c: '--s-anulada' }
+};
+const CICLO = ['confirmar', 'reservada', 'ocupada', 'finalizada'];
+const APARTE = ['noshow', 'anulada'];
+const GARANTIA = { pagado: 'Pagado', adelanto: 'Adelanto', hotel: 'Paga en el hotel' };
+
+// PED-0002, 0007, 0010, 0012 y 0013 son reservas reales de Nobility; el resto son ejemplos.
+const R = [
+  { id: 'PED-0013', notas: [{ quien: 'Ana · turno mañana', cuando: 'vie 16 oct 07:50', texto: 'Llamó: llega con un bebé, quiere cuna. Se dejó lista en la TWIN 204.' }], h: 'Diego YUX', doc: 'DNI 45127788', hab: 'TWIN', ll: '2026-10-16', n: 1, ad: 2, ni: 0, e: 'reservada', gar: 'pagado', pagado: 100, medio: 'Yape en línea', reembolsable: true,
+    llegaEst: '18:30', pedidos: 'Cama adicional si es posible. Llega desde el aeropuerto.' },
+  { id: 'PED-0021', h: 'Sofía Ramírez', doc: 'DNI 47001122', hab: 'Habitación Matrimonial', ll: '2026-10-16', n: 3, ad: 2, ni: 0, e: 'reservada', gar: 'adelanto', pagado: 270, medio: 'Adelanto con tarjeta', reembolsable: true,
+    llegaEst: '09:00', early: { hora: '09:00', precio: 60, estado: 'aprobado' }, entroAntes: true, pedidos: 'Aniversario: piso alto si hay.' },
+  { id: 'PED-0014', pms: 'NB-20431', h: 'María Quispe', doc: 'DNI 70221345', hab: 'Habitación Deluxe', ll: '2026-10-16', n: 2, ad: 2, ni: 1, e: 'ocupada', gar: 'adelanto', pagado: 200, medio: 'Adelanto con tarjeta', reembolsable: true,
+    entro: '14:20', acomp: ['Luis Quispe · DNI 70221346', 'Ana Quispe (7 años) · DNI 80112233'] },
+  { id: 'PED-0015', notas: [{ quien: 'Luis · turno noche', cuando: 'jue 15 oct 23:10', texto: 'Dejó su pasaporte en recepción por error. Está en la caja fuerte, entregárselo al salir.' }], pms: 'NB-20418', h: 'John Miller', doc: 'Pasaporte 55219034', hab: 'Suite', ll: '2026-10-14', n: 2, ad: 2, ni: 0, e: 'ocupada', gar: 'pagado', pagado: 640, medio: 'Tarjeta en línea', reembolsable: false,
+    entro: '15:05', acomp: ['Kate Miller · Pasaporte 55219035'], late: { hora: '16:00', precio: 160, estado: 'pedido' } },
+  { id: 'PED-0016', pms: 'NB-20425', h: 'Rosa Huamán', doc: 'DNI 41893320', hab: 'Habitación Matrimonial', ll: '2026-10-15', n: 4, ad: 2, ni: 0, e: 'ocupada', gar: 'adelanto', pagado: 360, medio: 'Adelanto Yape', reembolsable: true,
+    entro: '13:40', acomp: ['Jorge Huamán · DNI 41893321'] },
+  { id: 'PED-0007', pms: 'NB-20440', h: 'test test', doc: 'DNI 12345678', hab: 'Habitación Matrimonial', ll: '2026-10-20', n: 11, ad: 2, ni: 0, e: 'reservada', gar: 'adelanto', pagado: 990, medio: 'Adelanto transferencia', reembolsable: true },
+  { id: 'PED-0002', h: 'Jenny Kan', doc: 'DNI 47788123', hab: 'Habitación Matrimonial', ll: '2026-10-22', n: 1, ad: 2, ni: 0, e: 'confirmar', gar: 'hotel', pagado: 0, medio: 'Captura de Yape por revisar', reembolsable: true, motivo: 'pago por verificar' },
+  { id: 'PED-0017', h: 'Carlos Ríos', doc: 'DNI 40011223', hab: 'TWIN', ll: '2026-10-17', n: 2, ad: 1, ni: 0, e: 'reservada', gar: 'hotel', pagado: 0, medio: 'Paga en el hotel', reembolsable: true,
+    llegaEst: '07:30', early: { hora: '08:00', precio: 60, estado: 'pedido' } },
+  { id: 'PED-0006', pms: 'NB-20387', h: 'Lucía Paredes', doc: 'DNI 46677889', hab: 'Habitación Deluxe', ll: '2026-10-12', n: 2, ad: 2, ni: 0, e: 'finalizada', gar: 'pagado', pagado: 400, medio: 'Tarjeta en línea', reembolsable: true, entro: '14:10', salio: '11:30' },
+  { id: 'PED-0019', h: 'Pedro Díaz', doc: 'DNI 48899001', hab: 'TWIN', ll: '2026-10-15', n: 1, ad: 2, ni: 0, e: 'noshow', gar: 'adelanto', pagado: 50, medio: 'Adelanto Yape', reembolsable: true, retenido: 50 },
+  { id: 'PED-0012', h: 'Prueba 12 Armando', doc: 'DNI 70000469', hab: 'Habitación Deluxe', ll: '2026-10-16', n: 1, ad: 2, ni: 0, e: 'anulada', gar: 'hotel', pagado: 0, medio: '—', reembolsable: true, motivo: 'no pagó a tiempo' },
+  { id: 'PED-0020', h: 'Ana Torres', doc: 'DNI 44556677', hab: 'Habitación Matrimonial', ll: '2026-10-25', n: 2, ad: 2, ni: 0, e: 'anulada', gar: 'pagado', pagado: 360, medio: 'Tarjeta en línea', reembolsable: true, motivo: 'por el huésped · reembolso S/ 360' }
+].map(r => ({ cambios: [], notas: [], ...r }));
+
+let filtro = 'activas', sel = null;
+const $ = (id) => document.getElementById(id);
+const fmt = new Intl.DateTimeFormat('es-PE', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+const dia = (f) => fmt.format(new Date(f + 'T12:00:00Z')).replace(/\./g, '').replace(',', '');
+const mas = (f, n) => new Date(Date.parse(f + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+const entre = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+const soles = (n) => 'S/ ' + Number(n).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const v = (n) => `var(${n})`;
+const tarifa = (r) => TIPOS[r.hab].tarifa;
+const sa = (r) => mas(r.ll, r.n);
+const extras = (r) => [r.early, r.late].filter(x => x && x.estado === 'aprobado').reduce((s, x) => s + x.precio, 0) + (r.cargos ?? 0);
+const total = (r) => r.n * tarifa(r) + extras(r);
+const saldo = (r) => total(r) - r.pagado;
+const pax = (r) => `${r.ad} ${r.ad === 1 ? 'adulto' : 'adultos'}${r.ni ? `, ${r.ni} ${r.ni === 1 ? 'niño' : 'niños'}` : ''}`;
+const noches = (n) => `${n} ${n === 1 ? 'noche' : 'noches'}`;
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const horaLlegada = (r) => r.early?.estado === 'aprobado' ? r.early.hora : '14:00';
+const horaSalida = (r) => r.late?.estado === 'aprobado' ? r.late.hora : '12:00';
+
+function accion(r) {
+  if (r.e === 'confirmar') return { t: 'Verificar pago', a: 'verificar' };
+  if (r.e === 'reservada' && r.ll <= HOY) return { t: 'Check-in', a: 'checkin', go: true };
+  if (r.e === 'ocupada' && sa(r) <= HOY) return { t: 'Check-out', a: 'checkout', go: true };
+  if (r.e === 'ocupada') return { t: 'Check-out', a: 'checkout' };
+  return null;
+}
+
+function renderHoy() {
+  const llegan = R.filter(r => r.ll === HOY && ['reservada', 'ocupada'].includes(r.e));
+  const pendLl = llegan.filter(r => r.e === 'reservada');
+  const early = pendLl.filter(r => r.early?.estado === 'aprobado').map(r => r.early.hora);
+  const salen = R.filter(r => sa(r) === HOY && ['ocupada', 'finalizada'].includes(r.e));
+  const pendSa = salen.filter(r => r.e === 'ocupada');
+  const late = pendSa.filter(r => r.late?.estado === 'aprobado').map(r => r.late.hora);
+  const atender = R.filter(r => r.e === 'confirmar').length + R.filter(r => ['reservada', 'ocupada'].includes(r.e) && [r.early, r.late].some(x => x?.estado === 'pedido')).length;
+  const tiles = [
+    { k: 'Llegadas hoy', n: llegan.length, d: (pendLl.length ? `<b>${pendLl.length} sin check-in</b>` : 'Todas registradas') + (early.length ? ` · <i>early ${early.join(', ')}</i>` : ''), f: 'llegadas' },
+    { k: 'Ocupadas', n: R.filter(r => r.e === 'ocupada').length, d: 'Huéspedes en el hotel', f: 'ocupada' },
+    { k: 'Salidas hoy', n: salen.length, d: (pendSa.length ? `<b>${pendSa.length} sin check-out</b>` : 'Todas registradas') + (late.length ? ` · <i>late ${late.join(', ')}</i>` : ''), f: 'salidas' },
+    { k: 'Por atender', n: atender, d: atender ? 'Pagos, early y late por responder' : 'Nada pendiente', f: 'atender' }
+  ];
+  $('hoy').innerHTML = tiles.map(t => `<button type="button" class="tile" data-f="${t.f}" aria-pressed="${filtro === t.f}">
+    <span class="k">${t.k}</span><span class="n">${t.n}</span><span class="d">${t.d}</span></button>`).join('');
+}
+
+function renderCiclo() {
+  const cuenta = (e) => R.filter(r => r.e === e).length;
+  const chip = (id, t, c) => `<button type="button" class="chip${id === 'activas' ? ' todas' : ''}" data-f="${id}" aria-pressed="${filtro === id}"
+    ${c ? `style="--c:${v(c)};--cbg:${v(c + '-bg')}"` : ''}>${c ? '<span class="dot"></span>' : ''}${t}<span class="c">${id === 'activas' ? R.filter(r => CICLO.slice(0, 3).includes(r.e)).length : cuenta(id)}</span></button>`;
+  $('ciclo').innerHTML = chip('activas', 'Activas') + '<span class="sep"></span>'
+    + CICLO.map(e => chip(e, ESTADOS[e].t, ESTADOS[e].c)).join('<span class="flecha" aria-hidden="true">→</span>')
+    + '<span class="sep"></span>' + APARTE.map(e => chip(e, ESTADOS[e].t, ESTADOS[e].c)).join('');
+}
+
+function visibles() {
+  const q = $('q').value.trim().toLowerCase(), fe = $('fecha').value, ti = $('tipo').value;
+  return R.filter(r => {
+    if (filtro === 'activas' && !CICLO.slice(0, 3).includes(r.e)) return false;
+    if (filtro === 'llegadas' && !(r.ll === HOY && ['reservada', 'ocupada'].includes(r.e))) return false;
+    if (filtro === 'salidas' && !(sa(r) === HOY && ['ocupada', 'finalizada'].includes(r.e))) return false;
+    if (filtro === 'atender' && !(r.e === 'confirmar' || (['reservada', 'ocupada'].includes(r.e) && [r.early, r.late].some(x => x?.estado === 'pedido')))) return false;
+    if (ESTADOS[filtro] && r.e !== filtro) return false;
+    if (q && !`${r.h} ${r.id} ${r.pms ?? ''} ${r.doc} ${r.notas.map(n => n.texto).join(' ')}`.toLowerCase().includes(q)) return false;
+    if ($('connotas').checked && !r.notas.length) return false;
+    if ($('sinpms').checked && (r.pms || APARTE.includes(r.e))) return false;
+    if (fe === 'hoy' && r.ll !== HOY) return false;
+    if (fe === 'man' && r.ll !== MAN) return false;
+    if (fe === '7' && !(r.ll >= HOY && r.ll <= mas(HOY, 6))) return false;
+    if (ti && r.hab !== ti) return false;
+    return true;
+  }).sort((a, b) => a.ll.localeCompare(b.ll) || horaLlegada(a).localeCompare(horaLlegada(b)));
+}
+
+function pill(r) {
+  const s = ESTADOS[r.e];
+  let extra = '';
+  if (r.e === 'reservada' && r.ll === HOY) extra = ' <small>· llega hoy</small>';
+  if (r.e === 'ocupada' && sa(r) === HOY) extra = ' <small>· sale hoy</small>';
+  if (r.e === 'finalizada') extra = ' <small>· libre</small>';
+  if (r.motivo && ['confirmar', 'anulada'].includes(r.e)) extra = ` <small>· ${esc(r.motivo)}</small>`;
+  return `<span class="pill" style="--c:${v(s.c)};--cbg:${v(s.c + '-bg')}">${s.t}${extra}</span>`;
+}
+
+function etiquetaHorario(x, tipo) {
+  if (!x || x.estado === 'rechazado') return '';
+  return `<span class="horario${x.estado === 'pedido' ? ' pedido' : ''}">${tipo} ${x.hora}${x.estado === 'pedido' ? ' · pedido' : ''}</span>`;
+}
+
+function renderFilas() {
+  const filas = visibles();
+  if (!filas.length) { $('filas').innerHTML = `<tr><td colspan="10" class="vacio">No hay reservas con estos filtros.</td></tr>`; return; }
+  $('filas').innerHTML = filas.map(r => {
+    const a = accion(r), s = saldo(r), salida = sa(r);
+    const fLl = `<b>${dia(r.ll)}</b>${r.ll === HOY ? `<span class="hoytag">Hoy · ${horaLlegada(r)}</span>` : ''}${etiquetaHorario(r.early, 'Early')}`;
+    const fSa = `<b>${dia(salida)}</b>${salida === HOY ? `<span class="hoytag">Hoy · ${horaSalida(r)}</span>` : ''}${etiquetaHorario(r.late, 'Late')}`;
+    const pago = APARTE.includes(r.e)
+      ? (r.retenido ? `<span class="cod">Retenido ${soles(r.retenido)}</span>` : '<span class="cod">—</span>')
+      : `<span class="gar ${r.gar}">${GARANTIA[r.gar]}</span><span class="${s <= 0 ? 'saldo-0' : 'saldo'}">${s <= 0 ? 'Sin saldo' : 'Saldo ' + soles(s)}</span>`;
+    return `<tr data-id="${r.id}" class="${sel === r.id ? 'sel' : ''}" style="--c:${v(ESTADOS[r.e].c)}">
+      <td data-c="codigo"><span class="codigo">${r.id}</span>${r.pms ? `<span class="pms">PMS ${esc(r.pms)}</span>` : APARTE.includes(r.e) ? '' : '<span class="pms falta">Sin código PMS</span>'}</td>
+      <td data-c="huesped" class="huesped"><b>${esc(r.h)}</b>${r.notas.length ? `<span class="nota-tag" title="${esc(r.notas.at(-1).texto)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h8M8 14h5M5 4h14a1 1 0 011 1v11l-4 4H5a1 1 0 01-1-1V5a1 1 0 011-1z"/></svg>${r.notas.length === 1 ? '1 nota' : r.notas.length + ' notas'}</span>` : ''}</td>
+      <td data-c="hab">${r.hab}</td>
+      <td data-c="llegada" class="fecha">${fLl}</td>
+      <td data-c="salida" class="fecha">${fSa}</td>
+      <td data-c="fechas-m">${dia(r.ll)} → ${dia(salida)} · ${noches(r.n)} · ${pax(r)} ${etiquetaHorario(r.early, 'Early')} ${etiquetaHorario(r.late, 'Late')}</td>
+      <td data-c="noches" class="num">${r.n}</td>
+      <td data-c="pax">${pax(r)}</td>
+      <td data-c="estado">${pill(r)}</td>
+      <td data-c="pago" class="pago num">${pago}</td>
+      <td data-c="accion">${a ? `<button type="button" class="accion${a.go ? ' go' : ''}" data-a="${a.a}" data-id="${r.id}">${a.t}</button>` : ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function solicitudHorario(r, x, tipo, clave) {
+  if (!x || x.estado !== 'pedido' || !['reservada', 'ocupada'].includes(r.e)) return '';
+  return `<div class="solicitud"><span><b>${tipo} ${x.hora}</b> pedido por el huésped · ${soles(x.precio)} si lo apruebas</span>
+    <span class="acciones"><button type="button" class="btn mini primary" data-a="aprobar-${clave}" data-id="${r.id}">Aprobar</button>
+    <button type="button" class="btn mini" data-a="rechazar-${clave}" data-id="${r.id}">Rechazar</button></span></div>`;
+}
+
+function renderFicha() {
+  const r = R.find(x => x.id === sel);
+  $('ficha').hidden = $('velo').hidden = !r;
+  if (!r) return;
+  const s = saldo(r), salida = sa(r), activa = CICLO.slice(0, 3).includes(r.e);
+  const idx = { reservada: 0, ocupada: 1, finalizada: 2 }[r.e];
+  const pasos = ['Reservada', 'Ocupada · check-in', 'Finalizada · libre'].map((p, i) =>
+    `<div class="paso ${idx === undefined ? '' : i < idx ? 'hecho' : i === idx ? 'actual' : ''}">${p}</div>`).join('');
+  const horario = (x) => x ? ` · ${x.estado === 'aprobado' ? `${x === r.early ? 'early' : 'late'} ${x.hora} aprobado` : x.estado === 'pedido' ? `${x === r.early ? 'early' : 'late'} ${x.hora} pedido` : 'pedido rechazado'}` : '';
+  const btn = (a, t, cls = '') => `<button type="button" class="btn ${cls}" data-a="${a}" data-id="${r.id}">${t}</button>`;
+  let botones = '';
+  if (r.e === 'confirmar') botones = btn('verificar', 'Verificar pago', 'primary') + btn('modificar', 'Modificar') + btn('cancelar', 'Cancelar reserva', 'peligro');
+  if (r.e === 'reservada') botones = (r.ll <= HOY ? btn('checkin', 'Registrar check-in', 'primary') : '') + btn('modificar', 'Modificar') + (r.ll <= HOY ? btn('noshow', 'No llegó') : '') + btn('cancelar', 'Cancelar reserva', 'peligro');
+  if (r.e === 'ocupada') botones = btn('checkout', 'Registrar check-out', 'primary') + btn('salida', 'Cambiar salida') + (!r.late || r.late.estado === 'rechazado' ? btn('tardia', 'Salida tardía') : '');
+  $('ficha').innerHTML = `
+    <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button>
+    <div class="cabecera">
+      <span class="codigo-grande">${r.id}<button type="button" class="btn mini" data-a="copiar" data-id="${r.id}">Copiar</button></span>
+      <h2>${esc(r.h)}</h2>
+    </div>
+    ${pill(r)}
+    ${activa && r.e !== 'confirmar' || r.e === 'finalizada' ? `<div class="pasos">${pasos}</div>` : ''}
+    ${solicitudHorario(r, r.early, 'Early check-in', 'early')}${solicitudHorario(r, r.late, 'Late check-out', 'late')}
+    ${botones ? `<div class="acciones">${botones}</div>` : ''}
+    <section class="bloque"><h3>Notas para el siguiente turno</h3>
+      ${r.notas.length ? `<ul class="notas">${r.notas.map(n => `<li><small>${esc(n.quien)} · ${n.cuando}</small>${esc(n.texto)}</li>`).join('')}</ul>` : '<p class="nota">Sin notas. Deja aquí lo que el próximo turno debe saber de esta reserva.</p>'}
+      <div class="nota-nueva"><textarea id="nota-${r.id}" placeholder="Ej.: Pidió despertador a las 6:00. Pagará el saldo en efectivo." aria-label="Nueva nota"></textarea>
+      <button type="button" class="btn" data-a="nota" data-id="${r.id}">Agregar nota</button></div>
+    </section>
+    <section class="bloque"><h3>Código en el PMS</h3>
+      <div class="pms-campo"><input id="pms-${r.id}" value="${esc(r.pms ?? '')}" placeholder="Ej.: NB-20450" aria-label="Código de la reserva en el PMS">
+      <button type="button" class="btn" data-a="pms" data-id="${r.id}">${r.pms ? 'Actualizar' : 'Asociar'}</button></div>
+      <p class="nota">${r.pms ? 'Asociada al PMS. Se puede buscar por este código.' : 'Cuando registres la reserva en tu PMS, pega aquí su número para asociarlas.'}</p>
+    </section>
+    <section class="bloque"><h3>Estadía</h3><dl>
+      <dt>Habitación</dt><dd>${r.hab}</dd>
+      <dt>Llegada</dt><dd>${dia(r.ll)}, ${horaLlegada(r)}${horario(r.early)}${r.entro ? ` · entró ${r.entro}` : ''}</dd>
+      <dt>Salida</dt><dd>${dia(salida)}, ${horaSalida(r)}${horario(r.late)}${r.salio ? ` · salió ${r.salio}` : ''}</dd>
+      <dt>Estadía</dt><dd>${noches(r.n)} · ${pax(r)}</dd>
+    </dl></section>
+    ${r.llegaEst || r.pedidos ? `<section class="bloque"><h3>Antes de la llegada</h3><dl>
+      ${r.llegaEst ? `<dt>Llega aprox.</dt><dd>${r.llegaEst}</dd>` : ''}
+      ${r.pedidos ? `<dt>Pedidos</dt><dd>${esc(r.pedidos)}</dd>` : ''}
+    </dl></section>` : ''}
+    <section class="bloque"><h3>Huéspedes registrados</h3><dl>
+      <dt>Titular</dt><dd>${esc(r.h)} · ${esc(r.doc)}</dd>
+      ${(r.acomp ?? []).map((a, i) => `<dt>Acompañante ${i + 1}</dt><dd>${esc(a)}</dd>`).join('')}
+    </dl>${r.e === 'reservada' ? '<p class="nota">Los acompañantes se registran al hacer el check-in.</p>' : ''}</section>
+    <section class="bloque"><h3>Pago</h3><dl>
+      <dt>Garantía</dt><dd><span class="gar ${r.gar}">${GARANTIA[r.gar]}</span> · ${r.reembolsable ? 'tarifa reembolsable' : 'tarifa no reembolsable'}</dd>
+      <dt>Total</dt><dd class="num">${soles(r.n * tarifa(r))}${extras(r) ? ` + ${soles(extras(r))} de extras` : ''}</dd>
+      <dt>Pagado</dt><dd class="num">${soles(r.pagado)} · ${r.medio}</dd>
+      ${APARTE.includes(r.e) ? (r.retenido ? `<dt>Retenido</dt><dd class="num">${soles(r.retenido)} (primera noche)</dd>` : '') : `<dt>Saldo</dt><dd class="num ${s > 0 ? 'saldo' : 'saldo-0'}">${s > 0 ? soles(s) + ' por cobrar en el hotel' : 'Sin saldo'}</dd>`}
+    </dl></section>
+    ${r.cambios.length ? `<section class="bloque"><h3>Cambios</h3><ul class="historial">${r.cambios.map(c => `<li><b>${c.cuando}</b> · ${esc(c.texto)}</li>`).join('')}</ul></section>` : ''}
+    ${r.e === 'finalizada' ? '<p class="nota">La habitación quedó libre para venderse otra vez desde esa noche.</p>' : ''}`;
+}
+
+/* ---------- Ventanas de acción ---------- */
+let alEnviar = null;
+function abrir(titulo, sub, cuerpo, boton, enviar, peligro = false) {
+  $('modal').innerHTML = `<h2>${titulo}</h2>${sub ? `<p class="sub">${sub}</p>` : ''}${cuerpo}
+    <div class="pie"><button type="button" class="btn" data-cerrar-modal>Volver</button><button type="submit" class="btn ${peligro ? 'peligro' : 'primary'}" id="m-ok">${boton}</button></div>`;
+  alEnviar = enviar;
+  $('modal').hidden = $('modal-velo').hidden = false;
+  $('modal').querySelector('input, select')?.focus();
+}
+function cerrarModal() { $('modal').hidden = $('modal-velo').hidden = true; alEnviar = null; }
+$('modal').addEventListener('submit', (ev) => { ev.preventDefault(); if ($('m-ok').disabled) return; const f = Object.fromEntries(new FormData($('modal'))); alEnviar?.(f); cerrarModal(); todo(); });
+$('modal').addEventListener('input', () => $('modal').dispatchEvent(new CustomEvent('recalcular')));
+
+const cambio = (r, texto) => r.cambios.push({ cuando: `vie 16 oct ${AHORA}`, texto });
+
+function checkin(r) {
+  const extra = r.ad + r.ni - 1;
+  const filas = Array.from({ length: extra }, (_, i) => `
+    <label class="campo">Acompañante ${i + 1}<input name="n${i}" placeholder="Nombres y apellidos" required></label>
+    <label class="campo">Documento<input name="d${i}" placeholder="DNI, CE o pasaporte" required></label>`).join('');
+  abrir(`Check-in · ${esc(r.h)}`, `${r.hab} · ${noches(r.n)} · ${pax(r)}`, `
+    <label class="check"><input type="checkbox" name="doc" required> Verifiqué el documento del titular: ${esc(r.doc)}</label>
+    ${extra ? `<div class="campos">${filas}</div>` : ''}
+    <div class="campos"><label class="campo">Hora de entrada<input name="hora" type="time" value="${AHORA}"></label>
+    ${saldo(r) > 0 ? `<label class="campo">Saldo ${soles(saldo(r))}<select name="cobro"><option value="">Cobrar en el check-out</option><option value="ahora">Cobrar ahora</option></select></label>` : ''}</div>
+    <p class="nota">El registro de huéspedes queda con el documento de todos los que se alojan.</p>`,
+  'Registrar check-in', (f) => {
+    r.e = 'ocupada'; r.entro = f.hora || AHORA;
+    r.acomp = Array.from({ length: extra }, (_, i) => `${f['n' + i] || 'Acompañante'} · ${f['d' + i] || 'sin documento'}`);
+    if (f.cobro === 'ahora') { r.pagado = total(r); r.gar = 'pagado'; }
+    cambio(r, 'Check-in registrado'); toast(`Check-in de ${r.h} registrado`);
+  });
+  const valida = () => { const ok = [...$('modal').querySelectorAll('[required]')].every(i => i.type === 'checkbox' ? i.checked : i.value.trim()); $('m-ok').disabled = !ok; };
+  $('modal').addEventListener('recalcular', valida); valida();
+}
+
+function checkout(r) {
+  const s = saldo(r);
+  const temprano = sa(r) > HOY;
+  abrir(`Check-out · ${esc(r.h)}`, `${r.hab} · entró ${r.entro ?? '—'}`, `
+    ${temprano ? `<p class="nota mal">La salida reservada es ${dia(sa(r))}. Si se va hoy, usa “Cambiar salida” para liberar las noches que no usa.</p>` : ''}
+    <div class="resumen">
+      <div class="fila"><span>Estadía</span><b>${soles(r.n * tarifa(r))}</b></div>
+      ${extras(r) ? `<div class="fila"><span>Extras y cargos</span><b>${soles(extras(r))}</b></div>` : ''}
+      <div class="fila"><span>Pagado</span><b>− ${soles(r.pagado)}</b></div>
+      <div class="fila total"><span>Por cobrar</span><b>${soles(Math.max(0, s))}</b></div>
+    </div>
+    ${s > 0 ? `<div class="campos"><label class="campo">Cobra con<select name="medio"><option>Efectivo</option><option>Tarjeta</option><option>Yape / Plin</option><option>Transferencia</option></select></label>
+    <label class="campo">Comprobante<select name="comp"><option>Boleta</option><option>Factura</option></select></label></div>` : ''}`,
+  temprano ? 'Registrar igual' : 'Registrar check-out', (f) => {
+    r.e = 'finalizada'; r.salio = AHORA; r.pagado = total(r); r.gar = 'pagado';
+    cambio(r, `Check-out${s > 0 ? ` · cobró ${soles(s)} (${f.medio}, ${f.comp})` : ''}`);
+    toast(`Check-out registrado · ${r.hab} libre`);
+  });
+}
+
+function modificar(r) {
+  const opciones = Object.keys(TIPOS).map(t => `<option ${t === r.hab ? 'selected' : ''}>${t}</option>`).join('');
+  abrir(`Modificar ${r.id}`, 'Cambia fechas, tipo de habitación o huéspedes. El precio y el cupo se recalculan.', `
+    <div class="campos">
+      <label class="campo">Llegada<input name="ll" type="date" value="${r.ll}" min="${HOY}"></label>
+      <label class="campo">Noches<input name="n" type="number" min="1" max="30" value="${r.n}"></label>
+      <label class="campo ancho">Tipo de habitación<select name="hab">${opciones}</select></label>
+      <label class="campo">Adultos<input name="ad" type="number" min="1" max="4" value="${r.ad}"></label>
+      <label class="campo">Niños<input name="ni" type="number" min="0" max="3" value="${r.ni}"></label>
+    </div>
+    <div class="resumen" id="m-res"></div>`,
+  'Guardar cambios', (f) => {
+    const antes = `${dia(r.ll)} · ${noches(r.n)} · ${r.hab}`;
+    Object.assign(r, { ll: f.ll, n: +f.n, hab: f.hab, ad: +f.ad, ni: +f.ni });
+    cambio(r, `Modificada: antes ${antes}`); toast(`${r.id} modificada`);
+  });
+  const recalcular = () => {
+    const f = Object.fromEntries(new FormData($('modal')));
+    const nuevo = { ...r, ll: f.ll, n: +f.n || 1, hab: f.hab };
+    const mismoTipo = f.hab === r.hab;
+    const libres = TIPOS[f.hab].libres + (mismoTipo ? 1 : 0);
+    const dif = total(nuevo) - total(r);
+    $('m-res').innerHTML = `
+      <div class="fila"><span>${f.hab} · ${noches(nuevo.n)}</span><b>${soles(nuevo.n * TIPOS[f.hab].tarifa)}</b></div>
+      <div class="fila"><span>Diferencia con lo reservado</span><b>${dif >= 0 ? '+ ' : '− '}${soles(Math.abs(dif))}</b></div>
+      <div class="fila total"><span>Cupo para esas noches</span><span class="${libres > 0 ? 'ok' : 'mal'}">${libres > 0 ? `Hay ${libres} libre${libres === 1 ? '' : 's'}` : 'Sin cupo: elige otro tipo o fechas'}</span></div>`;
+    $('m-ok').disabled = libres <= 0;
+  };
+  $('modal').addEventListener('recalcular', recalcular); recalcular();
+}
+
+function cambiarSalida(r) {
+  abrir(`Cambiar salida · ${esc(r.h)}`, `Entró ${dia(r.ll)} · salida reservada ${dia(sa(r))}`, `
+    <div class="campos"><label class="campo ancho">Nueva fecha de salida<input name="sa" type="date" value="${sa(r)}" min="${HOY}"></label></div>
+    <div class="resumen" id="m-res"></div>`,
+  'Guardar salida', (f) => {
+    const n = entre(r.ll, f.sa), antes = r.n;
+    r.n = n;
+    if (n < antes && !r.reembolsable) r.cargos = (r.cargos ?? 0) + (antes - n) * tarifa(r);
+    cambio(r, n > antes ? `Extendió ${noches(n - antes)}` : `Salida anticipada: libera ${noches(antes - n)}`);
+    toast(n > antes ? `Estadía extendida a ${dia(f.sa)}` : `Salida adelantada · ${noches(antes - n)} vuelven a la venta`);
+  });
+  const recalcular = () => {
+    const f = Object.fromEntries(new FormData($('modal')));
+    const n = entre(r.ll, f.sa), d = n - r.n;
+    let html;
+    if (n < 1 || f.sa < HOY) { html = '<span class="mal">La salida no puede ser antes de hoy.</span>'; $('m-ok').disabled = true; }
+    else if (d === 0) { html = 'Sin cambios.'; $('m-ok').disabled = true; }
+    else if (d > 0) {
+      const libres = TIPOS[r.hab].libres;
+      html = `<div class="fila"><span>Extiende ${noches(d)}</span><b>+ ${soles(d * tarifa(r))}</b></div>
+        <div class="fila total"><span>Cupo</span><span class="${libres > 0 ? 'ok' : 'mal'}">${libres > 0 ? 'Hay cupo para esas noches' : 'Sin cupo para esas noches'}</span></div>`;
+      $('m-ok').disabled = libres <= 0;
+    } else {
+      html = `<div class="fila"><span>Salida anticipada</span><b>${noches(-d)} libres para vender</b></div>
+        <div class="fila total"><span>${r.reembolsable ? 'Se descuenta del total' : 'Tarifa no reembolsable: se cobran igual'}</span><b>${r.reembolsable ? '− ' : ''}${soles(-d * tarifa(r))}</b></div>`;
+      $('m-ok').disabled = false;
+    }
+    $('m-res').innerHTML = html;
+  };
+  $('modal').addEventListener('recalcular', recalcular); recalcular();
+}
+
+function salidaTardia(r) {
+  const precios = { '14:00': 50, '16:00': tarifa(r) / 2, '18:00': tarifa(r) };
+  abrir(`Salida tardía · ${esc(r.h)}`, `Check-out normal: 12:00. Se suma al saldo y queda a la vista en la tabla.`, `
+    <div class="opciones" role="radiogroup" aria-label="Hora de salida">
+      ${Object.entries(precios).map(([h, p], i) => `<label><input type="radio" name="hora" value="${h}" ${i === 1 ? 'checked' : ''}> ${h} · ${soles(p)}</label>`).join('')}
+    </div>
+    <p class="nota">Tarifa de ejemplo: hasta 14:00 S/ 50, hasta 16:00 media noche, hasta 18:00 la noche completa.</p>`,
+  'Aprobar salida tardía', (f) => {
+    r.late = { hora: f.hora, precio: precios[f.hora], estado: 'aprobado' };
+    cambio(r, `Late check-out ${f.hora} · ${soles(precios[f.hora])}`); toast(`Salida tardía ${f.hora} aprobada`);
+  });
+}
+
+/** Política de ejemplo: gratis hasta 48 h antes; después, primera noche; no reembolsable, todo. */
+function penalidad(r, quien) {
+  if (quien === 'hotel') return 0;
+  if (!r.reembolsable) return r.pagado;
+  const horas = (Date.parse(r.ll + 'T14:00:00') - Date.parse(HOY + 'T' + AHORA + ':00')) / 36e5;
+  return horas >= 48 ? 0 : Math.min(r.pagado, tarifa(r));
+}
+function cancelar(r) {
+  abrir(`Cancelar ${r.id}`, `${esc(r.h)} · ${dia(r.ll)} · ${noches(r.n)}`, `
+    <div class="opciones" role="radiogroup" aria-label="Quién cancela">
+      <label><input type="radio" name="quien" value="huesped" checked> La pide el huésped</label>
+      <label><input type="radio" name="quien" value="hotel"> La cancela el hotel</label>
+    </div>
+    <div class="campos"><label class="campo ancho">Motivo<select name="motivo">
+      <option>Cambio de planes</option><option>Encontró otra opción</option><option>Problema de salud</option><option>Vuelo cancelado</option><option>Sin disponibilidad del hotel</option><option>Otro</option>
+    </select></label></div>
+    <div class="resumen" id="m-res"></div>`,
+  'Cancelar reserva', (f) => {
+    const p = penalidad(r, f.quien), dev = r.pagado - p;
+    r.e = 'anulada'; r.retenido = p || undefined;
+    r.motivo = `${f.quien === 'hotel' ? 'por el hotel' : 'por el huésped'}${dev > 0 ? ` · reembolso ${soles(dev)}` : ''}`;
+    cambio(r, `Cancelada ${r.motivo} · ${f.motivo}`); toast(`${r.id} cancelada${dev > 0 ? ` · reembolsar ${soles(dev)}` : ''}`);
+  }, true);
+  const recalcular = () => {
+    const f = Object.fromEntries(new FormData($('modal')));
+    const p = penalidad(r, f.quien), dev = r.pagado - p;
+    $('m-res').innerHTML = `
+      <div class="fila"><span>Pagado</span><b>${soles(r.pagado)}</b></div>
+      <div class="fila"><span>Penalidad ${f.quien === 'hotel' ? '(cancela el hotel: sin penalidad)' : !r.reembolsable ? '(tarifa no reembolsable)' : p ? '(menos de 48 h: primera noche)' : '(más de 48 h: gratis)'}</span><b>${soles(p)}</b></div>
+      <div class="fila total"><span>A reembolsar</span><b>${soles(dev)}</b></div>
+      <span class="nota">El cupo de ${noches(r.n)} vuelve a la venta.</span>`;
+  };
+  $('modal').addEventListener('recalcular', recalcular); recalcular();
+}
+
+function noShow(r) {
+  const cargo = r.gar === 'hotel' ? 0 : Math.min(r.pagado, tarifa(r));
+  abrir(`No llegó · ${esc(r.h)}`, `Debía llegar ${dia(r.ll)}, ${horaLlegada(r)}`, `
+    <div class="resumen">
+      <div class="fila"><span>Garantía</span><b>${GARANTIA[r.gar]}</b></div>
+      <div class="fila"><span>Cargo por no presentarse (primera noche)</span><b>${soles(cargo)}</b></div>
+      <div class="fila total"><span>A reembolsar</span><b>${soles(r.pagado - cargo)}</b></div>
+      <span class="nota">${r.gar === 'hotel' ? 'Sin garantía no hay qué cobrar. ' : ''}Las ${noches(r.n)} vuelven a la venta de inmediato.</span>
+    </div>`,
+  'Marcar no llegó', () => {
+    r.e = 'noshow'; r.retenido = cargo || undefined;
+    cambio(r, `No llegó · retenido ${soles(cargo)}`); toast(`${r.h} marcado como no llegó · cupo liberado`);
+  }, true);
+}
+
+let toastT;
+function toast(t) { $('toast').textContent = t; $('toast').hidden = false; clearTimeout(toastT); toastT = setTimeout(() => $('toast').hidden = true, 2600); }
+
+function hacer(a, id) {
+  const r = R.find(x => x.id === id);
+  if (a === 'checkin') return checkin(r);
+  if (a === 'checkout') return checkout(r);
+  if (a === 'modificar') return modificar(r);
+  if (a === 'salida') return cambiarSalida(r);
+  if (a === 'tardia') return salidaTardia(r);
+  if (a === 'cancelar') return cancelar(r);
+  if (a === 'noshow') return noShow(r);
+  if (a === 'copiar') {
+    const listo = () => toast(`${r.id} copiado`);
+    navigator.clipboard?.writeText(r.id).then(listo, () => toast(`Código: ${r.id}`)) ?? toast(`Código: ${r.id}`);
+    return;
+  }
+  if (a === 'nota') {
+    const texto = $('nota-' + r.id).value.trim();
+    if (!texto) { toast('Escribe la nota antes de agregarla'); return; }
+    r.notas.push({ quien: 'Tú · turno tarde', cuando: `vie 16 oct ${AHORA}`, texto });
+    toast('Nota agregada para el siguiente turno');
+    todo(); return;
+  }
+  if (a === 'pms') {
+    const valor = $('pms-' + r.id).value.trim();
+    r.pms = valor || undefined;
+    cambio(r, valor ? `Código PMS ${valor}` : 'Código PMS quitado');
+    toast(valor ? `${r.id} asociada al PMS ${valor}` : 'Código PMS quitado');
+    todo(); return;
+  }
+  if (a === 'verificar') { r.e = 'reservada'; r.pagado = 90; r.gar = 'adelanto'; r.motivo = undefined; cambio(r, 'Pago verificado'); toast(`Pago de ${r.h} verificado · reservada`); }
+  const [verbo, clave] = a.split('-');
+  if (clave) { r[clave].estado = verbo === 'aprobar' ? 'aprobado' : 'rechazado'; cambio(r, `${clave === 'early' ? 'Early check-in' : 'Late check-out'} ${r[clave].hora} ${r[clave].estado}`); toast(`${clave === 'early' ? 'Early check-in' : 'Late check-out'} ${r[clave].estado}`); }
+  todo();
+}
+
+function todo() { renderHoy(); renderCiclo(); renderFilas(); renderFicha(); }
+
+document.addEventListener('click', (ev) => {
+  if (ev.target.closest('[data-cerrar-modal]') || ev.target.id === 'modal-velo') { cerrarModal(); return; }
+  if (!$('modal').hidden && ev.target.closest('#modal')) return;
+  const f = ev.target.closest('[data-f]');
+  if (f) { filtro = filtro === f.dataset.f && f.dataset.f !== 'activas' ? 'activas' : f.dataset.f; todo(); return; }
+  const b = ev.target.closest('[data-a]');
+  if (b) { ev.stopPropagation(); if (!sel) sel = b.dataset.id; hacer(b.dataset.a, b.dataset.id); return; }
+  if (ev.target.closest('[data-cerrar]') || ev.target.id === 'velo') { sel = null; todo(); return; }
+  const tr = ev.target.closest('tr[data-id]');
+  if (tr) { sel = tr.dataset.id; todo(); }
+});
+document.addEventListener('keydown', (ev) => {
+  if (ev.key !== 'Escape') return;
+  if (!$('modal').hidden) cerrarModal(); else if (sel) { sel = null; todo(); }
+});
+$('tipo').innerHTML = '<option value="">Todos los tipos</option>' + Object.keys(TIPOS).map(t => `<option>${t}</option>`).join('');
+['q', 'fecha', 'tipo', 'sinpms', 'connotas'].forEach(id => $(id).addEventListener('input', renderFilas));
+todo();
+</script>
+
+</body></html>

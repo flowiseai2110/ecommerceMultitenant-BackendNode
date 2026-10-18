@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Productos desktop: flujo de compra</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#14171C}a:hover{color:#000}
+.rw{display:flex;gap:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px;width:1024px}
+.step{font-size:14px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#3D434C}
+.step i{font-style:normal;font-weight:500;text-transform:none;letter-spacing:0;color:#59606B}
+.scr{width:1024px;height:680px;background:#fff;border-radius:14px;border:1px solid #CDD2D8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(0,0,0,.05);position:relative}
+.chr{height:30px;flex:none;background:#F1F3F5;display:flex;align-items:center;gap:6px;padding:0 12px;border-bottom:1px solid #E3E6EA}
+.chr b{width:9px;height:9px;border-radius:50%;background:#CDD2D8}
+.url{margin-left:12px;background:#fff;border-radius:6px;padding:2px 12px;font-size:11px;color:#59606B;width:320px}
+.nav{height:60px;flex:none;display:flex;align-items:center;gap:28px;padding:0 32px;border-bottom:1px solid #EEF0F2;font-size:14px}
+.nav .lk{display:flex;gap:22px;color:#3D434C}
+.ct{flex:1;padding:24px 32px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.btn{appearance:none;border:0;border-radius:10px;background:var(--a);color:#fff;font:600 15px 'Figtree',sans-serif;height:46px;padding:0 22px;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.btn2{appearance:none;border:1.5px solid var(--a);border-radius:10px;background:#fff;color:var(--a);font:600 15px 'Figtree',sans-serif;height:46px;padding:0 22px}
+.img{background:color-mix(in srgb,var(--a) 14%,#F1F3F5);border-radius:10px;display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font-size:11px;color:#3D434C}
+.chip{border:1px solid #CDD2D8;border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap;background:#fff;color:#14171C;font-family:inherit}
+.on{background:var(--a);border-color:var(--a);color:#fff}
+.h{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;margin:0;line-height:1.15}
+.mut{color:#59606B;font-size:13px}
+.fld{border:1px solid #CDD2D8;border-radius:8px;padding:6px 12px;display:flex;flex-direction:column;gap:2px}
+.lbl{font-size:11px;color:#59606B;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fld input{border:0;padding:0;font:500 14px 'Figtree',sans-serif;color:#14171C;background:transparent;outline:none;width:100%}
+.sep{height:1px;background:#EEF0F2;flex:none}
+.li{display:flex;justify-content:space-between;font-size:14px;gap:8px}
+.tag{font-size:11px;font-weight:700;color:var(--a);text-transform:uppercase;letter-spacing:.05em}
+.card{border:1px solid #E3E6EA;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.okc{width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,var(--a) 14%,#fff);color:var(--a);display:flex;align-items:center;justify-content:center}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.side{width:300px;flex:none;border:1px solid #E3E6EA;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 20px rgba(20,23,28,.06)}
+.cb{display:flex;gap:8px;align-items:center;font-size:13px}
+.cb input{width:16px;height:16px;margin:0;accent-color:var(--a)}
+.crumb{font-size:12px;color:#59606B}
+</style>
+</helmet>
+<div style="--a: {{accent}}; font-family: 'Figtree', sans-serif; color: #14171C; background: #E9ECEF; width: 3232px; height: 1700px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span class="tag">Rubro · productos · desktop</span>
+<h1 class="h" style="font-size: 48px">Tienda online</h1>
+<p style="margin: 0; font-size: 18px; color: #3D434C">Inicio → categoría con filtros laterales → producto → carrito lateral → checkout de una página → confirmación</p>
+</div>
+<p style="margin: 0; font-size: 15px; color: #3D434C; max-width: 640px; text-align: right">En desktop: filtros siempre visibles a la izquierda, ficha en dos columnas (galería | compra), carrito como panel lateral sin salir de la página y checkout con el resumen fijo a la derecha.</p>
+</div>
+
+<div class="rw">
+<div class="col">
+<span class="step">1 · Inicio <i>/</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">nativa.tutienda.pe</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Nativa</span><span class="lk"><span>Ropa</span><span>Calzado</span><span>Hogar</span><span style="color: #B42318; font-weight: 600">Ofertas</span></span><label class="fld" style="flex: 1; flex-direction: row; align-items: center; gap: 8px; padding: 8px 12px"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg><input placeholder="Buscar productos" aria-label="Buscar"></label><span>Mi cuenta</span><span style="font-weight: 600">Carrito (0)</span></div>
+<div class="ct">
+<div style="display: flex; gap: 20px; height: 250px">
+<div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 0 12px"><span class="tag">Temporada verano</span><h2 class="h" style="font-size: 40px">Nueva colección en algodón pima</h2><span class="mut" style="font-size: 15px">Envío a todo Lima en 2–3 días</span><a class="btn" href="#" style="align-self: flex-start">Ver colección</a></div>
+<div class="img" style="width: 470px; justify-content: center">Foto de campaña</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div class="img" style="width: 100%; height: 80px"></div><span style="font-size: 13px">Polos</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div class="img" style="width: 100%; height: 80px"></div><span style="font-size: 13px">Camisas</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div class="img" style="width: 100%; height: 80px"></div><span style="font-size: 13px">Casacas</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div class="img" style="width: 100%; height: 80px"></div><span style="font-size: 13px">Pantalones</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div class="img" style="width: 100%; height: 80px"></div><span style="font-size: 13px">Calzado</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div class="img" style="width: 100%; height: 80px"></div><span style="font-size: 13px">Hogar</span></div>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span class="h" style="font-size: 20px">Más vendidos</span><a href="#" style="font-size: 13px">Ver todo</a></div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px">
+<div class="img" style="height: 110px"></div><div class="img" style="height: 110px"></div><div class="img" style="height: 110px"></div><div class="img" style="height: 110px"></div><div class="img" style="height: 110px"></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">2 · Categoría <i>/categorias/ropa</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">nativa.tutienda.pe/categorias/ropa</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Nativa</span><span class="lk"><span style="color: #14171C; font-weight: 700">Ropa</span><span>Calzado</span><span>Hogar</span><span>Ofertas</span></span><label class="fld" style="flex: 1; flex-direction: row; align-items: center; gap: 8px; padding: 8px 12px"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg><input placeholder="Buscar productos" aria-label="Buscar"></label><span>Mi cuenta</span><span style="font-weight: 600">Carrito (0)</span></div>
+<div class="ct" style="flex-direction: row; gap: 28px">
+<div style="width: 200px; flex: none; display: flex; flex-direction: column; gap: 14px">
+<span class="crumb">Inicio / Ropa</span>
+<h2 class="h" style="font-size: 26px">Ropa</h2>
+<span class="lbl">Talla</span>
+<label class="cb"><input type="checkbox">S</label><label class="cb"><input type="checkbox" checked>M</label><label class="cb"><input type="checkbox" checked>L</label>
+<span class="lbl">Color</span>
+<div style="display: flex; gap: 8px"><span style="width: 22px; height: 22px; border-radius: 50%; background: #D8C7A8"></span><span style="width: 22px; height: 22px; border-radius: 50%; background: #2B3440"></span><span style="width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 1px solid #CDD2D8"></span><span style="width: 22px; height: 22px; border-radius: 50%; background: #6B8F71"></span></div>
+<span class="lbl">Precio</span>
+<div style="display: flex; gap: 8px"><label class="fld" style="flex: 1"><input value="S/ 50" aria-label="Precio mínimo"></label><label class="fld" style="flex: 1"><input value="S/ 200" aria-label="Precio máximo"></label></div>
+<label class="cb"><input type="checkbox">Solo con descuento</label>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0">
+<div style="display: flex; justify-content: space-between; align-items: center"><div style="display: flex; gap: 8px; align-items: center"><span class="mut">[N] productos</span><span class="chip">Talla M ×</span><span class="chip">Talla L ×</span></div><span class="chip">Ordenar: relevancia</span></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 14px">
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 170px"></div><span style="font-size: 13px">Polo algodón pima</span><b style="font-size: 14px">S/ 79</b></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 170px"></div><span style="font-size: 13px">Camisa lino</span><b style="font-size: 14px">S/ 129</b></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 170px"></div><span style="font-size: 13px">Casaca liviana</span><b style="font-size: 14px">S/ 189</b></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 170px"></div><span style="font-size: 13px">Pantalón chino</span><b style="font-size: 14px">S/ 149</b></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 170px"></div><span style="font-size: 13px">Polo cuello V</span><b style="font-size: 14px">S/ 69</b></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 170px"></div><span style="font-size: 13px">Short drill</span><b style="font-size: 14px">S/ 99</b></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 170px"></div><span style="font-size: 13px">Camisa oxford</span><b style="font-size: 14px">S/ 139</b></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 170px"></div><span style="font-size: 13px">Polera básica</span><b style="font-size: 14px">S/ 119</b></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">3 · Producto <i>/productos/polo-algodon-pima</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">nativa.tutienda.pe/productos/polo-algodon-pima</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Nativa</span><span class="lk"><span>Ropa</span><span>Calzado</span><span>Hogar</span><span>Ofertas</span></span><label class="fld" style="flex: 1; flex-direction: row; align-items: center; gap: 8px; padding: 8px 12px"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg><input placeholder="Buscar productos" aria-label="Buscar"></label><span>Mi cuenta</span><span style="font-weight: 600">Carrito (0)</span></div>
+<div class="ct" style="flex-direction: row; gap: 32px">
+<div style="display: flex; gap: 10px; width: 500px; flex: none">
+<div style="display: flex; flex-direction: column; gap: 8px; width: 64px"><div class="img" style="height: 80px; outline: 2px solid #14171C"></div><div class="img" style="height: 80px"></div><div class="img" style="height: 80px"></div><div class="img" style="height: 80px"></div></div>
+<div class="img" style="flex: 1; height: 520px; justify-content: center">Foto principal · zoom al pasar</div>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+<span class="crumb">Inicio / Ropa / Polos</span>
+<h2 class="h" style="font-size: 28px">Polo algodón pima</h2>
+<div style="display: flex; gap: 12px; align-items: baseline"><span style="font-size: 24px; font-weight: 700">S/ 79</span><a href="#" class="mut">★ 4,8 · [N] reseñas</a></div>
+<span class="lbl">Color: Arena</span>
+<div style="display: flex; gap: 8px"><span style="width: 28px; height: 28px; border-radius: 50%; background: #D8C7A8; outline: 2px solid #14171C; outline-offset: 2px"></span><span style="width: 28px; height: 28px; border-radius: 50%; background: #2B3440"></span><span style="width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 1px solid #CDD2D8"></span></div>
+<span class="lbl">Talla · <a href="#">Guía de tallas</a></span>
+<div style="display: flex; gap: 8px"><button class="chip">S</button><button class="chip on">M</button><button class="chip">L</button><button class="chip" style="color: #8A9099; text-decoration: line-through">XL</button></div>
+<div style="display: flex; gap: 10px"><span style="display: flex; align-items: center; gap: 14px; border: 1px solid #CDD2D8; border-radius: 10px; padding: 0 14px">− 1 +</span><a class="btn" href="#" style="flex: 1">Agregar al carrito</a></div>
+<div class="card" style="gap: 6px; font-size: 13px"><span>Envío a Lima: S/ 10 · llega en 2–3 días</span><span>Recojo en tienda gratis</span><a href="#">Cambios y devoluciones: 30 días</a></div>
+<span class="mut">Algodón pima peruano 100%. Corte regular.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="rw">
+<div class="col">
+<span class="step">4 · Carrito lateral <i>panel sobre la ficha</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">nativa.tutienda.pe/productos/polo-algodon-pima</span></div>
+<div class="nav" style="opacity: .35"><span class="h" style="font-size: 22px">Nativa</span><span class="lk"><span>Ropa</span><span>Calzado</span><span>Hogar</span><span>Ofertas</span></span><span style="flex: 1"></span><span>Mi cuenta</span><span>Carrito (2)</span></div>
+<div class="ct" style="flex-direction: row; gap: 32px; opacity: .35"><div class="img" style="width: 500px; height: 520px"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 14px"><div style="height: 28px; width: 70%; background: #E3E6EA; border-radius: 6px"></div><div style="height: 20px; width: 30%; background: #E3E6EA; border-radius: 6px"></div></div></div>
+<div style="position: absolute; top: 30px; right: 0; bottom: 0; width: 380px; background: #fff; border-left: 1px solid #CDD2D8; box-shadow: -12px 0 30px rgba(20,23,28,.12); display: flex; flex-direction: column">
+<div style="padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #EEF0F2"><span style="font-weight: 700; font-size: 16px">Tu carrito (2)</span><button class="chip" aria-label="Cerrar carrito">Cerrar</button></div>
+<div style="padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; flex: 1">
+<div style="background: color-mix(in srgb, var(--a) 10%, #fff); border-radius: 8px; padding: 8px 12px; font-size: 13px">Agregado: Polo algodón pima · Arena · M</div>
+<div style="display: flex; gap: 12px"><div class="img" style="width: 70px; height: 84px; flex: none"></div><div style="display: flex; flex-direction: column; gap: 4px; flex: 1"><span style="font-size: 14px; font-weight: 600">Polo algodón pima</span><span class="mut">Arena · M · 1</span><b>S/ 79</b></div></div>
+<div style="display: flex; gap: 12px"><div class="img" style="width: 70px; height: 84px; flex: none"></div><div style="display: flex; flex-direction: column; gap: 4px; flex: 1"><span style="font-size: 14px; font-weight: 600">Camisa lino</span><span class="mut">Blanco · L · 1</span><b>S/ 129</b></div></div>
+<div class="sep"></div>
+<span class="lbl">Combina con</span>
+<div style="display: flex; gap: 8px"><div class="img" style="width: 70px; height: 70px"></div><div class="img" style="width: 70px; height: 70px"></div><div class="img" style="width: 70px; height: 70px"></div></div>
+</div>
+<div style="padding: 16px 22px 20px; border-top: 1px solid #EEF0F2; display: flex; flex-direction: column; gap: 10px"><div class="li" style="font-weight: 700; font-size: 16px"><span>Subtotal</span><span>S/ 208</span></div><a class="btn" href="#">Ir a pagar</a><button class="btn2">Seguir comprando</button></div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">5 · Checkout de una página <i>/checkout</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">nativa.tutienda.pe/checkout</span></div>
+<div class="nav" style="justify-content: space-between"><span class="h" style="font-size: 22px">Nativa</span><span class="mut">Pago seguro</span></div>
+<div class="ct" style="flex-direction: row; gap: 32px; background: #F8F9FA">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between"><span class="h" style="font-size: 18px">1. Contacto</span><span class="mut">¿Ya tienes cuenta? <a href="#">Inicia sesión</a></span></div>
+<label class="fld" style="background: #fff"><span class="lbl">Correo</span><input value="cliente@correo.com"></label>
+<span class="h" style="font-size: 18px">2. Entrega</span>
+<div style="display: flex; gap: 10px"><div class="card" style="flex: 1; flex-direction: row; justify-content: space-between; border-color: var(--a); background: #fff; font-size: 14px"><span>Delivery · 2–3 días</span><b>S/ 10</b></div><div class="card" style="flex: 1; flex-direction: row; justify-content: space-between; background: #fff; font-size: 14px"><span>Recojo en tienda</span><b>Gratis</b></div></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px"><label class="fld" style="background: #fff"><span class="lbl">Dirección</span><input value="Av. Larco 123"></label><label class="fld" style="background: #fff"><span class="lbl">Distrito</span><input value="Miraflores"></label></div>
+<span class="h" style="font-size: 18px">3. Pago y comprobante</span>
+<div style="display: flex; gap: 8px"><button class="chip on">Tarjeta</button><button class="chip">Yape / Plin</button><button class="chip">Contra entrega</button><span style="width: 16px"></span><button class="chip on">Boleta</button><button class="chip">Factura</button></div>
+<div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px"><label class="fld" style="background: #fff"><span class="lbl">Número de tarjeta</span><input value="•••• •••• •••• 4242"></label><label class="fld" style="background: #fff"><span class="lbl">Vence</span><input value="08/28"></label><label class="fld" style="background: #fff"><span class="lbl">CVV</span><input value="•••"></label></div>
+</div>
+<div class="side" style="background: #fff">
+<span style="font-weight: 700">Resumen</span>
+<div style="display: flex; gap: 10px; align-items: center"><div class="img" style="width: 48px; height: 56px; flex: none"></div><span style="font-size: 13px; flex: 1">Polo algodón pima · M</span><b style="font-size: 13px">S/ 79</b></div>
+<div style="display: flex; gap: 10px; align-items: center"><div class="img" style="width: 48px; height: 56px; flex: none"></div><span style="font-size: 13px; flex: 1">Camisa lino · L</span><b style="font-size: 13px">S/ 129</b></div>
+<label class="fld"><span class="lbl">Cupón</span><input placeholder="Código"></label>
+<div class="li"><span>Subtotal</span><span>S/ 208</span></div>
+<div class="li"><span>Envío</span><span>S/ 10</span></div>
+<div class="li" style="font-weight: 700; font-size: 17px"><span>Total</span><span>S/ 218</span></div>
+<a class="btn" href="#">Pagar S/ 218</a>
+<span class="mut" style="font-size: 12px; text-align: center">Cambios y devoluciones: 30 días</span>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">6 · Confirmación <i>/pedido/[N]</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">nativa.tutienda.pe/pedido/[N]</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Nativa</span><span class="lk"><span>Ropa</span><span>Calzado</span><span>Hogar</span><span>Ofertas</span></span><span style="flex: 1"></span><span>Mi cuenta</span><span>Carrito (0)</span></div>
+<div class="ct" style="flex-direction: row; gap: 32px; align-items: flex-start; padding-top: 40px">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+<div class="okc"><svg class="ico" style="width: 30px; height: 30px" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+<h2 class="h" style="font-size: 32px">¡Gracias por tu compra!</h2>
+<span class="mut" style="font-size: 15px">Pedido #[N] · te enviamos el detalle y la boleta a cliente@correo.com</span>
+<div class="card" style="gap: 10px">
+<span class="lbl">Seguimiento</span>
+<div style="display: flex; gap: 8px"><span style="flex: 1; height: 6px; border-radius: 3px; background: var(--a)"></span><span style="flex: 1; height: 6px; border-radius: 3px; background: #E3E6EA"></span><span style="flex: 1; height: 6px; border-radius: 3px; background: #E3E6EA"></span></div>
+<div style="display: flex; justify-content: space-between; font-size: 13px"><b>Recibido</b><span class="mut">En camino</span><span class="mut">Entregado · estimado vie 16</span></div>
+</div>
+<div style="display: flex; gap: 10px"><a class="btn" href="#">Ver mi pedido</a><button class="btn2">Seguir comprando</button></div>
+</div>
+<div class="side">
+<span style="font-weight: 700">Detalle</span>
+<div class="li"><span>2 productos</span><span>S/ 208</span></div>
+<div class="li"><span>Envío</span><span>S/ 10</span></div>
+<div class="li" style="font-weight: 700"><span>Total pagado</span><span>S/ 218</span></div>
+<div class="sep"></div>
+<span class="lbl">Entrega en</span>
+<span style="font-size: 13px">Av. Larco 123, Miraflores</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#C2410C","options":["#C2410C","#1D4E89","#0F766E","#7E22CE"]},"$preview":{"width":3232,"height":1700}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#C2410C' };
+}
+}
+</script>
+</body>
+</html>

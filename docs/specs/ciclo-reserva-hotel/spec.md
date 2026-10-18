@@ -1,6 +1,6 @@
 # Spec: ciclo de la reserva del hotel
 
-> Estado (2026-10-16): aprobada con el prototipo https://claude.ai/artifact/XEDKSa6GfScKGMtJVyGbut. Tareas: [tasks.md](tasks.md).
+> Estado (2026-10-16): aprobada con el prototipo https://claude.ai/artifact/XEDKSa6GfScKGMtJVyGbut. Tareas: [tasks.md](tasks.md). Copia en el repo: [docs/disenos/reservas-hotel-nobility/](../../disenos/reservas-hotel-nobility/).
 > Base: [motor-reservas-hotel](../motor-reservas-hotel/spec.md) (bandeja M1, cupo M2), [reserva-directa-hotel](../reserva-directa-hotel/spec.md), [recepcion](../recepcion/spec.md).
 > Repos: BackendNode, FrontendAdmin (y FrontendStore en la pieza 4).
 

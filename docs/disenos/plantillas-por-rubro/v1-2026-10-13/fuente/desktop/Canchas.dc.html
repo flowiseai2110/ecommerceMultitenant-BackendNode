@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Canchas desktop: flujo de reserva</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#14171C}a:hover{color:#000}
+.rw{display:flex;gap:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px;width:1024px}
+.step{font-size:14px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#3D434C}
+.step i{font-style:normal;font-weight:500;text-transform:none;letter-spacing:0;color:#59606B}
+.scr{width:1024px;height:680px;background:#fff;border-radius:14px;border:1px solid #CDD2D8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(0,0,0,.05);position:relative}
+.chr{height:30px;flex:none;background:#F1F3F5;display:flex;align-items:center;gap:6px;padding:0 12px;border-bottom:1px solid #E3E6EA}
+.chr b{width:9px;height:9px;border-radius:50%;background:#CDD2D8}
+.url{margin-left:12px;background:#fff;border-radius:6px;padding:2px 12px;font-size:11px;color:#59606B;width:320px}
+.nav{height:60px;flex:none;display:flex;align-items:center;gap:28px;padding:0 32px;border-bottom:1px solid #EEF0F2;font-size:14px}
+.nav .lk{display:flex;gap:22px;color:#3D434C}
+.ct{flex:1;padding:24px 32px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.btn{appearance:none;border:0;border-radius:10px;background:var(--a);color:#fff;font:600 15px 'Figtree',sans-serif;height:46px;padding:0 22px;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.btn2{appearance:none;border:1.5px solid var(--a);border-radius:10px;background:#fff;color:var(--a);font:600 15px 'Figtree',sans-serif;height:46px;padding:0 22px}
+.img{background:color-mix(in srgb,var(--a) 14%,#F1F3F5);border-radius:10px;display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font-size:11px;color:#3D434C}
+.chip{border:1px solid #CDD2D8;border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap;background:#fff;color:#14171C;font-family:inherit}
+.on{background:var(--a);border-color:var(--a);color:#fff}
+.h{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;margin:0;line-height:1.15}
+.mut{color:#59606B;font-size:13px}
+.fld{border:1px solid #CDD2D8;border-radius:8px;padding:6px 12px;display:flex;flex-direction:column;gap:2px;background:#fff}
+.lbl{font-size:11px;color:#59606B;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fld input{border:0;padding:0;font:500 14px 'Figtree',sans-serif;color:#14171C;background:transparent;outline:none;width:100%}
+.sep{height:1px;background:#EEF0F2;flex:none}
+.li{display:flex;justify-content:space-between;font-size:14px;gap:8px}
+.tag{font-size:11px;font-weight:700;color:var(--a);text-transform:uppercase;letter-spacing:.05em}
+.card{border:1px solid #E3E6EA;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;background:#fff}
+.okc{width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,var(--a) 14%,#fff);color:var(--a);display:flex;align-items:center;justify-content:center}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.side{width:300px;flex:none;border:1px solid #E3E6EA;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 20px rgba(20,23,28,.06);background:#fff}
+.days{display:flex;gap:6px}
+.day{display:flex;flex-direction:column;align-items:center;gap:1px;border:1px solid #E3E6EA;border-radius:10px;padding:6px 0;width:56px;font-size:12px;background:#fff}
+.gr{display:grid;gap:4px;font-size:12px}
+.gr span{height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.lib{background:color-mix(in srgb,var(--a) 12%,#fff);border:1px solid color-mix(in srgb,var(--a) 35%,#fff);font-weight:600}
+.ocu{background:#F1F3F5;color:#8A9099}
+.sel{background:var(--a);color:#fff;font-weight:700}
+.ok{color:#0F5F3A;font-weight:600}
+</style>
+</helmet>
+<div style="--a: {{accent}}; font-family: 'Figtree', sans-serif; color: #14171C; background: #E9ECEF; width: 3232px; height: 1700px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span class="tag">Rubro · canchas · desktop</span>
+<h1 class="h" style="font-size: 48px">Reserva de canchas por turno</h1>
+<p style="margin: 0; font-size: 18px; color: #3D434C">Inicio → grilla completa cancha × hora → turno elegido en panel lateral → pago → confirmación → mis reservas y reserva fija</p>
+</div>
+<p style="margin: 0; font-size: 15px; color: #3D434C; max-width: 640px; text-align: right">En desktop: la grilla entra entera (todas las canchas y horas sin scroll lateral) y al tocar una celda se abre el panel del turno a la derecha sin perder la grilla de vista (patrón Playtomic / MATCHi).</p>
+</div>
+
+<div class="rw">
+<div class="col">
+<span class="step">1 · Inicio <i>/</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">loscedros.tutienda.pe</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Los Cedros</span><span class="lk"><span>Reservar</span><span>Liga</span><span>Tarifas</span><span>Cómo llegar</span></span><span style="flex: 1"></span><span>Mis reservas</span></div>
+<div class="ct" style="flex-direction: row; gap: 28px">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 16px">
+<div class="img" style="height: 230px; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 6px; padding: 22px"><span class="h" style="font-size: 34px; color: #14171C">Reserva tu cancha en 1 minuto</span><span style="font-size: 14px">3 canchas de grass sintético · abierto 7:00 – 23:00</span></div>
+<span class="lbl">Deporte</span>
+<div style="display: flex; gap: 8px"><button class="chip on">Fútbol 7</button><button class="chip">Pádel</button><button class="chip">Vóley</button></div>
+<span class="lbl">Día</span>
+<div class="days"><span class="day" style="background: var(--a); color: #fff; border-color: var(--a)"><span>Hoy</span><b>13</b></span><span class="day"><span class="mut" style="font-size: 12px">mié</span><b>14</b></span><span class="day"><span class="mut" style="font-size: 12px">jue</span><b>15</b></span><span class="day"><span class="mut" style="font-size: 12px">vie</span><b>16</b></span><span class="day"><span class="mut" style="font-size: 12px">sáb</span><b>17</b></span><span class="day"><span class="mut" style="font-size: 12px">dom</span><b>18</b></span><span class="day"><span class="mut" style="font-size: 12px">lun</span><b>19</b></span><a class="btn" href="#" style="margin-left: 12px">Ver horarios libres</a></div>
+</div>
+<div style="width: 300px; display: flex; flex-direction: column; gap: 12px">
+<div class="card"><span class="lbl">Tarifas</span><div class="li"><span>Día · 7–18 h</span><b>S/ 90 / h</b></div><div class="li"><span>Noche · 18–23 h</span><b>S/ 120 / h</b></div></div>
+<div class="card"><span class="lbl">Liga de los jueves</span><div class="li" style="font-size: 13px"><span>1. Los Pumas</span><b>18 pts</b></div><div class="li" style="font-size: 13px"><span>2. Real Cedros</span><b>15 pts</b></div><div class="li" style="font-size: 13px"><span>3. Atlético Sur</span><b>13 pts</b></div><a href="#" style="font-size: 13px">Ver tabla completa</a></div>
+<div class="img" style="height: 110px; justify-content: center">Mapa</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">2 · Grilla cancha × hora <i>/reservar?dia=hoy</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">loscedros.tutienda.pe/reservar?dia=2026-10-13</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Los Cedros</span><span class="lk"><span style="color: #14171C; font-weight: 700">Reservar</span><span>Liga</span><span>Tarifas</span></span><span style="flex: 1"></span><span>Mis reservas</span></div>
+<div class="ct" style="gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: center"><div class="days"><span class="day" style="background: var(--a); color: #fff; border-color: var(--a)"><span>Hoy</span><b>13</b></span><span class="day"><span class="mut" style="font-size: 12px">mié</span><b>14</b></span><span class="day"><span class="mut" style="font-size: 12px">jue</span><b>15</b></span><span class="day"><span class="mut" style="font-size: 12px">vie</span><b>16</b></span><span class="day"><span class="mut" style="font-size: 12px">sáb</span><b>17</b></span></div><div style="display: flex; gap: 8px"><button class="chip on">Fútbol 7</button><button class="chip">Pádel</button></div></div>
+<div class="gr" style="grid-template-columns: 80px repeat(9, minmax(0, 1fr))">
+<span></span><span class="mut">15:00</span><span class="mut">16:00</span><span class="mut">17:00</span><span class="mut">18:00</span><span class="mut">19:00</span><span class="mut">20:00</span><span class="mut">21:00</span><span class="mut">22:00</span><span class="mut">23:00</span>
+<span style="font-weight: 700; justify-content: flex-start">Cancha 1</span><span class="lib">S/ 90</span><span class="ocu">—</span><span class="ocu">—</span><span class="ocu">—</span><span class="lib">S/ 120</span><span class="lib">S/ 120</span><span class="lib">S/ 120</span><span class="lib">S/ 90</span><span class="ocu">Cierre</span>
+<span style="font-weight: 700; justify-content: flex-start">Cancha 2</span><span class="lib">S/ 90</span><span class="lib">S/ 90</span><span class="lib">S/ 90</span><span class="ocu">—</span><span class="ocu">—</span><span class="lib">S/ 120</span><span class="lib">S/ 120</span><span class="ocu">—</span><span class="ocu">Cierre</span>
+<span style="font-weight: 700; justify-content: flex-start">Cancha 3</span><span class="ocu">—</span><span class="lib">S/ 90</span><span class="ocu">—</span><span class="lib">S/ 120</span><span class="lib">S/ 120</span><span class="ocu">—</span><span class="lib">S/ 120</span><span class="lib">S/ 90</span><span class="ocu">Cierre</span>
+</div>
+<div style="display: flex; gap: 16px; font-size: 12px"><span style="display: flex; gap: 6px; align-items: center"><span class="lib" style="width: 14px; height: 14px; border-radius: 3px"></span>Libre (precio por hora)</span><span style="display: flex; gap: 6px; align-items: center"><span class="ocu" style="width: 14px; height: 14px; border-radius: 3px"></span>Ocupado</span><span class="mut" style="font-size: 12px">Desde las 18:00 aplica tarifa nocturna (con luz).</span></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 8px">
+<div class="card" style="flex-direction: row; gap: 12px; align-items: center"><div class="img" style="width: 70px; height: 56px; flex: none"></div><div style="display: flex; flex-direction: column"><b style="font-size: 14px">Cancha 1</b><span class="mut" style="font-size: 12px">Fútbol 7 · techada</span></div></div>
+<div class="card" style="flex-direction: row; gap: 12px; align-items: center"><div class="img" style="width: 70px; height: 56px; flex: none"></div><div style="display: flex; flex-direction: column"><b style="font-size: 14px">Cancha 2</b><span class="mut" style="font-size: 12px">Fútbol 7 · al aire libre</span></div></div>
+<div class="card" style="flex-direction: row; gap: 12px; align-items: center"><div class="img" style="width: 70px; height: 56px; flex: none"></div><div style="display: flex; flex-direction: column"><b style="font-size: 14px">Cancha 3</b><span class="mut" style="font-size: 12px">Fútbol 7 · al aire libre</span></div></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">3 · Turno en panel lateral <i>misma página</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">loscedros.tutienda.pe/reservar?dia=2026-10-13</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Los Cedros</span><span class="lk"><span style="color: #14171C; font-weight: 700">Reservar</span><span>Liga</span><span>Tarifas</span></span><span style="flex: 1"></span><span>Mis reservas</span></div>
+<div class="ct" style="flex-direction: row; gap: 24px">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0">
+<span class="mut">Hoy, martes 13 · Fútbol 7</span>
+<div class="gr" style="grid-template-columns: 70px repeat(6, minmax(0, 1fr))">
+<span></span><span class="mut">17:00</span><span class="mut">18:00</span><span class="mut">19:00</span><span class="mut">20:00</span><span class="mut">21:00</span><span class="mut">22:00</span>
+<span style="font-weight: 700; justify-content: flex-start">Cancha 1</span><span class="ocu">—</span><span class="ocu">—</span><span class="sel">19:00</span><span class="sel">20:00</span><span class="lib">S/ 120</span><span class="lib">S/ 90</span>
+<span style="font-weight: 700; justify-content: flex-start">Cancha 2</span><span class="lib">S/ 90</span><span class="ocu">—</span><span class="ocu">—</span><span class="lib">S/ 120</span><span class="lib">S/ 120</span><span class="ocu">—</span>
+<span style="font-weight: 700; justify-content: flex-start">Cancha 3</span><span class="ocu">—</span><span class="lib">S/ 120</span><span class="lib">S/ 120</span><span class="ocu">—</span><span class="lib">S/ 120</span><span class="lib">S/ 90</span>
+</div>
+<span class="mut" style="font-size: 12px">Toca una celda contigua para alargar el turno.</span>
+</div>
+<div class="side">
+<div class="img" style="height: 100px">Cancha 1 · grass sintético · techada</div>
+<b style="font-size: 16px">Cancha 1 · hoy 19:00</b>
+<span class="lbl">Duración</span>
+<div style="display: flex; gap: 8px"><button class="chip">1 h</button><button class="chip">1 h 30</button><button class="chip on">2 h</button></div>
+<span class="lbl">Extras</span>
+<div class="li" style="align-items: center"><span>Pelota</span><button class="chip">+ S/ 10</button></div>
+<div class="li" style="align-items: center"><span>Chalecos (14)</span><button class="chip">+ S/ 15</button></div>
+<div class="sep"></div>
+<div class="li" style="font-weight: 700; font-size: 17px"><span>19:00 – 21:00</span><span>S/ 240</span></div>
+<a class="btn" href="#">Reservar</a>
+<span class="mut" style="font-size: 12px">Cancela gratis hasta 6 h antes</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="rw">
+<div class="col">
+<span class="step">4 · Datos y pago <i>/reservar/pago</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">loscedros.tutienda.pe/reservar/pago</span></div>
+<div class="nav" style="justify-content: space-between"><span class="h" style="font-size: 22px">Los Cedros</span><span style="background: color-mix(in srgb, var(--a) 10%, #fff); border-radius: 8px; padding: 6px 12px; font-size: 13px">Turno guardado para ti <b>04:58</b></span></div>
+<div class="ct" style="flex-direction: row; gap: 32px; background: #F8F9FA">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 12px">
+<span class="h" style="font-size: 18px">1. Tus datos</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px"><label class="fld"><span class="lbl">Nombre</span><input value="Carlos Díaz"></label><label class="fld"><span class="lbl">Celular</span><input value="9…"></label></div>
+<span class="h" style="font-size: 18px">2. ¿Cuánto pagas ahora?</span>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div class="card" style="border-color: var(--a); border-width: 2px"><b>Adelanto</b><span class="mut">Saldo en la cancha</span><b style="font-size: 18px">S/ 60</b></div>
+<div class="card"><b>Total</b><span class="mut">Llegas y juegas</span><b style="font-size: 18px">S/ 240</b></div>
+<div class="card"><b>Dividir</b><span class="mut">Cada jugador paga por link</span><b style="font-size: 18px">S/ 17 c/u</b></div>
+</div>
+<span class="h" style="font-size: 18px">3. Medio de pago</span>
+<div style="display: flex; gap: 8px"><button class="chip on">Yape / Plin</button><button class="chip">Tarjeta</button></div>
+</div>
+<div class="side">
+<b>Cancha 1 · Fútbol 7</b>
+<span class="mut">Hoy mar 13 · 19:00 – 21:00</span>
+<div class="sep"></div>
+<div class="li"><span>2 h × S/ 120</span><span>S/ 240</span></div>
+<div class="li"><span>Pagas ahora</span><b>S/ 60</b></div>
+<div class="li"><span>En la cancha</span><span>S/ 180</span></div>
+<a class="btn" href="#">Pagar S/ 60</a>
+<span class="mut" style="font-size: 12px">Cancela gratis hasta las 13:00 de hoy</span>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">5 · Confirmación <i>/reserva/[CÓDIGO]</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">loscedros.tutienda.pe/reserva/[CÓDIGO]</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Los Cedros</span><span class="lk"><span>Reservar</span><span>Liga</span><span>Tarifas</span></span><span style="flex: 1"></span><span>Mis reservas</span></div>
+<div class="ct" style="flex-direction: row; gap: 32px; padding-top: 36px">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+<div class="okc"><svg class="ico" style="width: 30px; height: 30px" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+<h2 class="h" style="font-size: 32px">¡Cancha reservada!</h2>
+<span class="mut" style="font-size: 15px">Hoy 19:00 – 21:00 · Cancha 1 · Reserva <b style="color: #14171C">[CÓDIGO]</b></span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px"><div class="card" style="gap: 2px"><span class="lbl">Pagado</span><b>S/ 60</b></div><div class="card" style="gap: 2px"><span class="lbl">Saldo en la cancha</span><b>S/ 180</b></div></div>
+<div style="display: flex; gap: 10px"><a class="btn" href="#">Compartir con el equipo</a><button class="btn2">Agregar al calendario</button></div>
+<span class="mut">Muestra el código en recepción · llega 10 minutos antes</span>
+</div>
+<div style="width: 320px; display: flex; flex-direction: column; gap: 10px"><div class="img" style="height: 240px; justify-content: center">Mapa · cómo llegar</div><span class="mut">Av. Los Cedros 450, Chorrillos · cochera gratis</span></div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">6 · Mis reservas y reserva fija <i>/mis-reservas</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">loscedros.tutienda.pe/mis-reservas</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Los Cedros</span><span class="lk"><span>Reservar</span><span>Liga</span><span>Tarifas</span></span><span style="flex: 1"></span><span style="font-weight: 700">Mis reservas</span></div>
+<div class="ct" style="flex-direction: row; gap: 28px">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; gap: 8px"><button class="chip on">Próximas</button><button class="chip">Pasadas</button></div>
+<div class="card" style="flex-direction: row; justify-content: space-between; align-items: center"><div style="display: flex; flex-direction: column; gap: 2px"><b>Hoy · 19:00 – 21:00</b><span class="mut">Cancha 1 · Fútbol 7 · saldo S/ 180</span></div><div style="display: flex; gap: 8px; align-items: center"><span class="tag">Confirmada</span><button class="chip">Cambiar horario</button><button class="chip">Cancelar</button></div></div>
+<span class="lbl">Pasadas</span>
+<div class="li" style="align-items: center"><span>mar 6 oct · 19:00 · Cancha 1</span><button class="chip">Volver a reservar</button></div>
+<div class="sep"></div>
+<div class="li" style="align-items: center"><span>mar 29 set · 19:00 · Cancha 2</span><button class="chip">Volver a reservar</button></div>
+<div class="sep"></div>
+<div class="li" style="align-items: center"><span>mar 22 set · 20:00 · Cancha 1</span><button class="chip">Volver a reservar</button></div>
+</div>
+<div class="side" style="border-color: var(--a)">
+<b style="font-size: 16px">¿Juegan todos los martes?</b>
+<span class="mut">Reserva fija semanal: mismo día, hora y cancha, sin competir por el turno.</span>
+<div class="li"><span>Cada martes</span><span>19:00 – 21:00</span></div>
+<div class="li"><span>Cancha</span><span>Cancha 1</span></div>
+<div class="li"><span>Desde</span><span>mar 20 oct</span></div>
+<a class="btn" href="#">Activar reserva fija</a>
+<span class="mut" style="font-size: 12px">Pagas cada semana; cancela cuando quieras.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#15803D","options":["#15803D","#1D4E89","#C2410C","#14171C"]},"$preview":{"width":3232,"height":1700}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#15803D' };
+}
+}
+</script>
+</body>
+</html>

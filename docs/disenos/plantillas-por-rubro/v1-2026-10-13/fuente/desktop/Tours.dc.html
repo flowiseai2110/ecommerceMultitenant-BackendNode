@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Tours desktop: flujo de reserva</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#14171C}a:hover{color:#000}
+.rw{display:flex;gap:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px;width:1024px}
+.step{font-size:14px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#3D434C}
+.step i{font-style:normal;font-weight:500;text-transform:none;letter-spacing:0;color:#59606B}
+.scr{width:1024px;height:680px;background:#fff;border-radius:14px;border:1px solid #CDD2D8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(0,0,0,.05);position:relative}
+.chr{height:30px;flex:none;background:#F1F3F5;display:flex;align-items:center;gap:6px;padding:0 12px;border-bottom:1px solid #E3E6EA}
+.chr b{width:9px;height:9px;border-radius:50%;background:#CDD2D8}
+.url{margin-left:12px;background:#fff;border-radius:6px;padding:2px 12px;font-size:11px;color:#59606B;width:320px}
+.nav{height:60px;flex:none;display:flex;align-items:center;gap:28px;padding:0 32px;border-bottom:1px solid #EEF0F2;font-size:14px}
+.nav .lk{display:flex;gap:22px;color:#3D434C}
+.ct{flex:1;padding:24px 32px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.btn{appearance:none;border:0;border-radius:10px;background:var(--a);color:#fff;font:600 15px 'Figtree',sans-serif;height:46px;padding:0 22px;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.btn2{appearance:none;border:1.5px solid var(--a);border-radius:10px;background:#fff;color:var(--a);font:600 15px 'Figtree',sans-serif;height:46px;padding:0 22px}
+.img{background:color-mix(in srgb,var(--a) 14%,#F1F3F5);border-radius:10px;display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font-size:11px;color:#3D434C}
+.chip{border:1px solid #CDD2D8;border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap;background:#fff;color:#14171C;font-family:inherit}
+.on{background:var(--a);border-color:var(--a);color:#fff}
+.h{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;margin:0;line-height:1.15}
+.mut{color:#59606B;font-size:13px}
+.fld{border:1px solid #CDD2D8;border-radius:8px;padding:6px 12px;display:flex;flex-direction:column;gap:2px;background:#fff}
+.lbl{font-size:11px;color:#59606B;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fld input{border:0;padding:0;font:500 14px 'Figtree',sans-serif;color:#14171C;background:transparent;outline:none;width:100%}
+.sep{height:1px;background:#EEF0F2;flex:none}
+.li{display:flex;justify-content:space-between;font-size:14px;gap:8px}
+.tag{font-size:11px;font-weight:700;color:var(--a);text-transform:uppercase;letter-spacing:.05em}
+.card{border:1px solid #E3E6EA;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;background:#fff}
+.okc{width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,var(--a) 14%,#fff);color:var(--a);display:flex;align-items:center;justify-content:center}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.side{width:300px;flex:none;border:1px solid #E3E6EA;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 20px rgba(20,23,28,.06);background:#fff}
+.cb{display:flex;gap:8px;align-items:center;font-size:13px}
+.cb input{width:16px;height:16px;margin:0;accent-color:var(--a)}
+.crumb{font-size:12px;color:#59606B}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center;font-size:12px}
+.cal span{height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.ok{color:#0F5F3A;font-weight:600}
+</style>
+</helmet>
+<div style="--a: {{accent}}; font-family: 'Figtree', sans-serif; color: #14171C; background: #E9ECEF; width: 3232px; height: 1700px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span class="tag">Rubro · tours · desktop</span>
+<h1 class="h" style="font-size: 48px">Tours y experiencias</h1>
+<p style="margin: 0; font-size: 18px; color: #3D434C">Inicio → listado con filtros → ficha con panel de reserva → fecha, horario y viajeros dentro del panel → checkout → voucher</p>
+</div>
+<p style="margin: 0; font-size: 15px; color: #3D434C; max-width: 640px; text-align: right">En desktop: la elección de fecha no sale de la ficha; el calendario se abre en el panel derecho y el precio total se actualiza ahí (patrón Viator / GetYourGuide).</p>
+</div>
+
+<div class="rw">
+<div class="col">
+<span class="step">1 · Inicio <i>/</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">andestrek.tutienda.pe</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Andes Trek</span><span class="lk"><span>Tours</span><span>Trekking</span><span>Nosotros</span><span>Contacto</span></span><span style="flex: 1"></span><span class="chip">EN · ES</span><span class="chip">S/ · US$</span></div>
+<div class="ct" style="padding: 0; gap: 0">
+<div class="img" style="height: 300px; border-radius: 0; flex-direction: column; align-items: flex-start; justify-content: center; gap: 12px; padding: 0 56px"><span class="h" style="font-size: 44px; color: #14171C">Vive Cusco con guías locales</span><span style="font-size: 15px">Operador autorizado · RUC [N]</span>
+<label class="fld" style="flex-direction: row; align-items: center; gap: 8px; width: 520px; padding: 12px 14px"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg><input placeholder="¿Qué quieres conocer? Machu Picchu, Valle Sagrado…" aria-label="Buscar tours"></label></div>
+<div style="padding: 22px 56px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span class="h" style="font-size: 20px">Más reservados</span><a href="#" style="font-size: 13px">Ver todos los tours</a></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 110px"></div><b style="font-size: 13px">Machu Picchu full day</b><span class="mut" style="font-size: 12px">14 h · desde S/ 890</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 110px"></div><b style="font-size: 13px">Valle Sagrado VIP</b><span class="mut" style="font-size: 12px">10 h · desde S/ 180</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 110px"></div><b style="font-size: 13px">Montaña de Colores</b><span class="mut" style="font-size: 12px">12 h · desde S/ 120</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 110px"></div><b style="font-size: 13px">City tour</b><span class="mut" style="font-size: 12px">4 h · desde S/ 60</span></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">2 · Listado y filtros <i>/tours</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">andestrek.tutienda.pe/tours</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Andes Trek</span><span class="lk"><span style="color: #14171C; font-weight: 700">Tours</span><span>Trekking</span><span>Nosotros</span></span><span style="flex: 1"></span><span class="chip">EN · ES</span></div>
+<div class="ct" style="flex-direction: row; gap: 28px">
+<div style="width: 190px; flex: none; display: flex; flex-direction: column; gap: 12px">
+<label class="fld"><span class="lbl">Fecha</span><input value="vie 13 nov"></label>
+<span class="lbl">Duración</span><label class="cb"><input type="checkbox">Hasta 4 h</label><label class="cb"><input type="checkbox" checked>Día completo</label><label class="cb"><input type="checkbox">Varios días</label>
+<span class="lbl">Dificultad</span><label class="cb"><input type="checkbox">Fácil</label><label class="cb"><input type="checkbox">Moderado</label><label class="cb"><input type="checkbox">Exigente</label>
+<span class="lbl">Incluye</span><label class="cb"><input type="checkbox">Almuerzo</label><label class="cb"><input type="checkbox">Recojo en hotel</label>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0">
+<div style="display: flex; justify-content: space-between; align-items: center"><span class="mut">[N] tours disponibles el vie 13 nov</span><span class="chip">Ordenar: más reservados</span></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+<div class="card" style="padding: 0; overflow: hidden; gap: 0"><div class="img" style="height: 130px; border-radius: 0"></div><div style="padding: 12px; display: flex; flex-direction: column; gap: 4px"><b style="font-size: 14px">Valle Sagrado VIP</b><span class="mut" style="font-size: 12px">10 h · Moderado · Almuerzo</span><span class="mut" style="font-size: 12px">★ 4,9 · [N] reseñas</span><span class="ok" style="font-size: 12px">Cancelación gratis 24 h</span><span style="font-size: 14px">desde <b>S/ 180</b></span></div></div>
+<div class="card" style="padding: 0; overflow: hidden; gap: 0"><div class="img" style="height: 130px; border-radius: 0"></div><div style="padding: 12px; display: flex; flex-direction: column; gap: 4px"><b style="font-size: 14px">Montaña de Colores</b><span class="mut" style="font-size: 12px">12 h · Exigente · Desayuno</span><span class="mut" style="font-size: 12px">★ 4,7 · [N] reseñas</span><span class="ok" style="font-size: 12px">Cancelación gratis 24 h</span><span style="font-size: 14px">desde <b>S/ 120</b></span></div></div>
+<div class="card" style="padding: 0; overflow: hidden; gap: 0"><div class="img" style="height: 130px; border-radius: 0"></div><div style="padding: 12px; display: flex; flex-direction: column; gap: 4px"><b style="font-size: 14px">Machu Picchu full day</b><span class="mut" style="font-size: 12px">14 h · Moderado · Tren</span><span class="mut" style="font-size: 12px">★ 4,9 · [N] reseñas</span><span style="font-size: 12px; color: #B42318; font-weight: 600">Quedan 3 cupos</span><span style="font-size: 14px">desde <b>S/ 890</b></span></div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">3 · Ficha con panel de reserva <i>/tours/valle-sagrado-vip</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">andestrek.tutienda.pe/tours/valle-sagrado-vip</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Andes Trek</span><span class="lk"><span style="color: #14171C; font-weight: 700">Tours</span><span>Trekking</span><span>Nosotros</span></span><span style="flex: 1"></span><span class="chip">EN · ES</span></div>
+<div class="ct" style="gap: 14px">
+<div style="display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 110px 110px; gap: 8px"><div class="img" style="grid-row: span 2; justify-content: center">Foto principal</div><div class="img"></div><div class="img"></div><div class="img"></div><div class="img" style="justify-content: center; font-weight: 600">+ 8 fotos</div></div>
+<div style="display: flex; gap: 32px; align-items: flex-start">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+<h2 class="h" style="font-size: 26px">Valle Sagrado VIP</h2>
+<div style="display: flex; gap: 18px; font-size: 13px"><span>Duración 10 h</span><span>Salida 7:00</span><span>Recojo en hotel</span><span>Guía ES / EN</span><a href="#">★ 4,9 · [N] reseñas</a></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; font-size: 13px"><div class="card" style="gap: 2px; padding: 10px"><span class="lbl">Itinerario</span><span>Pisac · almuerzo · Ollantaytambo · Chinchero</span></div><div class="card" style="gap: 2px; padding: 10px"><span class="lbl">Incluye</span><span>Transporte, guía, almuerzo buffet</span></div><div class="card" style="gap: 2px; padding: 10px"><span class="lbl">No incluye</span><span>Boleto turístico (S/ 70)</span></div></div>
+<span class="mut">No apto para menores de 5 años · <span class="ok">Cancelación gratis hasta 24 h antes</span></span>
+</div>
+<div class="side" style="margin-top: -100px">
+<div style="display: flex; align-items: baseline; gap: 6px"><span class="mut">desde</span><b style="font-size: 22px">S/ 180</b><span class="mut">por persona</span></div>
+<label class="fld"><span class="lbl">Fecha</span><input value="Elige una fecha"></label>
+<label class="fld"><span class="lbl">Viajeros</span><input value="2 adultos"></label>
+<a class="btn" href="#">Ver disponibilidad</a>
+<span class="mut" style="font-size: 12px">Reserva ahora y paga después · confirmación inmediata</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="rw">
+<div class="col">
+<span class="step">4 · Fecha, horario y viajeros <i>en el mismo panel</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">andestrek.tutienda.pe/tours/valle-sagrado-vip?fecha=2026-11-13</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Andes Trek</span><span class="lk"><span style="color: #14171C; font-weight: 700">Tours</span><span>Trekking</span><span>Nosotros</span></span><span style="flex: 1"></span><span class="chip">EN · ES</span></div>
+<div class="ct" style="flex-direction: row; gap: 32px">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 12px; opacity: .45">
+<div class="img" style="height: 220px"></div>
+<div style="height: 26px; width: 60%; background: #E3E6EA; border-radius: 6px"></div>
+<div style="height: 14px; width: 80%; background: #E3E6EA; border-radius: 6px"></div>
+<div style="height: 14px; width: 70%; background: #E3E6EA; border-radius: 6px"></div>
+</div>
+<div class="side" style="width: 360px; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: center"><b>Noviembre 2026</b><span class="mut">‹ ›</span></div>
+<div class="cal">
+<span class="mut">L</span><span class="mut">M</span><span class="mut">M</span><span class="mut">J</span><span class="mut">V</span><span class="mut">S</span><span class="mut">D</span>
+<span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
+<span>9</span><span>10</span><span>11</span><span>12</span><span style="background: var(--a); color: #fff; font-weight: 700">13</span><span>14</span><span>15</span>
+<span>16</span><span>17</span><span style="color: #8A9099; text-decoration: line-through">18</span><span>19</span><span>20</span><span>21</span><span>22</span>
+</div>
+<span class="lbl">Horario</span>
+<div style="display: flex; gap: 8px"><button class="chip on">7:00 · 6 cupos</button><button class="chip">8:30 · 2 cupos</button></div>
+<span class="lbl">Viajeros</span>
+<div class="li" style="align-items: center"><span>Adultos · S/ 180</span><span style="border: 1px solid #CDD2D8; border-radius: 8px; padding: 3px 12px">− 2 +</span></div>
+<div class="li" style="align-items: center"><span>Niños 5–11 · S/ 120</span><span style="border: 1px solid #CDD2D8; border-radius: 8px; padding: 3px 12px">− 0 +</span></div>
+<div class="sep"></div>
+<div class="li" style="font-weight: 700; font-size: 16px"><span>Total</span><span>S/ 360</span></div>
+<a class="btn" href="#">Reservar</a>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">5 · Datos y pago <i>/reservar</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">andestrek.tutienda.pe/reservar</span></div>
+<div class="nav" style="justify-content: space-between"><span class="h" style="font-size: 22px">Andes Trek</span><span class="mut">Pago seguro</span></div>
+<div class="ct" style="flex-direction: row; gap: 32px; background: #F8F9FA">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 12px">
+<span class="h" style="font-size: 18px">1. Viajero principal</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px"><label class="fld"><span class="lbl">Nombre completo</span><input value="John Smith"></label><label class="fld"><span class="lbl">Pasaporte</span><input value="X12…"></label><label class="fld"><span class="lbl">Nacionalidad</span><input value="EE. UU."></label><label class="fld"><span class="lbl">WhatsApp</span><input value="+1 …"></label></div>
+<span class="h" style="font-size: 18px">2. Recojo</span>
+<label class="fld"><span class="lbl">Hotel en Cusco</span><input value="Casa Killa, San Blas"></label>
+<span class="h" style="font-size: 18px">3. Pago</span>
+<div style="display: flex; gap: 8px"><button class="chip on">Tarjeta</button><button class="chip">PayPal</button><button class="chip">Yape</button></div>
+<span class="mut">Turistas extranjeros con pasaporte: exonerado de IGV</span>
+</div>
+<div class="side">
+<div class="img" style="height: 100px">Valle Sagrado VIP</div>
+<b>vie 13 nov · 7:00</b>
+<span class="mut">2 adultos · guía en inglés</span>
+<span class="ok" style="font-size: 13px">Cancelación gratis hasta el 12 nov, 7:00</span>
+<div class="sep"></div>
+<div class="li"><span>2 × S/ 180</span><span>S/ 360</span></div>
+<div class="li" style="font-weight: 700; font-size: 17px"><span>Total</span><span>S/ 360</span></div>
+<a class="btn" href="#">Pagar S/ 360</a>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">6 · Voucher <i>/reserva/[CÓDIGO]</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">andestrek.tutienda.pe/reserva/[CÓDIGO]</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Andes Trek</span><span class="lk"><span>Tours</span><span>Trekking</span><span>Nosotros</span></span><span style="flex: 1"></span><span class="chip">EN · ES</span></div>
+<div class="ct" style="flex-direction: row; gap: 32px; padding-top: 36px">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+<div class="okc"><svg class="ico" style="width: 30px; height: 30px" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+<h2 class="h" style="font-size: 32px">¡Listo, John!</h2>
+<span class="mut" style="font-size: 15px">Voucher enviado a tu correo y WhatsApp</span>
+<div class="card" style="gap: 6px; font-size: 14px"><span class="lbl">Recojo</span><b>vie 13 nov, 6:45 · lobby de Casa Killa, San Blas</b><span class="mut">Lleva: abrigo, bloqueador y efectivo para el boleto turístico</span></div>
+<div style="display: flex; gap: 10px"><a class="btn" href="#">Descargar voucher</a><button class="btn2">Contactar al guía</button></div>
+</div>
+<div class="card" style="width: 300px; align-items: center; gap: 10px; padding: 24px">
+<div style="width: 170px; height: 170px; border-radius: 8px; background: repeating-linear-gradient(90deg, #14171C 0 6px, #fff 6px 12px)" role="img" aria-label="Código QR del voucher"></div>
+<span class="h" style="font-size: 20px; letter-spacing: .06em">[CÓDIGO]</span>
+<span class="mut">Valle Sagrado VIP · 2 adultos</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#0F766E","options":["#0F766E","#1D4E89","#C2410C","#14171C"]},"$preview":{"width":3232,"height":1700}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#0F766E' };
+}
+}
+</script>
+</body>
+</html>

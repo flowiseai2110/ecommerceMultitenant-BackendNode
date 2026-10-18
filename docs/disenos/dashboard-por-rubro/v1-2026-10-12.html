@@ -1,0 +1,685 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Dashboard por rubro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: documento de propuesta (diagnóstico → esqueleto común → maqueta por rubro → implementación).
+   Las maquetas imitan el admin real (Tailwind, solo modo claro): usan tokens --s-* fijos en ambos temas. */
+:root {
+  --bg: #f5f6f9; --surface: #ffffff; --fg: #141821; --muted: #5a6373; --line: #e1e5ec;
+  --accent: #2563eb; --accent-soft: #e8efff;
+  --ok: #157f3b; --ok-soft: #e3f5ea; --warn: #9a5b00; --warn-soft: #fdf1dc; --crit: #b42318; --crit-soft: #fde8e6;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  /* Pantalla del admin (fija: el admin no tiene modo oscuro) */
+  --s-bg: #f9fafb; --s-card: #ffffff; --s-line: #e5e7eb; --s-line2: #f3f4f6; --s-fg: #111827; --s-fg2: #374151; --s-muted: #6b7280; --s-faint: #9ca3af;
+  --s-blue: #2563eb; --s-blue-soft: #eff6ff; --s-blue-mid: #93b4f5;
+  --s-green: #15803d; --s-green-soft: #dcfce7; --s-amber: #b45309; --s-amber-soft: #fef3c7; --s-amber-mid: #f5c470;
+  --s-red: #b91c1c; --s-red-soft: #fee2e2; --s-gray-soft: #f3f4f6; --s-violet: #6d28d9; --s-violet-soft: #ede9fe;
+  --s-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1117; --surface: #161a22; --fg: #e6e9ef; --muted: #9aa3b3; --line: #262c37;
+  --accent: #7aa2ff; --accent-soft: #1b2540;
+  --ok: #5fd08a; --ok-soft: #13291c; --warn: #f2b44c; --warn-soft: #2e230f; --crit: #ff8a7a; --crit-soft: #331614;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0e1117; --surface: #161a22; --fg: #e6e9ef; --muted: #9aa3b3; --line: #262c37;
+  --accent: #7aa2ff; --accent-soft: #1b2540;
+  --ok: #5fd08a; --ok-soft: #13291c; --warn: #f2b44c; --warn-soft: #2e230f; --crit: #ff8a7a; --crit-soft: #331614;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; display: grid; gap: 56px; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(28px, 4vw, 38px); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 22px; font-weight: 600; }
+h3 { font-size: 16px; font-weight: 600; }
+p { margin: 0; max-width: 72ch; }
+.eyebrow { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.lead { color: var(--muted); font-size: 17px; }
+section { display: grid; gap: 20px; min-width: 0; }
+.sec-head { display: grid; gap: 6px; }
+code { font-family: var(--mono); font-size: 0.88em; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+
+/* Diagnóstico */
+.findings { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.finding { background: var(--surface); padding: 14px 18px; display: grid; grid-template-columns: 92px 1fr; gap: 14px; align-items: start; }
+.finding p { color: var(--fg); }
+.finding .where { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 4px; display: block; }
+.sev { font-family: var(--mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 8px; border-radius: 99px; text-align: center; }
+.sev.bug { background: var(--crit-soft); color: var(--crit); }
+.sev.diseno { background: var(--warn-soft); color: var(--warn); }
+.sev.ok { background: var(--ok-soft); color: var(--ok); }
+@media (max-width: 560px) { .finding { grid-template-columns: 1fr; gap: 6px; } .sev { justify-self: start; } }
+
+/* Esqueleto */
+.bands { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.band { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 6px; align-content: start; }
+.band .q { font-weight: 600; }
+.band .d { color: var(--muted); font-size: 14px; }
+.band .tag { font-family: var(--mono); font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; }
+@media (max-width: 860px) { .bands { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .bands { grid-template-columns: 1fr; } }
+
+/* Tabs */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.tab { font: inherit; font-size: 14px; font-weight: 500; color: var(--muted); background: transparent; border: 1px solid transparent; padding: 7px 14px; border-radius: 8px; cursor: pointer; }
+.tab:hover { color: var(--fg); background: var(--surface); }
+.tab[aria-selected="true"] { color: var(--fg); background: var(--surface); border-color: var(--line); font-weight: 600; }
+.tab:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rubro-intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+.rubro-intro .preg { display: grid; gap: 6px; }
+.rubro-intro ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14px; display: grid; gap: 3px; }
+@media (max-width: 760px) { .rubro-intro { grid-template-columns: 1fr; } }
+
+/* Fuentes */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table.src { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 620px; }
+table.src th, table.src td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.src th { font-size: 12px; font-family: var(--mono); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+table.src tr:last-child td { border-bottom: 0; }
+table.src td:first-child { font-weight: 600; white-space: nowrap; }
+.nuevo { font-family: var(--mono); font-size: 11px; color: var(--warn); background: var(--warn-soft); padding: 1px 6px; border-radius: 4px; margin-left: 6px; white-space: nowrap; }
+
+/* Implementación */
+.impl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.impl .box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.impl pre { margin: 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.6; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow-x: auto; color: var(--fg); }
+.impl ol, .impl ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; }
+@media (max-width: 860px) { .impl { grid-template-columns: 1fr; } }
+
+/* ============ Pantalla del admin (maqueta) ============ */
+.screen { --r: 12px; background: var(--s-bg); color: var(--s-fg); font-family: var(--s-sans); font-size: 14px; line-height: 1.45; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(15, 20, 30, 0.06), 0 12px 32px -12px rgba(15, 20, 30, 0.18); }
+.s-top { background: var(--s-card); border-bottom: 1px solid var(--s-line); padding: 14px 22px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.s-top .g { font-weight: 600; font-size: 15px; }
+.s-top .t { font-size: 12px; color: var(--s-muted); }
+.seg { display: inline-flex; background: var(--s-gray-soft); border-radius: 8px; padding: 3px; gap: 2px; }
+.seg span { font-size: 12px; padding: 4px 10px; border-radius: 6px; color: var(--s-muted); font-weight: 500; }
+.seg span.on { background: var(--s-card); color: var(--s-fg); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+.s-body { padding: 20px 22px 24px; display: grid; gap: 16px; }
+.example { font-size: 11px; color: var(--s-faint); text-align: right; margin-top: -8px; }
+.s-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--s-muted); }
+
+.att { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--s-card); border: 1px solid var(--s-line); border-radius: var(--r); padding: 10px 12px; }
+.att .s-label { margin-right: 4px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; padding: 5px 10px 5px 6px; border-radius: 8px; border: 1px solid var(--s-line); background: var(--s-card); color: var(--s-fg2); }
+.chip b { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 6px; display: inline-grid; place-items: center; font-size: 12px; font-variant-numeric: tabular-nums; }
+.chip.crit b { background: var(--s-red-soft); color: var(--s-red); }
+.chip.warn b { background: var(--s-amber-soft); color: var(--s-amber); }
+.chip.info b { background: var(--s-blue-soft); color: var(--s-blue); }
+.chip.ok b { background: var(--s-green-soft); color: var(--s-green); }
+.chip .arr { color: var(--s-faint); font-size: 12px; }
+.att .clear { font-size: 13px; color: var(--s-green); display: flex; align-items: center; gap: 6px; }
+
+.s-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; }
+.c12 { grid-column: span 12; } .c8 { grid-column: span 8; } .c7 { grid-column: span 7; } .c6 { grid-column: span 6; } .c5 { grid-column: span 5; } .c4 { grid-column: span 4; }
+@media (max-width: 900px) { .c8, .c7, .c6, .c5, .c4 { grid-column: span 12; } }
+.card { background: var(--s-card); border: 1px solid var(--s-line); border-radius: var(--r); min-width: 0; }
+.card-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 13px 16px; border-bottom: 1px solid var(--s-line2); }
+.card-h h4 { margin: 0; font-size: 14px; font-weight: 600; }
+.card-h .sub { font-size: 12px; color: var(--s-muted); }
+.card-h a { font-size: 12px; color: var(--s-blue); font-weight: 500; text-decoration: none; white-space: nowrap; }
+.card-b { padding: 14px 16px; }
+
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { background: var(--s-card); border: 1px solid var(--s-line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.kpi.hero { background: var(--s-blue); border-color: var(--s-blue); color: #ffffff; }
+.kpi .k { font-size: 12px; color: var(--s-muted); }
+.kpi.hero .k, .kpi.hero .n2 { color: #dbe6ff; }
+.kpi .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.kpi .n2 { font-size: 12px; color: var(--s-muted); font-variant-numeric: tabular-nums; }
+.delta { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.delta.up { color: var(--s-green); } .delta.down { color: var(--s-red); }
+.kpi.hero .delta { color: #ffffff; }
+.meter { height: 6px; border-radius: 3px; background: var(--s-gray-soft); overflow: hidden; margin-top: 6px; }
+.meter i { display: block; height: 100%; background: var(--s-blue); border-radius: 3px; }
+.kpi.hero .meter { background: rgba(255,255,255,0.25); } .kpi.hero .meter i { background: #ffffff; }
+
+.rows { display: grid; }
+.row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 16px; border-bottom: 1px solid var(--s-line2); }
+.row:last-child { border-bottom: 0; }
+.row .m { font-size: 12px; color: var(--s-muted); }
+.row .when { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 13px; min-width: 46px; }
+.row .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .r { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; }
+.pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+.pill.ok { background: var(--s-green-soft); color: var(--s-green); }
+.pill.warn { background: var(--s-amber-soft); color: var(--s-amber); }
+.pill.crit { background: var(--s-red-soft); color: var(--s-red); }
+.pill.info { background: var(--s-blue-soft); color: var(--s-blue); }
+.pill.mute { background: var(--s-gray-soft); color: var(--s-muted); }
+.rank { width: 22px; height: 22px; border-radius: 6px; background: var(--s-gray-soft); color: var(--s-muted); display: grid; place-items: center; font-size: 11px; font-weight: 600; }
+.hbar { height: 6px; background: var(--s-gray-soft); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+.hbar i { display: block; height: 100%; background: var(--s-blue); border-radius: 3px; }
+
+.s-tbl { overflow-x: auto; }
+.s-tbl table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 460px; }
+.s-tbl th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--s-muted); font-weight: 600; padding: 8px 16px; background: var(--s-bg); border-bottom: 1px solid var(--s-line2); }
+.s-tbl td { padding: 9px 16px; border-bottom: 1px solid var(--s-line2); font-variant-numeric: tabular-nums; }
+.s-tbl tr:last-child td { border-bottom: 0; }
+.s-tbl td.num, .s-tbl th.num { text-align: right; }
+.s-tbl .id { color: var(--s-blue); font-weight: 600; }
+
+svg.chart { display: block; width: 100%; height: auto; overflow: visible; }
+svg.chart text { font-family: var(--s-sans); font-size: 11px; fill: var(--s-muted); }
+svg.chart .grid { stroke: var(--s-line2); stroke-width: 1; }
+svg.chart .bar { fill: var(--s-blue); }
+svg.chart .bar.soft { fill: var(--s-blue-mid); }
+svg.chart .hit { fill: transparent; cursor: default; }
+svg.chart .hit:hover + .bar, svg.chart g.b:hover .bar { fill: #1d4ed8; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--s-muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+/* Hotel: mapa de habitaciones */
+.rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.room { border-radius: 8px; padding: 8px; display: grid; gap: 1px; border: 1px solid var(--s-line); background: var(--s-card); }
+.room .no { font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
+.room .st { font-size: 11px; }
+.room .ty { font-size: 10px; color: var(--s-faint); }
+.room.libre .st { color: var(--s-green); }
+.room.ocupada { background: var(--s-blue-soft); border-color: #c7d7fb; } .room.ocupada .st { color: var(--s-blue); }
+.room.llega { background: var(--s-violet-soft); border-color: #d9cffb; } .room.llega .st { color: var(--s-violet); }
+.room.limpiar { background: var(--s-amber-soft); border-color: #f7dc9c; } .room.limpiar .st { color: var(--s-amber); }
+.room.mant { background: var(--s-gray-soft); } .room.mant .st { color: var(--s-muted); }
+
+/* Canchas: agenda del día */
+.agenda { overflow-x: auto; }
+.ag { display: grid; grid-template-columns: 92px repeat(16, minmax(34px, 1fr)); min-width: 680px; font-size: 11px; position: relative; }
+.ag .hh { color: var(--s-muted); padding: 0 0 6px 2px; font-variant-numeric: tabular-nums; }
+.ag .cn { font-weight: 600; font-size: 12px; padding: 10px 8px 10px 0; display: flex; flex-direction: column; justify-content: center; border-top: 1px solid var(--s-line2); }
+.ag .cn small { font-weight: 400; color: var(--s-muted); font-size: 11px; }
+.ag .slot { border-top: 1px solid var(--s-line2); border-left: 1px dashed var(--s-line2); padding: 5px 2px; }
+.ag .blk { height: 100%; min-height: 36px; border-radius: 6px; padding: 4px 6px; font-size: 11px; line-height: 1.25; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.blk.res { background: var(--s-blue); color: #ffffff; }
+.blk.apa { background: var(--s-amber-soft); color: var(--s-amber); border: 1px dashed var(--s-amber-mid); }
+.blk.blq { background: repeating-linear-gradient(135deg, var(--s-gray-soft) 0 6px, #e5e7eb 6px 8px); color: var(--s-muted); }
+.blk.pas { opacity: 0.5; }
+.ag .now { position: absolute; top: 18px; bottom: 0; width: 2px; background: var(--s-red); border-radius: 1px; pointer-events: none; }
+.ag .now::before { content: "Ahora"; position: absolute; top: -16px; left: -14px; font-size: 10px; color: var(--s-red); font-weight: 700; }
+
+/* Heatmap */
+.heat { display: grid; grid-template-columns: 36px repeat(16, minmax(20px, 1fr)); gap: 2px; font-size: 10px; min-width: 460px; }
+.heat .hl { color: var(--s-muted); display: flex; align-items: center; }
+.heat .hx { color: var(--s-muted); text-align: center; font-variant-numeric: tabular-nums; }
+.heat .cell { aspect-ratio: 1.6; border-radius: 3px; }
+.ramp { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--s-muted); }
+.ramp i { width: 90px; height: 8px; border-radius: 2px; background: linear-gradient(90deg, rgba(37,99,235,0.07), rgba(37,99,235,0.95)); }
+
+/* Eventos: funciones */
+.fn { display: grid; gap: 6px; padding: 12px 16px; border-bottom: 1px solid var(--s-line2); }
+.fn:last-child { border-bottom: 0; }
+.fn .top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.fn .top b { font-weight: 600; }
+.fn .top .m { font-size: 12px; color: var(--s-muted); }
+.stack { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--s-gray-soft); gap: 2px; }
+.stack i { display: block; height: 100%; }
+.stack .v { background: var(--s-blue); } .stack .a { background: var(--s-amber-mid); }
+.fn .tipos { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--s-muted); font-variant-numeric: tabular-nums; }
+
+/* Locales: calendario */
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal .dw { font-size: 11px; color: var(--s-muted); text-align: center; padding-bottom: 2px; }
+.cal .d { min-height: 58px; border: 1px solid var(--s-line2); border-radius: 6px; padding: 4px; display: grid; gap: 2px; align-content: start; font-size: 11px; }
+.cal .d .n { color: var(--s-muted); font-variant-numeric: tabular-nums; }
+.cal .d.hoy { border-color: var(--s-blue); } .cal .d.hoy .n { color: var(--s-blue); font-weight: 700; }
+.cal .d.out { background: var(--s-bg); border-color: transparent; }
+.cal .ev { border-radius: 4px; padding: 1px 4px; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal .ev.conf { background: var(--s-blue); color: #ffffff; }
+.cal .ev.sol { background: var(--s-amber-soft); color: var(--s-amber); }
+@media (max-width: 520px) { .cal .ev { font-size: 0; height: 6px; padding: 0; } .cal .d { min-height: 40px; } }
+
+.funnel { display: grid; gap: 10px; }
+.funnel .st { display: grid; grid-template-columns: 110px minmax(0, 1fr) 48px; gap: 10px; align-items: center; font-size: 13px; }
+.funnel .bar { height: 22px; background: var(--s-blue); border-radius: 4px; }
+.funnel .conv { font-size: 11px; color: var(--s-muted); padding-left: 120px; margin-top: -6px; }
+.funnel .r { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.tip { position: fixed; z-index: 10; pointer-events: none; background: #111827; color: #ffffff; font-family: var(--s-sans); font-size: 12px; padding: 6px 9px; border-radius: 6px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
+@media (prefers-reduced-motion: no-preference) { .tab { transition: background 0.12s, color 0.12s; } }
+</style>
+
+<div class="wrap">
+
+  <header style="display:grid;gap:12px">
+    <span class="eyebrow">Admin · Propuesta de diseño · Octubre 2026</span>
+    <h1>Un dashboard por rubro</h1>
+    <p class="lead">El dashboard actual se hizo para la tienda de productos y quedó igual cuando llegaron hotel, tours, eventos, locales y canchas. Esta página revisa lo que hay, propone un esqueleto común y muestra la maqueta de cada rubro con el origen de cada número.</p>
+  </header>
+
+  <!-- 1. Diagnóstico -->
+  <section id="diagnostico">
+    <div class="sec-head">
+      <span class="eyebrow">1 · Diagnóstico</span>
+      <h2>Qué tiene hoy y por qué no sirve fuera de productos</h2>
+      <p style="color:var(--muted)">Revisado en <code>dashboard.component.*</code> (FrontendAdmin) y <code>getTiendaStats</code> / <code>findResumen</code> (BackendNode).</p>
+    </div>
+    <div class="findings">
+      <div class="finding"><span class="sev bug">Bug</span><p>Las <b>ventas totales</b> suman todo pedido que no esté <code>cancelado</code>. Las reservas guardan su estado en <code>pedidos.estado</code>, así que entran las <code>solicitada</code>, <code>rechazada</code> y <code>vencida</code> que nunca se pagaron. En un hotel o un local la cifra sale inflada.<span class="where">modules/tenants/tiendas.service.js · getTiendaStats</span></p></div>
+      <div class="finding"><span class="sev bug">Bug</span><p>«Pendientes» cuenta <code>estado = 'pendiente'</code>, un estado que las reservas no usan. En los rubros de reservas siempre muestra 0 aunque haya solicitudes esperando respuesta.<span class="where">getTiendaStats · pedidos_pendientes</span></p></div>
+      <div class="finding"><span class="sev bug">Bug</span><p><b>Últimos pedidos</b> no filtra por <code>tipo</code>: mezcla reservas con compras y muestra el estado crudo (<code>solicitada</code>, <code>por_pagar</code>). Además el HTML lee <code>pedido.cliente.nombre</code>, pero el endpoint devuelve <code>clienteNombre</code>: la columna Cliente sale «--» en todas las filas.<span class="where">ordenes/pedidos.service.js · findResumen · dashboard.component.html</span></p></div>
+      <div class="finding"><span class="sev diseno">Diseño</span><p>Las tarjetas y los accesos rápidos son fijos: Categorías, Productos, Pedidos. El hotel no tiene Categorías ni Pedidos en su menú, y las canchas no tienen Categorías. Llevan a pantallas que el rubro no usa y no muestran lo propio del rubro (Recepción, Agenda, Cotizaciones).</p></div>
+      <div class="finding"><span class="sev diseno">Diseño</span><p>Todo es <b>acumulado histórico</b>: no hay periodo ni comparación. Un total que solo crece no dice si el negocio va mejor o peor este mes.</p></div>
+      <div class="finding"><span class="sev diseno">Diseño</span><p>No responde «¿qué tengo que hacer ahora?». Lo urgente de un negocio de reservas (solicitudes que vencen, capturas por verificar, cuotas vencidas) está en <code>/reservas/resumen</code>, pero el dashboard no lo usa. Hoy solo aparece como contador en el menú.</p></div>
+      <div class="finding"><span class="sev diseno">Diseño</span><p>En el hotel, la plata del mostrador (<code>hotel_cobros</code>) no cuenta como ingreso: solo se suma lo que entra por la web.</p></div>
+      <div class="finding"><span class="sev ok">Se queda</span><p>El saludo, la consulta agregada en una sola query, el control por permisos (<code>canVerDatos</code>, <code>canGestionarPedidos</code>…) y la tabla de últimos pedidos para productos funcionan y se mantienen.</p></div>
+    </div>
+  </section>
+
+  <!-- 2. Esqueleto -->
+  <section id="esqueleto">
+    <div class="sec-head">
+      <span class="eyebrow">2 · Esqueleto común</span>
+      <h2>Cuatro preguntas en el mismo orden, respuestas distintas por rubro</h2>
+      <p style="color:var(--muted)">Todos los dashboards tienen las mismas cuatro franjas de arriba hacia abajo. Lo que cambia es qué contesta cada una. El código común nunca pregunta «¿es hotel?»: pinta los widgets que le entrega la estrategia del rubro.</p>
+    </div>
+    <div class="bands">
+      <div class="band"><span class="tag">Franja 1 · Atención</span><span class="q">¿Qué espera una acción mía?</span><span class="d">Chips con contador que llevan a la bandeja filtrada. Si no hay nada pendiente, una línea en verde: «Todo al día».</span></div>
+      <div class="band"><span class="tag">Franja 2 · Hoy</span><span class="q">¿Qué pasa hoy en el negocio?</span><span class="d">Lo operativo del día: llegadas, salidas, turnos, funciones. Los rubros con operación diaria (hotel, canchas, tours) lo ponen arriba.</span></div>
+      <div class="band"><span class="tag">Franja 3 · Periodo</span><span class="q">¿Cómo me va?</span><span class="d">Cuatro indicadores del periodo elegido (7 días, 30 días, mes) con su variación contra el periodo anterior, y un gráfico.</span></div>
+      <div class="band"><span class="tag">Franja 4 · Próximo</span><span class="q">¿Qué viene?</span><span class="d">Lo que se puede anticipar: ocupación de las próximas noches, funciones por vender, cuotas que vencen.</span></div>
+    </div>
+  </section>
+
+  <!-- 3. Maquetas -->
+  <section id="maquetas">
+    <div class="sec-head">
+      <span class="eyebrow">3 · Maquetas</span>
+      <h2>El dashboard de cada rubro</h2>
+      <p style="color:var(--muted)">Las cifras son de ejemplo. Debajo de cada maqueta está el origen de cada número; lo marcado como <span class="nuevo">consulta nueva</span> todavía no tiene endpoint.</p>
+    </div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div id="panel" role="tabpanel" style="display:grid;gap:20px;min-width:0"></div>
+  </section>
+
+  <!-- 4. Implementación -->
+  <section id="implementacion">
+    <div class="sec-head">
+      <span class="eyebrow">4 · Implementación propuesta</span>
+      <h2>Cómo encaja en la Strategy por rubro</h2>
+    </div>
+    <div class="impl">
+      <div class="box">
+        <h3>BackendNode</h3>
+        <ol>
+          <li>Un solo endpoint: <code>GET /admin/tiendas/:id/dashboard?periodo=7d|30d|mes</code>. Reemplaza a <code>/stats</code>.</li>
+          <li>El rubro se lee de la BD (<code>tiendaDe</code>) y se llama a <code>estrategia.dashboard({ tiendaId, desde, hasta, ahora })</code>, en <code>negocio/&lt;rubro&gt;/dashboard.js</code>.</li>
+          <li>Lo compartido va en <code>modules/dashboard/</code>: ingresos por día, comparación de periodos y la franja de atención (reusa <code>resumenReservas</code>).</li>
+          <li><code>dashboard</code> entra en <code>CONTRATO</code>, así el test de contrato falla si un rubro nuevo no lo define.</li>
+          <li>Ingresos = solo lo cobrado y verificado (<code>pagos</code> verificados, cuotas <code>pagada</code>, <code>hotel_cobros</code>), con fecha del cobro. Así se corrige la cifra inflada.</li>
+        </ol>
+      </div>
+      <div class="box">
+        <h3>Respuesta (forma tipada)</h3>
+<pre>{
+  "periodo": { "desde": "…", "hasta": "…", "anterior": {…} },
+  "atencion": [ { "clave": "por_responder", "n": 2,
+                  "ruta": "/reservas?pestana=por_responder",
+                  "tono": "warn" } ],
+  "widgets": [
+    { "tipo": "kpis",  "items": [ { "clave": "ingresos",
+        "valor": 18920, "anterior": 16030, "formato": "PEN" } ] },
+    { "tipo": "barras", "titulo": "Ocupación · próximos 14 días",
+      "serie": [ … ], "formato": "pct" },
+    { "tipo": "habitaciones", … }
+  ]
+}</pre>
+      </div>
+      <div class="box">
+        <h3>FrontendAdmin</h3>
+        <ul>
+          <li><code>DashboardComponent</code> pinta las franjas y delega cada widget por <code>tipo</code> a un componente: <code>kpis</code>, <code>barras</code>, <code>lista</code>, <code>tabla</code>, <code>mapa-calor</code>, <code>habitaciones</code>, <code>agenda</code>, <code>calendario</code>, <code>embudo</code>, <code>funciones</code>.</li>
+          <li>Un <code>tipo</code> desconocido falla en el <code>switch</code> exhaustivo (no compila): mismo criterio que <code>PerfilNegocio</code>.</li>
+          <li>El rol viewer recibe solo cantidades: el backend omite los montos (ingresos, ticket, cobrado) y el front no pinta esas tarjetas.</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h3>Decisiones tomadas</h3>
+        <ul>
+          <li><b>Periodo por defecto:</b> 30 días móviles, comparados con los 30 días anteriores.</li>
+          <li><b>Widgets:</b> los decide el backend según el rubro de la tienda (leído de la BD). El front solo los pinta.</li>
+          <li><b>Rol viewer:</b> solo cantidades por defecto, sin montos.</li>
+          <li><b>Canchas:</b> «Turnos fijos activos» sale por ahora (el fijo semanal no se guarda como tal). Lo reemplaza «Clientes que repiten».</li>
+          <li><b>Hotel sin habitaciones físicas:</b> el mapa de habitaciones se reemplaza por ocupación por tipo (<code>unidades</code>).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="tip" id="tip" hidden></div>
+
+<script>
+(function () {
+  "use strict";
+  const PEN = (n) => "S/ " + Number(n).toLocaleString("es-PE", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const PEN2 = (n) => "S/ " + Number(n).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const NUM = (n) => Number(n).toLocaleString("es-PE");
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // ---------- piezas ----------
+  function top(tienda, saludo) {
+    return `<div class="s-top"><div><div class="g">${saludo || "Buenas tardes"}</div><div class="t">${esc(tienda)}</div></div>
+      <div class="seg" aria-hidden="true"><span>Hoy</span><span>7 días</span><span class="on">30 días</span><span>Mes</span></div></div>`;
+  }
+  function atencion(items) {
+    if (!items.length) return `<div class="att"><span class="s-label">Requiere atención</span><span class="clear">✓ Todo al día</span></div>`;
+    return `<div class="att"><span class="s-label">Requiere atención</span>${items.map(i =>
+      `<span class="chip ${i.tono}"><b>${i.n}</b>${esc(i.t)}<span class="arr">›</span></span>`).join("")}</div>`;
+  }
+  function kpis(items) {
+    return `<div class="kpis">${items.map(k => {
+      const d = k.delta == null ? "" : `<span class="delta ${k.delta >= 0 ? "up" : "down"}">${k.delta >= 0 ? "▲" : "▼"} ${Math.abs(k.delta)}%</span>`;
+      const meter = k.pct == null ? "" : `<div class="meter"><i style="width:${k.pct}%"></i></div>`;
+      return `<div class="kpi ${k.hero ? "hero" : ""}"><span class="k">${esc(k.k)}</span><span class="v">${k.v}</span>${meter}
+        <span class="n2">${d}${d && k.n2 ? " · " : ""}${k.n2 ? esc(k.n2) : ""}</span></div>`;
+    }).join("")}</div>`;
+  }
+  function card(cls, titulo, sub, link, body, pad) {
+    return `<div class="card ${cls}"><div class="card-h"><div><h4>${esc(titulo)}</h4>${sub ? `<div class="sub">${esc(sub)}</div>` : ""}</div>${link ? `<a>${esc(link)} ›</a>` : ""}</div>${pad === false ? body : `<div class="card-b">${body}</div>`}</div>`;
+  }
+  function niceMax(m) {
+    const p = Math.pow(10, Math.floor(Math.log10(m))); const f = m / p;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+  }
+  // Barras verticales, una serie: sin leyenda (el título la nombra), tooltip por barra.
+  function barras(vals, labels, fmt, opt) {
+    opt = opt || {};
+    const W = 640, H = 170, L = 44, B = 22, T = 8;
+    const max = opt.max || niceMax(Math.max.apply(null, vals));
+    const iw = W - L - 4, ih = H - B - T, bw = iw / vals.length;
+    const y = (v) => T + ih - (v / max) * ih;
+    let g = "";
+    [0, 0.5, 1].forEach(t => {
+      const v = max * t, yy = y(v);
+      g += `<line class="grid" x1="${L}" x2="${W}" y1="${yy}" y2="${yy}"/><text x="${L - 8}" y="${yy + 4}" text-anchor="end">${fmt(v, true)}</text>`;
+    });
+    vals.forEach((v, i) => {
+      const x = L + i * bw + 1, w = Math.max(bw - 2, 2), h = Math.max((v / max) * ih, v > 0 ? 2 : 0);
+      const soft = opt.softFrom != null && i >= opt.softFrom;
+      g += `<g class="b" data-tip="${esc(labels[i] + " · " + fmt(v))}"><rect class="hit" x="${L + i * bw}" y="${T}" width="${bw}" height="${ih}"/><rect class="bar ${soft ? "soft" : ""}" x="${x}" y="${T + ih - h}" width="${w}" height="${h}" rx="2"/></g>`;
+    });
+    const ticks = opt.ticks || [0, Math.floor(vals.length / 2), vals.length - 1];
+    ticks.forEach(i => { g += `<text x="${L + i * bw + bw / 2}" y="${H - 6}" text-anchor="middle">${esc(labels[i])}</text>`; });
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria || "")}">${g}</svg>`;
+  }
+  function ranking(items, fmt) {
+    const max = Math.max.apply(null, items.map(i => i.v));
+    return `<div class="rows">${items.map((it, i) => `<div class="row"><span class="rank">${i + 1}</span>
+      <div style="min-width:0"><div class="name">${esc(it.t)}</div><div class="hbar"><i style="width:${(it.v / max) * 100}%"></i></div></div>
+      <span class="r">${fmt(it.v)}${it.m ? `<div class="m">${esc(it.m)}</div>` : ""}</span></div>`).join("")}</div>`;
+  }
+  function filas(items) {
+    return `<div class="rows">${items.map(r => `<div class="row"><span class="when">${esc(r.when)}</span>
+      <div style="min-width:0"><div class="name">${esc(r.t)}</div><div class="m">${esc(r.m)}</div></div>
+      <span>${r.pill ? `<span class="pill ${r.pill[0]}">${esc(r.pill[1])}</span>` : ""}${r.r ? `<div class="r" style="margin-top:2px">${esc(r.r)}</div>` : ""}</span></div>`).join("")}</div>`;
+  }
+  function serie(n, base, amp, seed, trend) {
+    const out = []; let s = seed;
+    for (let i = 0; i < n; i++) { s = (s * 9301 + 49297) % 233280; out.push(Math.max(0, Math.round(base + (trend || 0) * i + (s / 233280 - 0.5) * amp))); }
+    return out;
+  }
+  const DIAS30 = Array.from({ length: 30 }, (_, i) => { const d = new Date(2026, 8, 13 + i); return d.getDate() + " " + ["ene","feb","mar","abr","may","jun","jul","ago","set","oct","nov","dic"][d.getMonth()]; });
+  const PROX14 = Array.from({ length: 14 }, (_, i) => { const d = new Date(2026, 9, 12 + i); return ["dom","lun","mar","mié","jue","vie","sáb"][d.getDay()] + " " + d.getDate(); });
+
+  // ---------- rubros ----------
+  const RUBROS = [
+    {
+      id: "productos", nombre: "Productos",
+      pregunta: "Una tienda online vive de despachar a tiempo y de no quedarse sin stock de lo que más se vende.",
+      cambia: ["Ventas del periodo con comparación, en lugar del acumulado histórico", "Ticket promedio y clientes nuevos", "Más vendidos y stock bajo (antes no existían)", "Se mantiene la tabla de últimos pedidos, ya filtrada a compras"],
+      render: () => {
+        const v = serie(30, 400, 380, 7, 6);
+        return top("Moda Lucía") + `<div class="s-body"><div class="example">Datos de ejemplo</div>` +
+          atencion([{ n: 4, t: "Pedidos por confirmar", tono: "warn" }, { n: 2, t: "Pagos por verificar", tono: "warn" }, { n: 6, t: "Por despachar", tono: "info" }, { n: 3, t: "Variantes con stock bajo", tono: "crit" }]) +
+          kpis([{ k: "Ventas · 30 días", v: PEN(12480), delta: 18, n2: "vs. 30 días anteriores", hero: true }, { k: "Pedidos", v: "96", delta: 9 }, { k: "Ticket promedio", v: PEN2(130), delta: 8 }, { k: "Clientes nuevos", v: "41", delta: -4 }]) +
+          `<div class="s-grid">` +
+          card("c8", "Ventas por día", "Pedidos pagados, sin cancelados", null, barras(v, DIAS30, (x) => PEN(x), { aria: "Ventas por día, últimos 30 días" })) +
+          card("c4", "Más vendidos", "Unidades · 30 días", "Productos", ranking([{ t: "Polo oversize algodón", v: 58, m: "S/ 2,320" }, { t: "Jean mom fit", v: 34, m: "S/ 3,060" }, { t: "Casaca denim", v: 21, m: "S/ 2,730" }, { t: "Vestido lino", v: 17, m: "S/ 1,615" }, { t: "Gorra bordada", v: 15, m: "S/ 525" }], (x) => x + " u."), false) +
+          card("c8", "Últimos pedidos", null, "Ver todos", `<div class="s-tbl"><table><thead><tr><th># Pedido</th><th>Cliente</th><th>Estado</th><th class="num">Total</th><th>Fecha</th></tr></thead><tbody>
+            <tr><td class="id">PED-0412</td><td>Carla Mendoza</td><td><span class="pill warn">Pendiente</span></td><td class="num">${PEN2(189.9)}</td><td>12/10 14:20</td></tr>
+            <tr><td class="id">PED-0411</td><td>Jorge Quispe</td><td><span class="pill info">En preparación</span></td><td class="num">${PEN2(95)}</td><td>12/10 11:05</td></tr>
+            <tr><td class="id">PED-0410</td><td>Ana Torres</td><td><span class="pill info">Enviado</span></td><td class="num">${PEN2(260)}</td><td>11/10 19:42</td></tr>
+            <tr><td class="id">PED-0409</td><td>Luis Ramírez</td><td><span class="pill ok">Entregado</span></td><td class="num">${PEN2(74.5)}</td><td>11/10 16:10</td></tr>
+          </tbody></table></div>`, false) +
+          card("c4", "Stock bajo", "3 unidades o menos", "Inventario", filas([{ when: "1 u.", t: "Jean mom fit", m: "Talla 28 · Azul claro", pill: ["crit", "Se agota"] }, { when: "2 u.", t: "Casaca denim", m: "Talla M · Negro", pill: ["warn", "Bajo"] }, { when: "3 u.", t: "Polo oversize", m: "Talla L · Blanco", pill: ["warn", "Bajo"] }]), false) +
+          `</div></div>`;
+      },
+      fuentes: [
+        ["Pedidos por confirmar", "pedidos tipo=compra, estado=pendiente", false],
+        ["Pagos por verificar", "pagos con captura sin verificar de pedidos tipo=compra", false],
+        ["Por despachar", "pedidos tipo=compra, estado=en_proceso", false],
+        ["Stock bajo", "producto_variantes.stock ≤ umbral (umbral fijo 3; luego configurable por tienda)", true],
+        ["Ventas · Ticket", "SUM/AVG(pedidos.total) tipo=compra, estado_pago=pagado, por fecha_confirmado", true],
+        ["Clientes nuevos", "clientes.fecha_registro dentro del periodo", true],
+        ["Más vendidos", "pedido_detalles agrupado por producto (pedidos pagados del periodo)", true]
+      ]
+    },
+    {
+      id: "hotel", nombre: "Hotel",
+      pregunta: "Un hostal se maneja por la noche de hoy: quién llega, quién sale, qué habitación está lista y cuánto se llena la semana.",
+      cambia: ["Franja «Hoy»: llegadas, salidas, en casa y ocupación de esta noche", "Mapa de habitaciones con estado y limpieza (enlace a Recepción)", "Ingresos web + mostrador; tarifa promedio por noche (ADR)", "Ocupación de los próximos 14 días para decidir tarifas"],
+      render: () => {
+        const occ = [92, 75, 63, 56, 69, 94, 100, 81, 50, 44, 56, 63, 88, 100];
+        const rooms = [["101","Simple","ocupada","Ocupada"],["102","Simple","libre","Libre"],["103","Doble","limpiar","Por limpiar"],["104","Doble","ocupada","Ocupada"],["105","Doble","llega","Llega 15:00"],["201","Matrimonial","ocupada","Ocupada"],["202","Matrimonial","ocupada","Ocupada"],["203","Matrimonial","limpiar","Por limpiar"],["204","Triple","llega","Llega 18:30"],["205","Triple","ocupada","Ocupada"],["301","Suite","libre","Libre"],["302","Suite","ocupada","Ocupada"],["303","Doble","mant","Mantenim."],["304","Doble","ocupada","Ocupada"],["305","Simple","limpiar","Por limpiar"],["306","Simple","llega","Llega 21:00"]];
+        return top("Hostal Los Andes", "Buenos días") + `<div class="s-body"><div class="example">Datos de ejemplo</div>` +
+          atencion([{ n: 2, t: "Solicitudes por responder", tono: "warn" }, { n: 1, t: "Pago por verificar", tono: "warn" }, { n: 3, t: "Habitaciones por limpiar", tono: "info" }, { n: 1, t: "Salida vencida sin cerrar", tono: "crit" }]) +
+          `<div class="s-label">Hoy · lunes 12 de octubre</div>` +
+          kpis([{ k: "Ocupación esta noche", v: "75%", pct: 75, n2: "12 de 16 habitaciones", hero: true }, { k: "Llegadas", v: "5", n2: "2 ya ingresaron" }, { k: "Salidas", v: "3", n2: "1 pendiente de cerrar" }, { k: "Huéspedes en casa", v: "19", n2: "9 estadías en curso" }]) +
+          `<div class="s-grid">` +
+          card("c7", "Habitaciones", "Estado ahora", "Recepción", `<div class="rooms">${rooms.map(r => `<div class="room ${r[2]}"><span class="no">${r[0]}</span><span class="st">${r[3]}</span><span class="ty">${r[1]}</span></div>`).join("")}</div>
+            <div class="legend" style="margin-top:12px"><span><i style="background:#ffffff;border:1px solid #d1d5db"></i>Libre</span><span><i style="background:#dbe7fd"></i>Ocupada</span><span><i style="background:#ede9fe"></i>Llega hoy</span><span><i style="background:#fef3c7"></i>Por limpiar</span><span><i style="background:#f3f4f6"></i>Mantenimiento</span></div>`) +
+          card("c5", "Llegadas de hoy", null, "Reservas", filas([{ when: "15:00", t: "María Fernández", m: "Doble · 2 noches · 2 adultos", pill: ["ok", "Pagado"] }, { when: "18:30", t: "Tom Becker", m: "Triple · 3 noches · Web (EN)", pill: ["warn", "Saldo S/ 210"] }, { when: "21:00", t: "Rosa Huamán", m: "Simple · 1 noche", pill: ["info", "Paga en el hotel"] }, { when: "—", t: "Pasajero libre", m: "Matrimonial · Mostrador", pill: ["ok", "Ingresó 10:40"] }]), false) +
+          `</div><div class="s-label">Últimos 30 días</div>` +
+          kpis([{ k: "Ingresos", v: PEN(18920), delta: 12, n2: "Web S/ 11,450 · Mostrador S/ 7,470" }, { k: "Ocupación promedio", v: "68%", delta: 5 }, { k: "Tarifa promedio por noche", v: PEN(142), delta: 3, n2: "ADR" }, { k: "Noches vendidas", v: "133", delta: 9 }]) +
+          `<div class="s-grid">` + card("c12", "Ocupación · próximos 14 días", "Reservas confirmadas y por confirmar sobre el inventario", "Tarifas", barras(occ, PROX14, (x, ax) => Math.round(x) + "%", { max: 100, ticks: [0, 3, 6, 9, 13], aria: "Ocupación de los próximos 14 días" })) + `</div></div>`;
+      },
+      fuentes: [
+        ["Solicitudes · Pagos", "resumenReservas() (ya existe: /reservas/resumen)", false],
+        ["Por limpiar · Mapa", "hotel_habitaciones.limpieza / estado + hotel_estadias en_curso (tablero() de Recepción ya lo arma)", false],
+        ["Salida vencida", "hotel_estadias en_curso con fin < ahora", true],
+        ["Llegadas · Salidas", "reservas tipo=hotel con inicio/fin hoy + estadías de mostrador", false],
+        ["Ocupación", "ocupacion() de Recepción sobre hotel_tipos_habitacion.unidades, por noche", false],
+        ["Ingresos", "pagos verificados de reservas + hotel_cobros, por fecha de cobro", true],
+        ["ADR · Noches", "ingreso por alojamiento / noches vendidas (reservas.noches × habitaciones + estadías)", true]
+      ]
+    },
+    {
+      id: "tours", nombre: "Tours",
+      pregunta: "Una agencia necesita responder rápido (las solicitudes vencen a la hora de salida) y saber qué sale mañana y con cuántos pasajeros.",
+      cambia: ["Salidas de hoy y mañana con pasajeros e idioma", "Tiempo de respuesta, porque una solicitud sin respuesta se pierde", "Pasajeros por día de los próximos 14 días", "Tours que más venden por pasajeros"],
+      render: () => {
+        const pax = [14, 22, 8, 11, 16, 31, 27, 9, 12, 6, 15, 18, 24, 20];
+        return top("Cusco Trek Andino") + `<div class="s-body"><div class="example">Datos de ejemplo</div>` +
+          atencion([{ n: 5, t: "Solicitudes por responder", tono: "crit" }, { n: 2, t: "Pagos por verificar", tono: "warn" }, { n: 1, t: "Sale en menos de 24 h sin confirmar", tono: "crit" }]) +
+          kpis([{ k: "Ingresos · 30 días", v: PEN(9860), delta: 21, hero: true, n2: "vs. 30 días anteriores" }, { k: "Pasajeros", v: "164", delta: 14 }, { k: "Tasa de aceptación", v: "83%", delta: 2, n2: "52 de 63 solicitudes" }, { k: "Tiempo de respuesta", v: "2.4 h", delta: -18, n2: "mediana" }]) +
+          `<div class="s-grid">` +
+          card("c7", "Próximas salidas", "Hoy y mañana", "Agenda", filas([{ when: "05:00", t: "Montaña de 7 Colores", m: "Hoy · 12 pasajeros · ES / EN", pill: ["ok", "Confirmado"] }, { when: "08:30", t: "Valle Sagrado VIP", m: "Hoy · 8 pasajeros · ES", pill: ["ok", "Confirmado"] }, { when: "04:30", t: "Laguna Humantay", m: "Mañana · 6 pasajeros · EN", pill: ["warn", "2 por pagar"] }, { when: "09:00", t: "City tour Cusco", m: "Mañana · 3 pasajeros · ES", pill: ["crit", "1 sin responder"] }]), false) +
+          card("c5", "Tours más vendidos", "Pasajeros · 30 días", "Tours", ranking([{ t: "Montaña de 7 Colores", v: 61, m: "S/ 4,270" }, { t: "Laguna Humantay", v: 38, m: "S/ 2,280" }, { t: "Valle Sagrado VIP", v: 34, m: "S/ 2,550" }, { t: "City tour Cusco", v: 31, m: "S/ 760" }], (x) => x + " pax"), false) +
+          card("c12", "Pasajeros por día · próximos 14 días", "Reservas confirmadas", "Reservas", barras(pax, PROX14, (x) => Math.round(x) + " pax", { ticks: [0, 3, 6, 9, 13], aria: "Pasajeros por día" })) +
+          `</div></div>`;
+      },
+      fuentes: [
+        ["Por responder · Pagos", "resumenReservas()", false],
+        ["Sale en menos de 24 h", "reservas tipo=tour, estado solicitada/aceptada, inicio < ahora + 24 h", true],
+        ["Pasajeros", "SUM de reservas.pasajeros[].cantidad (confirmadas, inicio en el periodo)", true],
+        ["Tasa de aceptación", "aceptadas / (aceptadas + rechazadas + vencidas) del periodo", true],
+        ["Tiempo de respuesta", "mediana de reservas.respondida_en − pedidos.fecha_registro", true],
+        ["Próximas salidas", "/reservas/agenda (ya existe) agrupado por tour + hora de salida", false]
+      ]
+    },
+    {
+      id: "eventos", nombre: "Eventos",
+      pregunta: "Un organizador vive de vender el aforo antes de la función y de no perder ventas por capturas sin verificar.",
+      cambia: ["Funciones próximas con vendido / apartado / libre por tipo de entrada", "Venta diaria de entradas (la curva hacia la función)", "Pagos por verificar arriba: cada uno es una entrada apartada", "Saldo de minutos de transmisión"],
+      render: () => {
+        const ent = serie(30, 22, 30, 3, 0.9);
+        const fns = [
+          { t: "Noche de Boleros", m: "Sáb 17 oct · 20:00", cupo: 300, v: 236, a: 18, tipos: "General 180/200 · VIP 56/100" },
+          { t: "Stand-up: Ríete de Lima", m: "Vie 23 oct · 21:00", cupo: 180, v: 91, a: 12, tipos: "Platea 71/120 · Mesa 20/60" },
+          { t: "Festival Criollo", m: "Sáb 31 oct · 18:00", cupo: 500, v: 120, a: 6, tipos: "General 104/400 · Preferencial 16/100" }
+        ];
+        return top("Kallpa Producciones") + `<div class="s-body"><div class="example">Datos de ejemplo</div>` +
+          atencion([{ n: 7, t: "Pagos por verificar", tono: "warn" }, { n: 12, t: "Entradas apartadas por vencer", tono: "info" }, { n: 1, t: "Función en 5 días sin transmisión configurada", tono: "crit" }]) +
+          kpis([{ k: "Entradas vendidas · 30 días", v: NUM(842), delta: 26, hero: true, n2: "vs. 30 días anteriores" }, { k: "Ingresos", v: PEN(33680), delta: 22 }, { k: "Vendidas hoy", v: "38", n2: "ayer 29" }, { k: "Ingreso por entrada", v: PEN2(40), delta: -3 }]) +
+          `<div class="s-grid">` +
+          card("c7", "Próximas funciones", null, "Eventos", fns.map(f => `<div class="fn"><div class="top"><div><b>${esc(f.t)}</b><div class="m">${esc(f.m)}</div></div><div class="m" style="text-align:right"><b style="color:var(--s-fg)">${Math.round((f.v / f.cupo) * 100)}%</b> vendido<br>${f.v} + ${f.a} apartadas / ${f.cupo}</div></div>
+            <div class="stack" data-tip="${esc(f.t + " · vendidas " + f.v + " · apartadas " + f.a + " · libres " + (f.cupo - f.v - f.a))}"><i class="v" style="width:${(f.v / f.cupo) * 100}%"></i><i class="a" style="width:${(f.a / f.cupo) * 100}%"></i></div>
+            <div class="tipos">${esc(f.tipos)}</div></div>`).join("") + `<div class="card-b" style="padding-top:0"><div class="legend"><span><i style="background:var(--s-blue)"></i>Vendidas</span><span><i style="background:var(--s-amber-mid)"></i>Apartadas (por pagar o en revisión)</span><span><i style="background:var(--s-gray-soft)"></i>Libres</span></div></div>`, false) +
+          card("c5", "Transmisión en vivo", "Plan de octubre", "Transmisiones", `<div style="display:grid;gap:12px">
+            <div><div style="display:flex;justify-content:space-between;font-size:13px"><span>Minutos usados</span><b style="font-variant-numeric:tabular-nums">240 / 600</b></div><div class="meter"><i style="width:40%"></i></div><div class="m" style="font-size:12px;color:var(--s-muted);margin-top:4px">+ paquete de 300 min (vence 30 nov)</div></div>
+            ${filas([{ when: "Sáb", t: "Noche de Boleros", m: "Facebook · YouTube", pill: ["ok", "Lista"] }, { when: "Vie", t: "Stand-up: Ríete de Lima", m: "Sin destinos", pill: ["crit", "Falta configurar"] }]).replace('class="rows"', 'class="rows" style="margin:0 -16px"')}</div>`) +
+          card("c12", "Entradas vendidas por día", "Confirmadas · 30 días", "Reservas", barras(ent, DIAS30, (x) => Math.round(x) + " entradas", { aria: "Entradas vendidas por día" })) +
+          `</div></div>`;
+      },
+      fuentes: [
+        ["Pagos por verificar", "resumenReservas() · pagoPorVerificar", false],
+        ["Apartadas por vencer", "reservas tipo=evento, estado=por_pagar, apartado_hasta > ahora", true],
+        ["Vendido / apartado", "evento_tipos_entrada.vendidos y cupo + evento_compra_items de compras vigentes (misma regla que el cupo)", false],
+        ["Entradas · Ingresos", "evento_compra_items de compras confirmadas, por fecha_confirmado", true],
+        ["Transmisión", "evento_transmisiones + transmision_movimientos / transmision_paquetes (saldo del periodo)", false]
+      ]
+    },
+    {
+      id: "locales", nombre: "Locales",
+      pregunta: "Un local de eventos cierra pocas ventas grandes: le importa cuántas cotizaciones se convierten, qué fechas quedan libres y quién debe cuotas.",
+      cambia: ["Calendario del mes con salones y turnos ocupados", "Embudo cotización → solicitud → confirmada", "Cobrado vs. por cobrar del plan de pagos", "Canal de origen de las cotizaciones (TikTok, Instagram…)"],
+      render: () => {
+        const ev = { 3: [["conf", "A · Noche · 15 años"]], 4: [["conf", "B · Tarde · Bautizo"]], 10: [["conf", "A · Noche · Boda"], ["conf", "B · Noche · Promo"]], 11: [["conf", "B · Tarde · Cumple"]], 17: [["conf", "A · Noche · 15 años"], ["sol", "B · Noche · Solicitud"]], 18: [["sol", "A · Tarde · Solicitud"]], 24: [["conf", "A · Noche · Boda"]], 25: [["conf", "B · Tarde · Baby shower"]], 31: [["conf", "A · Noche · Halloween"], ["conf", "B · Noche · Promo"]] };
+        let cal = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"].map(d => `<div class="dw">${d}</div>`).join("");
+        // Octubre 2026 empieza en jueves
+        for (let i = 0; i < 3; i++) cal += `<div class="d out"></div>`;
+        for (let d = 1; d <= 31; d++) cal += `<div class="d ${d === 12 ? "hoy" : ""}"><span class="n">${d}</span>${(ev[d] || []).map(e => `<span class="ev ${e[0]}" data-tip="${esc(d + " oct · " + e[1])}">${esc(e[1])}</span>`).join("")}</div>`;
+        cal += `<div class="d out"></div>`;
+        const embudo = [["Cotizaciones", 54], ["Solicitudes", 19], ["Confirmadas", 12]];
+        return top("Salones Primavera") + `<div class="s-body"><div class="example">Datos de ejemplo</div>` +
+          atencion([{ n: 3, t: "Solicitudes por responder", tono: "warn" }, { n: 2, t: "Pagos por verificar", tono: "warn" }, { n: 4, t: "Cuotas vencidas · S/ 6,200", tono: "crit" }, { n: 2, t: "Garantías por devolver", tono: "info" }, { n: 5, t: "Cotizaciones vencen en 48 h", tono: "info" }]) +
+          kpis([{ k: "Cobrado · 30 días", v: PEN(41300), delta: 15, hero: true, n2: "cuotas y separaciones verificadas" }, { k: "Por cobrar", v: PEN(58900), n2: "de 17 eventos confirmados" }, { k: "Eventos este mes", v: "11", n2: "2 por confirmar" }, { k: "Conversión de cotizaciones", v: "22%", delta: 4, n2: "12 de 54" }]) +
+          `<div class="s-grid">` +
+          card("c8", "Octubre 2026", "Salón A y Salón B", "Calendario", `<div class="cal">${cal}</div><div class="legend" style="margin-top:10px"><span><i style="background:var(--s-blue)"></i>Confirmado</span><span><i style="background:var(--s-amber-soft);border:1px solid var(--s-amber-mid)"></i>Solicitud (fecha apartada)</span></div>`) +
+          `<div class="c4" style="display:grid;gap:16px;align-content:start;min-width:0">` +
+          card("", "De cotización a evento", "30 días", "Cotizaciones", `<div class="funnel">${embudo.map((e, i) => `<div class="st"><span>${e[0]}</span><div class="bar" style="width:${(e[1] / 54) * 100}%" data-tip="${esc(e[0] + " · " + e[1])}"></div><span class="r">${e[1]}</span></div>${i < 2 ? `<div class="conv">↓ ${Math.round((embudo[i + 1][1] / e[1]) * 100)}%</div>` : ""}`).join("")}</div>`) +
+          card("", "Cuotas de esta semana", null, "Pagos", filas([{ when: "13 oct", t: "Boda Castillo–Ríos", m: "Cuota 2 de 3", r: "S/ 3,500" }, { when: "15 oct", t: "15 años de Valeria", m: "Saldo final", r: "S/ 2,800" }, { when: "16 oct", t: "Promo Colegio Santa Rosa", m: "Cuota 1 de 4", r: "S/ 1,950" }]), false) +
+          `</div>` +
+          card("c12", "¿De dónde llegan las cotizaciones?", "30 días", null, ranking([{ t: "TikTok", v: 21 }, { t: "Instagram", v: 14 }, { t: "Facebook", v: 9 }, { t: "Recomendación", v: 6 }, { t: "Google", v: 4 }], (x) => x + " cotiz."), false) +
+          `</div></div>`;
+      },
+      fuentes: [
+        ["Por responder · Pagos · Cuotas vencidas", "resumenReservas() (incluye cuotasVencidas)", false],
+        ["Garantías por devolver", "misma bandeja que perfil.bandejasDePagos (reserva_cuotas concepto=garantia)", false],
+        ["Cotizaciones por vencer", "local_cotizaciones sin pedido_id, vence_en < ahora + 48 h", true],
+        ["Cobrado · Por cobrar", "reserva_cuotas pagada (por pagada_en) / pendiente de reservas confirmadas", true],
+        ["Calendario", "/reservas/locales/calendario (ya existe)", false],
+        ["Embudo · Canal", "local_cotizaciones (canal_origen, pedido_id) → reservas → estado confirmada", true]
+      ]
+    },
+    {
+      id: "canchas", nombre: "Canchas",
+      pregunta: "Un complejo deportivo vende horas: el dashboard es la agenda de hoy y el mapa de qué horas se llenan, para ajustar tarifa de día y de noche.",
+      cambia: ["Agenda de hoy por cancha con la hora actual marcada", "Apartados de 30 min por vencer y adelantos por verificar", "Ocupación por hora y día de la semana (mapa de calor)", "Ingresos separados en tarifa de día y de noche"],
+      render: () => {
+        const H = Array.from({ length: 16 }, (_, i) => 8 + i);
+        const canchas = [
+          { n: "Cancha 1", s: "F7 · techada", b: [[9, 2, "res", "Fijo · Los Halcones", 1], [12, 1, "res", "J. Paredes", 1], [16, 1, "apa", "Apartado 18 min"], [18, 2, "res", "Liga · Fecha 6"], [20, 2, "res", "Fijo · Amigos del 9"], [22, 1, "res", "C. Soto"]] },
+          { n: "Cancha 2", s: "F7", b: [[10, 1, "res", "M. Lozano", 1], [14, 1, "blq", "Mantenimiento"], [17, 1, "res", "R. Díaz"], [18, 1, "res", "Empresa Tecsur"], [19, 3, "res", "Liga · Fecha 6"]] },
+          { n: "Cancha 3", s: "F5", b: [[8, 1, "res", "Escuela Sub-10", 1], [15, 1, "res", "K. Vargas", 1], [17, 1, "apa", "Apartado 4 min"], [19, 1, "res", "P. Núñez"], [20, 1, "res", "A. Rojas"], [21, 2, "res", "Fijo · Barrio Unido"]] }
+        ];
+        let ag = `<div class="hh"></div>` + H.map(h => `<div class="hh">${h}h</div>`).join("");
+        canchas.forEach(c => {
+          ag += `<div class="cn">${esc(c.n)}<small>${esc(c.s)}</small></div>`;
+          let h = 8;
+          while (h < 24) {
+            const b = c.b.find(x => x[0] === h);
+            if (b) { ag += `<div class="slot" style="grid-column:span ${b[1]}"><div class="blk ${b[2]} ${b[4] ? "pas" : ""}" data-tip="${esc(c.n + " · " + b[0] + ":00–" + (b[0] + b[1]) + ":00 · " + b[3])}">${esc(b[3])}</div></div>`; h += b[1]; }
+            else { ag += `<div class="slot"></div>`; h++; }
+          }
+        });
+        // Ahora: 16:20 → columna 8 + 0.33 de la grilla de 16 h
+        ag += `<div class="now" style="left:calc(92px + (100% - 92px) * ${(16.33 - 8) / 16})"></div>`;
+        const dias = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+        let heat = `<div></div>` + H.map(h => `<div class="hx">${h % 2 === 0 ? h : ""}</div>`).join("");
+        let s = 11;
+        dias.forEach((d, di) => {
+          heat += `<div class="hl">${d}</div>`;
+          H.forEach(h => {
+            s = (s * 9301 + 49297) % 233280;
+            const noche = h >= 18 && h <= 22 ? 0.55 : h >= 8 && h <= 10 && di >= 5 ? 0.45 : 0.05;
+            const finde = di >= 4 ? 0.15 : 0;
+            const v = Math.min(1, Math.max(0, noche + finde + (s / 233280) * 0.3 - (h < 12 && di < 5 ? 0.05 : 0)));
+            heat += `<div class="cell" style="background:rgba(37,99,235,${(0.07 + v * 0.88).toFixed(2)})" data-tip="${esc(d + " " + h + ":00 · " + Math.round(v * 100) + "% ocupado")}"></div>`;
+          });
+        });
+        return top("Sport Center El Golazo") + `<div class="s-body"><div class="example">Datos de ejemplo</div>` +
+          atencion([{ n: 3, t: "Adelantos por verificar", tono: "warn" }, { n: 2, t: "Apartados por vencer", tono: "crit" }, { n: 1, t: "Cancha bloqueada hoy", tono: "info" }]) +
+          `<div class="s-label">Hoy · lunes 12 de octubre</div>` +
+          kpis([{ k: "Ocupación hoy", v: "72%", pct: 72, n2: "31 de 43 horas abiertas", hero: true }, { k: "Ingresos de hoy", v: PEN(2340), n2: "adelantos S/ 1,170" }, { k: "Próximo turno", v: "17:00", n2: "Cancha 2 · R. Díaz" }, { k: "Horas libres esta noche", v: "2", n2: "18:00–23:00" }]) +
+          `<div class="s-grid">` +
+          card("c12", "Agenda de hoy", null, "Agenda", `<div class="agenda"><div class="ag">${ag}</div></div>
+            <div class="legend" style="margin-top:12px"><span><i style="background:var(--s-blue)"></i>Reservada</span><span><i style="background:var(--s-amber-soft);border:1px dashed var(--s-amber-mid)"></i>Apartada (esperando adelanto)</span><span><i style="background:repeating-linear-gradient(135deg,#f3f4f6 0 3px,#d1d5db 3px 4px)"></i>Bloqueo</span><span><i style="background:var(--s-blue);opacity:.5"></i>Ya jugada</span></div>`) +
+          `</div><div class="s-label">Últimos 30 días</div>` +
+          kpis([{ k: "Ingresos", v: PEN(38450), delta: 7 }, { k: "Ocupación", v: "58%", delta: 4, pct: 58 }, { k: "Horas vendidas", v: "689", n2: "Noche 61% · Día 39%" }, { k: "Clientes que repiten", v: "62%", n2: "jugaron 2 o más veces" }]) +
+          `<div class="s-grid">` +
+          card("c12", "¿Qué horas se llenan?", "Ocupación promedio por hora · 4 semanas", "Tarifas", `<div style="overflow-x:auto"><div class="heat">${heat}</div></div>
+            <div class="ramp" style="margin-top:10px">0%<i></i>100%</div>`) +
+          `</div></div>`;
+      },
+      fuentes: [
+        ["Adelantos por verificar", "resumenReservas() · pagoPorVerificar", false],
+        ["Apartados por vencer", "cancha_ocupaciones tipo=apartado, activo, expira_en < ahora + 10 min", true],
+        ["Agenda de hoy", "/reservas/canchas/agenda (ya existe) con el horario de config_reservas", false],
+        ["Ocupación", "horas en cancha_ocupaciones (reserva) / horas abiertas (apertura–cierre × canchas − bloqueos)", true],
+        ["Noche vs. día", "reservas.cancha (snapshot con la tarifa aplicada) agrupado por franja", true],
+        ["Clientes que repiten", "clientes (auth_user_id o WhatsApp) con 2+ reservas tipo=cancha en el periodo / clientes del periodo. Reemplaza a «Turnos fijos», que vuelve cuando exista el fijo semanal", true],
+        ["Mapa de calor", "cancha_ocupaciones de 4 semanas agrupado por día de semana × hora", true]
+      ]
+    }
+  ];
+
+  // ---------- tabs ----------
+  const tabs = document.getElementById("tabs"), panel = document.getElementById("panel");
+  function show(id, focus) {
+    const r = RUBROS.find(x => x.id === id) || RUBROS[0];
+    tabs.querySelectorAll(".tab").forEach(b => { const on = b.dataset.id === r.id; b.setAttribute("aria-selected", on); b.tabIndex = on ? 0 : -1; if (on && focus) b.focus(); });
+    panel.setAttribute("aria-label", r.nombre);
+    panel.innerHTML = `<div class="rubro-intro"><div class="preg"><h3>${esc(r.nombre)}</h3><p style="color:var(--muted)">${esc(r.pregunta)}</p></div>
+      <div class="preg"><span class="eyebrow">Qué cambia respecto al actual</span><ul>${r.cambia.map(c => `<li>${esc(c)}</li>`).join("")}</ul></div></div>
+      <div class="screen">${r.render()}</div>
+      <div class="tbl-wrap"><table class="src"><thead><tr><th>Dato</th><th>De dónde sale</th></tr></thead><tbody>${r.fuentes.map(f => `<tr><td>${esc(f[0])}</td><td>${esc(f[1])}${f[2] ? `<span class="nuevo">consulta nueva</span>` : ""}</td></tr>`).join("")}</tbody></table></div>`;
+    try { localStorage.setItem("dash-rubro", r.id); } catch (e) {}
+  }
+  RUBROS.forEach(r => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.type = "button"; b.role = "tab"; b.dataset.id = r.id; b.textContent = r.nombre;
+    b.addEventListener("click", () => { show(r.id); history.replaceState(null, "", "#" + r.id); });
+    tabs.appendChild(b);
+  });
+  tabs.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    const ids = RUBROS.map(r => r.id), cur = ids.indexOf(tabs.querySelector('[aria-selected="true"]').dataset.id);
+    show(ids[(cur + (e.key === "ArrowRight" ? 1 : ids.length - 1)) % ids.length], true);
+  });
+  let inicial = location.hash.slice(1);
+  if (!RUBROS.some(r => r.id === inicial)) { try { inicial = localStorage.getItem("dash-rubro") || ""; } catch (e) { inicial = ""; } }
+  show(inicial || "productos");
+
+  // ---------- tooltip ----------
+  const tip = document.getElementById("tip");
+  document.addEventListener("mousemove", (e) => {
+    const t = e.target.closest && e.target.closest("[data-tip]");
+    if (!t) { tip.hidden = true; return; }
+    tip.textContent = t.dataset.tip; tip.hidden = false;
+    const w = tip.offsetWidth;
+    tip.style.left = Math.min(window.innerWidth - w - 8, e.clientX + 12) + "px";
+    tip.style.top = (e.clientY - 34) + "px";
+  });
+})();
+</script>
+
+</body></html>

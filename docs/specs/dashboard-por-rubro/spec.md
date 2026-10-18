@@ -1,7 +1,7 @@
 # Spec: dashboard del admin por rubro
 
 > Estado: **implementado** (2026-10-12, BackendNode y FrontendAdmin; tests y build OK, probado contra la base con una tienda de cada rubro). Pendiente: 3.1 (verificación en el navegador) y el saldo de minutos de transmisión (espera a que termine transmision-eventos). Tareas: al final.
-> Origen: el dashboard del admin se hizo para la tienda de productos y quedó igual al llegar hotel, tours, eventos, locales y canchas. Maquetas aprobadas: https://claude.ai/artifact/21v34bNa5RVRKwNWj9X1jz
+> Origen: el dashboard del admin se hizo para la tienda de productos y quedó igual al llegar hotel, tours, eventos, locales y canchas. Maquetas aprobadas: https://claude.ai/artifact/21v34bNa5RVRKwNWj9X1jz Copia en el repo: [docs/disenos/dashboard-por-rubro/](../../disenos/dashboard-por-rubro/).
 > Base: [perfil-negocio](../perfil-negocio/spec.md) (Strategy por rubro: contrato y registro).
 > Repos: BackendNode (datos y reglas) y FrontendAdmin (pinta los widgets).
 

@@ -1,0 +1,339 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Plantillas para canchas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Figtree:wght@400;500;600;700&family=Poppins:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: tres teléfonos lado a lado (página completa de cada plantilla) con su receta del editor debajo; se apilan en el celular. */
+:root{
+  --bg:#f1f3ee; --surface:#ffffff; --fg:#17201a; --muted:#5a665d; --line:#d7ddd3;
+  --ok:#17663b; --ok-soft:#dcefe2; --warn:#9a5a06; --warn-soft:#fbecd5; --chip:#e8ebe4;
+  --display:'Barlow Condensed','Arial Narrow',system-ui,sans-serif; --body:'Figtree','Segoe UI',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111612; --surface:#19201b; --fg:#e6ece6; --muted:#9aa89d; --line:#2b352d;
+  --ok:#5fcf8c; --ok-soft:#1c3424; --warn:#f2b34f; --warn-soft:#3a2c14; --chip:#222b24; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111612; --surface:#19201b; --fg:#e6ece6; --muted:#9aa89d; --line:#2b352d;
+  --ok:#5fcf8c; --ok-soft:#1c3424; --warn:#f2b34f; --warn-soft:#3a2c14; --chip:#222b24; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--body);padding-inline:16px;padding-block:0 64px}
+.wrap{max-width:1180px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.01em;line-height:1;margin:0;text-wrap:balance}
+p{margin:0}
+header.top{padding-block:36px 24px;display:grid;gap:12px;max-width:760px}
+header.top h1{font-size:clamp(2.4rem,6vw,3.6rem);font-weight:800}
+.eyebrow{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--ok)}
+.lede{color:var(--muted);font-size:1.05rem}
+.leyenda{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.85rem;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:5px;font:600 .72rem var(--body);border-radius:999px;padding:3px 9px;white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.falta{background:var(--warn-soft);color:var(--warn)}
+.chip.base{background:var(--chip);color:var(--muted)}
+
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;align-items:start}
+@media (max-width:1060px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:720px){.grid{grid-template-columns:1fr}}
+.col{display:grid;gap:14px;min-width:0}
+.col-head{display:grid;gap:6px}
+.col-head h2{font-size:1.9rem;font-weight:800}
+.col-head .para{color:var(--muted);font-size:.92rem}
+
+/* Teléfono: la página completa, sin scroll interno */
+.phone{width:100%;max-width:340px;margin-inline:auto;border-radius:30px;background:#0d0f0e;padding:10px;box-shadow:0 18px 40px -24px rgba(0,0,0,.6)}
+.screen{border-radius:22px;overflow:hidden}
+
+.receta{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px;font-size:.9rem}
+.receta h3{font-size:1.05rem;font-weight:700;letter-spacing:.04em}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600}
+.secs{margin:0;padding-left:20px;display:grid;gap:3px}
+.secs li::marker{font-family:var(--mono);font-size:.8em;color:var(--muted)}
+.secs .v{color:var(--muted);font-weight:400}
+.secs .nueva{color:var(--warn);font-weight:600}
+.ocultas{color:var(--muted);font-size:.85rem}
+.falta-box{background:var(--warn-soft);border-radius:8px;padding:10px 12px;display:grid;gap:6px}
+.falta-box b{color:var(--warn)}
+.falta-box ul{margin:0;padding-left:18px}
+
+section.block{padding-block:44px 0;display:grid;gap:14px;max-width:820px}
+section.block h2{font-size:1.9rem;font-weight:800}
+.pasos{margin:0;padding-left:22px;display:grid;gap:8px}
+.extra{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:6px}
+
+/* ===== Maquetas de tienda: cada una fija sus colores (no siguen el tema de la página) ===== */
+.m{background:var(--m-bg);color:var(--m-ink);font-family:var(--m-fb);font-size:11px;line-height:1.45}
+.m h4,.m h5{font-family:var(--m-fd);font-weight:var(--m-fw);text-transform:var(--m-tt);margin:0;line-height:1.02;letter-spacing:.005em}
+.m .k{font-size:8.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--m-acc)}
+.m .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.m-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--m-head);border-bottom:1px solid var(--m-line)}
+.m-brand{display:flex;align-items:center;gap:6px;font-family:var(--m-fd);font-weight:var(--m-fw);text-transform:var(--m-tt);font-size:14px}
+.m-brand i{width:18px;height:13px;border-radius:2px;background:var(--m-acc);position:relative}
+.m-brand i::after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px solid #fff}
+.m-btn{display:inline-block;background:var(--m-acc);color:var(--m-on);border-radius:999px;padding:6px 11px;font-weight:700;font-size:10px}
+.m-btn.gh{background:transparent;color:var(--m-ink);border:1.2px solid var(--m-line)}
+.m-sec{padding:16px 12px;display:grid;gap:9px}
+.m-sec.surf{background:var(--m-surface);border-block:1px solid var(--m-line)}
+.pitch{position:relative;border-radius:8px;overflow:hidden;background:repeating-linear-gradient(90deg,#1d6b3c 0 12.5%,#22783f 12.5% 25%);aspect-ratio:16/9;max-width:100%}
+.pitch::before{content:"";position:absolute;inset:9% 6%;border:1.2px solid rgba(247,250,245,.85);border-radius:1px}
+.pitch::after{content:"";position:absolute;left:50%;top:50%;width:20%;aspect-ratio:1;transform:translate(-50%,-50%);border:1.2px solid rgba(247,250,245,.85);border-radius:50%;box-shadow:0 0 0 0 transparent}
+.pitch b{position:absolute;top:6px;left:6px;z-index:1;background:var(--m-ink);color:var(--m-bg);font-family:var(--m-fd);font-size:10px;padding:0 6px;border-radius:4px}
+.pitch .mid{position:absolute;left:50%;top:9%;bottom:9%;border-left:1.2px solid rgba(247,250,245,.85)}
+.rates{display:flex;gap:14px}
+.rates small{display:block;font-size:7.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--m-muted)}
+.rates b{font-size:13px}
+.rates .n b{color:var(--m-flood)}
+.court{border:1px solid var(--m-line);border-radius:9px;overflow:hidden;background:var(--m-surface)}
+.court .pitch{border-radius:0}
+.court .bd{padding:7px 8px;display:grid;gap:4px}
+.court .pr{display:flex;justify-content:space-between;border-top:1px solid var(--m-line);padding-top:4px;font-size:10px}
+.court .pr .n{color:var(--m-flood);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:3px}
+.chips span{font-size:8px;border:1px solid var(--m-line);border-radius:99px;padding:1px 5px;color:var(--m-muted)}
+.days{display:flex;gap:4px}
+.day{flex:1;border:1.2px solid var(--m-line);border-radius:6px;text-align:center;padding:3px 0;background:var(--m-surface)}
+.day small{display:block;font-size:7px;font-weight:700;text-transform:uppercase;color:var(--m-muted)}
+.day b{font-family:var(--m-fd);font-size:13px}
+.day.on{background:var(--m-ink);color:var(--m-bg);border-color:var(--m-ink)}
+.day.on small{color:inherit}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.slot{border:1.2px solid var(--m-line);border-radius:6px;text-align:center;padding:3px 0;background:var(--m-surface)}
+.slot b{display:block;font-size:10px}
+.slot small{font-size:8px;color:var(--m-muted)}
+.slot.n{background:var(--m-flood-soft);border-color:color-mix(in oklab,var(--m-flood) 45%,var(--m-line))}
+.slot.x{background:var(--m-taken);border-color:var(--m-taken);color:var(--m-muted);text-decoration:line-through}
+.slot.on{background:var(--m-acc);border-color:var(--m-acc);color:var(--m-on)}
+.slot.on small{color:inherit}
+.sum{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--m-line);border-radius:8px;padding:7px 8px;background:var(--m-surface)}
+.sum span{font-size:9px;color:var(--m-muted)}
+.map{height:70px;border-radius:8px;border:1px solid var(--m-line);background:linear-gradient(var(--m-line) 0 0) 0 35%/100% 6px no-repeat,linear-gradient(var(--m-line) 0 0) 35% 0/6px 100% no-repeat,var(--m-surface);position:relative}
+.map::after{content:"";position:absolute;left:46%;top:44%;width:44px;height:26px;border-radius:3px;background:#1d6b3c}
+.carrusel{display:flex;gap:7px;overflow:hidden}
+.carrusel .court{flex:0 0 72%}
+.pasos-m{display:grid;gap:7px}
+.pasos-m div{border-top:2px solid var(--m-ink);padding-top:4px}
+.pasos-m b{font-family:var(--m-fd);text-transform:var(--m-tt);font-size:12px;display:block}
+.pasos-m span{color:var(--m-muted);font-size:9.5px}
+.amen{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.amen div{border:1px solid var(--m-line);border-radius:6px;padding:5px 6px;font-weight:600;font-size:9.5px;background:var(--m-surface);display:flex;gap:5px;align-items:center}
+.amen div::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--m-acc)}
+.fijo{background:var(--m-deep);color:#f6f8f3;border-radius:10px;padding:12px;display:grid;gap:6px}
+.fijo h5{color:#f6f8f3;font-size:16px}
+.fijo p{opacity:.85;font-size:9.5px}
+.fijo .m-btn{background:var(--m-flood);color:#1c1403;justify-self:start}
+.faq div{border-bottom:1px solid var(--m-line);padding:5px 0;font-weight:700;font-size:10px;display:flex;justify-content:space-between}
+.faq div::after{content:"+";color:var(--m-acc)}
+.ft{padding:12px;border-top:1px solid var(--m-line);font-size:8.5px;color:var(--m-muted);display:flex;justify-content:space-between;gap:6px}
+.galeria{display:grid;grid-template-columns:2fr 1fr;grid-template-rows:56px 56px;gap:4px}
+.galeria span{border-radius:6px;background:radial-gradient(ellipse at 20% 0%,rgba(255,226,150,.55),transparent 55%),repeating-linear-gradient(90deg,#16512e 0 12.5%,#1a5c34 12.5% 25%)}
+.galeria span:first-child{grid-row:span 2}
+.galeria span:nth-child(3){background:radial-gradient(circle at 70% 20%,rgba(255,226,150,.6),transparent 40%),#11231a}
+.tes{border:1px solid var(--m-line);border-radius:8px;padding:9px;display:grid;gap:4px;background:var(--m-surface)}
+.tes q{font-family:var(--m-fd);font-size:13px;quotes:none}
+.tes small{color:var(--m-muted);font-size:8.5px}
+
+/* Portada con dibujo (la que existe) */
+.hero-dibujo{display:grid;gap:9px;padding:16px 12px}
+.hero-dibujo h4{font-size:30px}
+.hero-dibujo h4 em{font-style:normal;color:var(--m-acc)}
+.hero-dibujo p{color:var(--m-muted);font-size:10.5px}
+.tag{display:inline-flex;align-items:center;gap:5px;background:var(--m-surface);color:var(--m-ink);border-radius:99px;padding:3px 8px;font-size:9px;font-weight:600;position:absolute;left:8px;bottom:8px;z-index:2}
+.tag::before{content:"";width:6px;height:6px;border-radius:50%;background:#22c55e}
+
+/* Portada con foto de noche (pieza nueva) */
+.hero-foto{position:relative;padding:22px 12px 16px;min-height:250px;display:grid;align-content:end;gap:8px;color:#f6f2e8;
+  background:linear-gradient(180deg,rgba(9,12,10,.15) 0%,rgba(9,12,10,.88) 72%),
+    radial-gradient(ellipse 60% 45% at 12% 0%,rgba(255,222,140,.75),transparent 70%),
+    radial-gradient(ellipse 60% 45% at 92% 0%,rgba(255,222,140,.6),transparent 70%),
+    repeating-linear-gradient(90deg,#174f2d 0 12.5%,#1b5a33 12.5% 25%)}
+.hero-foto h4{font-size:34px;color:#f6f2e8}
+.hero-foto h4 em{font-style:normal;color:var(--m-flood)}
+.hero-foto p{font-size:10.5px;color:rgba(246,242,232,.82)}
+.hero-foto .rates small{color:rgba(246,242,232,.7)}
+.hero-foto .marca{position:absolute;top:10px;right:10px;font:600 8px var(--body);background:var(--m-flood);color:#1c1403;border-radius:99px;padding:2px 7px}
+
+/* Temas de cada plantilla */
+.t-complejo{--m-bg:#eef3ec;--m-head:#e6eee3;--m-surface:#ffffff;--m-ink:#13241a;--m-muted:#5b6b60;--m-line:#d3ddd0;--m-acc:#1d6b3c;--m-on:#fff;--m-deep:#134a29;--m-flood:#d6920e;--m-flood-soft:#fbf0d6;--m-taken:#e3e8e1;
+  --m-fd:'Barlow Condensed','Arial Narrow',sans-serif;--m-fb:'Figtree',sans-serif;--m-fw:800;--m-tt:uppercase}
+.t-toque{--m-bg:#ffffff;--m-head:#ffffff;--m-surface:#f6f8f5;--m-ink:#16211a;--m-muted:#5d6a61;--m-line:#e2e7df;--m-acc:#1d6b3c;--m-on:#fff;--m-deep:#134a29;--m-flood:#c47f06;--m-flood-soft:#fbf1dc;--m-taken:#edf0ec;
+  --m-fd:'Poppins',sans-serif;--m-fb:'Figtree',sans-serif;--m-fw:700;--m-tt:none}
+.t-noche{--m-bg:#0f1512;--m-head:#0f1512;--m-surface:#18211c;--m-ink:#eef2ea;--m-muted:#9eab9f;--m-line:#29352d;--m-acc:#f0b33a;--m-on:#1c1403;--m-deep:#1e2a22;--m-flood:#f0b33a;--m-flood-soft:#3a2f14;--m-taken:#1c2620;
+  --m-fd:'Barlow Condensed','Arial Narrow',sans-serif;--m-fb:'Figtree',sans-serif;--m-fw:800;--m-tt:uppercase}
+.t-toque .hero-dibujo h4{font-size:24px;letter-spacing:-.01em}
+.t-noche .m-btn{color:#1c1403}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <span class="eyebrow">Diseño · rubro canchas</span>
+  <h1>Tres plantillas para canchas</h1>
+  <p class="lede">Una para cada tipo de cliente: el que quiere todo en su página, el que quiere algo rápido y el que quiere verse distinto. Cada una trae su receta para armarla en el editor de Diseño y dice si se puede armar hoy o si falta programar una pieza.</p>
+  <div class="leyenda">
+    <span><span class="chip base">Ya existe</span> es la plantilla por defecto</span>
+    <span><span class="chip ok">Se arma hoy</span> solo con el editor</span>
+    <span><span class="chip falta">Falta una pieza</span> hay que programarla una vez</span>
+  </div>
+</header>
+
+<div class="grid">
+
+  <!-- ══════════ 1. Complejo deportivo ══════════ -->
+  <div class="col">
+    <div class="col-head">
+      <span class="chip base" style="justify-self:start">Ya existe · por defecto</span>
+      <h2>Complejo deportivo</h2>
+      <p class="para">Para el complejo con varias canchas que quiere vender todo desde la página: tarifas, horarios, servicios y alquiler fijo.</p>
+    </div>
+    <div class="phone"><div class="screen m t-complejo">
+      <div class="m-hd"><span class="m-brand"><i></i>Los Cedros</span><span class="m-btn">Reservar</span></div>
+      <div class="hero-dibujo">
+        <span class="k">Grass sintético · SJL</span>
+        <h4>Arma tu pichanga <em>en 1 minuto</em></h4>
+        <p>Elige día y hora, ve la cancha libre al instante y separa con un adelanto.</p>
+        <div style="display:flex;gap:6px"><span class="m-btn">Ver horarios libres</span><span class="m-btn gh">Las canchas</span></div>
+        <div class="rates"><div><small>Día</small><b class="num">S/ 70</b></div><div class="n"><small>Noche</small><b class="num">S/ 100</b></div></div>
+        <div class="pitch"><span class="mid"></span><span class="tag">Hoy quedan 9 horarios libres</span></div>
+      </div>
+      <div class="m-sec"><span class="k">3 canchas</span><h5 style="font-size:18px">Nuestras canchas</h5>
+        <div class="court"><div class="pitch"><span class="mid"></span><b>F7</b></div><div class="bd"><b>Cancha 1</b><div class="chips"><span>Fútbol 7</span><span>45 × 25 m</span></div><div class="pr"><span class="num">Día S/ 120</span><span class="num n">Noche S/ 160</span></div></div></div>
+      </div>
+      <div class="m-sec surf"><span class="k">Disponibilidad en tiempo real</span><h5 style="font-size:18px">Reserva tu horario</h5>
+        <div class="days"><div class="day on"><small>Hoy</small><b>12</b></div><div class="day"><small>Mar</small><b>13</b></div><div class="day"><small>Mié</small><b>14</b></div><div class="day"><small>Jue</small><b>15</b></div><div class="day"><small>Vie</small><b>16</b></div></div>
+        <div class="slots"><div class="slot"><b class="num">16:00</b><small class="num">S/ 120</small></div><div class="slot on"><b class="num">17:00</b><small class="num">S/ 120</small></div><div class="slot n"><b class="num">18:00</b><small class="num">S/ 160</small></div><div class="slot x"><b class="num">19:00</b><small>Ocupado</small></div></div>
+      </div>
+      <div class="m-sec"><span class="k">Cómo funciona</span><div class="pasos-m"><div><b>Elige horario</b><span>Solo ves horas libres.</span></div><div><b>Paga el adelanto</b><span>Yapea el 50%.</span></div></div></div>
+      <div class="m-sec"><span class="k">Servicios</span><div class="amen"><div>Reflectores LED</div><div>Vestuarios</div><div>Estacionamiento</div><div>Kiosko</div></div></div>
+      <div class="m-sec"><div class="fijo"><span class="k" style="color:var(--m-flood)">Alquiler fijo semanal</span><h5>Tu equipo, el mismo día cada semana</h5><span class="m-btn">Pedir horario fijo</span></div></div>
+      <div class="m-sec"><span class="k">Políticas</span><div class="faq"><div>¿Cuánto adelanto?</div><div>¿Y si llueve?</div></div></div>
+      <div class="m-sec"><span class="k">Ubicación</span><div class="map"></div></div>
+      <div class="ft"><span>Los Cedros</span><span>Libro de Reclamaciones</span></div>
+    </div></div>
+    <div class="receta">
+      <h3>Receta</h3>
+      <dl class="kv"><dt>Colores</dt><dd>Verde cancha · Tinte</dd><dt>Letras</dt><dd>Deportiva</dd></dl>
+      <ol class="secs">
+        <li>Portada de canchas</li><li>Canchas <span class="v">· grilla</span></li><li>Horarios libres</li><li>Cómo funciona</li>
+        <li>Servicios <span class="v">· tarjetas</span></li><li>Alquiler fijo semanal</li><li>Preguntas <span class="v">· dos columnas</span></li><li>Ubicación</li>
+      </ol>
+      <p class="ocultas">No hay que hacer nada: es <strong>canchas-complejo</strong>, la que ven hoy todas las tiendas de canchas.</p>
+    </div>
+  </div>
+
+  <!-- ══════════ 2. Al toque ══════════ -->
+  <div class="col">
+    <div class="col-head">
+      <span class="chip ok" style="justify-self:start">Se arma hoy</span>
+      <h2>Al toque</h2>
+      <p class="para">Para la cancha de barrio, con una o dos canchas, que solo quiere que reserven rápido desde el celular. Lo primero que se ve después de la portada son los horarios.</p>
+    </div>
+    <div class="phone"><div class="screen m t-toque">
+      <div class="m-hd"><span class="m-brand"><i></i>La Bombonera</span><span class="m-btn">Reservar</span></div>
+      <div class="hero-dibujo">
+        <h4>Reserva tu cancha <em>en 1 minuto</em></h4>
+        <p>Elige la hora, paga el adelanto por Yape y listo.</p>
+        <div class="rates"><div><small>Día</small><b class="num">S/ 60</b></div><div class="n"><small>Noche</small><b class="num">S/ 90</b></div></div>
+      </div>
+      <div class="m-sec surf"><h5 style="font-size:16px">Horarios libres</h5>
+        <div class="days"><div class="day on"><small>Hoy</small><b>12</b></div><div class="day"><small>Mar</small><b>13</b></div><div class="day"><small>Mié</small><b>14</b></div><div class="day"><small>Jue</small><b>15</b></div><div class="day"><small>Vie</small><b>16</b></div></div>
+        <div class="slots"><div class="slot"><b class="num">16:00</b><small class="num">S/ 60</small></div><div class="slot on"><b class="num">17:00</b><small class="num">S/ 60</small></div><div class="slot n"><b class="num">18:00</b><small class="num">S/ 90</small></div><div class="slot n"><b class="num">19:00</b><small class="num">S/ 90</small></div><div class="slot x"><b class="num">20:00</b><small>Ocupado</small></div><div class="slot x"><b class="num">21:00</b><small>Ocupado</small></div><div class="slot n"><b class="num">22:00</b><small class="num">S/ 90</small></div></div>
+        <div class="sum"><span>Hoy 17:00 · Cancha 1</span><span class="m-btn">Separar con S/ 30</span></div>
+      </div>
+      <div class="m-sec"><h5 style="font-size:16px">Nuestras canchas</h5>
+        <div class="carrusel">
+          <div class="court"><div class="pitch"><span class="mid"></span><b>F6</b></div><div class="bd"><b>Cancha 1</b><div class="pr"><span class="num">S/ 60</span><span class="num n">S/ 90</span></div></div></div>
+          <div class="court"><div class="pitch"><span class="mid"></span><b>F5</b></div><div class="bd"><b>Cancha 2</b><div class="pr"><span class="num">S/ 50</span><span class="num n">S/ 80</span></div></div></div>
+        </div>
+      </div>
+      <div class="m-sec"><h5 style="font-size:16px">Cómo llegar</h5><div class="map"></div><p style="color:var(--m-muted);font-size:9.5px">Jr. Los Pinos 340, Comas</p></div>
+      <div class="ft"><span>La Bombonera</span><span>Libro de Reclamaciones</span></div>
+    </div></div>
+    <div class="receta">
+      <h3>Receta</h3>
+      <dl class="kv"><dt>Colores</dt><dd>Verde cancha · Clara</dd><dt>Letras</dt><dd>Moderna (Poppins + Inter)</dd></dl>
+      <ol class="secs">
+        <li>Portada de canchas <span class="v">· sin antetítulo ni botón secundario</span></li>
+        <li>Horarios libres <span class="v">· justo después de la portada</span></li>
+        <li>Canchas <span class="v">· carrusel</span></li>
+        <li>Ubicación</li>
+      </ol>
+      <p class="ocultas">Se ocultan: Cómo funciona, Servicios, Alquiler fijo semanal y Preguntas.</p>
+    </div>
+  </div>
+
+  <!-- ══════════ 3. Noche de reflectores ══════════ -->
+  <div class="col">
+    <div class="col-head">
+      <span class="chip falta" style="justify-self:start">Falta: 2 piezas</span>
+      <h2>Noche de reflectores</h2>
+      <p class="para">Para el complejo que vive de los partidos de noche y quiere lucir sus canchas: fondo oscuro, fotos reales y el ámbar de los reflectores.</p>
+    </div>
+    <div class="phone"><div class="screen m t-noche">
+      <div class="m-hd"><span class="m-brand"><i></i>Estadio 9</span><span class="m-btn">Reservar</span></div>
+      <div class="hero-foto">
+        <span class="marca">Pieza nueva: portada con foto</span>
+        <span class="k" style="color:var(--m-flood)">Surco · Fútbol 7 y 5</span>
+        <h4>El partido <em>de la noche</em></h4>
+        <p>Canchas con reflectores LED hasta las 11 p. m. Separa tu hora en un minuto.</p>
+        <div class="rates"><div><small>Día</small><b class="num">S/ 100</b></div><div class="n"><small>Noche</small><b class="num">S/ 150</b></div></div>
+        <span class="m-btn" style="justify-self:start">Ver horarios de hoy</span>
+      </div>
+      <div class="m-sec surf"><h5 style="font-size:18px">Reserva tu horario</h5>
+        <div class="days"><div class="day on"><small>Hoy</small><b>12</b></div><div class="day"><small>Mar</small><b>13</b></div><div class="day"><small>Mié</small><b>14</b></div><div class="day"><small>Jue</small><b>15</b></div><div class="day"><small>Vie</small><b>16</b></div></div>
+        <div class="slots"><div class="slot n"><b class="num">19:00</b><small class="num">S/ 150</small></div><div class="slot x"><b class="num">20:00</b><small>Ocupado</small></div><div class="slot on"><b class="num">21:00</b><small class="num">S/ 150</small></div><div class="slot n"><b class="num">22:00</b><small class="num">S/ 150</small></div></div>
+      </div>
+      <div class="m-sec"><span class="k">El lugar</span><div class="galeria"><span></span><span></span><span></span></div></div>
+      <div class="m-sec"><h5 style="font-size:18px">Nuestras canchas</h5>
+        <div class="court"><div class="pitch"><span class="mid"></span><b>F7</b></div><div class="bd"><b>Cancha principal</b><div class="chips"><span>Fútbol 7</span><span>Hasta 16</span></div><div class="pr"><span class="num">Día S/ 100</span><span class="num n">Noche S/ 150</span></div></div></div>
+      </div>
+      <div class="m-sec"><div class="tes"><q>Jugamos todos los jueves. Las luces y el grass, de primera.</q><small>Equipo Los Veteranos · fijo semanal</small></div></div>
+      <div class="m-sec"><div class="fijo"><span class="k" style="color:var(--m-flood)">Alquiler fijo semanal</span><h5>Tu noche, todas las semanas</h5><span class="m-btn">Pedir horario fijo</span></div></div>
+      <div class="m-sec"><div class="map"></div></div>
+      <div class="ft"><span>Estadio 9</span><span>Libro de Reclamaciones</span></div>
+    </div></div>
+    <div class="receta">
+      <h3>Receta</h3>
+      <dl class="kv"><dt>Colores</dt><dd class="nueva" style="color:var(--warn)">Noche (fondo oscuro, acento ámbar)</dd><dt>Letras</dt><dd>Deportiva</dd></dl>
+      <ol class="secs">
+        <li>Portada de canchas <span class="nueva">· con foto de fondo</span></li>
+        <li>Horarios libres</li>
+        <li>Galería <span class="v">· mosaico, fotos de noche</span></li>
+        <li>Canchas <span class="v">· grilla</span></li>
+        <li>Testimonios</li>
+        <li>Alquiler fijo semanal</li>
+        <li>Ubicación</li>
+      </ol>
+      <div class="falta-box">
+        <b>Lo que falta programar (una sola vez)</b>
+        <ul>
+          <li><strong>Paleta con fondo oscuro.</strong> Hoy las paletas solo oscurecen la barra de arriba y el pie; la página siempre es clara. Sirve también a otros rubros (bares, eventos).</li>
+          <li><strong>Portada de canchas con foto.</strong> Hoy dibuja una cancha; la variante nueva usa el banner de la tienda de fondo y mantiene las tarifas.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="block">
+  <span class="eyebrow">En el editor</span>
+  <h2>Cómo crear «Al toque»</h2>
+  <ol class="pasos">
+    <li>Entra con <strong>canchas@yopmail.com</strong> y abre <strong>Diseño</strong> en la tienda demo de canchas.</li>
+    <li><strong>Estilo:</strong> en Colores elige Verde cancha y la versión Clara; en Letras, Moderna.</li>
+    <li>En la lista, sube <strong>Horarios libres</strong> justo debajo de la portada y pon <strong>Canchas</strong> en carrusel.</li>
+    <li>Oculta Cómo funciona, Servicios, Alquiler fijo semanal y Preguntas.</li>
+    <li>En la portada, deja el título corto y borra el antetítulo y el botón secundario.</li>
+    <li><strong>Estilo → Plataforma:</strong> nombre «Al toque», descripción «Para una o dos canchas: horarios libres apenas entras». Guardar como plantilla nueva.</li>
+    <li>En <strong>Probar</strong>, vuelve a «Complejo deportivo» y publica, para que la tienda demo no quede con la nueva.</li>
+  </ol>
+</section>
+
+<section class="block">
+  <span class="eyebrow">Otra idea</span>
+  <div class="extra">
+    <h2 style="font-size:1.5rem">Liga y equipos</h2>
+    <p>Para complejos que viven del alquiler fijo y de campeonatos: el alquiler fijo semanal arriba de todo, después cómo funciona, horarios y una tabla de posiciones del campeonato. Necesita una pieza grande nueva (la tabla de la liga), así que conviene dejarla para cuando un cliente la pida.</p>
+  </div>
+</section>
+</div>
+
+</body></html>

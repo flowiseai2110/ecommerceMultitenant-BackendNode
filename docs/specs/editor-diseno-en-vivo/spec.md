@@ -4,7 +4,7 @@
 > Repos involucrados: BackendNode, FrontendAdmin, FrontendStore.
 > Pase a producción: [pase-a-produccion.md](pase-a-produccion.md).
 > Base: [estructura-tienda](../estructura-tienda/spec.md) (plantillas, copia, tema) y [diseno-por-rubro](../diseno-por-rubro/spec.md) (plantillas y secciones por tipo de negocio).
-> Propuesta elegida: "Opción A · Lienzo con panel" (claude.ai/artifact/7rNJojVewHZMc6MebjWNHz). Ejemplo con canchas: claude.ai/artifact/RkiwZVaqtx2ZYAqCxzQ7fW.
+> Propuesta elegida: "Opción A · Lienzo con panel" (claude.ai/artifact/7rNJojVewHZMc6MebjWNHz). Ejemplo con canchas: claude.ai/artifact/RkiwZVaqtx2ZYAqCxzQ7fW. Copia en el repo: [docs/disenos/nuevo-editor-diseno/](../../disenos/nuevo-editor-diseno/).
 
 ## Problema
 

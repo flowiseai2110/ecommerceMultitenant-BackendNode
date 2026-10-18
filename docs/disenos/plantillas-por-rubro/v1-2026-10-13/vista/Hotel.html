@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hotel: flujo de reserva</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#14171C}a:hover{color:#000}
+.row{display:flex;gap:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px;width:320px}
+.step{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#3D434C}
+.phone{width:320px;height:700px;background:#fff;border-radius:28px;border:1px solid #CDD2D8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.bar{height:52px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #EEF0F2;font-weight:700;font-size:15px}
+.bd{flex:1;padding:16px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.ft{flex:none;padding:12px 16px 16px;border-top:1px solid #EEF0F2;display:flex;align-items:center;gap:12px}
+.btn{appearance:none;border:0;border-radius:12px;background:var(--a);color:#fff;font:600 15px 'Figtree',sans-serif;height:48px;padding:0 18px;flex:1;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.btn2{appearance:none;border:1.5px solid var(--a);border-radius:12px;background:#fff;color:var(--a);font:600 15px 'Figtree',sans-serif;height:48px;padding:0 18px;flex:1}
+.img{background:color-mix(in srgb,var(--a) 14%,#F1F3F5);border-radius:12px;display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font-size:11px;color:#3D434C}
+.chip{border:1px solid #CDD2D8;border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap;background:#fff;color:#14171C;font-family:inherit}
+.on{background:var(--a);border-color:var(--a);color:#fff}
+.h{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;margin:0;line-height:1.15}
+.mut{color:#59606B;font-size:13px}
+.fld{border:1px solid #CDD2D8;border-radius:10px;padding:7px 12px;display:flex;flex-direction:column;gap:2px}
+.lbl{font-size:11px;color:#59606B;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fld input{border:0;padding:0;font:500 14px 'Figtree',sans-serif;color:#14171C;background:transparent;outline:none;width:100%}
+.sep{height:1px;background:#EEF0F2;flex:none}
+.li{display:flex;justify-content:space-between;font-size:14px;gap:8px}
+.tag{font-size:11px;font-weight:700;color:var(--a);text-transform:uppercase;letter-spacing:.05em}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ib{appearance:none;border:0;background:transparent;padding:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#14171C}
+.card{border:1px solid #E3E6EA;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.okc{width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,var(--a) 14%,#fff);color:var(--a);display:flex;align-items:center;justify-content:center}
+</style>
+</helmet>
+<div style="--a: #1D4E89; font-family: 'Figtree', sans-serif; color: #14171C; background: #E9ECEF; width: 2176px; height: 980px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span class="tag">Rubro · hotel</span>
+<h1 class="h" style="font-size: 44px">Reserva directa de hospedaje</h1>
+<p style="margin: 0; font-size: 17px; color: #3D434C">Buscador de fechas → habitaciones disponibles → habitación → resumen de estadía → datos y pago → confirmación</p>
+</div>
+<p style="margin: 0; font-size: 14px; color: #3D434C; max-width: 520px; text-align: right">Patrón de referencia: motor de reservas del propio hotel (Booking.com, Expedia, cadenas; benchmark Baymard de alojamiento).</p>
+</div>
+<div class="row">
+
+<div class="col">
+<span class="step">1 · Inicio con buscador</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Menú"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><span class="h" style="font-size: 18px">Casa Killa</span><button class="chip" style="padding: 4px 10px">ES</button></div>
+<div class="bd" style="padding: 0; gap: 0">
+<div class="img" style="height: 210px; border-radius: 0; padding: 16px; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 4px"><span class="h" style="font-size: 24px; color: #14171C">Tu casa en Cusco</span><span style="font-size: 13px">A 5 min de la Plaza de Armas</span></div>
+<div style="margin: -28px 16px 0; background: #fff; border-radius: 16px; border: 1px solid #CDD2D8; padding: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 6px 18px rgba(20,23,28,.08)">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><label class="fld"><span class="lbl">Llegada</span><input value="vie 13 nov"></label><label class="fld"><span class="lbl">Salida</span><input value="dom 15 nov"></label></div>
+<label class="fld"><span class="lbl">Huéspedes</span><input value="2 adultos · 1 habitación"></label>
+<a class="btn" href="#" style="flex: none">Ver disponibilidad</a>
+<span class="mut" style="text-align: center; font-size: 12px">Mejor precio reservando aquí</span>
+</div>
+<div style="padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<span class="h" style="font-size: 16px">Servicios</span>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><span class="chip">Desayuno</span><span class="chip">Wi-Fi</span><span class="chip">Traslado</span><span class="chip">Terraza</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">2 · Habitaciones disponibles</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span style="display: flex; flex-direction: column; align-items: center; line-height: 1.2"><span>13 – 15 nov</span><span class="mut" style="font-size: 12px; font-weight: 500">2 noches · 2 adultos</span></span><button class="ib" aria-label="Editar búsqueda"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16v4z"/></svg></button></div>
+<div class="bd" style="gap: 12px">
+<div class="card" style="padding: 0; overflow: hidden; gap: 0"><div class="img" style="height: 120px; border-radius: 0">Foto</div><div style="padding: 12px; display: flex; flex-direction: column; gap: 6px"><span style="font-weight: 700; font-size: 15px">Doble estándar</span><span class="mut">Cama queen · 2 personas · 18 m²</span><div style="display: flex; justify-content: space-between; align-items: flex-end"><div style="display: flex; flex-direction: column"><span style="font-weight: 700; font-size: 17px">S/ 360</span><span class="mut" style="font-size: 12px">total 2 noches · desayuno incluido</span></div><a class="btn" href="#" style="flex: none; height: 38px; font-size: 13px">Elegir</a></div></div></div>
+<div class="card" style="padding: 0; overflow: hidden; gap: 0"><div class="img" style="height: 120px; border-radius: 0">Foto</div><div style="padding: 12px; display: flex; flex-direction: column; gap: 6px"><span style="font-weight: 700; font-size: 15px">Suite con balcón</span><span class="mut">Cama king · 2 personas · 28 m²</span><span style="font-size: 12px; font-weight: 700; color: #B42318">Quedan 2</span><div style="display: flex; justify-content: space-between; align-items: flex-end"><div style="display: flex; flex-direction: column"><span style="font-weight: 700; font-size: 17px">S/ 560</span><span class="mut" style="font-size: 12px">total 2 noches</span></div><a class="btn" href="#" style="flex: none; height: 38px; font-size: 13px">Elegir</a></div></div></div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">3 · Habitación</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Doble estándar</span><span style="width: 44px"></span></div>
+<div class="bd" style="gap: 12px">
+<div class="img" style="height: 190px; justify-content: center">Galería · 1 / 8</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; text-align: center; font-size: 12px"><div class="card" style="padding: 8px; gap: 2px"><span style="font-weight: 700">2</span><span class="mut" style="font-size: 12px">personas</span></div><div class="card" style="padding: 8px; gap: 2px"><span style="font-weight: 700">Queen</span><span class="mut" style="font-size: 12px">cama</span></div><div class="card" style="padding: 8px; gap: 2px"><span style="font-weight: 700">18 m²</span><span class="mut" style="font-size: 12px">tamaño</span></div></div>
+<span class="lbl">Incluye</span>
+<div style="display: flex; gap: 6px; flex-wrap: wrap"><span class="chip">Baño privado</span><span class="chip">Agua caliente</span><span class="chip">Calefactor</span><span class="chip">TV</span></div>
+<div class="card" style="font-size: 13px; gap: 6px"><span class="lbl">Políticas</span><span>Check-in 14:00 · Check-out 11:00</span><span>Cancelación gratis hasta 48 h antes</span></div>
+</div>
+<div class="ft"><div style="display: flex; flex-direction: column"><span style="font-weight: 700; font-size: 17px">S/ 360</span><span class="mut" style="font-size: 12px">2 noches</span></div><a class="btn" href="#">Reservar</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">4 · Resumen de estadía</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Tu estadía</span><span class="mut" style="width: 44px; text-align: right">1/2</span></div>
+<div class="bd" style="gap: 12px">
+<div class="card" style="flex-direction: row; gap: 12px"><div class="img" style="width: 72px; height: 72px; flex: none"></div><div style="display: flex; flex-direction: column; gap: 2px; font-size: 13px"><span style="font-weight: 700; font-size: 14px">Doble estándar</span><span>vie 13 → dom 15 nov</span><span class="mut">2 noches · 2 adultos</span></div></div>
+<span class="lbl">Agrega a tu estadía</span>
+<div class="card" style="flex-direction: row; justify-content: space-between; align-items: center; font-size: 14px"><div style="display: flex; flex-direction: column"><span>Traslado aeropuerto</span><span class="mut" style="font-size: 12px">por trayecto</span></div><button class="chip">+ S/ 40</button></div>
+<div class="card" style="flex-direction: row; justify-content: space-between; align-items: center; font-size: 14px"><div style="display: flex; flex-direction: column"><span>Early check-in</span><span class="mut" style="font-size: 12px">desde las 9:00</span></div><button class="chip">+ S/ 50</button></div>
+<div style="display: flex; flex-direction: column; gap: 8px; margin-top: auto">
+<div class="li"><span>2 noches × S/ 180</span><span>S/ 360</span></div>
+<div class="li"><span>Impuestos</span><span>Incluidos</span></div>
+<div class="li" style="font-weight: 700; font-size: 16px"><span>Total</span><span>S/ 360</span></div>
+</div>
+</div>
+<div class="ft"><a class="btn" href="#">Continuar</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">5 · Datos y pago</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Huésped y pago</span><span class="mut" style="width: 44px; text-align: right">2/2</span></div>
+<div class="bd" style="gap: 10px">
+<label class="fld"><span class="lbl">Nombre completo</span><input value="Ana Quispe"></label>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><label class="fld"><span class="lbl">Documento</span><input value="DNI 4…"></label><label class="fld"><span class="lbl">País</span><input value="Perú"></label></div>
+<label class="fld"><span class="lbl">Correo</span><input value="ana@correo.com"></label>
+<label class="fld"><span class="lbl">Hora estimada de llegada</span><input value="15:00 – 16:00"></label>
+<span class="lbl" style="margin-top: 4px">Cómo pagar</span>
+<div class="card" style="flex-direction: row; justify-content: space-between; border-color: var(--a); font-size: 14px"><span>Adelanto 50% ahora</span><span style="font-weight: 700">S/ 180</span></div>
+<div class="card" style="flex-direction: row; justify-content: space-between; font-size: 14px"><span>Pago total ahora</span><span style="font-weight: 700">S/ 360</span></div>
+<span class="mut" style="font-size: 12px">Saldo S/ 180 en el hotel al llegar</span>
+</div>
+<div class="ft"><a class="btn" href="#">Pagar S/ 180</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">6 · Confirmación</span>
+<div class="phone">
+<div class="bar"><span></span><span>Reserva confirmada</span><span></span></div>
+<div class="bd" style="align-items: center; text-align: center; gap: 12px; padding-top: 28px">
+<div class="okc"><svg class="ico" style="width: 30px; height: 30px" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+<h2 class="h" style="font-size: 22px">¡Te esperamos, Ana!</h2>
+<span class="mut">Código de reserva</span>
+<span class="h" style="font-size: 26px; letter-spacing: .08em">[CÓDIGO]</span>
+<div class="card" style="width: 100%; box-sizing: border-box; text-align: left; font-size: 14px; gap: 6px">
+<div class="li"><span>Llegada</span><span>vie 13 nov · 14:00</span></div>
+<div class="li"><span>Salida</span><span>dom 15 nov · 11:00</span></div>
+<div class="li"><span>Pagado / saldo</span><span>S/ 180 / S/ 180</span></div>
+</div>
+<div class="img" style="width: 100%; height: 90px; justify-content: center">Mapa · cómo llegar</div>
+</div>
+<div class="ft" style="flex-direction: column; gap: 8px"><a class="btn" href="#" style="width: 100%; box-sizing: border-box">Escribir por WhatsApp</a><button class="btn2" style="width: 100%">Agregar al calendario</button></div>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1D4E89","options":["#1D4E89","#0F766E","#7C2D12","#14171C"]},"$preview":{"width":2176,"height":980}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#1D4E89' };
+}
+}
+</script>
+</body>
+</html>

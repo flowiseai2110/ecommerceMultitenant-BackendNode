@@ -1,7 +1,7 @@
 # Spec: plantillas estándar por rubro (prototipo → pantallas → plantillas)
 
 > Estado (2026-10-13): pasos 1 y 2 terminados. **Hotel: pasos 3 y 4 terminados** (sin commit): las 5 partes del flujo se ven como el prototipo y `hotel-estandar` prende todas sus opciones; aplicada en la demo `demobooking`. Los otros 5 rubros: paso 3 pendiente (sus plantillas "Estándar" solo cambian home, paleta y tipografía).
-> Diseños: lienzo "Plantillas estándar por rubro" (claude.ai/artifact/VUn82KP1ALcqC2HLzv7Gpk), páginas Móvil y Desktop, 6 flujos de 6 pantallas.
+> Diseños: lienzo "Plantillas estándar por rubro" (claude.ai/artifact/VUn82KP1ALcqC2HLzv7Gpk), páginas Móvil y Desktop, 6 flujos de 6 pantallas. Copia en el repo: [docs/disenos/plantillas-por-rubro/v1-2026-10-13/](../../disenos/plantillas-por-rubro/v1-2026-10-13/).
 > Repos: FrontendStore (pantallas), BackendNode (datos y plantillas), FrontendAdmin (solo donde haga falta cargar un dato o elegir una opción de layout).
 > Base: [perfil-negocio](../perfil-negocio/spec.md), [layout-por-rubro](../layout-por-rubro/spec.md), [diseno-por-rubro](../diseno-por-rubro/spec.md), [editor-diseno-en-vivo](../editor-diseno-en-vivo/spec.md).
 

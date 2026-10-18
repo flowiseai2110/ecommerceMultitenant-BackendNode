@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Productos: flujo de compra</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#14171C}a:hover{color:#000}
+.row{display:flex;gap:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px;width:320px}
+.step{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#3D434C}
+.phone{width:320px;height:700px;background:#fff;border-radius:28px;border:1px solid #CDD2D8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.bar{height:52px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #EEF0F2;font-weight:700;font-size:15px}
+.bd{flex:1;padding:16px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.ft{flex:none;padding:12px 16px 16px;border-top:1px solid #EEF0F2;display:flex;align-items:center;gap:12px}
+.btn{appearance:none;border:0;border-radius:12px;background:var(--a);color:#fff;font:600 15px 'Figtree',sans-serif;height:48px;padding:0 18px;flex:1;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.btn2{appearance:none;border:1.5px solid var(--a);border-radius:12px;background:#fff;color:var(--a);font:600 15px 'Figtree',sans-serif;height:48px;padding:0 18px;flex:1}
+.img{background:color-mix(in srgb,var(--a) 14%,#F1F3F5);border-radius:12px;display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font-size:11px;color:#3D434C}
+.chip{border:1px solid #CDD2D8;border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap;background:#fff;color:#14171C;font-family:inherit}
+.on{background:var(--a);border-color:var(--a);color:#fff}
+.h{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;margin:0;line-height:1.15}
+.mut{color:#59606B;font-size:13px}
+.fld{border:1px solid #CDD2D8;border-radius:10px;padding:7px 12px;display:flex;flex-direction:column;gap:2px}
+.lbl{font-size:11px;color:#59606B;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fld input{border:0;padding:0;font:500 14px 'Figtree',sans-serif;color:#14171C;background:transparent;outline:none;width:100%}
+.sep{height:1px;background:#EEF0F2;flex:none}
+.li{display:flex;justify-content:space-between;font-size:14px;gap:8px}
+.tag{font-size:11px;font-weight:700;color:var(--a);text-transform:uppercase;letter-spacing:.05em}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ib{appearance:none;border:0;background:transparent;padding:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#14171C}
+.card{border:1px solid #E3E6EA;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.okc{width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,var(--a) 14%,#fff);color:var(--a);display:flex;align-items:center;justify-content:center}
+</style>
+</helmet>
+<div style="--a: #C2410C; font-family: 'Figtree', sans-serif; color: #14171C; background: #E9ECEF; width: 2176px; height: 980px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span class="tag">Rubro · productos</span>
+<h1 class="h" style="font-size: 44px">Tienda online</h1>
+<p style="margin: 0; font-size: 17px; color: #3D434C">Inicio → categoría → producto → carrito → checkout → confirmación</p>
+</div>
+<p style="margin: 0; font-size: 14px; color: #3D434C; max-width: 520px; text-align: right">Patrón de referencia: ecommerce retail (guías Baymard de home, listado, ficha y checkout).</p>
+</div>
+<div class="row">
+
+<div class="col">
+<span class="step">1 · Inicio</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Menú"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><span class="h" style="font-size: 18px">Nativa</span><button class="ib" aria-label="Carrito"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12l-1 13H7L6 7zM9 7a3 3 0 016 0"/></svg></button></div>
+<div class="bd">
+<label class="fld" style="flex-direction: row; align-items: center; gap: 8px"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg><input placeholder="Buscar productos" aria-label="Buscar productos"></label>
+<div class="img" style="height: 170px; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 8px; padding: 14px"><span class="h" style="font-size: 22px; color: #14171C">Nueva colección</span><a class="btn" href="#" style="flex: none; height: 36px; font-size: 13px">Ver ahora</a></div>
+<span class="h" style="font-size: 16px">Categorías</span>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 4px; align-items: center"><div class="img" style="width: 60px; height: 60px; border-radius: 50%"></div><span style="font-size: 12px">Ropa</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px; align-items: center"><div class="img" style="width: 60px; height: 60px; border-radius: 50%"></div><span style="font-size: 12px">Calzado</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px; align-items: center"><div class="img" style="width: 60px; height: 60px; border-radius: 50%"></div><span style="font-size: 12px">Hogar</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px; align-items: center"><div class="img" style="width: 60px; height: 60px; border-radius: 50%"></div><span style="font-size: 12px">Ofertas</span></div>
+</div>
+<span class="h" style="font-size: 16px">Más vendidos</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 110px">Foto</div><span style="font-size: 13px">Polo algodón pima</span><span style="font-weight: 700; font-size: 14px">S/ 79</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 110px">Foto</div><span style="font-size: 13px">Casaca liviana</span><span style="font-weight: 700; font-size: 14px">S/ 189</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">2 · Categoría</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Ropa</span><button class="ib" aria-label="Buscar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg></button></div>
+<div class="bd">
+<div style="display: flex; gap: 8px; overflow: hidden"><button class="chip on">Filtros · 2</button><button class="chip">Talla</button><button class="chip">Color</button><button class="chip">Precio</button></div>
+<div style="display: flex; justify-content: space-between; align-items: center"><span class="mut">[N] productos</span><button class="chip">Ordenar: relevancia</button></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px">
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 150px">Foto</div><span style="font-size: 13px">Polo algodón pima</span><span style="font-weight: 700; font-size: 14px">S/ 79</span><span class="mut" style="font-size: 12px">4 colores</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 150px">Foto</div><span style="font-size: 13px">Camisa lino</span><span style="font-weight: 700; font-size: 14px">S/ 129 <span style="text-decoration: line-through; color: #59606B; font-weight: 400">S/ 159</span></span><span class="mut" style="font-size: 12px">Envío gratis</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 150px">Foto</div><span style="font-size: 13px">Casaca liviana</span><span style="font-weight: 700; font-size: 14px">S/ 189</span><span class="mut" style="font-size: 12px">Últimas unidades</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div class="img" style="height: 150px">Foto</div><span style="font-size: 13px">Pantalón chino</span><span style="font-weight: 700; font-size: 14px">S/ 149</span><span class="mut" style="font-size: 12px">3 colores</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">3 · Producto</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span></span><button class="ib" aria-label="Carrito"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12l-1 13H7L6 7zM9 7a3 3 0 016 0"/></svg></button></div>
+<div class="bd" style="gap: 12px">
+<div class="img" style="height: 220px; justify-content: center">Galería · 1 / 5</div>
+<div style="display: flex; flex-direction: column; gap: 4px"><h2 class="h" style="font-size: 20px">Polo algodón pima</h2><span style="font-size: 20px; font-weight: 700">S/ 79</span><span class="mut">★ 4,8 · [N] reseñas</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Color: Arena</span><div style="display: flex; gap: 8px"><span style="width: 28px; height: 28px; border-radius: 50%; background: #D8C7A8; outline: 2px solid #14171C; outline-offset: 2px"></span><span style="width: 28px; height: 28px; border-radius: 50%; background: #2B3440"></span><span style="width: 28px; height: 28px; border-radius: 50%; background: #FFFFFF; border: 1px solid #CDD2D8"></span></div></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Talla · <a href="#">Guía de tallas</a></span><div style="display: flex; gap: 8px"><button class="chip">S</button><button class="chip on">M</button><button class="chip">L</button><button class="chip" style="color: #8A9099; text-decoration: line-through">XL</button></div></div>
+<div class="card" style="gap: 6px; font-size: 13px"><span>Envío a Lima: S/ 10 · llega en 2–3 días</span><span>Recojo en tienda gratis</span><a href="#">Cambios y devoluciones: 30 días</a></div>
+</div>
+<div class="ft"><a class="btn" href="#">Agregar al carrito</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">4 · Carrito</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Carrito (2)</span><span style="width: 44px"></span></div>
+<div class="bd">
+<div style="display: flex; gap: 12px"><div class="img" style="width: 80px; height: 96px; flex: none"></div><div style="display: flex; flex-direction: column; gap: 4px; flex: 1"><span style="font-size: 14px; font-weight: 600">Polo algodón pima</span><span class="mut">Arena · M</span><div style="display: flex; justify-content: space-between; align-items: center"><div style="display: flex; align-items: center; gap: 10px; border: 1px solid #CDD2D8; border-radius: 10px; padding: 2px 10px"><span>−</span><span>1</span><span>+</span></div><span style="font-weight: 700">S/ 79</span></div></div></div>
+<div class="sep"></div>
+<div style="display: flex; gap: 12px"><div class="img" style="width: 80px; height: 96px; flex: none"></div><div style="display: flex; flex-direction: column; gap: 4px; flex: 1"><span style="font-size: 14px; font-weight: 600">Camisa lino</span><span class="mut">Blanco · L</span><div style="display: flex; justify-content: space-between; align-items: center"><div style="display: flex; align-items: center; gap: 10px; border: 1px solid #CDD2D8; border-radius: 10px; padding: 2px 10px"><span>−</span><span>1</span><span>+</span></div><span style="font-weight: 700">S/ 129</span></div></div></div>
+<div class="sep"></div>
+<label class="fld"><span class="lbl">Cupón de descuento</span><input placeholder="Ingresa tu código"></label>
+<div style="display: flex; flex-direction: column; gap: 8px; margin-top: auto">
+<div class="li"><span>Subtotal</span><span>S/ 208</span></div>
+<div class="li"><span>Envío</span><span class="mut">Se calcula en el checkout</span></div>
+<div class="li" style="font-weight: 700; font-size: 16px"><span>Total</span><span>S/ 208</span></div>
+</div>
+</div>
+<div class="ft"><a class="btn" href="#">Ir a pagar</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">5 · Checkout</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Checkout</span><span class="mut" style="width: 44px; text-align: right">2/2</span></div>
+<div class="bd" style="gap: 10px">
+<span class="mut">Compras como invitado · <a href="#">Iniciar sesión</a></span>
+<label class="fld"><span class="lbl">Correo</span><input value="cliente@correo.com"></label>
+<label class="fld"><span class="lbl">Dirección de entrega</span><input value="Av. Larco 123, Miraflores"></label>
+<span class="lbl" style="margin-top: 4px">Entrega</span>
+<div class="card" style="flex-direction: row; justify-content: space-between; border-color: var(--a); font-size: 14px"><span>Delivery · 2–3 días</span><span style="font-weight: 700">S/ 10</span></div>
+<div class="card" style="flex-direction: row; justify-content: space-between; font-size: 14px"><span>Recojo en tienda</span><span style="font-weight: 700">Gratis</span></div>
+<span class="lbl" style="margin-top: 4px">Pago</span>
+<div style="display: flex; gap: 8px"><button class="chip on">Tarjeta</button><button class="chip">Yape / Plin</button><button class="chip">Contra entrega</button></div>
+<div style="display: flex; gap: 8px"><button class="chip on">Boleta</button><button class="chip">Factura</button></div>
+<div class="li" style="font-weight: 700; font-size: 16px; margin-top: auto"><span>Total a pagar</span><span>S/ 218</span></div>
+</div>
+<div class="ft"><a class="btn" href="#">Pagar S/ 218</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">6 · Confirmación</span>
+<div class="phone">
+<div class="bar"><span></span><span>Pedido confirmado</span><span></span></div>
+<div class="bd" style="align-items: center; text-align: center; gap: 12px; padding-top: 28px">
+<div class="okc"><svg class="ico" style="width: 30px; height: 30px" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+<h2 class="h" style="font-size: 22px">¡Gracias por tu compra!</h2>
+<span class="mut">Pedido #[N] · te enviamos el detalle a cliente@correo.com</span>
+<div class="card" style="width: 100%; box-sizing: border-box; text-align: left; font-size: 14px">
+<span class="lbl">Seguimiento</span>
+<div style="display: flex; gap: 6px"><span style="flex: 1; height: 6px; border-radius: 3px; background: var(--a)"></span><span style="flex: 1; height: 6px; border-radius: 3px; background: #E3E6EA"></span><span style="flex: 1; height: 6px; border-radius: 3px; background: #E3E6EA"></span></div>
+<div style="display: flex; justify-content: space-between; font-size: 12px"><span style="font-weight: 700">Recibido</span><span class="mut" style="font-size: 12px">En camino</span><span class="mut" style="font-size: 12px">Entregado</span></div>
+</div>
+<div class="card" style="width: 100%; box-sizing: border-box; text-align: left; font-size: 14px; gap: 6px">
+<div class="li"><span>2 productos</span><span>S/ 208</span></div>
+<div class="li"><span>Envío</span><span>S/ 10</span></div>
+<div class="li" style="font-weight: 700"><span>Total pagado</span><span>S/ 218</span></div>
+<span class="mut">Boleta electrónica enviada por correo</span>
+</div>
+</div>
+<div class="ft" style="flex-direction: column; gap: 8px"><a class="btn" href="#" style="width: 100%; box-sizing: border-box">Ver mi pedido</a><button class="btn2" style="width: 100%">Seguir comprando</button></div>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#C2410C","options":["#C2410C","#1D4E89","#0F766E","#7E22CE"]},"$preview":{"width":2176,"height":980}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#C2410C' };
+}
+}
+</script>
+</body>
+</html>

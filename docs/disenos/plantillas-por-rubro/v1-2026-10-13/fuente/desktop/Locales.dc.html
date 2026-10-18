@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Locales desktop: flujo de alquiler</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#14171C}a:hover{color:#000}
+.rw{display:flex;gap:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px;width:1024px}
+.step{font-size:14px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#3D434C}
+.step i{font-style:normal;font-weight:500;text-transform:none;letter-spacing:0;color:#59606B}
+.scr{width:1024px;height:680px;background:#fff;border-radius:14px;border:1px solid #CDD2D8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(0,0,0,.05);position:relative}
+.chr{height:30px;flex:none;background:#F1F3F5;display:flex;align-items:center;gap:6px;padding:0 12px;border-bottom:1px solid #E3E6EA}
+.chr b{width:9px;height:9px;border-radius:50%;background:#CDD2D8}
+.url{margin-left:12px;background:#fff;border-radius:6px;padding:2px 12px;font-size:11px;color:#59606B;width:320px}
+.nav{height:60px;flex:none;display:flex;align-items:center;gap:28px;padding:0 32px;border-bottom:1px solid #EEF0F2;font-size:14px}
+.nav .lk{display:flex;gap:22px;color:#3D434C}
+.ct{flex:1;padding:24px 32px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.btn{appearance:none;border:0;border-radius:10px;background:var(--a);color:#fff;font:600 15px 'Figtree',sans-serif;height:46px;padding:0 22px;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.btn2{appearance:none;border:1.5px solid var(--a);border-radius:10px;background:#fff;color:var(--a);font:600 15px 'Figtree',sans-serif;height:46px;padding:0 22px}
+.img{background:color-mix(in srgb,var(--a) 14%,#F1F3F5);border-radius:10px;display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font-size:11px;color:#3D434C}
+.chip{border:1px solid #CDD2D8;border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap;background:#fff;color:#14171C;font-family:inherit}
+.on{background:var(--a);border-color:var(--a);color:#fff}
+.h{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;margin:0;line-height:1.15}
+.mut{color:#59606B;font-size:13px}
+.fld{border:1px solid #CDD2D8;border-radius:8px;padding:6px 12px;display:flex;flex-direction:column;gap:2px;background:#fff}
+.lbl{font-size:11px;color:#59606B;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fld input{border:0;padding:0;font:500 14px 'Figtree',sans-serif;color:#14171C;background:transparent;outline:none;width:100%}
+.sep{height:1px;background:#EEF0F2;flex:none}
+.li{display:flex;justify-content:space-between;font-size:14px;gap:8px}
+.tag{font-size:11px;font-weight:700;color:var(--a);text-transform:uppercase;letter-spacing:.05em}
+.card{border:1px solid #E3E6EA;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;background:#fff}
+.okc{width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,var(--a) 14%,#fff);color:var(--a);display:flex;align-items:center;justify-content:center}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.side{width:320px;flex:none;border:1px solid #E3E6EA;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 20px rgba(20,23,28,.06);background:#fff}
+.cb{display:flex;gap:8px;align-items:center;font-size:13px}
+.cb input{width:16px;height:16px;margin:0;accent-color:var(--a)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center;font-size:12px}
+.cal span{height:34px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:6px;line-height:1.1}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.ok{color:#0F5F3A;font-weight:600}
+</style>
+</helmet>
+<div style="--a: {{accent}}; font-family: 'Figtree', sans-serif; color: #14171C; background: #E9ECEF; width: 3232px; height: 1700px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span class="tag">Rubro · locales · desktop</span>
+<h1 class="h" style="font-size: 48px">Alquiler de salones</h1>
+<p style="margin: 0; font-size: 18px; color: #3D434C">Inicio por tipo de evento → salones con buscador de fecha e invitados → ficha con calendario por turno → cotizador en vivo → separación con plan de pagos → cronograma</p>
+</div>
+<p style="margin: 0; font-size: 15px; color: #3D434C; max-width: 640px; text-align: right">En desktop: la disponibilidad por turno se ve en la ficha sin pedirla, y el cotizador muestra el total actualizándose a la derecha mientras se eligen paquetes (patrón Peerspace / Tagvenue + cotizador inmediato).</p>
+</div>
+
+<div class="rw">
+<div class="col">
+<span class="step">1 · Inicio por tipo de evento <i>/</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">salonjardin.tutienda.pe</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Salón Jardín</span><span class="lk"><span>Salones</span><span>Paquetes</span><span>Galería</span><span>Contacto</span></span><span style="flex: 1"></span><span>WhatsApp</span><a class="btn" href="#" style="height: 38px; font-size: 14px">Cotizar</a></div>
+<div class="ct" style="padding: 0; gap: 0">
+<div class="img" style="height: 280px; border-radius: 0; flex-direction: column; align-items: flex-start; justify-content: center; gap: 10px; padding: 0 56px"><span class="h" style="font-size: 44px; color: #14171C">Tu celebración, sin preocupaciones</span><span style="font-size: 16px">Hasta 250 invitados · Surco · cochera para 40 autos</span></div>
+<div style="display: flex; gap: 10px; margin: -34px 56px 0; background: #fff; border: 1px solid #CDD2D8; border-radius: 14px; padding: 8px; box-shadow: 0 8px 24px rgba(20,23,28,.10)"><label class="fld" style="border: 0; flex: 1"><span class="lbl">Tipo de evento</span><input value="Quinceañero"></label><label class="fld" style="border: 0; border-left: 1px solid #E3E6EA; border-radius: 0; flex: 1"><span class="lbl">Fecha</span><input value="sáb 21 nov"></label><label class="fld" style="border: 0; border-left: 1px solid #E3E6EA; border-radius: 0; flex: 1"><span class="lbl">Invitados</span><input value="110"></label><a class="btn" href="#" style="height: auto">Ver salones libres</a></div>
+<div style="padding: 24px 56px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
+<div class="card" style="gap: 2px"><b style="font-size: 14px">Quinceañero</b><span class="mut">80–250 personas</span></div>
+<div class="card" style="gap: 2px"><b style="font-size: 14px">Boda</b><span class="mut">100–250 personas</span></div>
+<div class="card" style="gap: 2px"><b style="font-size: 14px">Infantil</b><span class="mut">30–80 personas</span></div>
+<div class="card" style="gap: 2px"><b style="font-size: 14px">Corporativo</b><span class="mut">20–200 personas</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">2 · Salones <i>/salones</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">salonjardin.tutienda.pe/salones?fecha=2026-11-21</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Salón Jardín</span><span class="lk"><span style="color: #14171C; font-weight: 700">Salones</span><span>Paquetes</span><span>Galería</span></span><span style="flex: 1"></span><span>WhatsApp</span></div>
+<div style="display: flex; gap: 10px; align-items: center; padding: 12px 32px; border-bottom: 1px solid #EEF0F2; background: #F8F9FA"><span class="chip">sáb 21 nov</span><span class="chip">110 invitados</span><span class="chip">Quinceañero</span><span style="flex: 1"></span><label class="cb"><input type="checkbox">Al aire libre</label><label class="cb"><input type="checkbox" checked>Con cochera</label></div>
+<div class="ct">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px">
+<div class="card" style="padding: 0; overflow: hidden; gap: 0"><div class="img" style="height: 200px; border-radius: 0">Foto</div><div style="padding: 14px; display: flex; flex-direction: column; gap: 6px"><span class="h" style="font-size: 18px">Salón Principal</span><span class="mut">Banquete 250 · Cóctel 350 · 400 m² · techado</span><div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 14px">desde <b>S/ 4 500</b> <span class="mut">por turno</span></span><span class="ok" style="font-size: 13px">Libre: día y noche</span></div></div></div>
+<div class="card" style="padding: 0; overflow: hidden; gap: 0"><div class="img" style="height: 200px; border-radius: 0">Foto</div><div style="padding: 14px; display: flex; flex-direction: column; gap: 6px"><span class="h" style="font-size: 18px">Terraza Jardín</span><span class="mut">Banquete 120 · Cóctel 180 · al aire libre con toldo</span><div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 14px">desde <b>S/ 2 800</b> <span class="mut">por turno</span></span><span class="ok" style="font-size: 13px">Libre: noche</span></div></div></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">3 · Ficha con calendario por turno <i>/salones/terraza-jardin</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">salonjardin.tutienda.pe/salones/terraza-jardin</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Salón Jardín</span><span class="lk"><span style="color: #14171C; font-weight: 700">Salones</span><span>Paquetes</span><span>Galería</span></span><span style="flex: 1"></span><span>WhatsApp</span></div>
+<div class="ct" style="flex-direction: row; gap: 28px">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 12px">
+<div style="display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: 110px 110px; gap: 8px"><div class="img" style="grid-row: span 2; justify-content: center">Recorrido 360°</div><div class="img"></div><div class="img" style="justify-content: center">Plano y distribución</div></div>
+<h2 class="h" style="font-size: 26px">Terraza Jardín</h2>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; text-align: center"><div class="card" style="padding: 8px; gap: 0"><b>120</b><span class="mut" style="font-size: 12px">banquete</span></div><div class="card" style="padding: 8px; gap: 0"><b>180</b><span class="mut" style="font-size: 12px">cóctel</span></div><div class="card" style="padding: 8px; gap: 0"><b>6 h</b><span class="mut" style="font-size: 12px">por turno</span></div></div>
+<span class="mut">Incluye mesas, sillas, mantelería, sonido básico, seguridad y limpieza.</span>
+</div>
+<div class="side">
+<div style="display: flex; justify-content: space-between; align-items: center"><b>Noviembre 2026</b><span class="mut">‹ ›</span></div>
+<div style="display: flex; gap: 12px; font-size: 11px"><span style="display: flex; gap: 4px; align-items: center"><span class="dot" style="background: var(--a)"></span>Día y noche</span><span style="display: flex; gap: 4px; align-items: center"><span class="dot" style="background: #E7A23B"></span>Un turno</span><span style="display: flex; gap: 4px; align-items: center"><span class="dot" style="background: #CDD2D8"></span>Ocupado</span></div>
+<div class="cal">
+<span class="mut">L</span><span class="mut">M</span><span class="mut">M</span><span class="mut">J</span><span class="mut">V</span><span class="mut">S</span><span class="mut">D</span>
+<span>9<i class="dot" style="background: var(--a); width: 5px; height: 5px"></i></span><span>10<i class="dot" style="background: var(--a); width: 5px; height: 5px"></i></span><span>11<i class="dot" style="background: var(--a); width: 5px; height: 5px"></i></span><span>12<i class="dot" style="background: var(--a); width: 5px; height: 5px"></i></span><span>13<i class="dot" style="background: #E7A23B; width: 5px; height: 5px"></i></span><span style="color: #8A9099">14<i class="dot" style="background: #CDD2D8; width: 5px; height: 5px"></i></span><span>15<i class="dot" style="background: var(--a); width: 5px; height: 5px"></i></span>
+<span>16<i class="dot" style="background: var(--a); width: 5px; height: 5px"></i></span><span>17<i class="dot" style="background: var(--a); width: 5px; height: 5px"></i></span><span>18<i class="dot" style="background: var(--a); width: 5px; height: 5px"></i></span><span>19<i class="dot" style="background: var(--a); width: 5px; height: 5px"></i></span><span style="color: #8A9099">20<i class="dot" style="background: #CDD2D8; width: 5px; height: 5px"></i></span><span style="outline: 2px solid var(--a); font-weight: 700">21<i class="dot" style="background: #E7A23B; width: 5px; height: 5px"></i></span><span>22<i class="dot" style="background: var(--a); width: 5px; height: 5px"></i></span>
+</div>
+<span class="lbl">sáb 21 nov</span>
+<div style="display: flex; gap: 8px"><button class="chip" style="color: #8A9099; text-decoration: line-through">Día · 10–16 h</button><button class="chip on">Noche · 19–01 h</button></div>
+<div style="display: flex; align-items: baseline; gap: 6px"><b style="font-size: 20px">S/ 2 800</b><span class="mut">turno noche</span></div>
+<a class="btn" href="#">Cotizar mi evento</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="rw">
+<div class="col">
+<span class="step">4 · Cotizador en vivo <i>/cotizar</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">salonjardin.tutienda.pe/cotizar</span></div>
+<div class="nav" style="justify-content: space-between"><span class="h" style="font-size: 22px">Salón Jardín</span><span class="mut">Paso 1 de 2 · Cotización</span></div>
+<div class="ct" style="flex-direction: row; gap: 32px; background: #F8F9FA">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 12px">
+<span class="h" style="font-size: 18px">Tu evento</span>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px"><label class="fld"><span class="lbl">Fecha y turno</span><input value="sáb 21 nov · noche"></label><label class="fld"><span class="lbl">Invitados</span><input value="110"></label><label class="fld"><span class="lbl">Tipo</span><input value="Quinceañero"></label></div>
+<span class="h" style="font-size: 18px">Paquetes</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div class="card" style="border-color: var(--a); border-width: 2px"><div class="li"><b>Buffet criollo</b><span class="tag">Elegido</span></div><span class="mut">Entrada, 2 fondos, postre · S/ 55 por persona</span><b>S/ 6 050</b></div>
+<div class="card"><div class="li"><b>Cena servida</b><button class="chip">Elegir</button></div><span class="mut">3 tiempos · S/ 75 por persona</span><b>S/ 8 250</b></div>
+<div class="card"><div class="li"><b>DJ + luces</b><button class="chip">+ Agregar</button></div><span class="mut">5 horas</span><b>S/ 900</b></div>
+<div class="card"><div class="li"><b>Decoración temática</b><button class="chip">+ Agregar</button></div><span class="mut">Según temática</span><b>S/ 1 200</b></div>
+</div>
+</div>
+<div class="side">
+<span style="font-weight: 700">Tu cotización</span>
+<div class="li"><span>Terraza Jardín · noche</span><span>S/ 2 800</span></div>
+<div class="li"><span>Buffet × 110</span><span>S/ 6 050</span></div>
+<div class="sep"></div>
+<div class="li" style="font-weight: 700; font-size: 17px"><span>Total estimado</span><span>S/ 8 850</span></div>
+<span class="mut" style="font-size: 12px">Separas con el 30% (S/ 2 655). El resto, en cuotas hasta una semana antes.</span>
+<a class="btn" href="#">Separar la fecha</a>
+<button class="btn2">Descargar cotización PDF</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">5 · Separación y plan de pagos <i>/cotizar/separar</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">salonjardin.tutienda.pe/cotizar/separar</span></div>
+<div class="nav" style="justify-content: space-between"><span class="h" style="font-size: 22px">Salón Jardín</span><span class="mut">Paso 2 de 2 · Separación</span></div>
+<div class="ct" style="flex-direction: row; gap: 32px; background: #F8F9FA">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 12px">
+<span class="h" style="font-size: 18px">Datos del responsable</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px"><label class="fld"><span class="lbl">Responsable</span><input value="Rosa Mendoza"></label><label class="fld"><span class="lbl">DNI</span><input value="4…"></label><label class="fld"><span class="lbl">Celular</span><input value="9…"></label><label class="fld"><span class="lbl">Agasajada</span><input value="Valentina · 15 años"></label></div>
+<span class="h" style="font-size: 18px">Plan de pagos</span>
+<div class="card" style="gap: 8px">
+<div class="li"><span style="display: flex; gap: 8px; align-items: center"><span class="dot" style="background: var(--a)"></span>Separación · hoy · 30%</span><b>S/ 2 655</b></div>
+<div class="li"><span style="display: flex; gap: 8px; align-items: center"><span class="dot" style="background: #CDD2D8"></span>2.° pago · 22 oct</span><span>S/ 3 100</span></div>
+<div class="li"><span style="display: flex; gap: 8px; align-items: center"><span class="dot" style="background: #CDD2D8"></span>Saldo · 15 nov</span><span>S/ 3 095</span></div>
+</div>
+<div style="display: flex; gap: 8px"><button class="chip on">Transferencia</button><button class="chip">Tarjeta</button><button class="chip">Yape</button></div>
+</div>
+<div class="side">
+<div class="img" style="height: 100px">Terraza Jardín</div>
+<b>sáb 21 nov · noche 19–01 h</b>
+<span class="mut">Quinceañero · 110 invitados · buffet criollo</span>
+<div class="sep"></div>
+<div class="li"><span>Total del evento</span><span>S/ 8 850</span></div>
+<div class="li" style="font-weight: 700; font-size: 17px"><span>Pagas hoy</span><span>S/ 2 655</span></div>
+<a class="btn" href="#">Pagar separación</a>
+<span class="mut" style="font-size: 12px">La fecha queda bloqueada 48 h mientras validamos tu pago.</span>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">6 · Confirmación y cronograma <i>/reserva/[CÓDIGO]</i></span>
+<div class="scr">
+<div class="chr"><b></b><b></b><b></b><span class="url">salonjardin.tutienda.pe/reserva/[CÓDIGO]</span></div>
+<div class="nav"><span class="h" style="font-size: 22px">Salón Jardín</span><span class="lk"><span>Salones</span><span>Paquetes</span><span>Galería</span></span><span style="flex: 1"></span><span>WhatsApp</span></div>
+<div class="ct" style="flex-direction: row; gap: 32px; padding-top: 32px">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+<div class="okc"><svg class="ico" style="width: 30px; height: 30px" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+<h2 class="h" style="font-size: 32px">¡El 21 de noviembre es tuyo!</h2>
+<span class="mut" style="font-size: 15px">Reserva [CÓDIGO] · Terraza Jardín · turno noche</span>
+<div class="card" style="gap: 6px"><span class="lbl">Siguientes pasos</span><span style="font-size: 14px">1. Visita técnica y degustación: te escribimos en menos de 24 h.</span><span style="font-size: 14px">2. Lista de proveedores externos hasta el 8 nov.</span><span style="font-size: 14px">3. Distribución de mesas final hasta el 15 nov.</span></div>
+<div style="display: flex; gap: 10px"><a class="btn" href="#">Hablar con mi coordinadora</a><button class="btn2">Descargar contrato</button></div>
+</div>
+<div class="side">
+<span style="font-weight: 700">Cronograma de pagos</span>
+<div class="li"><span>Separación</span><span class="ok">Pagado</span></div>
+<div class="li"><span>2.° pago · 22 oct</span><span>S/ 3 100</span></div>
+<div class="li"><span>Saldo · 15 nov</span><span>S/ 3 095</span></div>
+<div style="height: 8px; border-radius: 4px; background: #E3E6EA; overflow: hidden"><div style="width: 30%; height: 8px; background: var(--a)"></div></div>
+<span class="mut" style="font-size: 12px">Pagado S/ 2 655 de S/ 8 850</span>
+<button class="btn2">Pagar siguiente cuota</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#9D174D","options":["#9D174D","#7C2D12","#1D4E89","#14171C"]},"$preview":{"width":3232,"height":1700}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#9D174D' };
+}
+}
+</script>
+</body>
+</html>

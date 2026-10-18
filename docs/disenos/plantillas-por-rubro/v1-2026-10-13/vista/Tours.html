@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Tours: flujo de reserva</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#14171C}a:hover{color:#000}
+.row{display:flex;gap:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px;width:320px}
+.step{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#3D434C}
+.phone{width:320px;height:700px;background:#fff;border-radius:28px;border:1px solid #CDD2D8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.bar{height:52px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #EEF0F2;font-weight:700;font-size:15px}
+.bd{flex:1;padding:16px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.ft{flex:none;padding:12px 16px 16px;border-top:1px solid #EEF0F2;display:flex;align-items:center;gap:12px}
+.btn{appearance:none;border:0;border-radius:12px;background:var(--a);color:#fff;font:600 15px 'Figtree',sans-serif;height:48px;padding:0 18px;flex:1;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.btn2{appearance:none;border:1.5px solid var(--a);border-radius:12px;background:#fff;color:var(--a);font:600 15px 'Figtree',sans-serif;height:48px;padding:0 18px;flex:1}
+.img{background:color-mix(in srgb,var(--a) 14%,#F1F3F5);border-radius:12px;display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font-size:11px;color:#3D434C}
+.chip{border:1px solid #CDD2D8;border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap;background:#fff;color:#14171C;font-family:inherit}
+.on{background:var(--a);border-color:var(--a);color:#fff}
+.h{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;margin:0;line-height:1.15}
+.mut{color:#59606B;font-size:13px}
+.fld{border:1px solid #CDD2D8;border-radius:10px;padding:7px 12px;display:flex;flex-direction:column;gap:2px}
+.lbl{font-size:11px;color:#59606B;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fld input{border:0;padding:0;font:500 14px 'Figtree',sans-serif;color:#14171C;background:transparent;outline:none;width:100%}
+.sep{height:1px;background:#EEF0F2;flex:none}
+.li{display:flex;justify-content:space-between;font-size:14px;gap:8px}
+.tag{font-size:11px;font-weight:700;color:var(--a);text-transform:uppercase;letter-spacing:.05em}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ib{appearance:none;border:0;background:transparent;padding:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#14171C}
+.card{border:1px solid #E3E6EA;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.okc{width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,var(--a) 14%,#fff);color:var(--a);display:flex;align-items:center;justify-content:center}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center;font-size:13px}
+.cal span{height:34px;display:flex;align-items:center;justify-content:center;border-radius:8px}
+</style>
+</helmet>
+<div style="--a: #0F766E; font-family: 'Figtree', sans-serif; color: #14171C; background: #E9ECEF; width: 2176px; height: 980px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span class="tag">Rubro · tours</span>
+<h1 class="h" style="font-size: 44px">Tours y experiencias</h1>
+<p style="margin: 0; font-size: 17px; color: #3D434C">Inicio → listado con filtros → ficha del tour → fecha y viajeros → datos y pago → voucher</p>
+</div>
+<p style="margin: 0; font-size: 14px; color: #3D434C; max-width: 520px; text-align: right">Patrón de referencia: Viator / GetYourGuide / FareHarbor; checklist de ficha de Viator y estudio Baymard de tours.</p>
+</div>
+<div class="row">
+
+<div class="col">
+<span class="step">1 · Inicio</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Menú"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><span class="h" style="font-size: 18px">Andes Trek</span><button class="chip" style="padding: 4px 10px">EN</button></div>
+<div class="bd">
+<div class="img" style="height: 180px; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 4px; padding: 14px"><span class="h" style="font-size: 22px; color: #14171C">Vive Cusco con locales</span><span style="font-size: 13px">Operador autorizado · RUC [N]</span></div>
+<label class="fld" style="flex-direction: row; align-items: center; gap: 8px"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg><input placeholder="¿A dónde quieres ir?" aria-label="Buscar tours"></label>
+<div style="display: flex; gap: 8px; overflow: hidden"><span class="chip">Día completo</span><span class="chip">Trekking</span><span class="chip">Cultural</span><span class="chip">Aventura</span></div>
+<span class="h" style="font-size: 16px">Más reservados</span>
+<div style="display: flex; gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 4px; width: 150px; flex: none"><div class="img" style="height: 110px">Foto</div><span style="font-size: 13px; font-weight: 600">Machu Picchu full day</span><span class="mut" style="font-size: 12px">14 h · desde <b style="color: #14171C">S/ 890</b></span></div>
+<div style="display: flex; flex-direction: column; gap: 4px; width: 150px; flex: none"><div class="img" style="height: 110px">Foto</div><span style="font-size: 13px; font-weight: 600">Montaña de Colores</span><span class="mut" style="font-size: 12px">12 h · desde <b style="color: #14171C">S/ 120</b></span></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">2 · Listado y filtros</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Tours en Cusco</span><button class="ib" aria-label="Filtros"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg></button></div>
+<div class="bd" style="gap: 12px">
+<div style="display: flex; gap: 8px; overflow: hidden"><button class="chip on">Hasta 1 día</button><button class="chip">Dificultad</button><button class="chip">Con almuerzo</button></div>
+<div style="display: flex; gap: 12px"><div class="img" style="width: 100px; height: 112px; flex: none"></div><div style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; font-weight: 700">Valle Sagrado VIP</span><span class="mut" style="font-size: 12px">10 h · Moderado · Almuerzo</span><span class="mut" style="font-size: 12px">★ 4,9 · [N] reseñas</span><span style="font-size: 12px; color: #0F5F3A; font-weight: 600">Cancelación gratis 24 h</span><span style="font-size: 14px">desde <b>S/ 180</b></span></div></div>
+<div class="sep"></div>
+<div style="display: flex; gap: 12px"><div class="img" style="width: 100px; height: 112px; flex: none"></div><div style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; font-weight: 700">Montaña de Colores</span><span class="mut" style="font-size: 12px">12 h · Exigente · Desayuno</span><span class="mut" style="font-size: 12px">★ 4,7 · [N] reseñas</span><span style="font-size: 12px; color: #0F5F3A; font-weight: 600">Cancelación gratis 24 h</span><span style="font-size: 14px">desde <b>S/ 120</b></span></div></div>
+<div class="sep"></div>
+<div style="display: flex; gap: 12px"><div class="img" style="width: 100px; height: 112px; flex: none"></div><div style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; font-weight: 700">City tour + Sacsayhuamán</span><span class="mut" style="font-size: 12px">4 h · Fácil · Tarde</span><span class="mut" style="font-size: 12px">★ 4,8 · [N] reseñas</span><span style="font-size: 14px">desde <b>S/ 60</b></span></div></div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">3 · Ficha del tour</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span></span><button class="ib" aria-label="Compartir"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 9l5-5 5 5M5 15v4h14v-4"/></svg></button></div>
+<div class="bd" style="gap: 10px">
+<div class="img" style="height: 150px; justify-content: center">Galería · 1 / 12</div>
+<h2 class="h" style="font-size: 19px">Valle Sagrado VIP</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; font-size: 12px"><span>Duración 10 h</span><span>Salida 7:00</span><span>Recojo en hotel</span><span>Guía ES / EN</span></div>
+<div class="card" style="gap: 4px; font-size: 13px"><span class="lbl">Itinerario</span><span>7:00 Recojo · 9:30 Pisac · 13:00 Almuerzo · 15:00 Ollantaytambo</span></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; font-size: 12px"><div class="card" style="padding: 8px; gap: 2px"><span class="lbl">Incluye</span><span>Transporte, guía, almuerzo</span></div><div class="card" style="padding: 8px; gap: 2px"><span class="lbl">No incluye</span><span>Boleto turístico</span></div></div>
+<div class="img" style="height: 60px; justify-content: center">Mapa · punto de encuentro</div>
+<span class="mut" style="font-size: 12px">No apto para menores de 5 años · <a href="#">Ver reseñas</a></span>
+</div>
+<div class="ft"><div style="display: flex; flex-direction: column"><span class="mut" style="font-size: 12px">desde</span><span style="font-weight: 700; font-size: 17px">S/ 180</span></div><a class="btn" href="#">Ver fechas</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">4 · Fecha y viajeros</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Elige tu fecha</span><span class="mut" style="width: 44px; text-align: right">1/2</span></div>
+<div class="bd" style="gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 700">Noviembre 2026</span><span class="mut">‹ ›</span></div>
+<div class="cal">
+<span class="mut">L</span><span class="mut">M</span><span class="mut">M</span><span class="mut">J</span><span class="mut">V</span><span class="mut">S</span><span class="mut">D</span>
+<span></span><span></span><span></span><span></span><span></span><span></span><span style="color: #8A9099">1</span>
+<span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
+<span>9</span><span>10</span><span>11</span><span>12</span><span style="background: var(--a); color: #fff; font-weight: 700">13</span><span>14</span><span>15</span>
+<span>16</span><span>17</span><span style="color: #8A9099; text-decoration: line-through">18</span><span>19</span><span>20</span><span>21</span><span>22</span>
+</div>
+<span class="lbl">Horario de salida</span>
+<div style="display: flex; gap: 8px"><button class="chip on">7:00 · 6 cupos</button><button class="chip">8:30 · 2 cupos</button></div>
+<span class="lbl">Viajeros</span>
+<div class="li" style="align-items: center"><span>Adultos · S/ 180</span><span style="display: flex; gap: 14px; border: 1px solid #CDD2D8; border-radius: 10px; padding: 4px 12px">− 2 +</span></div>
+<div class="li" style="align-items: center"><span>Niños 5–11 · S/ 120</span><span style="display: flex; gap: 14px; border: 1px solid #CDD2D8; border-radius: 10px; padding: 4px 12px">− 0 +</span></div>
+</div>
+<div class="ft"><div style="display: flex; flex-direction: column"><span class="mut" style="font-size: 12px">Total</span><span style="font-weight: 700; font-size: 17px">S/ 360</span></div><a class="btn" href="#">Continuar</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">5 · Datos y pago</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Datos y pago</span><span class="mut" style="width: 44px; text-align: right">2/2</span></div>
+<div class="bd" style="gap: 10px">
+<div class="card" style="font-size: 13px; gap: 4px"><span style="font-weight: 700; font-size: 14px">Valle Sagrado VIP</span><span>vie 13 nov · 7:00 · 2 adultos</span><span style="color: #0F5F3A; font-weight: 600">Cancelación gratis hasta el 12 nov, 7:00</span></div>
+<label class="fld"><span class="lbl">Viajero principal</span><input value="John Smith"></label>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><label class="fld"><span class="lbl">Pasaporte</span><input value="X12…"></label><label class="fld"><span class="lbl">Nacionalidad</span><input value="EE. UU."></label></div>
+<label class="fld"><span class="lbl">WhatsApp</span><input value="+1 …"></label>
+<label class="fld"><span class="lbl">Hotel para el recojo</span><input value="Casa Killa, San Blas"></label>
+<span class="lbl" style="margin-top: 4px">Pago</span>
+<div style="display: flex; gap: 8px"><button class="chip on">Tarjeta</button><button class="chip">PayPal</button><button class="chip">Yape</button></div>
+<span class="mut" style="font-size: 12px">Turistas extranjeros: exonerado de IGV</span>
+</div>
+<div class="ft"><a class="btn" href="#">Pagar S/ 360</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">6 · Voucher</span>
+<div class="phone">
+<div class="bar"><span></span><span>Reserva confirmada</span><span></span></div>
+<div class="bd" style="align-items: center; text-align: center; gap: 12px; padding-top: 24px">
+<div class="okc"><svg class="ico" style="width: 30px; height: 30px" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+<h2 class="h" style="font-size: 22px">¡Listo, John!</h2>
+<div class="card" style="width: 100%; box-sizing: border-box; align-items: center; gap: 8px">
+<div style="width: 120px; height: 120px; border-radius: 8px; background: repeating-linear-gradient(90deg, #14171C 0 6px, #fff 6px 12px)" role="img" aria-label="Código QR del voucher"></div>
+<span class="h" style="font-size: 18px; letter-spacing: .06em">[CÓDIGO]</span>
+</div>
+<div class="card" style="width: 100%; box-sizing: border-box; text-align: left; font-size: 13px; gap: 4px">
+<span style="font-weight: 700">Recojo: vie 13 nov, 6:45</span>
+<span>Lobby de Casa Killa, San Blas</span>
+<span class="mut">Lleva: abrigo, bloqueador, efectivo para el boleto turístico</span>
+</div>
+</div>
+<div class="ft" style="flex-direction: column; gap: 8px"><a class="btn" href="#" style="width: 100%; box-sizing: border-box">Descargar voucher</a><button class="btn2" style="width: 100%">Contactar al guía</button></div>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#0F766E","options":["#0F766E","#1D4E89","#C2410C","#14171C"]},"$preview":{"width":2176,"height":980}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#0F766E' };
+}
+}
+</script>
+</body>
+</html>

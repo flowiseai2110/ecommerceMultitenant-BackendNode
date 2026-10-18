@@ -1,7 +1,7 @@
 # Spec: selector de fechas
 
 > Estado (2026-10-16): spec, tareas y análisis de patrones escritos. Nada implementado.
-> Prototipo y mapa de uso: claude.ai/artifact/MGNhGAvQ1HfgtXVJdYazkd (propuestas 0–4 y sección "Mapa de uso").
+> Prototipo y mapa de uso: claude.ai/artifact/MGNhGAvQ1HfgtXVJdYazkd (propuestas 0–4 y sección "Mapa de uso"). Copia en el repo: [docs/disenos/selector-fechas/](../../disenos/selector-fechas/).
 > Repos: FrontendStore (vitrina) y FrontendAdmin (panel). BackendNode sin cambios (D1 no aplica).
 > Tareas: [tasks.md](tasks.md). Patrones de implementación: [patrones.md](patrones.md).
 

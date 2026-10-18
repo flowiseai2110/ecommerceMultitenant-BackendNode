@@ -2,7 +2,7 @@
 
 > Estado: **implementado y verificado** (2026-10-12): SQL aplicado en Supabase, tienda demo `los-cedros` (`scripts/seed-canchas.mjs`, dueño `canchas@yopmail.com`) y flujo probado por el usuario. Falta commit y deploy.
 > Repos: BackendNode, FrontendStore, FrontendAdmin.
-> Diseño de la vista del cliente: maqueta aprobada "Cancha Los Cedros" (claude.ai/artifact/1pvieL2mWPLwB4XYJHwb98).
+> Diseño de la vista del cliente: maqueta aprobada "Cancha Los Cedros" (claude.ai/artifact/1pvieL2mWPLwB4XYJHwb98). Copia en el repo: [docs/disenos/cancha-los-cedros/](../../disenos/cancha-los-cedros/).
 > Base: [perfil-negocio](../perfil-negocio/spec.md) (Strategy por rubro), [layout-por-rubro](../layout-por-rubro/spec.md) (Abstract Factory de piezas), [mini-booking](../mini-booking/spec.md) (estados, pago y seguimiento), [alquiler-locales](../alquiler-locales/plan.md) (ocupaciones con restricción de exclusión).
 > Relacionado: [grabacion-canchas](../grabacion-canchas/spec.md) (se conecta con estas reservas más adelante).
 

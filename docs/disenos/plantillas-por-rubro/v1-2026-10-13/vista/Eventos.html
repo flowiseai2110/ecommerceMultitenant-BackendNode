@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Eventos: flujo de entradas</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#14171C}a:hover{color:#000}
+.row{display:flex;gap:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px;width:320px}
+.step{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#3D434C}
+.phone{width:320px;height:700px;background:#fff;border-radius:28px;border:1px solid #CDD2D8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.bar{height:52px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #EEF0F2;font-weight:700;font-size:15px}
+.bd{flex:1;padding:16px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.ft{flex:none;padding:12px 16px 16px;border-top:1px solid #EEF0F2;display:flex;align-items:center;gap:12px}
+.btn{appearance:none;border:0;border-radius:12px;background:var(--a);color:#fff;font:600 15px 'Figtree',sans-serif;height:48px;padding:0 18px;flex:1;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.btn2{appearance:none;border:1.5px solid var(--a);border-radius:12px;background:#fff;color:var(--a);font:600 15px 'Figtree',sans-serif;height:48px;padding:0 18px;flex:1}
+.img{background:color-mix(in srgb,var(--a) 14%,#F1F3F5);border-radius:12px;display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font-size:11px;color:#3D434C}
+.chip{border:1px solid #CDD2D8;border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap;background:#fff;color:#14171C;font-family:inherit}
+.on{background:var(--a);border-color:var(--a);color:#fff}
+.h{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;margin:0;line-height:1.15}
+.mut{color:#59606B;font-size:13px}
+.fld{border:1px solid #CDD2D8;border-radius:10px;padding:7px 12px;display:flex;flex-direction:column;gap:2px}
+.lbl{font-size:11px;color:#59606B;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fld input{border:0;padding:0;font:500 14px 'Figtree',sans-serif;color:#14171C;background:transparent;outline:none;width:100%}
+.sep{height:1px;background:#EEF0F2;flex:none}
+.li{display:flex;justify-content:space-between;font-size:14px;gap:8px}
+.tag{font-size:11px;font-weight:700;color:var(--a);text-transform:uppercase;letter-spacing:.05em}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ib{appearance:none;border:0;background:transparent;padding:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#14171C}
+.card{border:1px solid #E3E6EA;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.okc{width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,var(--a) 14%,#fff);color:var(--a);display:flex;align-items:center;justify-content:center}
+.dt{width:48px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px;border:1px solid #E3E6EA;padding:6px 0;line-height:1.1}
+</style>
+</helmet>
+<div style="--a: #7E22CE; font-family: 'Figtree', sans-serif; color: #14171C; background: #E9ECEF; width: 2176px; height: 980px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span class="tag">Rubro · eventos</span>
+<h1 class="h" style="font-size: 44px">Venta de entradas</h1>
+<p style="margin: 0; font-size: 17px; color: #3D434C">Agenda → eventos por fecha → página del evento → tipo de entrada → pago con tiempo reservado → entradas QR</p>
+</div>
+<p style="margin: 0; font-size: 14px; color: #3D434C; max-width: 520px; text-align: right">Patrón de referencia: Eventbrite / Joinnus / Teleticket; estudio Baymard de ticketing (precio final claro, compra sin cuenta).</p>
+</div>
+<div class="row">
+
+<div class="col">
+<span class="step">1 · Inicio · agenda</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Menú"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><span class="h" style="font-size: 18px">Sala Lima</span><button class="ib" aria-label="Mis entradas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6h16v2a2 2 0 000 4v2a2 2 0 000 4v2H4v-2a2 2 0 000-4v-2a2 2 0 000-4z"/></svg></button></div>
+<div class="bd">
+<div class="img" style="height: 200px; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 6px; padding: 14px"><span class="tag">Destacado</span><span class="h" style="font-size: 22px; color: #14171C">Noche de jazz criollo</span><span style="font-size: 13px">sáb 21 nov · 21:00</span><a class="btn" href="#" style="flex: none; height: 36px; font-size: 13px">Comprar entradas</a></div>
+<span class="h" style="font-size: 16px">Próximos</span>
+<div style="display: flex; gap: 12px; align-items: center"><div class="dt"><span class="mut" style="font-size: 11px">NOV</span><span style="font-weight: 700; font-size: 18px">15</span></div><div style="display: flex; flex-direction: column; gap: 2px; flex: 1"><span style="font-size: 14px; font-weight: 600">Stand-up: Funciones dobles</span><span class="mut" style="font-size: 12px">20:00 · desde S/ 45</span></div></div>
+<div class="sep"></div>
+<div style="display: flex; gap: 12px; align-items: center"><div class="dt"><span class="mut" style="font-size: 11px">NOV</span><span style="font-weight: 700; font-size: 18px">21</span></div><div style="display: flex; flex-direction: column; gap: 2px; flex: 1"><span style="font-size: 14px; font-weight: 600">Noche de jazz criollo</span><span class="mut" style="font-size: 12px">21:00 · desde S/ 60</span></div></div>
+<div class="sep"></div>
+<div style="display: flex; gap: 12px; align-items: center"><div class="dt"><span class="mut" style="font-size: 11px">DIC</span><span style="font-weight: 700; font-size: 18px">06</span></div><div style="display: flex; flex-direction: column; gap: 2px; flex: 1"><span style="font-size: 14px; font-weight: 600">Taller de cerámica</span><span class="mut" style="font-size: 12px">10:00 · <b style="color: #B42318">Agotado</b></span></div></div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">2 · Eventos por fecha</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Eventos</span><button class="ib" aria-label="Buscar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg></button></div>
+<div class="bd" style="gap: 12px">
+<div style="display: flex; gap: 8px; overflow: hidden"><button class="chip on">Este finde</button><button class="chip">Hoy</button><button class="chip">Música</button><button class="chip">Comedia</button></div>
+<div class="card" style="padding: 0; overflow: hidden; gap: 0"><div class="img" style="height: 120px; border-radius: 0">Afiche</div><div style="padding: 12px; display: flex; flex-direction: column; gap: 4px"><span class="tag">sáb 21 nov · 21:00</span><span style="font-weight: 700; font-size: 15px">Noche de jazz criollo</span><span class="mut" style="font-size: 12px">Sala Lima · Barranco</span><span style="font-size: 14px">desde <b>S/ 60</b></span></div></div>
+<div class="card" style="padding: 0; overflow: hidden; gap: 0"><div class="img" style="height: 120px; border-radius: 0">Afiche</div><div style="padding: 12px; display: flex; flex-direction: column; gap: 4px"><span class="tag">dom 22 nov · 17:00</span><span style="font-weight: 700; font-size: 15px">Matiné familiar</span><span class="mut" style="font-size: 12px">Sala Lima · Barranco</span><span style="font-size: 14px">desde <b>S/ 30</b></span></div></div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">3 · Página del evento</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span></span><button class="ib" aria-label="Compartir"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 9l5-5 5 5M5 15v4h14v-4"/></svg></button></div>
+<div class="bd" style="gap: 10px">
+<div class="img" style="height: 170px; justify-content: center">Afiche del evento</div>
+<h2 class="h" style="font-size: 21px">Noche de jazz criollo</h2>
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px">
+<div style="display: flex; gap: 8px; align-items: center"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span>sáb 21 nov · puertas 20:00 · show 21:00</span></div>
+<div style="display: flex; gap: 8px; align-items: center"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Sala Lima · Av. Grau 456, Barranco</span></div>
+</div>
+<p style="margin: 0; font-size: 13px; line-height: 1.45">Un repaso por valses y landós con cuarteto en vivo. Duración aprox. 2 h.</p>
+<div class="card" style="font-size: 12px; gap: 4px"><span class="lbl">Antes de ir</span><span>Mayores de 18 · sin reingreso · no hay devoluciones salvo cancelación</span></div>
+<div class="img" style="height: 70px; justify-content: center">Mapa del lugar</div>
+</div>
+<div class="ft"><div style="display: flex; flex-direction: column"><span class="mut" style="font-size: 12px">desde</span><span style="font-weight: 700; font-size: 17px">S/ 60</span></div><a class="btn" href="#">Comprar entradas</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">4 · Tipo de entrada</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Entradas</span><span class="mut" style="width: 44px; text-align: right">1/2</span></div>
+<div class="bd" style="gap: 10px">
+<span class="mut">sáb 21 nov · 21:00</span>
+<div class="card" style="flex-direction: row; justify-content: space-between; align-items: center"><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 14px">Preventa</span><span class="mut" style="font-size: 12px">hasta el 15 nov</span><span style="font-size: 14px; font-weight: 700">S/ 60</span></div><span style="display: flex; gap: 14px; border: 1px solid #CDD2D8; border-radius: 10px; padding: 4px 12px">− 2 +</span></div>
+<div class="card" style="flex-direction: row; justify-content: space-between; align-items: center"><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 14px">General</span><span style="font-size: 14px; font-weight: 700">S/ 80</span></div><span style="display: flex; gap: 14px; border: 1px solid #CDD2D8; border-radius: 10px; padding: 4px 12px">− 0 +</span></div>
+<div class="card" style="flex-direction: row; justify-content: space-between; align-items: center"><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 14px">Mesa VIP · 4 personas</span><span class="mut" style="font-size: 12px">incluye 1 botella</span><span style="font-size: 14px; font-weight: 700">S/ 480</span></div><span style="font-size: 12px; font-weight: 700; color: #B42318">Agotado</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px; margin-top: auto">
+<div class="li"><span>2 × Preventa</span><span>S/ 120</span></div>
+<div class="li"><span>Cargo por servicio</span><span>S/ 6</span></div>
+<div class="li" style="font-weight: 700; font-size: 16px"><span>Total final</span><span>S/ 126</span></div>
+</div>
+</div>
+<div class="ft"><a class="btn" href="#">Continuar</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">5 · Pago</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Pago</span><span class="mut" style="width: 44px; text-align: right">2/2</span></div>
+<div class="bd" style="gap: 10px">
+<div style="background: color-mix(in srgb, var(--a) 10%, #fff); border-radius: 10px; padding: 10px 12px; font-size: 13px; display: flex; justify-content: space-between"><span>Te guardamos las entradas</span><b>09:42</b></div>
+<span class="mut">Compras sin crear cuenta</span>
+<label class="fld"><span class="lbl">Nombre</span><input value="Lucía Rojas"></label>
+<label class="fld"><span class="lbl">DNI</span><input value="7…"></label>
+<label class="fld"><span class="lbl">Correo para recibir las entradas</span><input value="lucia@correo.com"></label>
+<span class="lbl" style="margin-top: 4px">Pago</span>
+<div style="display: flex; gap: 8px"><button class="chip on">Tarjeta</button><button class="chip">Yape / Plin</button></div>
+<div style="display: flex; gap: 8px"><button class="chip on">Boleta</button><button class="chip">Factura</button></div>
+<div class="li" style="font-weight: 700; font-size: 16px; margin-top: auto"><span>Total</span><span>S/ 126</span></div>
+</div>
+<div class="ft"><a class="btn" href="#">Pagar S/ 126</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">6 · Entradas QR</span>
+<div class="phone">
+<div class="bar"><span></span><span>Tus entradas</span><span></span></div>
+<div class="bd" style="gap: 12px; background: #F6F7F9">
+<div style="display: flex; gap: 10px; align-items: center"><div class="okc" style="width: 40px; height: 40px"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div><div style="display: flex; flex-direction: column"><span style="font-weight: 700">¡Compra confirmada!</span><span class="mut" style="font-size: 12px">Enviadas a lucia@correo.com</span></div></div>
+<div style="background: #fff; border-radius: 16px; border: 1px solid #E3E6EA; overflow: hidden; display: flex; flex-direction: column">
+<div style="padding: 14px; display: flex; flex-direction: column; gap: 2px; background: var(--a); color: #fff"><span style="font-weight: 700">Noche de jazz criollo</span><span style="font-size: 12px">sáb 21 nov · 21:00 · Sala Lima</span></div>
+<div style="padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 8px"><div style="width: 150px; height: 150px; border-radius: 8px; background: repeating-linear-gradient(0deg, #14171C 0 6px, #fff 6px 12px)" role="img" aria-label="Código QR de la entrada"></div><span style="font-size: 13px; font-weight: 600">Preventa · entrada 1 de 2</span><span class="mut" style="font-size: 12px">Desliza para ver la siguiente</span></div>
+</div>
+</div>
+<div class="ft" style="flex-direction: column; gap: 8px"><a class="btn" href="#" style="width: 100%; box-sizing: border-box">Guardar en el celular</a><button class="btn2" style="width: 100%">Transferir una entrada</button></div>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#7E22CE","options":["#7E22CE","#B42318","#1D4E89","#14171C"]},"$preview":{"width":2176,"height":980}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#7E22CE' };
+}
+}
+</script>
+</body>
+</html>

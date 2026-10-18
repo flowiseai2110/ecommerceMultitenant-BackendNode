@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Locales: flujo de alquiler</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#14171C}a:hover{color:#000}
+.row{display:flex;gap:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px;width:320px}
+.step{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#3D434C}
+.phone{width:320px;height:700px;background:#fff;border-radius:28px;border:1px solid #CDD2D8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.bar{height:52px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #EEF0F2;font-weight:700;font-size:15px}
+.bd{flex:1;padding:16px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.ft{flex:none;padding:12px 16px 16px;border-top:1px solid #EEF0F2;display:flex;align-items:center;gap:12px}
+.btn{appearance:none;border:0;border-radius:12px;background:var(--a);color:#fff;font:600 15px 'Figtree',sans-serif;height:48px;padding:0 18px;flex:1;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.btn2{appearance:none;border:1.5px solid var(--a);border-radius:12px;background:#fff;color:var(--a);font:600 15px 'Figtree',sans-serif;height:48px;padding:0 18px;flex:1}
+.img{background:color-mix(in srgb,var(--a) 14%,#F1F3F5);border-radius:12px;display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font-size:11px;color:#3D434C}
+.chip{border:1px solid #CDD2D8;border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap;background:#fff;color:#14171C;font-family:inherit}
+.on{background:var(--a);border-color:var(--a);color:#fff}
+.h{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;margin:0;line-height:1.15}
+.mut{color:#59606B;font-size:13px}
+.fld{border:1px solid #CDD2D8;border-radius:10px;padding:7px 12px;display:flex;flex-direction:column;gap:2px}
+.lbl{font-size:11px;color:#59606B;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fld input{border:0;padding:0;font:500 14px 'Figtree',sans-serif;color:#14171C;background:transparent;outline:none;width:100%}
+.sep{height:1px;background:#EEF0F2;flex:none}
+.li{display:flex;justify-content:space-between;font-size:14px;gap:8px}
+.tag{font-size:11px;font-weight:700;color:var(--a);text-transform:uppercase;letter-spacing:.05em}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ib{appearance:none;border:0;background:transparent;padding:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#14171C}
+.card{border:1px solid #E3E6EA;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.okc{width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,var(--a) 14%,#fff);color:var(--a);display:flex;align-items:center;justify-content:center}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+</style>
+</helmet>
+<div style="--a: {{accent}}; font-family: 'Figtree', sans-serif; color: #14171C; background: #E9ECEF; width: 2176px; height: 980px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span class="tag">Rubro · locales</span>
+<h1 class="h" style="font-size: 44px">Alquiler de salones</h1>
+<p style="margin: 0; font-size: 17px; color: #3D434C">Inicio por tipo de evento → salones → ficha del salón → cotización (fecha, turno, invitados, paquetes) → separación → cronograma de pagos</p>
+</div>
+<p style="margin: 0; font-size: 14px; color: #3D434C; max-width: 520px; text-align: right">Patrón de referencia: Peerspace / Tagvenue y guías de consultas de venues (disponibilidad visible, cotización inmediata, tiempo de respuesta).</p>
+</div>
+<div class="row">
+
+<div class="col">
+<span class="step">1 · Inicio por tipo de evento</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Menú"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><span class="h" style="font-size: 18px">Salón Jardín</span><button class="ib" aria-label="WhatsApp"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.5-4A8 8 0 1112 20a8 8 0 01-4-1l-4 1z"/></svg></button></div>
+<div class="bd">
+<div class="img" style="height: 190px; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 4px; padding: 14px"><span class="h" style="font-size: 22px; color: #14171C">Tu celebración, sin preocupaciones</span><span style="font-size: 13px">Hasta 250 invitados · Surco</span></div>
+<span class="h" style="font-size: 16px">¿Qué celebras?</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<div class="card" style="padding: 10px; gap: 2px"><span style="font-weight: 700; font-size: 14px">Quinceañero</span><span class="mut" style="font-size: 12px">80–250 personas</span></div>
+<div class="card" style="padding: 10px; gap: 2px"><span style="font-weight: 700; font-size: 14px">Boda</span><span class="mut" style="font-size: 12px">100–250 personas</span></div>
+<div class="card" style="padding: 10px; gap: 2px"><span style="font-weight: 700; font-size: 14px">Infantil</span><span class="mut" style="font-size: 12px">30–80 personas</span></div>
+<div class="card" style="padding: 10px; gap: 2px"><span style="font-weight: 700; font-size: 14px">Corporativo</span><span class="mut" style="font-size: 12px">20–200 personas</span></div>
+</div>
+<a class="btn" href="#" style="flex: none">Ver fechas disponibles</a>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">2 · Salones</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Salones</span><span style="width: 44px"></span></div>
+<div class="bd" style="gap: 12px">
+<div style="display: flex; gap: 8px; overflow: hidden"><button class="chip on">120 invitados</button><button class="chip">Cochera</button><button class="chip">Al aire libre</button></div>
+<div class="card" style="padding: 0; overflow: hidden; gap: 0"><div class="img" style="height: 120px; border-radius: 0">Foto</div><div style="padding: 12px; display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 700; font-size: 15px">Salón Principal</span><span class="mut" style="font-size: 12px">Banquete 250 · Cóctel 350 · 400 m²</span><span style="font-size: 14px">desde <b>S/ 4 500</b> <span class="mut" style="font-size: 12px">por turno</span></span></div></div>
+<div class="card" style="padding: 0; overflow: hidden; gap: 0"><div class="img" style="height: 120px; border-radius: 0">Foto</div><div style="padding: 12px; display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 700; font-size: 15px">Terraza Jardín</span><span class="mut" style="font-size: 12px">Banquete 120 · Cóctel 180 · al aire libre</span><span style="font-size: 14px">desde <b>S/ 2 800</b> <span class="mut" style="font-size: 12px">por turno</span></span></div></div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">3 · Ficha del salón</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Terraza Jardín</span><span style="width: 44px"></span></div>
+<div class="bd" style="gap: 10px">
+<div class="img" style="height: 150px; justify-content: center">Galería · recorrido 360°</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; text-align: center; font-size: 12px"><div class="card" style="padding: 8px; gap: 2px"><span style="font-weight: 700">120</span><span class="mut" style="font-size: 12px">banquete</span></div><div class="card" style="padding: 8px; gap: 2px"><span style="font-weight: 700">180</span><span class="mut" style="font-size: 12px">cóctel</span></div><div class="card" style="padding: 8px; gap: 2px"><span style="font-weight: 700">6 h</span><span class="mut" style="font-size: 12px">por turno</span></div></div>
+<div class="card" style="gap: 4px; font-size: 13px"><span class="lbl">Incluye</span><span>Mesas, sillas, mantelería, sonido básico, seguridad, limpieza</span></div>
+<div class="img" style="height: 72px; justify-content: center">Plano y distribución</div>
+<span class="lbl">Disponibilidad · noviembre</span>
+<div style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px"><span class="chip" style="padding: 4px 9px">vie 13 · noche</span><span class="chip" style="padding: 4px 9px">sáb 14 · día</span><span class="chip" style="padding: 4px 9px; color: #8A9099; text-decoration: line-through">sáb 14 · noche</span><span class="chip" style="padding: 4px 9px">sáb 21 · noche</span></div>
+</div>
+<div class="ft"><a class="btn" href="#">Cotizar mi evento</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">4 · Cotización</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Cotiza tu evento</span><span class="mut" style="width: 44px; text-align: right">1/2</span></div>
+<div class="bd" style="gap: 10px">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><label class="fld"><span class="lbl">Fecha</span><input value="sáb 21 nov"></label><label class="fld"><span class="lbl">Invitados</span><input value="110"></label></div>
+<span class="lbl">Turno</span>
+<div style="display: flex; gap: 8px"><button class="chip">Día · 10–16 h</button><button class="chip on">Noche · 19–01 h</button></div>
+<span class="lbl">Paquetes opcionales</span>
+<div class="card" style="flex-direction: row; justify-content: space-between; align-items: center; font-size: 14px; border-color: var(--a)"><div style="display: flex; flex-direction: column"><span>Buffet criollo</span><span class="mut" style="font-size: 12px">S/ 55 por persona</span></div><span style="font-weight: 700">S/ 6 050</span></div>
+<div class="card" style="flex-direction: row; justify-content: space-between; align-items: center; font-size: 14px"><div style="display: flex; flex-direction: column"><span>DJ + luces</span><span class="mut" style="font-size: 12px">5 horas</span></div><button class="chip">+ S/ 900</button></div>
+<div style="display: flex; flex-direction: column; gap: 6px; margin-top: auto">
+<div class="li"><span>Terraza Jardín · noche</span><span>S/ 2 800</span></div>
+<div class="li"><span>Buffet × 110</span><span>S/ 6 050</span></div>
+<div class="li" style="font-weight: 700; font-size: 16px"><span>Total estimado</span><span>S/ 8 850</span></div>
+</div>
+</div>
+<div class="ft"><a class="btn" href="#">Separar la fecha</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">5 · Separación</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Separa tu fecha</span><span class="mut" style="width: 44px; text-align: right">2/2</span></div>
+<div class="bd" style="gap: 10px">
+<label class="fld"><span class="lbl">Responsable</span><input value="Rosa Mendoza"></label>
+<label class="fld"><span class="lbl">Celular</span><input value="9…"></label>
+<label class="fld"><span class="lbl">Agasajada</span><input value="Valentina · 15 años"></label>
+<span class="lbl" style="margin-top: 4px">Plan de pagos</span>
+<div class="card" style="font-size: 13px; gap: 6px">
+<div class="li" style="font-size: 13px"><span style="display: flex; gap: 8px; align-items: center"><span class="dot" style="background: var(--a)"></span>Separación hoy · 30%</span><b>S/ 2 655</b></div>
+<div class="li" style="font-size: 13px"><span style="display: flex; gap: 8px; align-items: center"><span class="dot" style="background: #CDD2D8"></span>2.° pago · 22 oct</span><span>S/ 3 100</span></div>
+<div class="li" style="font-size: 13px"><span style="display: flex; gap: 8px; align-items: center"><span class="dot" style="background: #CDD2D8"></span>Saldo · 15 nov</span><span>S/ 3 095</span></div>
+</div>
+<div style="display: flex; gap: 8px"><button class="chip on">Transferencia</button><button class="chip">Tarjeta</button><button class="chip">Yape</button></div>
+<span class="mut" style="font-size: 12px">La fecha queda bloqueada 48 h mientras validamos tu pago.</span>
+</div>
+<div class="ft"><a class="btn" href="#">Pagar separación S/ 2 655</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">6 · Confirmación y cronograma</span>
+<div class="phone">
+<div class="bar"><span></span><span>Fecha separada</span><span></span></div>
+<div class="bd" style="align-items: center; text-align: center; gap: 12px; padding-top: 24px">
+<div class="okc"><svg class="ico" style="width: 30px; height: 30px" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+<h2 class="h" style="font-size: 22px">¡El 21 de noviembre es tuyo!</h2>
+<span class="mut">Reserva [CÓDIGO] · Terraza Jardín · noche</span>
+<div class="card" style="width: 100%; box-sizing: border-box; text-align: left; gap: 8px">
+<span class="lbl">Cronograma</span>
+<div class="li" style="font-size: 13px"><span>Separación</span><span style="color: #0F5F3A; font-weight: 700">Pagado</span></div>
+<div class="li" style="font-size: 13px"><span>2.° pago · 22 oct</span><span>S/ 3 100</span></div>
+<div class="li" style="font-size: 13px"><span>Saldo · 15 nov</span><span>S/ 3 095</span></div>
+<div style="height: 6px; border-radius: 3px; background: #E3E6EA; overflow: hidden"><div style="width: 30%; height: 6px; background: var(--a)"></div></div>
+</div>
+<div class="card" style="width: 100%; box-sizing: border-box; text-align: left; font-size: 13px; gap: 4px"><span class="lbl">Siguiente paso</span><span>Visita técnica y degustación: te escribimos en menos de 24 h.</span></div>
+</div>
+<div class="ft" style="flex-direction: column; gap: 8px"><a class="btn" href="#" style="width: 100%; box-sizing: border-box">Ver mi reserva</a><button class="btn2" style="width: 100%">Hablar con mi coordinadora</button></div>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#9D174D","options":["#9D174D","#7C2D12","#1D4E89","#14171C"]},"$preview":{"width":2176,"height":980}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#9D174D' };
+}
+}
+</script>
+</body>
+</html>

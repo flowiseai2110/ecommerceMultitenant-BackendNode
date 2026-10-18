@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Canchas: flujo de reserva</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#14171C}a:hover{color:#000}
+.row{display:flex;gap:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px;width:320px}
+.step{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#3D434C}
+.phone{width:320px;height:700px;background:#fff;border-radius:28px;border:1px solid #CDD2D8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.bar{height:52px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #EEF0F2;font-weight:700;font-size:15px}
+.bd{flex:1;padding:16px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.ft{flex:none;padding:12px 16px 16px;border-top:1px solid #EEF0F2;display:flex;align-items:center;gap:12px}
+.btn{appearance:none;border:0;border-radius:12px;background:var(--a);color:#fff;font:600 15px 'Figtree',sans-serif;height:48px;padding:0 18px;flex:1;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.btn2{appearance:none;border:1.5px solid var(--a);border-radius:12px;background:#fff;color:var(--a);font:600 15px 'Figtree',sans-serif;height:48px;padding:0 18px;flex:1}
+.img{background:color-mix(in srgb,var(--a) 14%,#F1F3F5);border-radius:12px;display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font-size:11px;color:#3D434C}
+.chip{border:1px solid #CDD2D8;border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap;background:#fff;color:#14171C;font-family:inherit}
+.on{background:var(--a);border-color:var(--a);color:#fff}
+.h{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;margin:0;line-height:1.15}
+.mut{color:#59606B;font-size:13px}
+.fld{border:1px solid #CDD2D8;border-radius:10px;padding:7px 12px;display:flex;flex-direction:column;gap:2px}
+.lbl{font-size:11px;color:#59606B;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fld input{border:0;padding:0;font:500 14px 'Figtree',sans-serif;color:#14171C;background:transparent;outline:none;width:100%}
+.sep{height:1px;background:#EEF0F2;flex:none}
+.li{display:flex;justify-content:space-between;font-size:14px;gap:8px}
+.tag{font-size:11px;font-weight:700;color:var(--a);text-transform:uppercase;letter-spacing:.05em}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ib{appearance:none;border:0;background:transparent;padding:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#14171C}
+.card{border:1px solid #E3E6EA;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.okc{width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,var(--a) 14%,#fff);color:var(--a);display:flex;align-items:center;justify-content:center}
+.day{display:flex;flex-direction:column;align-items:center;gap:2px;border:1px solid #E3E6EA;border-radius:10px;padding:6px 0;width:40px;flex:none;font-size:12px}
+.gr{display:grid;grid-template-columns:44px repeat(3,minmax(0,1fr));gap:4px;font-size:12px}
+.gr span{height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.lib{background:color-mix(in srgb,var(--a) 12%,#fff);border:1px solid color-mix(in srgb,var(--a) 35%,#fff);color:#14171C;font-weight:600}
+.ocu{background:#F1F3F5;color:#8A9099}
+.sel{background:var(--a);color:#fff;font-weight:700}
+</style>
+</helmet>
+<div style="--a: {{accent}}; font-family: 'Figtree', sans-serif; color: #14171C; background: #E9ECEF; width: 2176px; height: 980px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span class="tag">Rubro · canchas</span>
+<h1 class="h" style="font-size: 44px">Reserva de canchas por turno</h1>
+<p style="margin: 0; font-size: 17px; color: #3D434C">Inicio (deporte + día) → grilla cancha × hora → turno y duración → datos y pago → confirmación para compartir → mis reservas / repetir</p>
+</div>
+<p style="margin: 0; font-size: 14px; color: #3D434C; max-width: 520px; text-align: right">Patrón de referencia: Playtomic / MATCHi / Reservá tu cancha; guía Baymard de selectores de horario (jerarquía clara día → hora).</p>
+</div>
+<div class="row">
+
+<div class="col">
+<span class="step">1 · Inicio</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Menú"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><span class="h" style="font-size: 18px">Los Cedros</span><button class="ib" aria-label="Mis reservas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></button></div>
+<div class="bd">
+<div class="img" style="height: 160px; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 4px; padding: 14px"><span class="h" style="font-size: 22px; color: #14171C">Reserva tu cancha en 1 minuto</span><span style="font-size: 13px">Abierto 7:00 – 23:00</span></div>
+<span class="lbl">Deporte</span>
+<div style="display: flex; gap: 8px"><button class="chip on">Fútbol 7</button><button class="chip">Pádel</button><button class="chip">Vóley</button></div>
+<span class="lbl">Día</span>
+<div style="display: flex; gap: 6px"><span class="day" style="background: var(--a); color: #fff; border-color: var(--a)"><span>Hoy</span><b>13</b></span><span class="day"><span class="mut" style="font-size: 12px">mié</span><b>14</b></span><span class="day"><span class="mut" style="font-size: 12px">jue</span><b>15</b></span><span class="day"><span class="mut" style="font-size: 12px">vie</span><b>16</b></span><span class="day"><span class="mut" style="font-size: 12px">sáb</span><b>17</b></span><span class="day"><span class="mut" style="font-size: 12px">dom</span><b>18</b></span></div>
+<a class="btn" href="#" style="flex: none">Ver horarios libres</a>
+<div class="card" style="flex-direction: row; gap: 10px; align-items: center"><div class="img" style="width: 56px; height: 56px; flex: none"></div><div style="display: flex; flex-direction: column; font-size: 13px"><span style="font-weight: 700">Liga de los jueves</span><span class="mut" style="font-size: 12px">Tabla y próximos partidos</span></div></div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">2 · Grilla de horarios</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span style="display: flex; flex-direction: column; align-items: center; line-height: 1.2"><span>Hoy, mar 13</span><span class="mut" style="font-size: 12px; font-weight: 500">Fútbol 7</span></span><span style="width: 44px"></span></div>
+<div class="bd" style="gap: 10px">
+<div style="display: flex; gap: 12px; font-size: 12px"><span style="display: flex; gap: 6px; align-items: center"><span style="width: 12px; height: 12px; border-radius: 3px" class="lib"></span>Libre</span><span style="display: flex; gap: 6px; align-items: center"><span style="width: 12px; height: 12px; border-radius: 3px" class="ocu"></span>Ocupado</span></div>
+<div class="gr">
+<span></span><span style="font-weight: 700">Cancha 1</span><span style="font-weight: 700">Cancha 2</span><span style="font-weight: 700">Cancha 3</span>
+<span class="mut">17:00</span><span class="ocu">—</span><span class="lib">S/ 90</span><span class="ocu">—</span>
+<span class="mut">18:00</span><span class="ocu">—</span><span class="ocu">—</span><span class="lib">S/ 120</span>
+<span class="mut">19:00</span><span class="sel">S/ 120</span><span class="ocu">—</span><span class="lib">S/ 120</span>
+<span class="mut">20:00</span><span class="sel">S/ 120</span><span class="lib">S/ 120</span><span class="ocu">—</span>
+<span class="mut">21:00</span><span class="lib">S/ 120</span><span class="lib">S/ 120</span><span class="lib">S/ 120</span>
+<span class="mut">22:00</span><span class="lib">S/ 90</span><span class="ocu">—</span><span class="lib">S/ 90</span>
+</div>
+<span class="mut" style="font-size: 12px">Desde las 18:00 aplica tarifa nocturna (con luz).</span>
+</div>
+<div class="ft"><div style="display: flex; flex-direction: column"><span class="mut" style="font-size: 12px">Cancha 1 · 19–21 h</span><span style="font-weight: 700; font-size: 17px">S/ 240</span></div><a class="btn" href="#">Continuar</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">3 · Turno y duración</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Tu turno</span><span class="mut" style="width: 44px; text-align: right">1/2</span></div>
+<div class="bd" style="gap: 12px">
+<div class="img" style="height: 130px; justify-content: center">Foto · Cancha 1 · grass sintético</div>
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 16px">Cancha 1 · Fútbol 7</span><span class="mut">Hoy mar 13 · desde 19:00</span></div>
+<span class="lbl">Duración</span>
+<div style="display: flex; gap: 8px"><button class="chip">1 h</button><button class="chip">1 h 30</button><button class="chip on">2 h</button></div>
+<span class="lbl">Extras</span>
+<div class="card" style="flex-direction: row; justify-content: space-between; align-items: center; font-size: 14px"><span>Alquiler de pelota</span><button class="chip">+ S/ 10</button></div>
+<div class="card" style="flex-direction: row; justify-content: space-between; align-items: center; font-size: 14px"><span>Chalecos (14)</span><button class="chip">+ S/ 15</button></div>
+<div class="card" style="font-size: 12px; gap: 2px"><span class="lbl">Política</span><span>Cancela gratis hasta 6 h antes. Llega 10 min antes.</span></div>
+</div>
+<div class="ft"><div style="display: flex; flex-direction: column"><span class="mut" style="font-size: 12px">19:00 – 21:00</span><span style="font-weight: 700; font-size: 17px">S/ 240</span></div><a class="btn" href="#">Reservar</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">4 · Datos y pago</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Pago</span><span class="mut" style="width: 44px; text-align: right">2/2</span></div>
+<div class="bd" style="gap: 10px">
+<div style="background: color-mix(in srgb, var(--a) 10%, #fff); border-radius: 10px; padding: 10px 12px; font-size: 13px; display: flex; justify-content: space-between"><span>Turno guardado para ti</span><b>04:58</b></div>
+<label class="fld"><span class="lbl">Nombre</span><input value="Carlos Díaz"></label>
+<label class="fld"><span class="lbl">Celular</span><input value="9…"></label>
+<span class="lbl" style="margin-top: 4px">¿Cuánto pagas ahora?</span>
+<div class="card" style="flex-direction: row; justify-content: space-between; font-size: 14px; border-color: var(--a)"><div style="display: flex; flex-direction: column"><span>Adelanto</span><span class="mut" style="font-size: 12px">saldo en la cancha</span></div><span style="font-weight: 700">S/ 60</span></div>
+<div class="card" style="flex-direction: row; justify-content: space-between; font-size: 14px"><span>Total</span><span style="font-weight: 700">S/ 240</span></div>
+<div class="card" style="flex-direction: row; justify-content: space-between; font-size: 14px"><div style="display: flex; flex-direction: column"><span>Dividir entre jugadores</span><span class="mut" style="font-size: 12px">cada uno paga su parte por link</span></div><span style="font-weight: 700">S/ 17</span></div>
+<div style="display: flex; gap: 8px"><button class="chip on">Yape / Plin</button><button class="chip">Tarjeta</button></div>
+</div>
+<div class="ft"><a class="btn" href="#">Pagar S/ 60</a></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">5 · Confirmación</span>
+<div class="phone">
+<div class="bar"><span></span><span>¡Cancha reservada!</span><span></span></div>
+<div class="bd" style="align-items: center; text-align: center; gap: 12px; padding-top: 24px">
+<div class="okc"><svg class="ico" style="width: 30px; height: 30px" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+<h2 class="h" style="font-size: 22px">Hoy 19:00 · Cancha 1</h2>
+<span class="mut">Reserva [CÓDIGO] · Fútbol 7 · 2 h</span>
+<div class="card" style="width: 100%; box-sizing: border-box; text-align: left; font-size: 14px; gap: 6px">
+<div class="li"><span>Pagado</span><span>S/ 60</span></div>
+<div class="li"><span>Saldo en la cancha</span><span>S/ 180</span></div>
+</div>
+<div class="img" style="width: 100%; height: 90px; justify-content: center">Mapa · cómo llegar</div>
+<span class="mut" style="font-size: 12px">Muestra el código en recepción</span>
+</div>
+<div class="ft" style="flex-direction: column; gap: 8px"><a class="btn" href="#" style="width: 100%; box-sizing: border-box">Compartir con el equipo</a><button class="btn2" style="width: 100%">Agregar al calendario</button></div>
+</div>
+</div>
+
+<div class="col">
+<span class="step">6 · Mis reservas</span>
+<div class="phone">
+<div class="bar"><button class="ib" aria-label="Volver"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>Mis reservas</span><span style="width: 44px"></span></div>
+<div class="bd" style="gap: 12px">
+<div style="display: flex; gap: 8px"><button class="chip on">Próximas</button><button class="chip">Pasadas</button></div>
+<div class="card" style="gap: 6px"><div class="li"><span style="font-weight: 700">Hoy · 19:00 – 21:00</span><span class="tag">Confirmada</span></div><span class="mut">Cancha 1 · Fútbol 7 · saldo S/ 180</span><div style="display: flex; gap: 8px"><button class="chip">Cambiar horario</button><button class="chip">Cancelar</button></div></div>
+<div class="card" style="gap: 8px; border-color: var(--a)"><span style="font-weight: 700; font-size: 14px">¿Juegan todos los martes?</span><span class="mut">Reserva fija semanal: mismo día, hora y cancha.</span><a class="btn" href="#" style="flex: none; height: 40px; font-size: 14px">Repetir cada martes</a></div>
+<span class="lbl">Pasadas</span>
+<div class="li" style="font-size: 13px"><span>mar 6 oct · Cancha 1</span><button class="chip" style="padding: 4px 10px">Volver a reservar</button></div>
+<div class="li" style="font-size: 13px"><span>mar 29 set · Cancha 2</span><button class="chip" style="padding: 4px 10px">Volver a reservar</button></div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#15803D","options":["#15803D","#1D4E89","#C2410C","#14171C"]},"$preview":{"width":2176,"height":980}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#15803D' };
+}
+}
+</script>
+</body>
+</html>
