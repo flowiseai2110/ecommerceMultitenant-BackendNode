@@ -14,7 +14,7 @@
 
 > Sale de la memoria de sesiones anteriores, no de los repos. Los tres repos están sin cambios pendientes
 > al 2026-10-18, así que lo de "sin commit" probablemente ya está commiteado. Falta confirmar SQL, llaves y pruebas.
-> Pídele al `deployer` que lo verifique: *"@agente-deployer verifica el pendiente heredado de ESTADO.md"*.
+> Pídele al `ecommerce-proceso:deployer` que lo verifique: *"verifica el pendiente heredado de ESTADO.md"*.
 
 | Funcionalidad | Spec | Pendiente según memoria |
 |---|---|---|

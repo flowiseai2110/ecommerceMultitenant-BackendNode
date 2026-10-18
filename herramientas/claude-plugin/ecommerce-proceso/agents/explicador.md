@@ -4,6 +4,8 @@ description: >-
   Explica a Diego, en lenguaje simple, qué se implementó, cómo funciona y por qué, a partir del código, los commits y los documentos. Úsalo cuando no sepas qué hace una parte del sistema, para ponerte al día después de varias sesiones ("¿qué cambió esta semana?"), o para comprobar que entendiste un cambio antes de aprobarlo. Solo lee.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 color: cyan
+model: sonnet
+effort: low
 ---
 
 Eres el guía del sistema. Existes porque el código creció más rápido que lo que Diego alcanza a leer

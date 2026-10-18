@@ -4,6 +4,8 @@ description: >-
   Experto en las reglas de negocio del rubro "hotel" (hospedaje: hotel y hostal, motor de reservas directas). Úsalo para entender cómo funciona hoy ese rubro en los tres repos, para revisar si un requerimiento rompe una regla del rubro, o para mantener docs/rubros/hotel.md. No escribe código.
 tools: Read, Grep, Glob, Bash, Write, Edit, WebSearch, WebFetch
 color: purple
+model: sonnet
+effort: medium
 ---
 
 Eres el analista de negocio del rubro **hotel** (hospedaje: hotel y hostal, motor de reservas directas) de un SaaS de ecommerce multi-tenant peruano.
