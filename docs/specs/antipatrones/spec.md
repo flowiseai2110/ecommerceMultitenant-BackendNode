@@ -108,6 +108,13 @@ En las operaciones por clave, Prisma exige que la clave quede en la raíz del `w
 - **A3.5** Backend: el layout por defecto de cada rubro sale de `datos.diseno.layoutPorDefecto` (y el rubro de la tienda, de una capacidad), no de `tipoNegocio === "productos"`.
 - **A3.6** Fitness function en cada repo: un test que busca `tipo === '<rubro>'`, `tipoNegocio === '<rubro>'` y `es<Rubro>(` fuera de `negocio/<rubro>/` y de las carpetas de un solo rubro, y falla si encuentra alguno.
 
+  Hecho el 2026-10-18 (pieza 3). La tabla de arriba listaba 6 lugares, pero el barrido con el patrón de A3.6 encontró unos 50. Se corrigieron los de la tabla, y además todo `reservas.util.ts` y `reserva-detail` del Admin y todo el seguimiento del Store. Lo que queda está en el backend: `reservas.emails.js` (22), `reservas.service.js` (11), `reservas.serializer.js` (5) y `reservas.pago.js` (2). Va a la **pieza 3b**, y mientras tanto lo cubre la lista `DEUDA` del test, que solo puede bajar. Hecha el 2026-10-18: `DEUDA` quedó vacía. Lo propio de cada tipo en la transición, el DTO y los correos vive en `reservas/<rubro>/` (`alCambiarEstado`, `dto.js`, `correo.js`), y el código común lo elige con un registro (`DTO_POR_TIPO`, `CORREO_POR_TIPO`), no con un if. Las comparaciones que no son de rubro (tipo de sección, tour guiado del asistente, comentarios) se declaran en `NO_ES_RUBRO` con su motivo.
+
+  Desvíos de lo escrito arriba:
+  - A3.1: el detalle por rubro del seguimiento es `perfil.detalle` (un componente) y no `<app-slot-rubro>`, porque el slot elige por el rubro de la tienda y el seguimiento por el tipo de la reserva. `permiteModificar(r)` quedó como `antesDeLlegar: boolean`: la condición de estado es común.
+  - A3.3: `alAceptar({ tiendaId, pedido, ahora })` no recibe `tx` y corre antes de la transacción, igual que antes, para no cambiar el comportamiento.
+  - Traducciones: los textos del detalle del seguimiento ahora cuentan solo para su rubro ("Pasajeros" solo en tours, "Entradas" solo en eventos), porque viven en `negocio/<rubro>/`. En Admin › Traducciones, cada tienda deja de ver los de otros rubros.
+
 ### A4. Tipos de sección por registro (Admin y Backend)
 
 **Antipatrón:** un condicional que crece con cada tipo nuevo. Por ejemplo, `pages/diseno/seccion-form.component.ts:519`: `s.tipo === 'categorias' || 'productos' || 'habitaciones' || 'tours' || 'eventos' || 'salones' || 'canchas'`.
@@ -208,6 +215,7 @@ En las operaciones por clave, Prisma exige que la clave quede en la raíz del `w
 | 1 | Aislamiento por tienda | A1 | Backend | No |
 | 2 | Errores centralizados | A2 | Backend | No |
 | 3 | Rubro por capacidades + secciones por registro | A3, A4 | Los tres | No |
+| 3b | Rubro por capacidades en correos, serializer y service de reservas | A3 (resto) | Backend | No |
 | 4 | Checkout por estrategias | A5 | Store | No |
 | 5 | CRUD con Composition Root | A7 | Backend | No |
 | 6 | Contratos generados + núcleo compartido | A8 | Los tres | No |

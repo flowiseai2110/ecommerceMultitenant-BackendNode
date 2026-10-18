@@ -5,9 +5,8 @@ import PasarelaService from "../pagos/pasarela/pasarela.service.js";
 import { registrarDestino } from "../pagos/pasarela/destinos.js";
 import { exigirAutomatico } from "../pagos/modo-pago.service.js";
 import { transicionar } from "./estados.js";
-import { moverVendidos } from "./eventos/eventos.service.js";
 import { confirmadaEmail } from "./reservas.emails.js";
-import { aplicarAccion, correoCliente, efectivoDe, obtenerSeguimiento, pedidoDeReserva } from "./reservas.service.js";
+import { aplicarAccion, conPlanDePagos, correoCliente, efectivoDe, obtenerSeguimiento, pedidoDeReserva } from "./reservas.service.js";
 import { destinoCuota } from "./locales/cuotas.service.js";
 
 /**
@@ -63,8 +62,7 @@ async function confirmarReservaPasarela(tiendaId, pedidoId, { pago, metodo, carg
 
   const pagado = redondear(Number(pedido.montoPagado) + monto);
   await prisma.$transaction(async (tx) => {
-    // Entradas: el cupo apartado pasa a vendido (filas bloqueadas; el CHECK impide sobrevender).
-    if (pedido.tipo === "evento") await moverVendidos(tx, tiendaId, pedidoId, +1);
+    // Entradas: el cupo apartado pasa a vendido en alCambiarEstado de su vertical.
     await aplicarAccion(tx, pedido, "pago_pasarela", {
       ahora,
       datosPedido: {
@@ -128,7 +126,7 @@ export async function pagarReserva(tiendaId, pedidoId, { tokenId, metodo, cuotaI
   const { proveedor } = await exigirAutomatico(tiendaId);
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
   let destino;
-  if (pedido.tipo === "local") {
+  if (conPlanDePagos(pedido)) {
     if (!cuotaId) {
       const message = "Elige la cuota que vas a pagar";
       throw new ValidationError(message, { message, body: { cuotaId: [message] } });

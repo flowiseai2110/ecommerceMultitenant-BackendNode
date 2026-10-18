@@ -14,7 +14,9 @@ export const locales = {
   marcas: false,
   diseno: {
     plantillaPorDefecto: "locales-salones",
-    secciones: Object.freeze([...SECCIONES_COMUNES, ...SECCIONES_RESERVAS, "salones"])
+    secciones: Object.freeze([...SECCIONES_COMUNES, ...SECCIONES_RESERVAS, "salones"]),
+    layoutPorDefecto: Object.freeze({}),
+    rubroEnPlantillas: false
   },
   // El negocio acepta y la separación es el 40 % (alquiler-locales, plan).
   configReservas: { avisoProximoHoras: null, comprobanteEn: "al_pagar", cobro: "adelanto", adelantoPct: 40 },

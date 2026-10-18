@@ -79,7 +79,7 @@ const tienda = { id: TIENDA, slug: "verona", nombre: "Verona", email: "hotel@tes
 
 function pedido(extra = {}, reserva = {}) {
   return {
-    id: PEDIDO, tiendaId: TIENDA, numeroPedido: "PED-0012", estado: "solicitada",
+    id: PEDIDO, tiendaId: TIENDA, tipo: "hotel", numeroPedido: "PED-0012", estado: "solicitada",
     subtotal: 100, total: 100, montoPagado: 0, clienteEmail: "c@test.com", clienteWhatsapp: "957625308",
     detalles: [], pagos: [], historialEstados: [],
     reserva: {
@@ -161,6 +161,8 @@ describe("cobro en destino (hospedaje-completo A6)", () => {
     }, { ahora });
     const data = prisma.pedidos.create.mock.calls[0][0].data;
     expect(data).toEqual(expect.objectContaining({ estado: "confirmada", estadoPago: "pendiente", fechaConfirmado: ahora }));
+    // Antes decía "Entradas libres confirmadas" (la clave de eventos pisaba la común; antipatrones 3b).
+    expect(data.historialEstados.create.notas).toBe("Reserva confirmada desde la vitrina: se paga al llegar");
   });
 });
 

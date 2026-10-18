@@ -1,5 +1,15 @@
 import { SECCIONES_COMUNES } from "../secciones.js";
 
+/** Opciones del detalle de producto (R5) por defecto: lo que se ve hoy. */
+export const PRODUCTO_DEFAULT = Object.freeze({
+  galeria: "lado",
+  envio: { mostrar: true, texto: null },
+  devoluciones: { mostrar: true, texto: null },
+  relacionados: true,
+  resenas: true,
+  beneficios: []
+});
+
 /** Tienda de productos: catálogo con carrito, envíos y pago contra entrega. */
 export const productos = {
   // Textos fijos que muestra su tienda: los traduce el dueño (docs/specs/idiomas D8).
@@ -14,7 +24,11 @@ export const productos = {
   marcas: true,
   diseno: {
     plantillaPorDefecto: "clasica",
-    secciones: Object.freeze([...SECCIONES_COMUNES, "categorias", "productos", "oferta"])
+    secciones: Object.freeze([...SECCIONES_COMUNES, "categorias", "productos", "oferta"]),
+    // Lo que toda plantilla de productos trae en su layout: la tarjeta y el detalle de producto (layout-por-rubro RU8).
+    layoutPorDefecto: Object.freeze({ producto: PRODUCTO_DEFAULT }),
+    // El rubro de la tienda (moda, alimentos…) distingue sus plantillas.
+    rubroEnPlantillas: true
   },
   configReservas: { avisoProximoHoras: null, comprobanteEn: "al_pagar" },
   // Sin reservas: el aviso de reserva próxima no aplica (rige el del hotel si se pidiera).

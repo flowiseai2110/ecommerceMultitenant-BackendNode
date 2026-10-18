@@ -16,6 +16,12 @@ los diseños, en BackendNode `docs/disenos/INDICE.md`.
 - Cambio chico (un archivo, texto, estilo, bug evidente): directo; si toca una funcionalidad con carpeta en `docs/specs/`, se anota en su `cambios.md`.
 - Toda llave nueva o quitada y todo SQL quedan escritos en el documento de la funcionalidad, nunca solo en el chat.
 - Si Diego pregunta "¿qué hace?", "¿qué cambió?" o "¿por qué?", se usa `ecommerce-proceso:explicador`.
+- **Al cerrar una funcionalidad** (Diego confirma que se desplegó): el `deployer` la mueve a "Desplegado" en `ESTADO.md` y después
+  se llama al `analista-<rubro>` de cada rubro que tocó para que actualice `docs/rubros/<rubro>.md` con lo nuevo. Así el
+  conocimiento de los rubros crece con cada funcionalidad terminada.
+- **Mejoras del proceso**: cuando un agente tropieza, Diego corrige cómo se trabaja ("no hagas X", "siempre Y") o una tarea se
+  repite sin receta, anótalo en BackendNode `herramientas/claude-plugin/MEJORAS.md` (fecha, qué pasó, mejora propuesta, dónde se
+  aplica, `propuesta`) y díselo a Diego en una línea. No cambies el plugin sin su aprobación.
 
 ## Estrategia de costo: el modelo y el esfuerzo según la tarea
 

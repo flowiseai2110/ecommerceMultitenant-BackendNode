@@ -11,8 +11,6 @@ import { vozAlojamiento } from "./hotel/alojamiento.js";
 import { ESTADOS_EN_CURSO, TIPOS_CON_CICLO, transicionar, estadoEfectivo } from "./estados.js";
 import { obtenerConfig } from "./reservas.config.service.js";
 import { aplicarFormulario, formularioDe } from "./formulario.js";
-import { cupoEstadia } from "./hotel/disponibilidad.service.js";
-import { moverVendidos } from "./eventos/eventos.service.js";
 import { firmarTokenReserva } from "./reservas.token.js";
 import { subirCaptura, urlCaptura } from "./reservas.capturas.js";
 import { serializeReservaAdmin, serializeReservaLista, serializeReservaStore } from "./reservas.serializer.js";
@@ -20,10 +18,10 @@ import {
   aceptadaEmail, compraPendienteEmail, confirmadaEmail, nuevaReservaEmail, nuevaSolicitudEmail, pagoSubidoEmail, rechazadaEmail, solicitudRecibidaEmail
 } from "./reservas.emails.js";
 import { instanteLima, fechaLima, sumarDias } from "./tiempo.js";
-import { estrategiaDe, verticalDePedido } from "../negocio/registro.js";
+import { estrategiaDe, rubroDePedido, verticalDePedido } from "../negocio/registro.js";
 import { exigirManual, modoEfectivo } from "../pagos/modo-pago.service.js";
 import { errorNoDisponible, filasCuotas, prepararAceptacion } from "./locales/locales.service.js";
-import { actualizarOcupacion, FechaNoDisponibleError, liberar, liberarHuerfanas, ocupar } from "./locales/ocupaciones.js";
+import { actualizarOcupacion, FechaNoDisponibleError, liberarHuerfanas, ocupar } from "./locales/ocupaciones.js";
 import { conPreparacion } from "./locales/franja.js";
 import { traductorPara } from "../idiomas/textos.service.js";
 
@@ -93,11 +91,21 @@ const MOTIVOS_RECHAZO = {
   }
 };
 
+/** Nota del historial de una reserva nueva según su estado inicial; la vertical puede poner las suyas. */
+const NOTAS_INICIALES = {
+  solicitada: "Solicitud enviada desde la vitrina",
+  aceptada: "Reserva con pago directo desde la vitrina",
+  // Hotel o tour con cobro en destino y confirmación inmediata.
+  confirmada: "Reserva confirmada desde la vitrina: se paga al llegar"
+};
+
 const usuarioDe = (user) => user?.email ?? user?.id ?? null;
 
-/** Locales: el pago va por cuotas (cuotas.service), no por el flujo de un solo pago. */
-function exigirNoLocal(pedido) {
-  if (pedido.tipo !== "local") return;
+/** Con plan de pagos (locales) se paga por cuotas (cuotas.service), no por el flujo de un solo pago. */
+export const conPlanDePagos = (pedido) => Boolean(rubroDePedido(pedido.tipo)?.planDePagos);
+
+function exigirPagoUnico(pedido) {
+  if (!conPlanDePagos(pedido)) return;
   const message = "Esta reserva se paga por cuotas: usa el plan de pagos";
   throw new ConflictError(message, { message, motivo: "USAR_CUOTAS" });
 }
@@ -193,7 +201,8 @@ export async function pedidoDeReserva(tiendaId, pedidoId, client = prisma) {
  * reserva: la segunda recibe 409.
  */
 export async function aplicarAccion(tx, pedido, accion, { ahora = new Date(), datosPedido = {}, nota = null } = {}) {
-  const nuevo = transicionar(efectivoDe(pedido, ahora), accion, pedido.tipo);
+  const anterior = efectivoDe(pedido, ahora);
+  const nuevo = transicionar(anterior, accion, pedido.tipo);
   const { count } = await tx.pedidos.updateMany({
     where: { id: pedido.id, tiendaId: pedido.tiendaId, estado: pedido.estado },
     data: { estado: nuevo, fechaActualizacion: ahora, ...datosPedido }
@@ -202,8 +211,9 @@ export async function aplicarAccion(tx, pedido, accion, { ahora = new Date(), da
     throw new ConflictError("La reserva cambió mientras la revisabas. Actualiza la página.", { message: "La reserva cambió mientras la revisabas. Actualiza la página.", motivo: "RESERVA_MODIFICADA" });
   }
   await tx.pedido_historial_estados.create({ data: { pedidoId: pedido.id, estado: nuevo, notas: nota } });
-  // La vertical mantiene su inventario en la misma transacción (canchas: la ocupación del horario).
-  await verticalDePedido(pedido.tipo)?.alCambiarEstado?.(tx, { pedido, nuevo, ahora });
+  // La vertical mantiene su inventario en la misma transacción (canchas: la ocupación del
+  // horario; locales: la franja; eventos: las entradas vendidas).
+  await verticalDePedido(pedido.tipo)?.alCambiarEstado?.(tx, { pedido, anterior, nuevo, ahora });
   return nuevo;
 }
 
@@ -264,9 +274,8 @@ async function validarSolicitudesAbiertas(tiendaId, vertical, { whatsapp, docNum
     }
   });
   if (abiertas >= max) {
-    const message = vertical.tipoPedido === "evento"
-      ? `Ya tienes ${abiertas} compras pendientes de pago en ${vertical.este}. Completa o cancela alguna antes de hacer otra.`
-      : `Ya tienes ${abiertas} solicitudes en curso en ${vertical.este}. Espera la respuesta o cancela alguna.`;
+    const message = vertical.mensajeMaxAbiertas?.(abiertas, vertical.este)
+      ?? `Ya tienes ${abiertas} solicitudes en curso en ${vertical.este}. Espera la respuesta o cancela alguna.`;
     throw new ValidationError(message, { message,
       motivo: "MAX_SOLICITUDES_ABIERTAS"
     });
@@ -373,14 +382,8 @@ export async function crearSolicitud(datos, { authUserId = null, ahora = new Dat
           historialEstados: {
             create: {
               estado: estadoInicial,
-              notas: {
-                solicitada: "Solicitud enviada desde la vitrina",
-                aceptada: "Reserva con pago directo desde la vitrina",
-                // Hotel o tour con cobro en destino y confirmación inmediata; o entradas libres.
-                ...(vertical.tipoPedido !== "evento" ? { confirmada: "Reserva confirmada desde la vitrina: se paga al llegar" } : {}),
-                por_pagar: "Compra de entradas: cupo apartado hasta recibir el pago",
-                confirmada: "Entradas libres confirmadas desde la vitrina"
-              }[estadoInicial]
+              // La vertical pone las suyas (eventos: compra apartada, entradas libres).
+              notas: { ...NOTAS_INICIALES, ...vertical.notasIniciales }[estadoInicial]
             }
           },
           reserva: {
@@ -446,17 +449,16 @@ export async function notificarSolicitud({ pedido, tienda, config, token }) {
     const dtoCliente = serializeReservaStore(pedido, { tienda, config });
     // Al cliente, en el idioma en que reservó (docs/specs/idiomas D11); al negocio, en el base.
     const t = await traductorPara(tienda.id, dtoCliente.idiomaHuesped);
-    // Compra de entradas: el organizador no tiene nada que responder; se le avisa al subir la captura.
-    if (pedido.tipo === "evento") {
-      const correo = pedido.estado === "confirmada" ? confirmadaEmail : compraPendienteEmail;
-      enviar(pedido.clienteEmail, correo(dtoCliente, urlSeguimiento(tienda.slug, token), t), tienda.email);
-      return;
-    }
     // Con confirmación inmediata (pago directo) no hay solicitud que responder:
     // la reserva nace aceptada (por pagar) o confirmada (se paga al llegar).
-    const dtoNegocio = serializeReservaAdmin(pedido);
-    const alCliente = { solicitada: solicitudRecibidaEmail, aceptada: aceptadaEmail, confirmada: confirmadaEmail }[pedido.estado] ?? solicitudRecibidaEmail;
+    // Una compra de entradas nace por pagar o, si es gratis, confirmada.
+    const alCliente = {
+      solicitada: solicitudRecibidaEmail, aceptada: aceptadaEmail, confirmada: confirmadaEmail, por_pagar: compraPendienteEmail
+    }[pedido.estado] ?? solicitudRecibidaEmail;
     enviar(pedido.clienteEmail, alCliente(dtoCliente, urlSeguimiento(tienda.slug, token), t), tienda.email);
+    // Compra de entradas: el organizador no tiene nada que responder; se le avisa al subir la captura.
+    if (verticalDePedido(pedido.tipo)?.avisaAlNegocio === false) return;
+    const dtoNegocio = serializeReservaAdmin(pedido);
     enviar(tienda.email, (pedido.estado === "solicitada" ? nuevaSolicitudEmail : nuevaReservaEmail)(dtoNegocio), pedido.clienteEmail);
   } catch (error) {
     logger.warn(`📭 Reservas: no se avisó la solicitud ${pedido?.numeroPedido}: ${error.message}`);
@@ -478,7 +480,6 @@ export async function cancelarPorCliente(tiendaId, pedidoId, ahora = new Date())
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
   await prisma.$transaction(async (tx) => {
     await aplicarAccion(tx, pedido, "cancelar_cliente", { ahora, nota: "Cancelada por el cliente" });
-    if (pedido.tipo === "local") await liberar(tx, pedidoId);
   });
   return obtenerSeguimiento(tiendaId, pedidoId, ahora);
 }
@@ -491,7 +492,7 @@ export async function subirCapturaCliente(tiendaId, pedidoId, { file, metodo, nu
   // Con pago automático no hay capturas (docs/specs/pago-automatico R3.7).
   await exigirManual(tiendaId);
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
-  exigirNoLocal(pedido);
+  exigirPagoUnico(pedido);
   const r = pedido.reserva;
   // Valida antes de subir el archivo: una reserva vencida no acepta pagos.
   transicionar(efectivoDe(pedido, ahora), "subir_captura", pedido.tipo);
@@ -762,9 +763,10 @@ export async function reenviarCorreo(tiendaId, pedidoId, ahora = new Date()) {
 /** Aceptar (R6.1, R6.2), con ajuste opcional del total (R6.4). */
 export async function aceptarReserva(tiendaId, pedidoId, { nuevoTotal = null, ajusteMotivo = null, forzar = false }, user, ahora = new Date()) {
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
-  if (pedido.tipo === "local") return aceptarLocal(tiendaId, pedido, { nuevoTotal, ajusteMotivo }, user, ahora);
+  if (conPlanDePagos(pedido)) return aceptarConPlanDePagos(tiendaId, pedido, { nuevoTotal, ajusteMotivo }, user, ahora);
   const config = await obtenerConfig(tiendaId);
-  if (pedido.tipo === "hotel" && !forzar) await validarCupoAlAceptar(tiendaId, pedido, ahora);
+  // La vertical revisa lo suyo antes de aceptar (hotel: el cupo); `forzar` lo salta.
+  if (!forzar) await verticalDePedido(pedido.tipo)?.alAceptar?.({ tiendaId, pedido, ahora });
   const subtotal = Number(pedido.subtotal);
   const total = nuevoTotal ?? Number(pedido.total);
   const aPagar = montoACuenta(total, config);
@@ -803,7 +805,7 @@ export async function aceptarReserva(tiendaId, pedidoId, { nuevoTotal = null, aj
  * contrato, y la solicitud pasa a apartado con su propio plazo. Si la fila de
  * ocupación ya no está (limpiada al vencer), se vuelve a ocupar: la BD decide.
  */
-async function aceptarLocal(tiendaId, pedido, { nuevoTotal, ajusteMotivo }, user, ahora) {
+async function aceptarConPlanDePagos(tiendaId, pedido, { nuevoTotal, ajusteMotivo }, user, ahora) {
   const config = await obtenerConfig(tiendaId);
   const subtotal = Number(pedido.subtotal);
   const anterior = Number(pedido.total);
@@ -851,26 +853,6 @@ async function aceptarLocal(tiendaId, pedido, { nuevoTotal, ajusteMotivo }, user
   return detalleReservaAdmin(tiendaId, pedido.id, ahora);
 }
 
-/**
- * Con inventario (C1): aceptar sin cupo responde 409 SIN_CUPO con el detalle
- * de la noche llena; el admin puede confirmar y reenviar con `forzar` (sabe
- * algo que el sistema no: una cancelación por teléfono, una habitación extra).
- */
-async function validarCupoAlAceptar(tiendaId, pedido, ahora) {
-  const r = pedido.reserva;
-  if (!r.noches) return;
-  const tipo = await prisma.hotel_tipos_habitacion.findUnique({
-    where: { productoId: r.productoId }, select: { productoId: true, unidades: true }
-  });
-  if (tipo?.unidades == null) return;
-  const cupo = await cupoEstadia(prisma, tiendaId, tipo, fechaLima(r.inicio), r.noches, { ahora, excluirPedidoId: pedido.id });
-  const pide = r.habitaciones ?? 1;
-  if (cupo && pide > cupo.libres) {
-    const message = `No hay cupo: para esas noches te quedan ${cupo.libres} de ${cupo.unidades} y esta reserva pide ${pide}.`;
-    throw new ConflictError(message, { message, motivo: "SIN_CUPO", libres: cupo.libres, unidades: cupo.unidades, pide });
-  }
-}
-
 /** Rechazar con motivo visible para el cliente (R6.1). */
 export async function rechazarReserva(tiendaId, pedidoId, { motivoTipo, motivo }, user, ahora = new Date()) {
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
@@ -882,7 +864,6 @@ export async function rechazarReserva(tiendaId, pedidoId, { motivoTipo, motivo }
       ahora, datosPedido: { usuarioActualizacion: usuarioDe(user) }, nota: texto ? `Rechazada: ${texto}` : "Rechazada"
     });
     await tx.reservas.update({ where: { pedidoId }, data: { respondidaEn: ahora, motivoRechazo: texto } });
-    if (pedido.tipo === "local") await liberar(tx, pedidoId);
   });
   await correoCliente(tiendaId, pedidoId, rechazadaEmail);
   return detalleReservaAdmin(tiendaId, pedidoId, ahora);
@@ -894,7 +875,7 @@ const pagoPendiente = (pedido) => [...pedido.pagos].reverse()
 /** "Pago verificado" (R7.3): confirma la reserva y registra lo pagado. */
 export async function verificarPago(tiendaId, pedidoId, user, ahora = new Date()) {
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
-  exigirNoLocal(pedido);
+  exigirPagoUnico(pedido);
   const pago = pagoPendiente(pedido);
   if (!pago) throw new ConflictError("No hay un pago por verificar en esta reserva", { message: "No hay un pago por verificar en esta reserva", motivo: "SIN_PAGO_PENDIENTE" });
 
@@ -909,8 +890,7 @@ export async function verificarPago(tiendaId, pedidoId, user, ahora = new Date()
         usuarioActualizacion: usuarioDe(user)
       }
     });
-    // Entradas: el cupo apartado pasa a vendido (filas bloqueadas; el CHECK impide sobrevender).
-    if (pedido.tipo === "evento") await moverVendidos(tx, tiendaId, pedidoId, +1);
+    // Entradas: el cupo apartado pasa a vendido en alCambiarEstado de su vertical.
     await aplicarAccion(tx, pedido, "verificar", {
       ahora,
       datosPedido: {
@@ -930,7 +910,7 @@ export async function verificarPago(tiendaId, pedidoId, user, ahora = new Date()
 /** "No corresponde" (R7.3): la reserva vuelve a esperar el pago. */
 export async function rechazarPago(tiendaId, pedidoId, { motivo }, user, ahora = new Date()) {
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
-  exigirNoLocal(pedido);
+  exigirPagoUnico(pedido);
   const pago = pagoPendiente(pedido);
   if (!pago) throw new ConflictError("No hay un pago por verificar en esta reserva", { message: "No hay un pago por verificar en esta reserva", motivo: "SIN_PAGO_PENDIENTE" });
 
@@ -948,9 +928,9 @@ export async function rechazarPago(tiendaId, pedidoId, { motivo }, user, ahora =
     await aplicarAccion(tx, pedido, "rechazar_pago", {
       ahora, datosPedido: { usuarioActualizacion: usuarioDe(user) }, nota: `Pago no corresponde: ${motivo}`
     });
-    // Entradas, o una habitación apartada (C1): vuelve a esperar el pago con
-    // un apartado nuevo para que suba otra captura.
-    if (pedido.tipo === "evento" || pedido.reserva.apartadoHasta) {
+    // Lo que vivía apartado (entradas pagadas, una habitación apartada C1) vuelve a
+    // esperar el pago con un apartado nuevo para que suba otra captura.
+    if (pedido.reserva.apartadoHasta) {
       const config = await obtenerConfig(tiendaId);
       await tx.reservas.update({ where: { pedidoId }, data: { apartadoHasta: nuevoApartado(pedido.reserva.inicio, config.apartadoManualMin, ahora) } });
     }
@@ -961,15 +941,11 @@ export async function rechazarPago(tiendaId, pedidoId, { motivo }, user, ahora =
 /** El negocio cancela una reserva confirmada (R12.2). El reembolso se gestiona fuera. */
 export async function cancelarPorNegocio(tiendaId, pedidoId, { motivo }, user, ahora = new Date()) {
   const pedido = await pedidoDeReserva(tiendaId, pedidoId);
-  // Entradas ya vendidas vuelven a la venta; las apartadas se liberan solas con el cambio de estado.
-  const devolverCupo = pedido.tipo === "evento" && efectivoDe(pedido, ahora) === "confirmada";
+  // Entradas vendidas y franjas de locales: las devuelve la vertical (alCambiarEstado).
   await prisma.$transaction(async (tx) => {
     await aplicarAccion(tx, pedido, "cancelar_negocio", {
       ahora, datosPedido: { usuarioActualizacion: usuarioDe(user) }, nota: motivo ? `Cancelada por el negocio: ${motivo}` : "Cancelada por el negocio"
     });
-    if (devolverCupo) await moverVendidos(tx, tiendaId, pedidoId, -1);
-    // Locales: la franja se libera en la misma transacción (R10.6). La devolución llega en la fase 2.
-    if (pedido.tipo === "local") await liberar(tx, pedidoId);
   });
   return detalleReservaAdmin(tiendaId, pedidoId, ahora);
 }

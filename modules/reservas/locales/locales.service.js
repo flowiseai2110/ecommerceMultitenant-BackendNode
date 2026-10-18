@@ -8,7 +8,7 @@ import { fechaLima, horaLima, instanteLima, sumarDias, sumarHoras } from "../tie
 import { cotizarLocal, etiquetaTipoEvento, separacionDe } from "./cotizar.js";
 import { franjaDe } from "./franja.js";
 import { alternativas, calendario } from "./disponibilidad.js";
-import { FechaNoDisponibleError, MENSAJE_NO_DISPONIBLE, ocupacionesVigentes, ocupar } from "./ocupaciones.js";
+import { FechaNoDisponibleError, MENSAJE_NO_DISPONIBLE, liberar, ocupacionesVigentes, ocupar } from "./ocupaciones.js";
 import { generarPlan } from "./plan-pagos.js";
 import { datosContrato, hashContrato, renderContrato } from "./contrato.js";
 import { cargarSalonParaReserva } from "./salones.service.js";
@@ -377,6 +377,10 @@ async function cotizacionParaSolicitud(tiendaId, token, ahora) {
 export const verticalLocal = {
   tipoPedido: "local",
   este: "este local",
+  /** Rechazada o cancelada: la franja se libera en la misma transacción (R10.6). */
+  async alCambiarEstado(tx, { pedido, nuevo }) {
+    if (nuevo === "cancelada" || nuevo === "rechazada") await liberar(tx, pedido.id);
+  },
   /** Separación, garantía y si la franja está libre (R3.5, R4.1). */
   extraCotizacion: extraCotizacionLocal,
 

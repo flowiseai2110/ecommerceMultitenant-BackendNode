@@ -12,7 +12,8 @@ import { GRUPOS_TEXTOS } from "../idiomas/grupos.js";
  *   ("crear" | "editar") y devuelve los datos a guardar, o lanza ValidationError.
  * - Datos del rubro (negocio/<rubro>/datos.js): recibeReservas, planDePagos,
  *   transmisiones, alquilerPorHoras y marcas (capacidades), diseno { plantillaPorDefecto,
- *   secciones, temaPorDefecto? }, configReservas (defaults), textoAviso (string o null) y
+ *   secciones, layoutPorDefecto (lo que toda plantilla del rubro trae en su layout),
+ *   rubroEnPlantillas (si el rubro de la tienda distingue plantillas), temaPorDefecto? }, configReservas (defaults), textoAviso (string o null) y
  *   gruposTextos (grupos del catálogo de textos fijos que muestra su tienda; docs/specs/idiomas D8) y
  *   nombreCatalogo (cómo se llama su catálogo en Traducciones: "Habitaciones", "Tours"…; diseno.md A1).
  * - agente: perfil del asesor de ventas, o null (usa el de productos).
@@ -21,11 +22,21 @@ import { GRUPOS_TEXTOS } from "../idiomas/grupos.js";
  * - reservas: la vertical del mini booking, o null si el rubro no recibe reservas.
  *   Obligatorio: cotizar({ tiendaId, datos, config, ahora }), tipoPedido, este.
  *   Opcional: estadoInicial, apartadoInicial, whereAbiertas, enTransaccion,
- *   traducirError, extraCotizacion y alCambiarEstado(tx, { pedido, nuevo, ahora })
- *   (lo llama aplicarAccion en cada transición: la vertical mantiene su inventario).
+ *   traducirError, extraCotizacion, alCambiarEstado(tx, { pedido, anterior, nuevo, ahora })
+ *   (lo llama aplicarAccion en cada transición: la vertical mantiene su inventario),
+ *   mensajeMaxAbiertas(abiertas, este), notasIniciales { estado: nota }, avisaAlNegocio
+ *   (false: el negocio no recibe la reserva nueva por correo)
+ *   y alAceptar({ tiendaId, pedido, ahora }) (revisa lo del rubro antes de aceptar;
+ *   el hotel, el cupo; `forzar` lo salta; docs/specs/antipatrones A3.3).
  */
 export const CONTRATO = ["prepararProducto"];
-export const CONTRATO_RESERVAS = { funciones: ["cotizar"], textos: ["tipoPedido", "este"] };
+export const CONTRATO_RESERVAS = {
+  funciones: ["cotizar"],
+  textos: ["tipoPedido", "este"],
+  opcionales: ["estadoInicial", "apartadoInicial", "whereAbiertas", "enTransaccion", "traducirError", "extraCotizacion", "alCambiarEstado", "alAceptar", "modoConfirmacion", "mensajeMaxAbiertas"],
+  /** Opcionales que son datos: si están, con este tipo. */
+  datosOpcionales: { avisaAlNegocio: "boolean", notasIniciales: "object" }
+};
 export const CAPACIDADES = ["recibeReservas", "planDePagos", "transmisiones", "alquilerPorHoras", "marcas"];
 
 /** Lo que le falta a los datos de un rubro (negocio/<rubro>/datos.js). */
@@ -33,6 +44,9 @@ export function faltantesDeDatos(d) {
   const faltan = CAPACIDADES.filter((c) => typeof d?.[c] !== "boolean");
   if (typeof d?.diseno?.plantillaPorDefecto !== "string") faltan.push("diseno.plantillaPorDefecto");
   if (!Array.isArray(d?.diseno?.secciones) || !d.diseno.secciones.length) faltan.push("diseno.secciones");
+  const l = d?.diseno?.layoutPorDefecto;
+  if (typeof l !== "object" || l === null || Array.isArray(l)) faltan.push("diseno.layoutPorDefecto");
+  if (typeof d?.diseno?.rubroEnPlantillas !== "boolean") faltan.push("diseno.rubroEnPlantillas");
   if (typeof d?.configReservas !== "object" || d.configReservas === null) faltan.push("configReservas");
   if (d?.textoAviso !== null && typeof d?.textoAviso !== "string") faltan.push("textoAviso");
   const g = d?.gruposTextos;
@@ -54,7 +68,10 @@ export function faltantesDelContrato(estrategia) {
   return [
     ...faltan,
     ...CONTRATO_RESERVAS.funciones.filter((m) => typeof r[m] !== "function").map((m) => `reservas.${m}`),
-    ...CONTRATO_RESERVAS.textos.filter((m) => typeof r[m] !== "string").map((m) => `reservas.${m}`)
+    ...CONTRATO_RESERVAS.textos.filter((m) => typeof r[m] !== "string").map((m) => `reservas.${m}`),
+    // Un hook opcional, si está, es una función (un typo como `alAceptar: true` no pasa).
+    ...CONTRATO_RESERVAS.opcionales.filter((m) => m in r && typeof r[m] !== "function").map((m) => `reservas.${m}`),
+    ...Object.entries(CONTRATO_RESERVAS.datosOpcionales).filter(([m, t]) => m in r && typeof r[m] !== t).map(([m]) => `reservas.${m}`)
   ];
 }
 

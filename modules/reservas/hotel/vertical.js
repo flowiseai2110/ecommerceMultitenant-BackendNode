@@ -1,7 +1,7 @@
 import { prisma } from "../../../config/prisma.js";
 import { ConflictError, ValidationError } from "../../../utils/errors.js";
 import { cierresDeProducto } from "../cierres.service.js";
-import { sumarDias } from "../tiempo.js";
+import { fechaLima, sumarDias } from "../tiempo.js";
 import { cotizarHotel, plazoLlegadaTardia } from "./cotizar.js";
 import { cargarHabitacionParaReserva } from "./habitaciones.service.js";
 import { extrasDeTienda, planDeTienda, temporadasParaEstadia } from "./tarifas.service.js";
@@ -65,6 +65,25 @@ export const verticalHotel = {
     if (cupo && c.habitaciones > cupo.libres) {
       const message = "Se acaba de ocupar el último cupo para esas fechas. Elige otras fechas.";
       throw new ConflictError(message, { message, motivo: "SIN_CUPO" });
+    }
+  },
+  /**
+   * Con inventario (C1): aceptar sin cupo responde 409 SIN_CUPO con el detalle
+   * de la noche llena; el admin puede confirmar y reenviar con `forzar` (sabe
+   * algo que el sistema no: una cancelación por teléfono, una habitación extra).
+   */
+  async alAceptar({ tiendaId, pedido, ahora }) {
+    const r = pedido.reserva;
+    if (!r.noches) return;
+    const tipo = await prisma.hotel_tipos_habitacion.findUnique({
+      where: { productoId: r.productoId }, select: { productoId: true, unidades: true }
+    });
+    if (tipo?.unidades == null) return;
+    const cupo = await cupoEstadia(prisma, tiendaId, tipo, fechaLima(r.inicio), r.noches, { ahora, excluirPedidoId: pedido.id });
+    const pide = r.habitaciones ?? 1;
+    if (cupo && pide > cupo.libres) {
+      const message = `No hay cupo: para esas noches te quedan ${cupo.libres} de ${cupo.unidades} y esta reserva pide ${pide}.`;
+      throw new ConflictError(message, { message, motivo: "SIN_CUPO", libres: cupo.libres, unidades: cupo.unidades, pide });
     }
   }
 };

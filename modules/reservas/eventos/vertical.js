@@ -1,5 +1,5 @@
 import { cotizarEvento } from "./cotizar.js";
-import { apartarEntradas, cargarFuncionParaCompra } from "./eventos.service.js";
+import { apartarEntradas, cargarFuncionParaCompra, moverVendidos } from "./eventos.service.js";
 import { anularEntradas, emitirEntradas } from "./entradas.js";
 
 /** Compra de entradas (Strategy de reservas, modules/negocio/registro.js). */
@@ -28,8 +28,24 @@ export const verticalEventos = {
     if (estadoInicial === "confirmada") await emitirEntradas(tx, { tiendaId, pedidoId });
   },
   /** Entradas con QR (plantillas-por-rubro E6): se emiten al confirmar y se anulan al cancelar. */
-  async alCambiarEstado(tx, { pedido, nuevo }) {
-    if (nuevo === "confirmada") await emitirEntradas(tx, { tiendaId: pedido.tiendaId, pedidoId: pedido.id });
-    if (nuevo === "cancelada") await anularEntradas(tx, pedido.id);
+  async alCambiarEstado(tx, { pedido, anterior, nuevo }) {
+    // Pagada: el cupo apartado pasa a vendido (filas bloqueadas; el CHECK impide sobrevender).
+    if (nuevo === "confirmada") {
+      await moverVendidos(tx, pedido.tiendaId, pedido.id, +1);
+      await emitirEntradas(tx, { tiendaId: pedido.tiendaId, pedidoId: pedido.id });
+    }
+    if (nuevo === "cancelada") {
+      // Las vendidas vuelven a la venta; las apartadas se liberan solas con el cambio de estado.
+      if (anterior === "confirmada") await moverVendidos(tx, pedido.tiendaId, pedido.id, -1);
+      await anularEntradas(tx, pedido.id);
+    }
+  },
+  // Compra de entradas: el organizador no tiene nada que responder (se le avisa al subir la captura).
+  avisaAlNegocio: false,
+  mensajeMaxAbiertas: (abiertas, este) =>
+    `Ya tienes ${abiertas} compras pendientes de pago en ${este}. Completa o cancela alguna antes de hacer otra.`,
+  notasIniciales: {
+    por_pagar: "Compra de entradas: cupo apartado hasta recibir el pago",
+    confirmada: "Entradas libres confirmadas desde la vitrina"
   }
 };

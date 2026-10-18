@@ -14,17 +14,7 @@ import { datosDe } from "../negocio/datos.js";
 // ejemplo: al copiar, copia.js oculta las secciones que afirman cosas del
 // negocio y deja el hero con los textos propios de la tienda (R3).
 
-const SIN_BENEFICIOS = [];
-
-/** Opciones del detalle de producto (R5) por defecto: lo que se ve hoy. */
-export const PRODUCTO_DEFAULT = Object.freeze({
-  galeria: "lado",
-  envio: { mostrar: true, texto: null },
-  devoluciones: { mostrar: true, texto: null },
-  relacionados: true,
-  resenas: true,
-  beneficios: SIN_BENEFICIOS
-});
+export { PRODUCTO_DEFAULT } from "../negocio/productos/datos.js";
 
 const B = {
   envio: { icono: "envio", titulo: "Envíos a todo el Perú", texto: "Lima en 24-48 h, provincias por agencia" },
@@ -41,10 +31,10 @@ function congelar(obj) {
 // `tema` (opcional): paleta y tipografía con que se prueba en el editor
 // (editor-diseno-en-vivo V1). Sin tema, probarla conserva los colores y las
 // letras de la tienda.
-// El layout es el de su rubro (layout-por-rubro RU8): solo productos lleva la
-// tarjeta y el detalle de producto.
+// El layout parte del de su rubro (layout-por-rubro RU8): productos trae la
+// tarjeta y el detalle de producto (datos.diseno.layoutPorDefecto).
 function plantilla({ layout, tipoNegocio = "productos", ...resto }) {
-  return { version: 1, tipoNegocio, ...resto, layout: tipoNegocio === "productos" ? { ...layout, producto: PRODUCTO_DEFAULT } : layout };
+  return { version: 1, tipoNegocio, ...resto, layout: { ...datosDe(tipoNegocio).diseno.layoutPorDefecto, ...layout } };
 }
 
 // Servicios de ejemplo de un hospedaje: se copian ocultos (R3.5) hasta que el

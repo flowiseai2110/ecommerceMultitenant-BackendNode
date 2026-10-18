@@ -19,7 +19,9 @@ export const canchas = {
       "canchas-portada", "canchas", "reservador", "pasos", "fijo-semanal", "liga"
     ]),
     // Verde cancha con el ámbar de los reflectores y títulos condensados, como la maqueta aprobada.
-    temaPorDefecto: { paleta: "cancha-tinte", tipografia: "deportiva" }
+    temaPorDefecto: { paleta: "cancha-tinte", tipografia: "deportiva" },
+    layoutPorDefecto: Object.freeze({}),
+    rubroEnPlantillas: false
   },
   // Separar sin esperar respuesta: pago directo con el 50 % y la cancha apartada 30 min (R5).
   configReservas: {

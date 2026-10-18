@@ -22,7 +22,9 @@
         "id": "reserva-aceptada",
         "nombre": "Reserva aceptada",
         "grupos": [
-          "correos"
+          "canchas",
+          "correos",
+          "locales"
         ]
       },
       {
@@ -36,14 +38,22 @@
         "id": "reserva-confirmada",
         "nombre": "Reserva confirmada",
         "grupos": [
-          "correos"
+          "correos",
+          "eventos",
+          "locales",
+          "tours"
         ]
       },
       {
         "id": "partes-comunes-de-los-correos",
         "nombre": "Partes comunes de los correos",
         "grupos": [
-          "correos"
+          "canchas",
+          "correos",
+          "eventos",
+          "hotel",
+          "locales",
+          "tours"
         ]
       }
     ]
@@ -57,8 +67,7 @@
         "id": "disponibilidad-y-precios",
         "nombre": "Disponibilidad y precios",
         "grupos": [
-          "hotel",
-          "reservas"
+          "hotel"
         ]
       },
       {

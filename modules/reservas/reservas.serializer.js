@@ -1,14 +1,13 @@
 import { ESTADOS_ABIERTOS, estadoEfectivo, etiquetaEstado } from "./estados.js";
-import { serializarEntrada } from "./eventos/entradas.js";
 import { localizar } from "../traducciones/localizar.js";
 import { FUENTES } from "../traducciones/fuentes.js";
-import { fechaLima } from "./tiempo.js";
-import { resumenPlan } from "./locales/plan-pagos.js";
-import { etiquetaTipoEvento } from "./locales/cotizar.js";
-import { etiquetaConcepto } from "./locales/contrato.js";
 import { IDIOMA_BASE } from "../idiomas/idioma.js";
-import { clave } from "../idiomas/clave.js";
-import { TRADUCTOR_BASE } from "../idiomas/traductor.js";
+import { num } from "./dto.comun.js";
+import { dtoHotel } from "./hotel/dto.js";
+import { dtoTour } from "./tours/dto.js";
+import { dtoEvento } from "./eventos/dto.js";
+import { dtoLocal, dtoAdminLocal } from "./locales/dto.js";
+import { dtoCancha } from "./canchas/dto.js";
 
 /**
  * Contrato de salida del mini booking. La reserva se construye campo por campo
@@ -19,25 +18,21 @@ import { TRADUCTOR_BASE } from "../idiomas/traductor.js";
  *   - admin (negocio): registro de huésped completo.
  */
 
-const num = (v) => (v === null || v === undefined ? null : Number(v));
-
-export function etiquetaModalidad(modalidad, reserva) {
-  const { clave: k, params } = textoModalidad(modalidad, reserva);
-  return TRADUCTOR_BASE(k, params);
-}
-
 /**
- * La misma etiqueta como clave del catálogo + valores, para que la tienda la
- * traduzca en el idioma de la página: "3 noches" no es una clave, "{n} noches" sí
- * (docs/specs/idiomas D7).
+ * Lo propio de cada tipo de reserva en el DTO, de reservas/<rubro>/dto.js
+ * (docs/specs/antipatrones 3b). Un registro, no un if por tipo; un tipo sin
+ * entrada aquí falla el test de contrato (una por máquina de estados).
  */
-export function textoModalidad(modalidad, reserva) {
-  const horas = reserva?.horas ?? modalidad?.horas;
-  if ((modalidad?.tipo ?? (horas ? "horas" : "noche")) === "horas") return { clave: clave("{n} horas"), params: { n: horas } };
-  const noches = reserva?.noches;
-  if (!noches) return { clave: clave("Por noche"), params: {} };
-  return { clave: noches === 1 ? clave("{n} noche") : clave("{n} noches"), params: { n: noches } };
-}
+export const DTO_POR_TIPO = {
+  hotel: { base: dtoHotel },
+  tour: { base: dtoTour },
+  evento: { base: dtoEvento },
+  local: { base: dtoLocal, admin: dtoAdminLocal },
+  cancha: { base: dtoCancha }
+};
+
+/** Bloques de los demás tipos: vacíos (cada dto.js pone los suyos). */
+const SIN_BLOQUES = { modalidad: null, pasajeros: null, tour: null, evento: null, entradas: null, entradasEmitidas: [], local: null, cancha: null };
 
 /** "44836469" → "•••••469": el titular reconoce su documento sin exponerlo entero. */
 const enmascarar = (doc) => (doc ? `${"•".repeat(Math.max(doc.length - 3, 0))}${doc.slice(-3)}` : null);
@@ -59,75 +54,13 @@ function ultimoPagoManual(pagos = []) {
     .sort((a, b) => new Date(b.fechaRegistro) - new Date(a.fechaRegistro))[0] ?? null;
 }
 
-/** Pasajeros de un tour (snapshot guardado al solicitar). */
-const pasajerosDe = (r) => (Array.isArray(r.pasajeros) ? r.pasajeros : []).map(p => ({
-  tipoId: p.tipoId, nombre: p.nombre, cantidad: p.cantidad, precio: num(p.precio)
-}));
-
-/** Entradas de una compra de evento (snapshot guardado al comprar). */
-const entradasDe = (pedido) => (pedido.itemsEvento ?? []).map(i => ({
-  tipoId: i.tipoEntradaId, nombre: i.nombre, cantidad: i.cantidad, precio: num(i.precio)
-}));
-
-function fichaTour(r) {
-  const t = localizar(FUENTES.tours, { tour: r.producto?.tour ?? {}, traducciones: r.producto?.traducciones }, r.idiomaHuesped).tour;
-  return { duracion: t.duracion ?? null, puntoEncuentro: t.puntoEncuentro ?? null, mapaUrl: r.producto?.tour?.mapaUrl ?? null, recojo: t.recojo ?? null };
-}
-
-const serializarCuota = (c) => ({
-  id: c.id,
-  numero: c.numero,
-  concepto: c.concepto,
-  conceptoEtiqueta: etiquetaConcepto(c.concepto),
-  monto: num(c.monto),
-  // Columna DATE (medianoche UTC): se lee tal cual, sin pasar a hora de Lima.
-  venceEn: (c.venceEn instanceof Date ? c.venceEn.toISOString() : String(c.venceEn)).slice(0, 10),
-  estado: c.estado,
-  pagadaEn: c.pagadaEn ?? null
-});
-
-/**
- * Alquiler de locales (alquiler-locales R7.5): salón, turno, paquete, plan de
- * pagos con su resumen (pagado, saldo, próxima cuota, mora, garantía) y el
- * estado del contrato. El texto del contrato lo agrega cada audiencia.
- */
-function bloqueLocal(pedido, estado, ahora) {
-  const r = pedido.reserva;
-  const l = r.local ?? {};
-  const cuotas = (pedido.cuotas ?? []).filter(c => c.estado !== "anulada");
-  return {
-    salon: l.salon?.nombre ?? null,
-    aforoMaximo: l.salon?.aforoMaximo ?? null,
-    turno: l.turno ?? null,
-    paquete: l.paquete ?? null,
-    tipoEvento: r.tipoEvento,
-    tipoEventoEtiqueta: etiquetaTipoEvento(r.tipoEvento),
-    invitados: r.invitados,
-    agasajado: r.agasajado,
-    fecha: l.fecha ?? fechaLima(r.inicio),
-    horaInicio: l.horaInicio ?? null,
-    horaFin: l.horaFin ?? null,
-    proveedoresExternos: l.proveedoresExternos ?? false,
-    garantia: num(l.garantia) ?? 0,
-    // Hasta cuándo la fecha queda apartada sin respuesta o sin pago (R6.4).
-    apartadoHasta: ["solicitada", "aceptada"].includes(estado) ? r.apartadoHasta : null,
-    plan: cuotas.map(serializarCuota),
-    resumen: resumenPlan(cuotas, fechaLima(ahora)),
-    contrato: r.contrato ? { version: r.contrato.version, hash: r.contrato.hash, generadoEn: r.contrato.generadoEn, aceptadoEn: r.contrato.aceptadoEn ?? null } : null,
-    reprogramaciones: r.reprogramaciones ?? 0
-  };
-}
-
 function base(pedido, ahora) {
   const r = pedido.reserva;
-  const esTour = r.tipo === "tour";
-  const esEvento = r.tipo === "evento";
-  const esLocal = r.tipo === "local";
-  const esCancha = r.tipo === "cancha";
-  const pasajeros = esTour ? pasajerosDe(r) : null;
-  const entradas = esEvento ? entradasDe(pedido) : null;
   const estado = estadoEfectivo({ estado: pedido.estado, inicio: r.inicio, fin: r.fin, apartadoHasta: r.apartadoHasta, tipo: r.tipo }, ahora);
   return {
+    // Lo propio de cada tipo (modalidad, pasajeros, evento, local, cancha, personas), de su dto.js.
+    ...SIN_BLOQUES,
+    ...(DTO_POR_TIPO[r.tipo] ?? DTO_POR_TIPO.hotel).base(pedido, { estado, ahora }),
     id: pedido.id,
     codigo: pedido.numeroPedido,
     tipo: r.tipo,
@@ -138,13 +71,6 @@ function base(pedido, ahora) {
       nombre: r.producto?.nombre ?? pedido.detalles?.[0]?.productoNombre ?? null,
       slug: r.producto?.slug ?? null,
       imagenUrl: imagenPrincipal(r.producto)
-    },
-    // Solo hotel: tours, eventos, locales y canchas no tienen modalidad de estadía.
-    modalidad: esTour || esEvento || esLocal || esCancha ? null : {
-      id: r.modalidadId,
-      tipo: r.modalidad?.tipo ?? (r.horas ? "horas" : "noche"),
-      etiqueta: etiquetaModalidad(r.modalidad, r),
-      texto: textoModalidad(r.modalidad, r)
     },
     inicio: r.inicio,
     fin: r.fin,
@@ -167,48 +93,10 @@ function base(pedido, ahora) {
     habitaciones: r.habitaciones ?? 1,
     plan: r.plan ?? null,
     idiomaHuesped: r.idiomaHuesped ?? IDIOMA_BASE,
-    pasajeros,
     idioma: r.idioma ?? null,
-    // Lo que el pasajero necesita para llegar a la salida (confirmación, R8.1);
-    // en inglés si reservó en inglés (C3).
-    tour: esTour ? fichaTour(r) : null,
-    // Función y lugar del evento; hasta cuándo se guarda el cupo si falta pagar.
-    evento: esEvento ? {
-      funcionId: r.funcionId,
-      funcion: r.funcion?.nombre ?? null,
-      lugar: r.producto?.evento?.lugar ?? null,
-      direccion: r.producto?.evento?.direccion ?? null,
-      mapaUrl: r.producto?.evento?.mapaUrl ?? null,
-      organizador: r.producto?.evento?.organizador ?? null,
-      apartadoHasta: estado === "por_pagar" ? r.apartadoHasta : null
-    } : null,
-    entradas,
     // Hotel (plantillas-por-rubro E8): check-in en línea y cambio de fechas pedido.
     checkin: r.checkinOnline ?? null,
     cambioSolicitado: r.cambioSolicitado ?? null,
-    // Entradas con QR por persona: solo con la compra confirmada (plantillas-por-rubro E6).
-    entradasEmitidas: esEvento && ["confirmada", "completada"].includes(estado)
-      ? (pedido.entradasEvento ?? []).filter(e => !e.anulada).map(serializarEntrada)
-      : [],
-    local: esLocal ? bloqueLocal(pedido, estado, ahora) : null,
-    // Cancha: formato, duración y tramos día/noche (foto de la reserva) y hasta cuándo se aparta sin pagar.
-    cancha: esCancha ? {
-      nombre: r.cancha?.nombre ?? r.producto?.nombre ?? null,
-      formato: r.cancha?.formato ?? null,
-      techada: r.cancha?.techada ?? false,
-      jugadoresMax: r.cancha?.jugadoresMax ?? null,
-      duracionMin: r.cancha?.duracionMin ?? null,
-      tramos: r.cancha?.tramos ?? [],
-      apartadoHasta: ["solicitada", "aceptada"].includes(estado) ? r.apartadoHasta : null,
-      // Pago dividido (plantillas-por-rubro E7): cuántas partes y cuántas pagadas; los links, en GET /partes.
-      pagoDividido: (pedido.partesPago ?? []).length
-        ? { partes: pedido.partesPago.length, pagadas: pedido.partesPago.filter(p => p.estado === "pagada").length }
-        : null
-    } : null,
-    personas: esCancha ? 0 : esTour ? pasajeros.reduce((s, p) => s + p.cantidad, 0)
-      : esEvento ? entradas.reduce((s, e) => s + e.cantidad, 0)
-        : esLocal ? r.invitados ?? 0
-          : (r.adultos ?? 0) + (r.ninos ?? 0),
     total: num(pedido.total),
     montoAPagar: num(r.montoAPagar),
     saldoDestino: num(r.saldoDestino),
@@ -377,13 +265,6 @@ export function serializeReservaAdmin(pedido, { urlsCaptura = new Map(), ahora =
       fechaRegistro: p.fechaRegistro
     })),
     historial: (pedido.historialEstados ?? []).map(h => ({ estado: h.estado, notas: h.notas, fecha: h.fechaRegistro })),
-    // Locales: contrato completo y cambios (ajustes de monto y de plan).
-    ...(r.tipo === "local" ? {
-      contratoTexto: r.contrato?.texto ?? null,
-      contratoAceptadoPor: r.contrato?.aceptadoPor ?? null,
-      cambios: (pedido.cambios ?? []).map(c => ({
-        tipo: c.tipo, actor: c.actor, motivo: c.motivo, nota: c.nota, diferencia: num(c.diferencia), antes: c.antes, despues: c.despues, fecha: c.fechaRegistro
-      }))
-    } : {})
+    ...(DTO_POR_TIPO[r.tipo]?.admin?.(pedido) ?? {})
   };
 }

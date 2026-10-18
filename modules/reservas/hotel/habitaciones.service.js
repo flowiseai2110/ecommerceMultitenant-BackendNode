@@ -1,7 +1,7 @@
 import { prisma } from "../../../config/prisma.js";
 import { NotFoundError, ValidationError } from "../../../utils/errors.js";
 import { invalidateProductoDetailCache } from "../../catalogo/productos.cache.js";
-import { etiquetaModalidad, textoModalidad } from "../reservas.serializer.js";
+import { etiquetaModalidad, textoModalidad } from "./dto.js";
 import { localizar } from "../../traducciones/localizar.js";
 import { FUENTES } from "../../traducciones/fuentes.js";
 import { IDIOMA_BASE } from "../../idiomas/idioma.js";

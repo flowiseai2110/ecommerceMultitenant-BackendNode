@@ -20,7 +20,7 @@
   {
     "clave": "¡Tus entradas están confirmadas!",
     "grupos": [
-      "correos"
+      "eventos"
     ],
     "ubicaciones": [
       "correos/reserva-confirmada"
@@ -47,7 +47,7 @@
   {
     "clave": "{inicio} a {fin}|horario",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -74,7 +74,7 @@
   {
     "clave": "{n} adulto",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -83,7 +83,7 @@
   {
     "clave": "{n} adultos",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -110,9 +110,7 @@
   {
     "clave": "{n} horas",
     "grupos": [
-      "correos",
-      "hotel",
-      "reservas"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos",
@@ -122,7 +120,7 @@
   {
     "clave": "{n} niño",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -140,7 +138,7 @@
   {
     "clave": "{n} niños",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -158,9 +156,7 @@
   {
     "clave": "{n} noche",
     "grupos": [
-      "correos",
-      "hotel",
-      "reservas"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos",
@@ -170,9 +166,7 @@
   {
     "clave": "{n} noches",
     "grupos": [
-      "correos",
-      "hotel",
-      "reservas"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos",
@@ -191,7 +185,7 @@
   {
     "clave": "✅ Entradas confirmadas {codigo} — {evento}",
     "grupos": [
-      "correos"
+      "eventos"
     ],
     "ubicaciones": [
       "correos/reserva-confirmada"
@@ -209,7 +203,7 @@
   {
     "clave": "a la agencia|voz",
     "grupos": [
-      "correos"
+      "tours"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -218,7 +212,7 @@
   {
     "clave": "a la cancha|voz",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -227,7 +221,7 @@
   {
     "clave": "a la casa|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -236,7 +230,7 @@
   {
     "clave": "a la posada|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -263,7 +257,7 @@
   {
     "clave": "Adelanto",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -281,7 +275,7 @@
   {
     "clave": "al apart|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -290,7 +284,7 @@
   {
     "clave": "al hostal|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -299,7 +293,7 @@
   {
     "clave": "al hotel|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -308,7 +302,7 @@
   {
     "clave": "al local|voz",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -317,7 +311,7 @@
   {
     "clave": "al lodge|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -326,7 +320,7 @@
   {
     "clave": "al organizador|voz",
     "grupos": [
-      "correos"
+      "eventos"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -371,7 +365,7 @@
   {
     "clave": "Cancha",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -506,7 +500,7 @@
   {
     "clave": "El apart|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -515,7 +509,7 @@
   {
     "clave": "el horario|voz",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -524,7 +518,7 @@
   {
     "clave": "El hostal|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -533,7 +527,7 @@
   {
     "clave": "El hotel|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -542,7 +536,7 @@
   {
     "clave": "el inicio de la función|voz",
     "grupos": [
-      "correos"
+      "eventos"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -551,7 +545,7 @@
   {
     "clave": "El local|voz",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -560,7 +554,7 @@
   {
     "clave": "El lodge|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -578,7 +572,7 @@
   {
     "clave": "El organizador|voz",
     "grupos": [
-      "correos"
+      "eventos"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -587,7 +581,7 @@
   {
     "clave": "El resto se paga en cuotas según el plan de pagos que verás en el link.",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/reserva-aceptada"
@@ -650,7 +644,7 @@
   {
     "clave": "en destino|voz",
     "grupos": [
-      "correos"
+      "tours"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -659,7 +653,7 @@
   {
     "clave": "en el apart|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -668,7 +662,7 @@
   {
     "clave": "en el hostal|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -677,7 +671,7 @@
   {
     "clave": "en el hotel|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -686,7 +680,7 @@
   {
     "clave": "en el local|voz",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -695,7 +689,7 @@
   {
     "clave": "en el lodge|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -704,7 +698,7 @@
   {
     "clave": "en el lugar|voz",
     "grupos": [
-      "correos"
+      "eventos"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -713,7 +707,7 @@
   {
     "clave": "en la cancha|voz",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -722,7 +716,7 @@
   {
     "clave": "en la casa|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -731,7 +725,7 @@
   {
     "clave": "en la posada|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -749,7 +743,7 @@
   {
     "clave": "Entrada|estadia",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -758,7 +752,7 @@
   {
     "clave": "Entradas",
     "grupos": [
-      "correos"
+      "eventos"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -848,7 +842,7 @@
   {
     "clave": "Estadía",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -893,7 +887,8 @@
   {
     "clave": "Evento",
     "grupos": [
-      "correos"
+      "eventos",
+      "locales"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -920,7 +915,7 @@
   {
     "clave": "Fecha",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -929,7 +924,7 @@
   {
     "clave": "Función",
     "grupos": [
-      "correos"
+      "eventos"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -938,7 +933,7 @@
   {
     "clave": "Garantía",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -947,7 +942,7 @@
   {
     "clave": "Habitación",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -965,7 +960,7 @@
   {
     "clave": "hasta las {hora}",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -974,7 +969,7 @@
   {
     "clave": "Hola {nombre}, {negocio} aceptó tu solicitud. Para separar la fecha, lee y acepta el contrato, y paga la separación de {monto} antes del {fecha}.",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/reserva-aceptada"
@@ -983,7 +978,7 @@
   {
     "clave": "Hola {nombre}, {negocio} aceptó tu solicitud. Para separar la fecha, lee y acepta el contrato, y paga la separación de {monto}.",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/reserva-aceptada"
@@ -1037,7 +1032,7 @@
   {
     "clave": "Hola {nombre}, tu horario en {negocio} está apartado hasta las {hora}. Para confirmarlo, paga el adelanto de {monto} y sube la captura desde el link.",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/reserva-aceptada"
@@ -1046,7 +1041,7 @@
   {
     "clave": "Hola {nombre}, tu horario en {negocio} está apartado. Para confirmarlo, paga el adelanto de {monto} y sube la captura desde el link.",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/reserva-aceptada"
@@ -1073,7 +1068,7 @@
   {
     "clave": "Horario",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1136,7 +1131,7 @@
   {
     "clave": "Invitados",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1181,7 +1176,7 @@
   {
     "clave": "La agencia|voz",
     "grupos": [
-      "correos"
+      "tours"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1190,7 +1185,7 @@
   {
     "clave": "La cancha|voz",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1199,7 +1194,7 @@
   {
     "clave": "La casa|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1208,7 +1203,7 @@
   {
     "clave": "la disponibilidad de la salida|voz",
     "grupos": [
-      "correos"
+      "tours"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1217,7 +1212,7 @@
   {
     "clave": "la disponibilidad|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1226,7 +1221,7 @@
   {
     "clave": "la fecha del evento|voz",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1235,7 +1230,7 @@
   {
     "clave": "la fecha|voz",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1244,7 +1239,7 @@
   {
     "clave": "la hora de ingreso|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1253,7 +1248,7 @@
   {
     "clave": "la hora de salida|voz",
     "grupos": [
-      "correos"
+      "tours"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1262,7 +1257,7 @@
   {
     "clave": "la hora del partido|voz",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1271,7 +1266,7 @@
   {
     "clave": "La posada|voz",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1325,7 +1320,7 @@
   {
     "clave": "Lugar",
     "grupos": [
-      "correos"
+      "eventos"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1514,7 +1509,7 @@
   {
     "clave": "Pagado: {pagado}. Saldo: {saldo}.",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/reserva-confirmada"
@@ -1551,7 +1546,7 @@
   {
     "clave": "Paquete",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1578,7 +1573,7 @@
   {
     "clave": "Pasajeros",
     "grupos": [
-      "correos"
+      "tours"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1596,7 +1591,7 @@
   {
     "clave": "Personas",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1623,7 +1618,7 @@
   {
     "clave": "Por noche",
     "grupos": [
-      "reservas"
+      "hotel"
     ],
     "ubicaciones": [
       "sistema/disponibilidad-y-precios"
@@ -1650,7 +1645,7 @@
   {
     "clave": "Presenta esta confirmación o tu código de compra y tu documento en el ingreso.",
     "grupos": [
-      "correos"
+      "eventos"
     ],
     "ubicaciones": [
       "correos/reserva-confirmada"
@@ -1668,7 +1663,7 @@
   {
     "clave": "Presenta esta confirmación o tu código de reserva en la salida.",
     "grupos": [
-      "correos"
+      "tours"
     ],
     "ubicaciones": [
       "correos/reserva-confirmada"
@@ -1677,7 +1672,7 @@
   {
     "clave": "Próxima cuota: {monto} hasta el {fecha}.",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/reserva-confirmada"
@@ -1713,7 +1708,7 @@
   {
     "clave": "Punto de encuentro",
     "grupos": [
-      "correos"
+      "tours"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1785,7 +1780,7 @@
   {
     "clave": "Saldo en la cancha",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1794,7 +1789,7 @@
   {
     "clave": "Salida",
     "grupos": [
-      "correos"
+      "hotel"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1803,7 +1798,7 @@
   {
     "clave": "Salida|tour",
     "grupos": [
-      "correos"
+      "tours"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1812,7 +1807,7 @@
   {
     "clave": "Salón",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1821,7 +1816,7 @@
   {
     "clave": "Separación",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -1830,7 +1825,7 @@
   {
     "clave": "Separamos tu horario",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/reserva-aceptada"
@@ -1839,7 +1834,7 @@
   {
     "clave": "Separamos tu horario {codigo}: paga el adelanto",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/reserva-aceptada"
@@ -1884,7 +1879,7 @@
   {
     "clave": "Si no pagas la separación a tiempo, la fecha se libera.",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/reserva-aceptada"
@@ -1893,7 +1888,7 @@
   {
     "clave": "Si no subes la captura a tiempo, el horario se libera para otro equipo.",
     "grupos": [
-      "correos"
+      "canchas"
     ],
     "ubicaciones": [
       "correos/reserva-aceptada"
@@ -1985,7 +1980,7 @@
   {
     "clave": "Tour",
     "grupos": [
-      "correos"
+      "tours"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -2003,7 +1998,7 @@
   {
     "clave": "tu compra|voz",
     "grupos": [
-      "correos"
+      "eventos"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -2048,7 +2043,7 @@
   {
     "clave": "turno {nombre}",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
@@ -2075,7 +2070,7 @@
   {
     "clave": "Ver contrato y pagar",
     "grupos": [
-      "correos"
+      "locales"
     ],
     "ubicaciones": [
       "correos/reserva-aceptada"

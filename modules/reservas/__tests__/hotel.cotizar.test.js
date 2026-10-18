@@ -133,15 +133,15 @@ describe("montoACuenta", () => {
 
 describe("estados", () => {
   it("sigue el flujo solicitud → aceptada → pago en revisión → confirmada", () => {
-    expect(transicionar("solicitada", "aceptar")).toBe("aceptada");
-    expect(transicionar("aceptada", "subir_captura")).toBe("pago_en_revision");
-    expect(transicionar("pago_en_revision", "verificar")).toBe("confirmada");
-    expect(transicionar("pago_en_revision", "rechazar_pago")).toBe("aceptada");
+    expect(transicionar("solicitada", "aceptar", "hotel")).toBe("aceptada");
+    expect(transicionar("aceptada", "subir_captura", "hotel")).toBe("pago_en_revision");
+    expect(transicionar("pago_en_revision", "verificar", "hotel")).toBe("confirmada");
+    expect(transicionar("pago_en_revision", "rechazar_pago", "hotel")).toBe("aceptada");
   });
 
   it("rechaza transiciones inválidas con 409", () => {
-    expect(() => transicionar("confirmada", "aceptar")).toThrow(expect.objectContaining({ statusCode: 409 }));
-    expect(() => transicionar("rechazada", "verificar")).toThrow(expect.objectContaining({ statusCode: 409 }));
+    expect(() => transicionar("confirmada", "aceptar", "hotel")).toThrow(expect.objectContaining({ statusCode: 409 }));
+    expect(() => transicionar("rechazada", "verificar", "hotel")).toThrow(expect.objectContaining({ statusCode: 409 }));
   });
 
   it("lo no atendido se anula a la hora de inicio; lo pagado en revisión no", () => {

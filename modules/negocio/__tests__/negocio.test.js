@@ -14,6 +14,9 @@ const { ESTRATEGIAS, estrategiaDe, tiendaDe, invalidarRubrosCache } = await impo
 const { prepararProductoDelRubro, requiereCapacidad } = await import("../negocio.middleware.js");
 const { createProductoSchema } = await import("../../catalogo/productos.schema.js");
 const { TIPOS_NEGOCIO } = await import("../../tenants/tiendas.schema.js");
+const { MAQUINAS, transicionar } = await import("../../reservas/estados.js");
+const { DTO_POR_TIPO } = await import("../../reservas/reservas.serializer.js");
+const { CORREO_POR_TIPO } = await import("../../reservas/reservas.emails.js");
 
 const TIENDA = "22222222-2222-4222-8222-222222222222";
 const base = { tiendaId: TIENDA, nombre: "Matrimonial", slug: "matrimonial" };
@@ -35,6 +38,8 @@ describe("contrato", () => {
     expect(faltantesDelContrato({ ...ESTRATEGIAS.productos, dashboard: [{}] })).toEqual(["dashboard"]);
     const completo = { ...ESTRATEGIAS.productos, reservas: { este: "x" } };
     expect(faltantesDelContrato(completo)).toEqual(["reservas.cotizar", "reservas.tipoPedido"]);
+    const hookMal = { ...ESTRATEGIAS.hotel, reservas: { ...ESTRATEGIAS.hotel.reservas, alAceptar: true } };
+    expect(faltantesDelContrato(hookMal)).toEqual(["reservas.alAceptar"]);
   });
 
   it("capacidades por rubro", () => {
@@ -54,6 +59,27 @@ describe("contrato", () => {
     // Canchas mantiene la ocupación del horario en cada transición (alquiler-canchas R5).
     expect(typeof ESTRATEGIAS.canchas.reservas.alCambiarEstado).toBe("function");
     expect(typeof ESTRATEGIAS.locales.reservas.extraCotizacion).toBe("function");
+    // Solo el hotel revisa algo al aceptar: el cupo (antipatrones A3.3).
+    expect(Object.keys(ESTRATEGIAS).filter((t) => ESTRATEGIAS[t].reservas?.alAceptar)).toEqual(["hotel"]);
+  });
+
+  it("cada vertical tiene su máquina de estados; un tipo sin máquina es un error (antipatrones A3.4)", () => {
+    const tipos = Object.values(ESTRATEGIAS).map((e) => e.reservas?.tipoPedido).filter(Boolean);
+    expect(tipos.filter((t) => !MAQUINAS[t])).toEqual([]);
+    expect(() => transicionar("solicitada", "aceptar", "xyz")).toThrow(/sin máquina/);
+    expect(() => transicionar("solicitada", "aceptar")).toThrow(/sin máquina/);
+  });
+
+  it("cada tipo de reserva tiene su bloque en el DTO (antipatrones 3b)", () => {
+    expect(Object.keys(DTO_POR_TIPO).sort()).toEqual(Object.keys(MAQUINAS).sort());
+    expect(Object.values(DTO_POR_TIPO).every((d) => typeof d.base === "function")).toBe(true);
+  });
+
+  it("cada tipo de reserva tiene sus partes en los correos (antipatrones 3b)", () => {
+    expect(Object.keys(CORREO_POR_TIPO).sort()).toEqual(Object.keys(MAQUINAS).sort());
+    for (const c of Object.values(CORREO_POR_TIPO)) {
+      expect([typeof c.voz, typeof c.detalle, typeof c.asuntoSolicitud, typeof c.avisaConsumos]).toEqual(["function", "function", "function", "boolean"]);
+    }
   });
 });
 

@@ -33,8 +33,8 @@ export async function crearPlantilla({ tiendaId, nombre, descripcion, estructura
   await guardarFilaPlantilla({
     id,
     tipoNegocio,
-    // El rubro (moda, alimentos…) solo distingue plantillas de productos.
-    rubro: tipoNegocio === "productos" ? tienda.rubro ?? "general" : "general",
+    // El rubro (moda, alimentos…) distingue plantillas solo donde el tipo de negocio lo pide.
+    rubro: datosDe(tipoNegocio).diseno.rubroEnPlantillas ? tienda.rubro ?? "general" : "general",
     nombre: nombre.trim(),
     descripcion: descripcion.trim(),
     version: 1,

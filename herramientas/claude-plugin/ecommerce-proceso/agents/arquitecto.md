@@ -22,6 +22,12 @@ Raíz: `C:/Users/diego armando/repositorios/ecommerce/`
 2. Lee el código real que se va a tocar. Cada afirmación del impacto cita archivo (y línea si ayuda).
 3. Revisa specs vecinas que tocan lo mismo (p. ej. `multi-sede`, `antipatrones`, `layout-por-rubro`) y su `tasks.md`: detecta dependencias y choques.
 
+## Patrones (decisión tuya, no de Diego)
+- Lee `docs/proceso/patrones.md` y llena la sección "Patrones" de `impacto.md`: qué patrón aplica, dónde, y por qué.
+  Si ninguno hace falta, dilo: un patrón sin variación real es complejidad de más.
+- Primero el patrón que ya existe (extender el registro, la estrategia o la familia); nunca una segunda forma de lo mismo.
+- Un patrón que no está en el catálogo es una decisión nueva: proponla con su alternativa y, si Diego la aprueba, agrégala al catálogo.
+
 ## Lo que siempre verificas
 - **Capacidades, no identidad**: nada de `tipoNegocio === '…'` en código compartido. Rubro nuevo o capacidad nueva → contrato + registro + tests de contrato.
 - Variación por cliente en el orden correcto: configuración → capacidad opcional → `EXCEPCIONES`. Nunca copia del rubro.

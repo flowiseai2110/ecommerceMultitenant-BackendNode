@@ -536,7 +536,12 @@
         "id": "seguimiento",
         "nombre": "Seguimiento",
         "grupos": [
-          "reservas"
+          "canchas",
+          "eventos",
+          "hotel",
+          "locales",
+          "reservas",
+          "tours"
         ]
       },
       {

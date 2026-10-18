@@ -27,11 +27,16 @@ const GRUPO_POR_RUTA = {
   "reservas/locales": "locales",
   "reservas/canchas": "canchas",
   "reservas/reservas.emails.js": "correos",
+  "reservas/correo.comun.js": "correos",
   "ordenes": "productos",
   "pagos": "comun"
 };
 
 const CORREOS = "reservas/reservas.emails.js";
+const COMUN = "reservas/correo.comun.js";
+// Lo propio de cada rubro en los correos (docs/specs/antipatrones 3b): va a la
+// misma sección que antes, y a su grupo, para que cada tienda vea lo suyo.
+const RUBRO = (r) => `reservas/${r}/correo.js`;
 
 /**
  * Dónde ve el dueño los textos del servidor en Traducciones (diseno.md A6):
@@ -44,16 +49,22 @@ export const PANTALLAS_SERVIDOR = {
   correos: { nombre: "Correos al cliente", zona: "mensajes", secciones: {
     "Solicitud recibida": [`${CORREOS}#solicitudRecibidaEmail`],
     "Compra por pagar": [`${CORREOS}#compraPendienteEmail`],
-    "Reserva aceptada": [`${CORREOS}#aceptadaEmail`],
+    "Reserva aceptada": [`${CORREOS}#aceptadaEmail`, `${RUBRO("canchas")}#aceptadaCancha`, `${RUBRO("locales")}#aceptadaLocal`],
     "Reserva rechazada": [`${CORREOS}#rechazadaEmail`],
-    "Reserva confirmada": [`${CORREOS}#confirmadaEmail`],
+    "Reserva confirmada": [
+      `${CORREOS}#confirmadaEmail`, `${RUBRO("eventos")}#confirmadaEvento`, `${RUBRO("tours")}#confirmadaTour`, `${RUBRO("locales")}#confirmadaLocal`
+    ],
     "Partes comunes de los correos": [
-      `${CORREOS}#fechaHora`, `${CORREOS}#DIAS_CORTOS`, `${CORREOS}#VOZ`, `${CORREOS}#VOZ_ALOJAMIENTO`,
-      `${CORREOS}#VOZ_HOTEL`, `${CORREOS}#textoPersonas`, `${CORREOS}#estadia`, `${CORREOS}#resumen`
+      `${COMUN}#fechaHora`, `${COMUN}#DIAS_CORTOS`, `${CORREOS}#resumen`,
+      `${RUBRO("hotel")}#VOZ_ALOJAMIENTO`, `${RUBRO("hotel")}#VOZ_HOTEL`, `${RUBRO("hotel")}#textoPersonas`, `${RUBRO("hotel")}#estadia`, `${RUBRO("hotel")}#resumenHotel`,
+      `${RUBRO("tours")}#VOZ_TOUR`, `${RUBRO("tours")}#resumenTour`,
+      `${RUBRO("eventos")}#VOZ_EVENTO`, `${RUBRO("eventos")}#resumenEvento`,
+      `${RUBRO("locales")}#VOZ_LOCAL`, `${RUBRO("locales")}#resumenLocal`,
+      `${RUBRO("canchas")}#VOZ_CANCHA`, `${RUBRO("canchas")}#resumenCancha`
     ]
   } },
   sistema: { nombre: "Mensajes del sistema", zona: "mensajes", secciones: {
-    "Disponibilidad y precios": ["reservas/hotel/textos-cotizar.js", "reservas/hotel/habitaciones.service.js", "reservas/reservas.serializer.js"],
+    "Disponibilidad y precios": ["reservas/hotel/textos-cotizar.js", "reservas/hotel/habitaciones.service.js", "reservas/hotel/dto.js"],
     "Salidas de los tours": ["reservas/tours/textos-tour.js"],
     "Estados de la reserva": ["reservas/estados.js"],
     "Fechas": ["reservas/textos-fecha.js"],

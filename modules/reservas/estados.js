@@ -87,25 +87,27 @@ export const TRANSICIONES_HOTEL = {
   completada:       {}
 };
 
-const MAQUINAS = { hotel: TRANSICIONES_HOTEL, evento: TRANSICIONES_EVENTO, local: TRANSICIONES_LOCAL };
+/** Una máquina por tipo de pedido; tour y cancha usan la base. Un tipo sin máquina es un error (antipatrones A3.4). */
+export const MAQUINAS = { hotel: TRANSICIONES_HOTEL, tour: TRANSICIONES, evento: TRANSICIONES_EVENTO, local: TRANSICIONES_LOCAL, cancha: TRANSICIONES };
 
 /**
  * Con ciclo de estadía (check-in y check-out), la reserva no se cierra sola al
  * llegar la fecha: la cierra recepción. Se deduce de la máquina, no del rubro.
  */
-export const tieneCicloEstadia = (tipo) => Boolean((MAQUINAS[tipo] ?? TRANSICIONES).confirmada?.check_in);
+export const tieneCicloEstadia = (tipo) => Boolean(MAQUINAS[tipo]?.confirmada?.check_in);
 /** Tipos de reserva con ciclo de estadía (para filtrar en SQL). */
 export const TIPOS_CON_CICLO = Object.keys(MAQUINAS).filter(tieneCicloEstadia);
 
 /**
  * @param {string} actual
  * @param {string} accion
- * @param {string} [tipo] - tipo del pedido: hotel | tour | evento | local
+ * @param {string} tipo - tipo del pedido: hotel | tour | evento | local | cancha
  * @returns {string} estado nuevo
  * @throws {ConflictError} TRANSICION_INVALIDA
  */
-export function transicionar(actual, accion, tipo = "hotel") {
-  const maquina = MAQUINAS[tipo] ?? TRANSICIONES;
+export function transicionar(actual, accion, tipo) {
+  const maquina = MAQUINAS[tipo];
+  if (!maquina) throw new Error(`Tipo de reserva sin máquina de estados: ${tipo}`);
   const nuevo = maquina[actual]?.[accion];
   if (!nuevo) {
     // El errorHandler solo expone `details`: el mensaje va también ahí para la interfaz.

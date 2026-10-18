@@ -28,11 +28,14 @@ Tipos: **R** receta · **C** chica · **M** mediana · **K** crítica · **P** p
 | 18 | "Ya publiqué el sitio, haz la auditoría de accesibilidad" | M | `qa` | — | Al entregar el resultado |
 | 19 | "Actualiza lo que sabemos del rubro canchas" | M | `analista-canchas` | — | Al entregar `docs/rubros/canchas.md` |
 | 20 | "Que el recordatorio de bitácora no salte cuando solo cambio tests" | C | Ninguno: directo | plugin | No; corre `verificar.sh` |
+| 21 | "Ya desplegué el rediseño del checkout en producción" | M | `deployer` (mueve a Desplegado, propone el tag `prod-*`) → `analista-productos` (actualiza `docs/rubros/productos.md`) | estado | Antes de crear el tag |
+| 22 | "Siempre olvidas revisar la vista del celular antes de darme algo por terminado" | C | Ninguno: anota la mejora en `MEJORAS.md` como `propuesta` y la aplica solo si Diego aprueba | plugin | Sí: para aplicar la mejora |
 
 ## Evaluaciones
 
 | Fecha | Versión del plugin | Sesión principal | Resultado | Cambios que salieron |
 |---|---|---|---|---|
 | 2026-10-18 | 0.3.0 → 0.3.1 | sonnet | 18/20 bien a la primera; 2 con costo de más (6: lanzaba el `explicador` para resumir; 2: repetía el `arquitecto` con `tasks.md` ya aprobado). Tras corregir, 20/20. En 8 y 17 decidió mejor que lo esperado (se actualizó la tabla) | `coordinacion.md`: no repetir etapas hechas, no lanzar agentes para resumir, revisar specs en borrador con el analista del rubro |
+| 2026-10-18 | 0.3.3 | sonnet | Casos nuevos 21 y 22 bien; regresión de 3 y 14 bien | `coordinacion.md`: cerrar una funcionalidad actualiza `docs/rubros/`; las mejoras del proceso se anotan en `MEJORAS.md` |
 
 Límite: es una simulación de la decisión de la sesión principal (qué agentes, modelo, recetas y paradas); no ejecuta los agentes.

@@ -13,7 +13,9 @@ export const tours = {
   marcas: false,
   diseno: {
     plantillaPorDefecto: "tours-catalogo",
-    secciones: Object.freeze([...SECCIONES_COMUNES, ...SECCIONES_RESERVAS, "tours"])
+    secciones: Object.freeze([...SECCIONES_COMUNES, ...SECCIONES_RESERVAS, "tours"]),
+    layoutPorDefecto: Object.freeze({}),
+    rubroEnPlantillas: false
   },
   configReservas: { avisoProximoHoras: 24, comprobanteEn: "al_pagar" },
   // Formulario de la reserva (reservas/formulario.js): como hasta ahora.

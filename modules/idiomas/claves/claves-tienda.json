@@ -1945,7 +1945,7 @@
   {
     "clave": "Cancha",
     "grupos": [
-      "reservas"
+      "canchas"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -4051,7 +4051,7 @@
   {
     "clave": "Encuentro",
     "grupos": [
-      "reservas"
+      "tours"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -4107,8 +4107,7 @@
   {
     "clave": "Entradas",
     "grupos": [
-      "eventos",
-      "reservas"
+      "eventos"
     ],
     "ubicaciones": [
       "eventos/lista-de-eventos",
@@ -4516,7 +4515,7 @@
   {
     "clave": "Estadía",
     "grupos": [
-      "reservas"
+      "hotel"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -4642,7 +4641,8 @@
   {
     "clave": "Evento",
     "grupos": [
-      "reservas"
+      "eventos",
+      "locales"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -4724,6 +4724,7 @@
     "clave": "Fecha",
     "grupos": [
       "hotel",
+      "locales",
       "reservas",
       "tours"
     ],
@@ -4831,8 +4832,7 @@
   {
     "clave": "Función",
     "grupos": [
-      "eventos",
-      "reservas"
+      "eventos"
     ],
     "ubicaciones": [
       "evento/ficha",
@@ -4889,8 +4889,7 @@
   {
     "clave": "Habitación",
     "grupos": [
-      "hotel",
-      "reservas"
+      "hotel"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento",
@@ -4900,8 +4899,7 @@
   {
     "clave": "Habitaciones",
     "grupos": [
-      "hotel",
-      "reservas"
+      "hotel"
     ],
     "ubicaciones": [
       "habitaciones/buscador-de-fechas",
@@ -5077,7 +5075,7 @@
   {
     "clave": "Horario",
     "grupos": [
-      "reservas"
+      "canchas"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -5132,7 +5130,6 @@
   {
     "clave": "Idioma",
     "grupos": [
-      "reservas",
       "tours"
     ],
     "ubicaciones": [
@@ -5429,8 +5426,7 @@
   {
     "clave": "Ingreso",
     "grupos": [
-      "hotel",
-      "reservas"
+      "hotel"
     ],
     "ubicaciones": [
       "habitacion/ficha",
@@ -5511,7 +5507,7 @@
   {
     "clave": "Invitados",
     "grupos": [
-      "reservas"
+      "locales"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -5601,6 +5597,7 @@
   {
     "clave": "Jugadores",
     "grupos": [
+      "canchas",
       "reservas"
     ],
     "ubicaciones": [
@@ -5977,7 +5974,7 @@
   {
     "clave": "Lugar",
     "grupos": [
-      "reservas"
+      "eventos"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -6014,8 +6011,8 @@
     "clave": "Mapa",
     "grupos": [
       "comun",
-      "hotel",
-      "reservas"
+      "eventos",
+      "hotel"
     ],
     "ubicaciones": [
       "inicio/ubicacion",
@@ -6662,7 +6659,7 @@
   {
     "clave": "niños de {edades} años",
     "grupos": [
-      "reservas"
+      "hotel"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -7722,7 +7719,7 @@
   {
     "clave": "Paquete",
     "grupos": [
-      "reservas"
+      "locales"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -7803,7 +7800,7 @@
   {
     "clave": "Pasajeros",
     "grupos": [
-      "reservas"
+      "tours"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -7908,7 +7905,7 @@
   {
     "clave": "Personas",
     "grupos": [
-      "reservas"
+      "hotel"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -8302,7 +8299,7 @@
   {
     "clave": "Proveedores",
     "grupos": [
-      "reservas"
+      "locales"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -8541,7 +8538,7 @@
   {
     "clave": "Recojo",
     "grupos": [
-      "reservas"
+      "tours"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -8900,7 +8897,7 @@
   {
     "clave": "Salida|tour",
     "grupos": [
-      "reservas"
+      "tours"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -8909,7 +8906,7 @@
   {
     "clave": "Salón",
     "grupos": [
-      "reservas"
+      "locales"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -9243,8 +9240,7 @@
   {
     "clave": "Tarifa",
     "grupos": [
-      "hotel",
-      "reservas"
+      "hotel"
     ],
     "ubicaciones": [
       "habitacion/ficha",
@@ -9589,7 +9585,7 @@
   {
     "clave": "Tour",
     "grupos": [
-      "reservas"
+      "tours"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -9607,7 +9603,7 @@
   {
     "clave": "Traes proveedores propios",
     "grupos": [
-      "reservas"
+      "locales"
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
@@ -10030,7 +10026,6 @@
     "clave": "Ver en el mapa",
     "grupos": [
       "eventos",
-      "reservas",
       "tours"
     ],
     "ubicaciones": [

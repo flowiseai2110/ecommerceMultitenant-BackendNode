@@ -29,15 +29,25 @@
 - [ ] **Usuario:** provocar errores en el Admin según "Cómo probar" del issue FrontendStore#3
 
 ## Pieza 3 — Rubro por capacidades + secciones por registro (los tres, nada visible)
-- [ ] Store: `ventana`, `permiteModificar` y `textoFechas` en el perfil de reserva; detalle por slot en el seguimiento (A3.1)
-- [ ] Admin: `voz()` y `detalle()` al perfil de reserva de cada rubro (A3.2)
-- [ ] Backend: hook `alAceptar` en la vertical + contrato; el hotel valida el cupo ahí (A3.3)
-- [ ] Backend: `transicionar` sin rubro por defecto (A3.4)
-- [ ] Backend: `datos.diseno.layoutPorDefecto` en lugar de `tipoNegocio === "productos"` (A3.5)
-- [ ] Fitness function anti-identidad en los tres repos (A3.6)
-- [ ] Admin: `META_SECCIONES` exhaustivo y `seccion-form` sin el OR de 7 tipos (A4.1, A4.2)
-- [ ] Actualizar `perfiles.spec.ts` y `uis.spec.ts` solo si el cambio es intencional
-- [ ] Verificar: seguimiento de una reserva por rubro y editor de Diseño en el navegador, iguales que antes
+- [x] Store: `cuando`, `fechasConfirmada`, `personas`, `antesDeLlegar` y `detalle` (componente por rubro) en el perfil de reserva; el seguimiento sin comparaciones de tipo (A3.1)
+- [x] Admin: `LecturaReserva` (voz, servicio, ventana, fechas, personas, WhatsApp) y `detalle` en el perfil de reserva de cada rubro; `perfilDeTipoReserva`; equivalencia verificada contra la versión anterior en 252 casos (A3.2)
+- [x] Backend: hook `alAceptar` en la vertical + contrato (hooks opcionales deben ser funciones); el hotel valida el cupo ahí (A3.3)
+- [x] Backend: `transicionar` sin rubro por defecto; `MAQUINAS` exhaustivo y test de contrato (A3.4)
+- [x] Backend: `datos.diseno.layoutPorDefecto` y `rubroEnPlantillas` en lugar de `tipoNegocio === "productos"`; las 23 plantillas idénticas (A3.5)
+- [x] Fitness function anti-identidad en los tres repos, con lista de deuda que solo baja: backend `modules/negocio/__tests__/anti-identidad.test.js`; fronts `scripts/anti-identidad.mjs` antes de `ng test` (A3.6)
+- [x] Admin: `META_SECCIONES` exhaustivo y `seccion-form` sin el OR de 7 tipos (A4.1, A4.2)
+- [x] `perfiles.spec.ts` (Store y Admin) con tests nuevos; `uis.spec.ts` sin cambios
+- [x] Tests: backend 116 suites / 1571; Store 220; Admin 168; builds de producción OK
+- [ ] **Usuario:** seguimiento de una reserva por rubro, Admin › Reservas y editor de Diseño en el navegador, según "Cómo probar" del issue FrontendStore#4
+
+## Pieza 3b — Rubro por capacidades en correos, serializer y service de reservas (Backend, nada visible)
+- [x] `reservas.service.js` (11) y `reservas.pago.js` (2): `alCambiarEstado` de locales (libera la franja) y de eventos (vendidas ±1, con `anterior`); capacidad `planDePagos` vía `rubroDePedido`; `mensajeMaxAbiertas`, `notasIniciales` y `avisaAlNegocio` en la vertical
+- [x] `reservas.serializer.js` (5): `DTO_POR_TIPO` + `reservas/<rubro>/dto.js`; equivalencia en 70 casos × 3 serializadores
+- [x] `reservas.emails.js` (22): `CORREO_POR_TIPO` + `reservas/<rubro>/correo.js` + `correo.comun.js`; equivalencia en 468 casos; Traducciones sin cambios de sección (90 claves pasan de `correos` a su rubro)
+- [x] `DEUDA` de `anti-identidad.test.js` vacía; tests de contrato de `DTO_POR_TIPO` y `CORREO_POR_TIPO`
+- [x] Bug corregido: la nota inicial de una reserva confirmada al reservar (hotel o tour) decía "Entradas libres confirmadas"
+- [x] Tests: 117 suites / 1582
+- [ ] **Usuario:** probar según "Cómo probar" del issue FrontendStore#9
 
 ## Pieza 4 — Checkout por estrategias (Store, nada visible)
 - [ ] e2e de Playwright del checkout por método de envío, **antes** de tocar nada (A5.5)

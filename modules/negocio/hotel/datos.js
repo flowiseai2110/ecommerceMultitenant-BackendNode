@@ -13,7 +13,9 @@ export const hotel = {
   marcas: false,
   diseno: {
     plantillaPorDefecto: "hotel-boutique",
-    secciones: Object.freeze([...SECCIONES_COMUNES, ...SECCIONES_RESERVAS, "habitaciones"])
+    secciones: Object.freeze([...SECCIONES_COMUNES, ...SECCIONES_RESERVAS, "habitaciones"]),
+    layoutPorDefecto: Object.freeze({}),
+    rubroEnPlantillas: false
   },
   // El comprobante se emite en el check-out, junto con los consumos.
   configReservas: { avisoProximoHoras: 2, comprobanteEn: "en_el_servicio" },

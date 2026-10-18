@@ -60,6 +60,10 @@ const EXCEPCIONES = {};
 export const verticalDePedido = (tipoPedido) =>
   Object.values(ESTRATEGIAS).find((e) => e.reservas?.tipoPedido === tipoPedido)?.reservas ?? null;
 
+/** Capacidades del rubro que recibe ese `tipo` de pedido (p. ej. `planDePagos`), o null. */
+export const rubroDePedido = (tipoPedido) =>
+  Object.values(ESTRATEGIAS).find((e) => e.reservas?.tipoPedido === tipoPedido) ?? null;
+
 /** @param {{ id: string, tipoNegocio: string }} tienda */
 export const estrategiaDe = (tienda) =>
   EXCEPCIONES[tienda.id] ?? ESTRATEGIAS[tienda.tipoNegocio] ?? ESTRATEGIAS.productos;

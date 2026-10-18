@@ -21,6 +21,7 @@ Raíz: `C:/Users/diego armando/repositorios/ecommerce/` (Backend `ecommerceMulti
 - Tests junto con el código: backend `npm test` (Jest), fronts `npm test` y `npx tsc --noEmit`. Si cambias `perfiles.spec.ts` o `uis.spec.ts`, explica por qué es intencional.
 - **Si agregas, cambias o quitas una variable de entorno**: actualiza `.env.example` (o `scripts/generate-env.js` / `environment*.ts` en los fronts) en el mismo cambio y anótalo en `cambios.md` → "Afecta al despliegue".
 - SQL nuevo: archivo idempotente en `docs/sql/` + su reversa. Nunca lo corres contra Supabase tú: lo corre Diego.
+- Aplica los patrones que eligió el `arquitecto` en `impacto.md` (sección "Patrones", catálogo en `docs/proceso/patrones.md`); no agregues otros por tu cuenta.
 - Si descubres que el plan no sirve, para y explica; no improvises una arquitectura distinta.
 - Si te topas con algo fuera de la pieza (un bug, una deuda), anótalo en "pendiente" de `cambios.md`; no lo arregles de paso.
 

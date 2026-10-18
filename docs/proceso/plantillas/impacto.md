@@ -17,6 +17,12 @@
 - Tests de contrato que cambian (`perfiles.spec.ts`, `uis.spec.ts`, tests de `negocio/`) y por qué es intencional
 - Rubros afectados indirectamente (regresión posible)
 
+## Patrones
+Del [catálogo](../patrones.md). Uno por fila; si ninguno aplica, decirlo y por qué basta código directo.
+
+| Patrón | Dónde se aplica | Por qué aplica (o por qué no hace falta) |
+|---|---|---|
+
 ## Base de datos
 - Tablas / columnas / índices / RLS
 - SQL: `docs/sql/<archivo>.sql` (idempotente) + reversa
