@@ -1540,9 +1540,7 @@ model reservas {
   // Fase C
   habitaciones   Int       @default(1) // cuántas habitaciones del mismo tipo
   plan           Json?     @db.JsonB // { id, nombre, ajustePct, reembolsable } (snapshot)
-  idiomaHuesped  String    @default("es") @map("idioma_huesped") @db.VarChar(10) // idioma en que reservó (correos; docs/specs/idiomas)
-  resenaPedidaEn DateTime? @map("resena_pedida_en") @db.Timestamptz // correo "¿Cómo fue tu estadía?" enviado
-  // Alquiler de locales: inicio/fin = horario del evento SIN preparación.
+  idiomaHuesped  String    @default("es") @map("idioma_huesped") @db.VarChar(10) // idioma en que reservó (correos; docs/specs/idiomas)  // Alquiler de locales: inicio/fin = horario del evento SIN preparación.
   turnoId                String?   @map("turno_id") @db.Uuid
   paqueteId              String?   @map("paquete_id") @db.Uuid
   cotizacionId           String?   @map("cotizacion_id") @db.Uuid

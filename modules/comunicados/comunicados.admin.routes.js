@@ -24,13 +24,9 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ query: comunicadosQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const data = await getComunicadosAdmin(req.tiendaId);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "COMUNICADOS_GET", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await getComunicadosAdmin(req.tiendaId);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "COMUNICADOS_GET", data });
   }
 );
 
@@ -41,14 +37,10 @@ router.put(
   authMiddleware,
   requireTiendaAccess("editor"),
   validate({ query: comunicadosQuerySchema, body: updateComunicadosSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await saveComunicados(req.tiendaId, req.body.comunicados, req.user);
-      invalidateTiendasStoreCache();
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "COMUNICADOS_UPDATED", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await saveComunicados(req.tiendaId, req.body.comunicados, req.user);
+    invalidateTiendasStoreCache();
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "COMUNICADOS_UPDATED", data });
   }
 );
 
@@ -59,14 +51,10 @@ router.get(
   authMiddleware,
   requireTiendaAccess("admin"),
   validate({ params: comunicadoIdParamSchema, query: rangoEmailQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const { desde, hasta } = req.validatedQuery;
-      const data = await contarDestinatarios(req.tiendaId, req.params.id, { desde, hasta });
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "COMUNICADO_DESTINATARIOS", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const { desde, hasta } = req.validatedQuery;
+    const data = await contarDestinatarios(req.tiendaId, req.params.id, { desde, hasta });
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "COMUNICADO_DESTINATARIOS", data });
   }
 );
 
@@ -78,13 +66,9 @@ router.post(
   authMiddleware,
   requireTiendaAccess("admin"),
   validate({ params: comunicadoIdParamSchema, query: comunicadosQuerySchema, body: rangoEmailSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await iniciarEnvio(req.tiendaId, req.params.id, req.body, req.user);
-      return apiResponse(res, { status: 202, type: "SUCCESS", code: "COMUNICADO_EMAIL_ENVIANDO", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await iniciarEnvio(req.tiendaId, req.params.id, req.body, req.user);
+    return apiResponse(res, { status: 202, type: "SUCCESS", code: "COMUNICADO_EMAIL_ENVIANDO", data });
   }
 );
 

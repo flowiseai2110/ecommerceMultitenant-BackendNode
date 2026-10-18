@@ -30,15 +30,11 @@ router.get(
   "/proveedor",
   validate({ query: tiendaQuerySchema }),
   scopeQueryToTienda,
-  async (req, res, next) => {
-    try {
-      const { tiendaId } = req.validatedQuery || req.query;
-      const data = await obtenerProveedor(tiendaId);
-      res.set("Cache-Control", "public, max-age=300");
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_PROVEEDOR", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const { tiendaId } = req.validatedQuery || req.query;
+    const data = await obtenerProveedor(tiendaId);
+    res.set("Cache-Control", "public, max-age=300");
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_PROVEEDOR", data });
   }
 );
 
@@ -51,32 +47,28 @@ router.post(
   optionalAuth,
   scopeBodyToTienda,
   validate({ body: crearHojaSchema }),
-  async (req, res, next) => {
-    try {
-      // Honeypot: una persona nunca llena este campo. Al bot se le responde
-      // como si se hubiera registrado, para que no aprenda a evitarlo.
-      if (req.body.sitioWeb) {
-        logger.warn(`🪤 Libro de Reclamaciones: honeypot activado en la tienda ${req.body.tiendaId}`);
-        return apiResponse(res, {
-          status: 201, type: "SUCCESS", code: "LIBRO_HOJA_REGISTRADA", data: { numero: null, token: null }
-        });
-      }
-
-      const { hoja, tienda } = await registrarHoja(req.body, { authUserId: req.user?.id ?? null, ip: clientIp(req) });
-      const token = await firmarTokenHoja({ hojaId: hoja.id, tiendaId: hoja.tiendaId });
-
-      // Fire-and-forget: la constancia en pantalla no espera a los correos.
-      notificarRegistro(hoja, tienda, token);
-
+  async (req, res) => {
+    // Honeypot: una persona nunca llena este campo. Al bot se le responde
+    // como si se hubiera registrado, para que no aprenda a evitarlo.
+    if (req.body.sitioWeb) {
+      logger.warn(`🪤 Libro de Reclamaciones: honeypot activado en la tienda ${req.body.tiendaId}`);
       return apiResponse(res, {
-        status: 201,
-        type: "SUCCESS",
-        code: "LIBRO_HOJA_REGISTRADA",
-        data: { numero: hoja.numero, token, hoja: serializeHojaStore(hoja) }
+        status: 201, type: "SUCCESS", code: "LIBRO_HOJA_REGISTRADA", data: { numero: null, token: null }
       });
-    } catch (error) {
-      next(error);
     }
+
+    const { hoja, tienda } = await registrarHoja(req.body, { authUserId: req.user?.id ?? null, ip: clientIp(req) });
+    const token = await firmarTokenHoja({ hojaId: hoja.id, tiendaId: hoja.tiendaId });
+
+    // Fire-and-forget: la constancia en pantalla no espera a los correos.
+    notificarRegistro(hoja, tienda, token);
+
+    return apiResponse(res, {
+      status: 201,
+      type: "SUCCESS",
+      code: "LIBRO_HOJA_REGISTRADA",
+      data: { numero: hoja.numero, token, hoja: serializeHojaStore(hoja) }
+    });
   }
 );
 
@@ -86,19 +78,15 @@ router.post(
 router.get(
   "/hoja/:token",
   validate({ params: tokenParamSchema }),
-  async (req, res, next) => {
-    try {
-      const { hojaId, tiendaId } = await verificarTokenHoja(req.params.token);
-      // Un enlace de la tienda A no sirve en el subdominio de la tienda B (R8.3).
-      if (req.tiendaId && req.tiendaId !== tiendaId) {
-        throw new NotFoundError("Hoja de reclamación", "Hoja de reclamación no encontrada");
-      }
-      const data = await obtenerHojaPublica(tiendaId, hojaId);
-      res.set("Cache-Control", "private, no-store");
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_HOJA", data });
-    } catch (error) {
-      next(error);
+  async (req, res) => {
+    const { hojaId, tiendaId } = await verificarTokenHoja(req.params.token);
+    // Un enlace de la tienda A no sirve en el subdominio de la tienda B (R8.3).
+    if (req.tiendaId && req.tiendaId !== tiendaId) {
+      throw new NotFoundError("Hoja de reclamación", "Hoja de reclamación no encontrada");
     }
+    const data = await obtenerHojaPublica(tiendaId, hojaId);
+    res.set("Cache-Control", "private, no-store");
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_HOJA", data });
   }
 );
 

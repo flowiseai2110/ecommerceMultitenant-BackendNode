@@ -13,13 +13,9 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ query: consumoIaQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const data = await obtenerConsumo(req.tiendaId);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "CONSUMO_IA_GET", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await obtenerConsumo(req.tiendaId);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "CONSUMO_IA_GET", data });
   }
 );
 
@@ -29,13 +25,9 @@ router.put(
   authMiddleware,
   requireTiendaAccess("admin"),
   validate({ query: consumoIaQuerySchema, params: consumoIaParamsSchema, body: ajustesConsumoIaSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await guardarAjustes(req.tiendaId, req.params.tipo, req.body, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "CONSUMO_IA_UPDATED", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await guardarAjustes(req.tiendaId, req.params.tipo, req.body, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "CONSUMO_IA_UPDATED", data });
   }
 );
 

@@ -4,7 +4,7 @@ import GenericService from "../../services/generic.service.js";
 import GenericRepository from "../../repositories/generic.repository.js";
 import { prisma } from "../../config/prisma.js";
 import { validate } from "../../middlewares/validation.middleware.js";
-import { scopeQueryToTienda } from "../../kernel/tenant/index.js";
+import { requireTienda, scopeQueryToTienda } from "../../kernel/tenant/index.js";
 import { idParamSchema, paginationSchema } from "./categorias.schema.js";
 import { serializeCategoriaStore } from "./categorias.serializer.js";
 import { localizado } from "../traducciones/localizar.js";
@@ -32,7 +32,9 @@ const router = Router();
 // o por ?tiendaId=&activo=true como fallback en dev/dominio genérico)
 router.get("/", validate({ query: paginationSchema }), scopeQueryToTienda, categoriasController.findAll);
 
-// GET /:id - Obtener categoría por ID (público)
-router.get("/:id", validate({ params: idParamSchema }), categoriasController.findById);
+// GET /:id - Obtener categoría por ID (público). Exige la tienda del subdominio
+// (o ?tienda=): con ella en el contexto, el auto-scope de Prisma deja fuera las
+// categorías de otras tiendas (docs/specs/antipatrones A1.8).
+router.get("/:id", validate({ params: idParamSchema }), requireTienda, categoriasController.findById);
 
 export default router;

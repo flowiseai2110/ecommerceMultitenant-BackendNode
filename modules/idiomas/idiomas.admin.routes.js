@@ -23,37 +23,35 @@ const vistaPreviaQuery = tiendaQuery.extend({ idioma: codigoIdiomaSchema });
 const router = Router();
 const ok = (res, code, data, status = 200) => apiResponse(res, { status, type: "SUCCESS", code, data });
 
-router.get("/", async (_req, res, next) => {
-  try { return ok(res, "IDIOMAS_LIST", await idiomasActivos()); } catch (error) { next(error); }
+router.get("/", async (_req, res) => {
+  return ok(res, "IDIOMAS_LIST", await idiomasActivos());
 });
 
 // GET /tienda?tiendaId= — idiomas de la tienda con su avance y si están publicados (P5).
-router.get("/tienda", requireTiendaAccess("viewer"), validate({ query: tiendaQuery }), async (req, res, next) => {
-  try { return ok(res, "IDIOMAS_TIENDA", await estadoIdiomas(req.tiendaId)); } catch (error) { next(error); }
+router.get("/tienda", requireTiendaAccess("viewer"), validate({ query: tiendaQuery }), async (req, res) => {
+  return ok(res, "IDIOMAS_TIENDA", await estadoIdiomas(req.tiendaId));
 });
 
 // GET /vista-previa?tiendaId=&idioma= — permiso de 1 hora para ver la tienda en un
 // idioma elegido aunque no esté publicado (modo traducir; diseno.md B3). Quien traduce: admin.
-router.get("/vista-previa", requireTiendaAccess("admin"), validate({ query: vistaPreviaQuery }), async (req, res, next) => {
-  try {
-    const { token, expiraEn, slug } = await permisoVistaPrevia(req.tiendaId, req.validatedQuery?.idioma ?? req.query.idioma);
-    return ok(res, "IDIOMA_VISTA_PREVIA", { token, expiraEn, url: slug ? urlTienda(slug, "") : null });
-  } catch (error) { next(error); }
+router.get("/vista-previa", requireTiendaAccess("admin"), validate({ query: vistaPreviaQuery }), async (req, res) => {
+  const { token, expiraEn, slug } = await permisoVistaPrevia(req.tiendaId, req.validatedQuery?.idioma ?? req.query.idioma);
+  return ok(res, "IDIOMA_VISTA_PREVIA", { token, expiraEn, url: slug ? urlTienda(slug, "") : null });
 });
 
 // GET /permisos — si quien entra administra la plataforma (el admin muestra el enlace a la pantalla Idiomas).
 router.get("/permisos", (req, res) => ok(res, "IDIOMAS_PERMISOS", { plataforma: esAdminPlataforma(req.user) }));
 
-router.get("/plataforma", requirePlatformAdmin, async (_req, res, next) => {
-  try { return ok(res, "IDIOMAS_PLATAFORMA_LIST", await listarTodos()); } catch (error) { next(error); }
+router.get("/plataforma", requirePlatformAdmin, async (_req, res) => {
+  return ok(res, "IDIOMAS_PLATAFORMA_LIST", await listarTodos());
 });
 
-router.post("/", requirePlatformAdmin, validate({ body: crearIdiomaSchema }), async (req, res, next) => {
-  try { return ok(res, "IDIOMA_CREATED", await crearIdiomaPlataforma(req.body, req.user), 201); } catch (error) { next(error); }
+router.post("/", requirePlatformAdmin, validate({ body: crearIdiomaSchema }), async (req, res) => {
+  return ok(res, "IDIOMA_CREATED", await crearIdiomaPlataforma(req.body, req.user), 201);
 });
 
-router.put("/:codigo", requirePlatformAdmin, validate({ params: codigoParamSchema, body: actualizarIdiomaSchema }), async (req, res, next) => {
-  try { return ok(res, "IDIOMA_UPDATED", await actualizarIdioma(req.params.codigo, req.body, req.user)); } catch (error) { next(error); }
+router.put("/:codigo", requirePlatformAdmin, validate({ params: codigoParamSchema, body: actualizarIdiomaSchema }), async (req, res) => {
+  return ok(res, "IDIOMA_UPDATED", await actualizarIdioma(req.params.codigo, req.body, req.user));
 });
 
 export default router;

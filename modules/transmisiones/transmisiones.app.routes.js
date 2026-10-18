@@ -23,20 +23,20 @@ function bearer(req) {
   return token;
 }
 
-router.post("/vincular", validate({ body: vincularSchema }), async (req, res, next) => {
-  try { return ok(res, "APP_VINCULADA", await vincularApp(req.body.codigo)); } catch (error) { next(error); }
+router.post("/vincular", validate({ body: vincularSchema }), async (req, res) => {
+  return ok(res, "APP_VINCULADA", await vincularApp(req.body.codigo));
 });
 
-router.get("/estado", async (req, res, next) => {
-  try { return ok(res, "APP_ESTADO", await estadoApp(bearer(req))); } catch (error) { next(error); }
+router.get("/estado", async (req, res) => {
+  return ok(res, "APP_ESTADO", await estadoApp(bearer(req)));
 });
 
-router.post("/prueba", async (req, res, next) => {
-  try { return ok(res, "APP_PRUEBA", await pruebaDesdeApp(bearer(req))); } catch (error) { next(error); }
+router.post("/prueba", async (req, res) => {
+  return ok(res, "APP_PRUEBA", await pruebaDesdeApp(bearer(req)));
 });
 
-router.post("/terminar", async (req, res, next) => {
-  try { return ok(res, "APP_TERMINADA", await terminarDesdeApp(bearer(req))); } catch (error) { next(error); }
+router.post("/terminar", async (req, res) => {
+  return ok(res, "APP_TERMINADA", await terminarDesdeApp(bearer(req)));
 });
 
 export default router;

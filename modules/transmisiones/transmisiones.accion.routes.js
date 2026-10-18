@@ -17,16 +17,16 @@ const ok = (res, code, data) => {
   return apiResponse(res, { status: 200, type: "SUCCESS", code, data });
 };
 
-router.get("/:token", validate({ params: tokenParamSchema }), async (req, res, next) => {
-  try { return ok(res, "TRANSMISION_ACCION", await accionInfo(req.params.token)); } catch (error) { next(error); }
+router.get("/:token", validate({ params: tokenParamSchema }), async (req, res) => {
+  return ok(res, "TRANSMISION_ACCION", await accionInfo(req.params.token));
 });
 
-router.post("/:token/extender", validate({ params: tokenParamSchema, body: accionExtenderSchema }), async (req, res, next) => {
-  try { return ok(res, "TRANSMISION_EXTENDIDA", await accionExtender(req.params.token, req.body.minutos)); } catch (error) { next(error); }
+router.post("/:token/extender", validate({ params: tokenParamSchema, body: accionExtenderSchema }), async (req, res) => {
+  return ok(res, "TRANSMISION_EXTENDIDA", await accionExtender(req.params.token, req.body.minutos));
 });
 
-router.post("/:token/terminar-a-la-hora", validate({ params: tokenParamSchema }), async (req, res, next) => {
-  try { return ok(res, "TRANSMISION_SIN_EXTENSION", await accionTerminarALaHora(req.params.token)); } catch (error) { next(error); }
+router.post("/:token/terminar-a-la-hora", validate({ params: tokenParamSchema }), async (req, res) => {
+  return ok(res, "TRANSMISION_SIN_EXTENSION", await accionTerminarALaHora(req.params.token));
 });
 
 export default router;

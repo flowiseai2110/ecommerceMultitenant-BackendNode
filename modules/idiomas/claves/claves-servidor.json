@@ -27,42 +27,6 @@
     ]
   },
   {
-    "clave": "¿Cómo te fue con {negocio}?|estadía",
-    "grupos": [
-      "correos"
-    ],
-    "ubicaciones": [
-      "correos/pedido-de-resena"
-    ]
-  },
-  {
-    "clave": "¿Cómo te fue con {negocio}?|tour",
-    "grupos": [
-      "correos"
-    ],
-    "ubicaciones": [
-      "correos/pedido-de-resena"
-    ]
-  },
-  {
-    "clave": "¿Cómo te fue?",
-    "grupos": [
-      "correos"
-    ],
-    "ubicaciones": [
-      "correos/pedido-de-resena"
-    ]
-  },
-  {
-    "clave": "¿Tienes un minuto más? Tu reseña en {sitio} nos ayuda mucho.",
-    "grupos": [
-      "correos"
-    ],
-    "ubicaciones": [
-      "correos/pedido-de-resena"
-    ]
-  },
-  {
     "clave": "{dd}/{mm}|fecha corta; también {d} y {mes}",
     "grupos": [
       "reservas"
@@ -483,15 +447,6 @@
     ],
     "ubicaciones": [
       "sistema/disponibilidad-y-precios"
-    ]
-  },
-  {
-    "clave": "Dejar mi reseña",
-    "grupos": [
-      "correos"
-    ],
-    "ubicaciones": [
-      "correos/pedido-de-resena"
     ]
   },
   {
@@ -1059,15 +1014,6 @@
     ],
     "ubicaciones": [
       "correos/solicitud-recibida"
-    ]
-  },
-  {
-    "clave": "Hola {nombre}, gracias por elegir {negocio}. Tu reseña toma un minuto y ayuda a otros viajeros a decidir.",
-    "grupos": [
-      "correos"
-    ],
-    "ubicaciones": [
-      "correos/pedido-de-resena"
     ]
   },
   {
@@ -2082,24 +2028,6 @@
     ]
   },
   {
-    "clave": "Tu reserva|estadía",
-    "grupos": [
-      "correos"
-    ],
-    "ubicaciones": [
-      "correos/pedido-de-resena"
-    ]
-  },
-  {
-    "clave": "Tu reserva|tour",
-    "grupos": [
-      "correos"
-    ],
-    "ubicaciones": [
-      "correos/pedido-de-resena"
-    ]
-  },
-  {
     "clave": "Tu solicitud {codigo} no pudo ser aceptada — {negocio}",
     "grupos": [
       "correos"
@@ -2124,15 +2052,6 @@
     ],
     "ubicaciones": [
       "correos/partes-comunes-de-los-correos"
-    ]
-  },
-  {
-    "clave": "Una reseña por reserva. El link es personal.",
-    "grupos": [
-      "correos"
-    ],
-    "ubicaciones": [
-      "correos/pedido-de-resena"
     ]
   },
   {

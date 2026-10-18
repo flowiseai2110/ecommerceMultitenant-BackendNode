@@ -147,17 +147,13 @@ router.post(
 // bloquea: el controller ya devuelve un estado "fail" con mensaje genérico
 // sin filtrar ningún dato, así que no hay nada que proteger en ese caso.
 async function requireIaTaskAccess(req, res, next) {
-  try {
-    const tiendaId = getTaskTiendaId(req.params.taskId);
-    if (!tiendaId) return next();
+  const tiendaId = getTaskTiendaId(req.params.taskId);
+  if (!tiendaId) return next();
 
-    const membership = await findActiveMembership(req.user.id, tiendaId);
-    if (!membership) return next(new ForbiddenError("No tienes acceso a esta tarea de IA"));
+  const membership = await findActiveMembership(req.user.id, tiendaId);
+  if (!membership) return next(new ForbiddenError("No tienes acceso a esta tarea de IA"));
 
-    next();
-  } catch (error) {
-    next(error);
-  }
+  next();
 }
 
 // GET - Consulta el estado de la tarea de IA (polling, sin efectos secundarios)

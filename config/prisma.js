@@ -2,6 +2,7 @@ import { PrismaClient, Prisma } from "../generated/prisma/client.ts";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { logger } from "./logger.js";
 import { getTenantStore } from "../kernel/tenant/tenant-store.js";
+import { MODELOS_DE_TIENDA } from "../kernel/tenant/alcance.js";
 
 // Reexport del namespace `Prisma` (Prisma.sql / Prisma.join / Prisma.raw, tipos
 // de error, etc.). Los services deben importarlo desde aquí y NO desde el path
@@ -9,43 +10,50 @@ import { getTenantStore } from "../kernel/tenant/tenant-store.js";
 // a la extensión .ts del código generado.
 export { Prisma };
 
-// ── Auto-scope multi-tenant (defensa en profundidad, Etapa 2) ────────────────
-// Modelos con columna tienda_id propia sobre los que se inyecta el scope de
-// tienda automáticamente cuando hay un tiendaId en el contexto ALS. Se EXCLUYEN
-// a propósito:
-//   - tiendas (raíz del tenant, no tiene tienda_id)
-//   - usuario_tiendas / invitaciones (se consultan cross-tenant en auth/token)
-//   - enumerados / ubigeos / persona (datos maestros globales)
-//   - producto_variantes / producto_imagenes / pedido_detalles / historial
-//     (hijos sin tienda_id; se scopan por relación en la capa de servicio)
-const TENANT_SCOPED_MODELS = new Set([
-  "categorias", "marcas", "productos", "producto_atributos",
-  "clientes", "pedidos", "metodos_pago", "metodos_envio", "cupones",
-  "pagos", "tienda_pasarela_config", "resenas",
-  "agente_conversaciones", "agente_mensajes", "libro_reclamaciones",
-  // Mini booking
-  "config_reservas", "cierres_fecha", "hotel_tipos_habitacion", "hotel_modalidades", "reservas",
-  "tours", "tour_tipos_pasajero",
-  "eventos", "evento_funciones", "evento_tipos_entrada", "evento_compra_items",
-  // Alquiler de locales
-  "local_salones", "local_turnos", "local_paquetes", "local_ocupaciones", "local_cotizaciones",
-  "reserva_cuotas", "reserva_cambios",
-  // Alquiler de canchas
-  "cancha_canchas", "cancha_ocupaciones"
+// ── Auto-scope multi-tenant (defensa en profundidad) ─────────────────────────
+// Los modelos con filtro automático salen del registro ALCANCE
+// (kernel/tenant/alcance.js, docs/specs/antipatrones A1): todo modelo con
+// tiendaId es `tienda` salvo los `global` declarados, y el test de contrato
+// falla si uno nuevo no está clasificado. Los que no tienen tienda_id (tiendas,
+// enumerados, ubigeos, hijos como producto_variantes) se scopan por relación en
+// la capa de servicio.
+
+// Lecturas y operaciones masivas: el where admite cualquier filtro.
+const OPERACIONES_MASIVAS = new Set([
+  "findMany", "findFirst", "findFirstOrThrow", "count", "aggregate", "groupBy",
+  "updateMany", "updateManyAndReturn", "deleteMany"
 ]);
 
-// Solo lecturas y operaciones masivas. findUnique/update/delete/create se dejan
-// fuera: van por clave única (id) y ya están protegidos en la capa de ruta, y
-// findUnique no admite un where no-único como tiendaId.
-const SCOPED_OPERATIONS = new Set([
-  "findMany", "findFirst", "findFirstOrThrow", "count", "aggregate", "groupBy",
-  "updateMany", "deleteMany"
+// Por clave única: desde Prisma 5 su where acepta filtros no únicos junto a la
+// clave, siempre que la clave quede en la raíz. Un registro de otra tienda da
+// null (findUnique) o P2025 (update/delete → 404 en errorHandler).
+// create/createMany quedan fuera: el tiendaId lo pone la ruta y lo valida
+// requireTiendaAccess.
+const OPERACIONES_POR_CLAVE = new Set([
+  "findUnique", "findUniqueOrThrow", "update", "upsert", "delete"
 ]);
+
+/** El args de `operation` con el tiendaId agregado, o el mismo args si no aplica. */
+export function conScopeDeTienda(model, operation, args, store) {
+  const tiendaId = store && !store.bypass ? store.tiendaId : null;
+  if (!tiendaId || !MODELOS_DE_TIENDA.has(String(model).toLowerCase())) return args;
+
+  const where = args?.where;
+  if (OPERACIONES_MASIVAS.has(operation)) {
+    return { ...args, where: where ? { AND: [where, { tiendaId }] } : { tiendaId } };
+  }
+  if (OPERACIONES_POR_CLAVE.has(operation)) {
+    const and = where?.AND === undefined ? [] : [].concat(where.AND);
+    return { ...args, where: { ...where, AND: [...and, { tiendaId }] } };
+  }
+  return args;
+}
 
 /**
- * Extensión que hace AND del tiendaId del contexto sobre el where. Solo estrecha
- * el resultado (nunca lo amplía), así que no puede causar fugas cross-tenant; en
- * el peor caso (contexto mal poblado) devolvería de menos, no de más.
+ * Extensión que agrega el tiendaId del contexto al where. Solo estrecha el
+ * resultado (nunca lo amplía), así que no puede causar fugas cross-tenant; en el
+ * peor caso (contexto mal poblado) devolvería de menos, no de más.
+ * Escape explícito: runUnscoped (kernel/tenant/tenant-store.js).
  */
 function tenantScopeExtension(client) {
   return client.$extends({
@@ -53,20 +61,7 @@ function tenantScopeExtension(client) {
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          const store = getTenantStore();
-          const tiendaId = store && !store.bypass ? store.tiendaId : null;
-
-          if (
-            !tiendaId ||
-            !TENANT_SCOPED_MODELS.has(String(model).toLowerCase()) ||
-            !SCOPED_OPERATIONS.has(operation)
-          ) {
-            return query(args);
-          }
-
-          const scoped = { ...(args || {}) };
-          scoped.where = scoped.where ? { AND: [scoped.where, { tiendaId }] } : { tiendaId };
-          return query(scoped);
+          return query(conScopeDeTienda(model, operation, args, getTenantStore()));
         }
       }
     }

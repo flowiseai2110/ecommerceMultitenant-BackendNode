@@ -124,6 +124,7 @@ Para errores:
 - Prefijo global: `/api/v1`
 - Documentación Swagger: `/api/v1/swagger`
 - JSON OpenAPI: `/api/v1/swagger.json`
+- Sin `try { … } catch (error) { next(error); }` en los handlers: con Express 5 una promesa rechazada llega sola a `errorHandler`. Un `catch` en una ruta solo si traduce el error o hace otra cosa (p. ej. un webhook que responde 200 al proveedor). Lo vigila `middlewares/__tests__/errores-async.test.js` (spec antipatrones A2).
 
 ### Modelos Prisma
 - Nombres en **español** y **snake_case** en DB (mapeados con `@map`)

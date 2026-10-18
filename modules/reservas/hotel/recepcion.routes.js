@@ -28,7 +28,7 @@ import {
 
 const router = Router();
 const ok = (res, code, data) => apiResponse(res, { status: 200, type: "SUCCESS", code, data });
-const ruta = (fn) => async (req, res, next) => { try { await fn(req, res); } catch (error) { next(error); } };
+const ruta = (fn) => async (req, res) => { await fn(req, res); };
 
 const RECEPCIONISTA = { tambien: ["recepcionista"] };
 const lectura = [authMiddleware, requireTiendaAccess("viewer", RECEPCIONISTA)];

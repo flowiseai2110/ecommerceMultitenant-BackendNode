@@ -13,33 +13,21 @@ import { configQuerySchema, credencialesPagoSchema, modoPagoSchema } from "./pas
 const router = Router();
 
 // GET /?tiendaId= → { modo, listo, faltan[] }
-router.get("/", authMiddleware, requireTiendaAccess("admin"), validate({ query: configQuerySchema }), async (req, res, next) => {
-  try {
-    return apiResponse(res, { status: 200, type: "SUCCESS", code: "MODO_PAGO", data: await obtenerModo(req.tiendaId) });
-  } catch (error) {
-    next(error);
-  }
+router.get("/", authMiddleware, requireTiendaAccess("admin"), validate({ query: configQuerySchema }), async (req, res) => {
+  return apiResponse(res, { status: 200, type: "SUCCESS", code: "MODO_PAGO", data: await obtenerModo(req.tiendaId) });
 });
 
 // PUT / { tiendaId, modo } → { modo, listo, faltan[] }; 422 PASARELA_NO_LISTA si falta configurar
-router.put("/", authMiddleware, requireTiendaAccess("admin"), validate({ body: modoPagoSchema }), async (req, res, next) => {
-  try {
-    const data = await cambiarModo(req.tiendaId, req.body.modo, req.user);
-    return apiResponse(res, { status: 200, type: "SUCCESS", code: "MODO_PAGO_GUARDADO", data });
-  } catch (error) {
-    next(error);
-  }
+router.put("/", authMiddleware, requireTiendaAccess("admin"), validate({ body: modoPagoSchema }), async (req, res) => {
+  const data = await cambiarModo(req.tiendaId, req.body.modo, req.user);
+  return apiResponse(res, { status: 200, type: "SUCCESS", code: "MODO_PAGO_GUARDADO", data });
 });
 
 // PUT /credenciales { tiendaId, llavePublica, llaveSecreta? } → igual que GET /
-router.put("/credenciales", authMiddleware, requireTiendaAccess("admin"), validate({ body: credencialesPagoSchema }), async (req, res, next) => {
-  try {
-    const { llavePublica, llaveSecreta } = req.body;
-    const data = await guardarCredenciales(req.tiendaId, { llavePublica, llaveSecreta }, req.user);
-    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PAGO_CREDENCIALES_GUARDADAS", data });
-  } catch (error) {
-    next(error);
-  }
+router.put("/credenciales", authMiddleware, requireTiendaAccess("admin"), validate({ body: credencialesPagoSchema }), async (req, res) => {
+  const { llavePublica, llaveSecreta } = req.body;
+  const data = await guardarCredenciales(req.tiendaId, { llavePublica, llaveSecreta }, req.user);
+  return apiResponse(res, { status: 200, type: "SUCCESS", code: "PAGO_CREDENCIALES_GUARDADAS", data });
 });
 
 export default router;

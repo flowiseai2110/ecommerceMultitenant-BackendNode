@@ -111,169 +111,157 @@ router.get("/", validate({ query: paginationSchema }), scopeQueryToTienda, produ
 
 // GET /opciones?tiendaId=&categoriaId=a,b - Facetas de talla, color… para el panel de filtros (plantillas-por-rubro E9).
 // Debe ir ANTES de /:id.
-router.get("/opciones", validate({ query: paginationSchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    const q = req.validatedQuery || req.query;
-    const categorias = String(q.categoriaId ?? "").split(",").map(s => s.trim()).filter(Boolean);
-    const data = await facetasOpciones(q.tiendaId, categorias);
-    res.set("Cache-Control", "public, max-age=60");
-    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PRODUCTOS_OPCIONES", data });
-  } catch (error) {
-    next(error);
-  }
+router.get("/opciones", validate({ query: paginationSchema }), scopeQueryToTienda, async (req, res) => {
+  const q = req.validatedQuery || req.query;
+  const categorias = String(q.categoriaId ?? "").split(",").map(s => s.trim()).filter(Boolean);
+  const data = await facetasOpciones(q.tiendaId, categorias);
+  res.set("Cache-Control", "public, max-age=60");
+  return apiResponse(res, { status: 200, type: "SUCCESS", code: "PRODUCTOS_OPCIONES", data });
 });
 
 // GET /home - Destacados + recientes en una sola llamada (público, para el home del storefront).
 // Sin count() — el home no pagina, solo necesita un top-N de cada lista.
 // Debe ir ANTES de /:id para que "home" no se intente validar como UUID.
-router.get("/home", validate({ query: homeQuerySchema }), async (req, res, next) => {
-  try {
-    const { tiendaId, limit } = req.validatedQuery || req.query;
-    const take = Math.min(limit || 8, 20);
+router.get("/home", validate({ query: homeQuerySchema }), async (req, res) => {
+  const { tiendaId, limit } = req.validatedQuery || req.query;
+  const take = Math.min(limit || 8, 20);
 
-    const cacheKey = `${tiendaId}|${take}|${req.idioma.codigo}`;
-    const cached = getProductosHome(cacheKey);
-    if (cached) {
-      return apiResponse(res, cached);
-    }
-
-    // Una sola query (UNION ALL + LATERAL JOIN para la imagen principal) en vez de
-    // 2 findMany + 2 sub-queries de relación: con la latencia de red a Supabase
-    // (~150-300ms por round-trip vía pgbouncer), cada round-trip evitado pesa.
-    // Ver análisis de performance: 12 productos, ejecución en Postgres <1ms —
-    // el costo real estaba en la cantidad de viajes de red, no en la query.
-    const rows = await prisma.$queryRaw`
-      (
-        SELECT 'destacados' AS grupo, p.id, p.tienda_id AS "tiendaId", p.nombre, p.slug,
-               p.descripcion_corta AS "descripcionCorta", p.traducciones, p.sku, p.precio_base AS "precioBase",
-               p.precio_oferta AS "precioOferta", p.stock, p.activo, p.destacado,
-               p.es_servicio AS "esServicio", p.etiquetas,
-               p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
-               p.marca_id AS "marcaId", m.nombre AS "marcaNombre", m.slug AS "marcaSlug", m.logo_url AS "marcaLogoUrl",
-               img.id AS "imagenId", img.url AS "imagenUrl", img.texto_alternativo AS "imagenAlt"
-        FROM productos p
-        LEFT JOIN marcas m ON m.id = p.marca_id
-        LEFT JOIN LATERAL (
-          SELECT id, url, texto_alternativo
-          FROM producto_imagenes
-          WHERE producto_id = p.id AND es_principal = true
-          LIMIT 1
-        ) img ON true
-        WHERE p.tienda_id = ${tiendaId}::uuid AND p.activo = true AND p.destacado = true
-          AND NOT EXISTS (SELECT 1 FROM eventos e WHERE e.producto_id = p.id AND e.privado)
-          AND ${conPrecioSql()}
-        ORDER BY p.id DESC
-        LIMIT ${take}
-      )
-      UNION ALL
-      (
-        SELECT 'recientes' AS grupo, p.id, p.tienda_id AS "tiendaId", p.nombre, p.slug,
-               p.descripcion_corta AS "descripcionCorta", p.traducciones, p.sku, p.precio_base AS "precioBase",
-               p.precio_oferta AS "precioOferta", p.stock, p.activo, p.destacado,
-               p.es_servicio AS "esServicio", p.etiquetas,
-               p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
-               p.marca_id AS "marcaId", m.nombre AS "marcaNombre", m.slug AS "marcaSlug", m.logo_url AS "marcaLogoUrl",
-               img.id AS "imagenId", img.url AS "imagenUrl", img.texto_alternativo AS "imagenAlt"
-        FROM productos p
-        LEFT JOIN marcas m ON m.id = p.marca_id
-        LEFT JOIN LATERAL (
-          SELECT id, url, texto_alternativo
-          FROM producto_imagenes
-          WHERE producto_id = p.id AND es_principal = true
-          LIMIT 1
-        ) img ON true
-        WHERE p.tienda_id = ${tiendaId}::uuid AND p.activo = true
-          AND NOT EXISTS (SELECT 1 FROM eventos e WHERE e.producto_id = p.id AND e.privado)
-          AND ${conPrecioSql()}
-        ORDER BY p.fecha_registro DESC
-        LIMIT ${take}
-      )
-    `;
-
-    const destacados = [];
-    const recientes = [];
-    for (const row of rows) {
-      // La query aplana la imagen principal en columnas (imagenId/imagenUrl/...);
-      // se rearma como array antes de pasar por el serializer de tarjeta.
-      const producto = serializeProductoCardStore({
-        ...localizar(FUENTES.productos, row, req.idioma),
-        marca: row.marcaId
-          ? { id: row.marcaId, nombre: row.marcaNombre, slug: row.marcaSlug, logoUrl: row.marcaLogoUrl }
-          : null,
-        imagenes: row.imagenId
-          ? [{ id: row.imagenId, url: row.imagenUrl, textoAlternativo: row.imagenAlt }]
-          : []
-      });
-      (row.grupo === "destacados" ? destacados : recientes).push(producto);
-    }
-
-    const responsePayload = { status: 200, type: "SUCCESS", code: "PRODUCTO_HOME", data: { destacados, recientes } };
-    setProductosHome(cacheKey, responsePayload);
-
-    return apiResponse(res, responsePayload);
-  } catch (error) {
-    next(error);
+  const cacheKey = `${tiendaId}|${take}|${req.idioma.codigo}`;
+  const cached = getProductosHome(cacheKey);
+  if (cached) {
+    return apiResponse(res, cached);
   }
-});
 
-// GET /:id - Obtener producto con variantes e imágenes (público)
-router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    const cached = getProductoDetail(id, req.idioma.codigo);
-    if (cached) {
-      return apiResponse(res, cached);
-    }
-
-    const rows = await prisma.$queryRaw`
-      SELECT p.id, p.tienda_id AS "tiendaId", p.categoria_id AS "categoriaId", p.marca_id AS "marcaId",
-             CASE WHEN m.id IS NULL THEN NULL
-                  ELSE json_build_object('id', m.id, 'nombre', m.nombre, 'slug', m.slug, 'logoUrl', m.logo_url) END AS marca,
-             p.nombre, p.slug,
-             p.descripcion, p.descripcion_corta AS "descripcionCorta", p.traducciones, p.sku,
-             p.precio_base AS "precioBase", p.precio_oferta AS "precioOferta",
-             p.stock, p.activo, p.destacado, p.es_servicio AS "esServicio", p.etiquetas,
+  // Una sola query (UNION ALL + LATERAL JOIN para la imagen principal) en vez de
+  // 2 findMany + 2 sub-queries de relación: con la latencia de red a Supabase
+  // (~150-300ms por round-trip vía pgbouncer), cada round-trip evitado pesa.
+  // Ver análisis de performance: 12 productos, ejecución en Postgres <1ms —
+  // el costo real estaba en la cantidad de viajes de red, no en la query.
+  const rows = await prisma.$queryRaw`
+    (
+      SELECT 'destacados' AS grupo, p.id, p.tienda_id AS "tiendaId", p.nombre, p.slug,
+             p.descripcion_corta AS "descripcionCorta", p.traducciones, p.sku, p.precio_base AS "precioBase",
+             p.precio_oferta AS "precioOferta", p.stock, p.activo, p.destacado,
+             p.es_servicio AS "esServicio", p.etiquetas,
              p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
-             p.metadata->'opciones' AS opciones,
-             p.metadata->'video' AS video,
-             COALESCE(v.variantes, '[]'::json) AS variantes,
-             COALESCE(i.imagenes, '[]'::json) AS imagenes
+             p.marca_id AS "marcaId", m.nombre AS "marcaNombre", m.slug AS "marcaSlug", m.logo_url AS "marcaLogoUrl",
+             img.id AS "imagenId", img.url AS "imagenUrl", img.texto_alternativo AS "imagenAlt"
       FROM productos p
       LEFT JOIN marcas m ON m.id = p.marca_id
       LEFT JOIN LATERAL (
-        SELECT json_agg(json_build_object(
-          'id', pv.id, 'nombre', pv.nombre, 'sku', pv.sku, 'precio', pv.precio,
-          'stock', pv.stock, 'atributos', pv.atributos, 'activo', pv.activo
-        )) AS variantes
-        FROM producto_variantes pv
-        WHERE pv.producto_id = p.id AND pv.activo = true
-      ) v ON true
-      LEFT JOIN LATERAL (
-        SELECT json_agg(json_build_object(
-          'id', pi.id, 'url', pi.url, 'textoAlternativo', pi.texto_alternativo,
-          'orden', pi.orden, 'esPrincipal', pi.es_principal, 'valorOpcion', pi.valor_opcion
-        ) ORDER BY pi.orden ASC) AS imagenes
-        FROM producto_imagenes pi
-        WHERE pi.producto_id = p.id
-      ) i ON true
-      WHERE p.id = ${id}::uuid
+        SELECT id, url, texto_alternativo
+        FROM producto_imagenes
+        WHERE producto_id = p.id AND es_principal = true
+        LIMIT 1
+      ) img ON true
+      WHERE p.tienda_id = ${tiendaId}::uuid AND p.activo = true AND p.destacado = true
         AND NOT EXISTS (SELECT 1 FROM eventos e WHERE e.producto_id = p.id AND e.privado)
         AND ${conPrecioSql()}
-    `;
+      ORDER BY p.id DESC
+      LIMIT ${take}
+    )
+    UNION ALL
+    (
+      SELECT 'recientes' AS grupo, p.id, p.tienda_id AS "tiendaId", p.nombre, p.slug,
+             p.descripcion_corta AS "descripcionCorta", p.traducciones, p.sku, p.precio_base AS "precioBase",
+             p.precio_oferta AS "precioOferta", p.stock, p.activo, p.destacado,
+             p.es_servicio AS "esServicio", p.etiquetas,
+             p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
+             p.marca_id AS "marcaId", m.nombre AS "marcaNombre", m.slug AS "marcaSlug", m.logo_url AS "marcaLogoUrl",
+             img.id AS "imagenId", img.url AS "imagenUrl", img.texto_alternativo AS "imagenAlt"
+      FROM productos p
+      LEFT JOIN marcas m ON m.id = p.marca_id
+      LEFT JOIN LATERAL (
+        SELECT id, url, texto_alternativo
+        FROM producto_imagenes
+        WHERE producto_id = p.id AND es_principal = true
+        LIMIT 1
+      ) img ON true
+      WHERE p.tienda_id = ${tiendaId}::uuid AND p.activo = true
+        AND NOT EXISTS (SELECT 1 FROM eventos e WHERE e.producto_id = p.id AND e.privado)
+        AND ${conPrecioSql()}
+      ORDER BY p.fecha_registro DESC
+      LIMIT ${take}
+    )
+  `;
 
-    if (!rows[0]) {
-      throw new NotFoundError("Producto");
-    }
-    const producto = serializeProductoDetailStore(localizar(FUENTES.productos, rows[0], req.idioma));
-
-    const responsePayload = { status: 200, type: "SUCCESS", code: "PRODUCTO_FOUND", data: producto };
-    setProductoDetail(id, req.idioma.codigo, responsePayload);
-
-    return apiResponse(res, responsePayload);
-  } catch (error) {
-    next(error);
+  const destacados = [];
+  const recientes = [];
+  for (const row of rows) {
+    // La query aplana la imagen principal en columnas (imagenId/imagenUrl/...);
+    // se rearma como array antes de pasar por el serializer de tarjeta.
+    const producto = serializeProductoCardStore({
+      ...localizar(FUENTES.productos, row, req.idioma),
+      marca: row.marcaId
+        ? { id: row.marcaId, nombre: row.marcaNombre, slug: row.marcaSlug, logoUrl: row.marcaLogoUrl }
+        : null,
+      imagenes: row.imagenId
+        ? [{ id: row.imagenId, url: row.imagenUrl, textoAlternativo: row.imagenAlt }]
+        : []
+    });
+    (row.grupo === "destacados" ? destacados : recientes).push(producto);
   }
+
+  const responsePayload = { status: 200, type: "SUCCESS", code: "PRODUCTO_HOME", data: { destacados, recientes } };
+  setProductosHome(cacheKey, responsePayload);
+
+  return apiResponse(res, responsePayload);
+});
+
+// GET /:id - Obtener producto con variantes e imágenes (público)
+router.get("/:id", validate({ params: idParamSchema }), async (req, res) => {
+  const { id } = req.params;
+
+  const cached = getProductoDetail(id, req.idioma.codigo);
+  if (cached) {
+    return apiResponse(res, cached);
+  }
+
+  const rows = await prisma.$queryRaw`
+    SELECT p.id, p.tienda_id AS "tiendaId", p.categoria_id AS "categoriaId", p.marca_id AS "marcaId",
+           CASE WHEN m.id IS NULL THEN NULL
+                ELSE json_build_object('id', m.id, 'nombre', m.nombre, 'slug', m.slug, 'logoUrl', m.logo_url) END AS marca,
+           p.nombre, p.slug,
+           p.descripcion, p.descripcion_corta AS "descripcionCorta", p.traducciones, p.sku,
+           p.precio_base AS "precioBase", p.precio_oferta AS "precioOferta",
+           p.stock, p.activo, p.destacado, p.es_servicio AS "esServicio", p.etiquetas,
+           p.rating_promedio AS "ratingPromedio", p.rating_cantidad AS "ratingCantidad",
+           p.metadata->'opciones' AS opciones,
+           p.metadata->'video' AS video,
+           COALESCE(v.variantes, '[]'::json) AS variantes,
+           COALESCE(i.imagenes, '[]'::json) AS imagenes
+    FROM productos p
+    LEFT JOIN marcas m ON m.id = p.marca_id
+    LEFT JOIN LATERAL (
+      SELECT json_agg(json_build_object(
+        'id', pv.id, 'nombre', pv.nombre, 'sku', pv.sku, 'precio', pv.precio,
+        'stock', pv.stock, 'atributos', pv.atributos, 'activo', pv.activo
+      )) AS variantes
+      FROM producto_variantes pv
+      WHERE pv.producto_id = p.id AND pv.activo = true
+    ) v ON true
+    LEFT JOIN LATERAL (
+      SELECT json_agg(json_build_object(
+        'id', pi.id, 'url', pi.url, 'textoAlternativo', pi.texto_alternativo,
+        'orden', pi.orden, 'esPrincipal', pi.es_principal, 'valorOpcion', pi.valor_opcion
+      ) ORDER BY pi.orden ASC) AS imagenes
+      FROM producto_imagenes pi
+      WHERE pi.producto_id = p.id
+    ) i ON true
+    WHERE p.id = ${id}::uuid
+      AND NOT EXISTS (SELECT 1 FROM eventos e WHERE e.producto_id = p.id AND e.privado)
+      AND ${conPrecioSql()}
+  `;
+
+  if (!rows[0]) {
+    throw new NotFoundError("Producto");
+  }
+  const producto = serializeProductoDetailStore(localizar(FUENTES.productos, rows[0], req.idioma));
+
+  const responsePayload = { status: 200, type: "SUCCESS", code: "PRODUCTO_FOUND", data: producto };
+  setProductoDetail(id, req.idioma.codigo, responsePayload);
+
+  return apiResponse(res, responsePayload);
 });
 
 export default router;

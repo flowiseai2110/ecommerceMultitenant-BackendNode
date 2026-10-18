@@ -101,6 +101,8 @@ Organización (futuro, opcional) ─ varias marcas de un dueño: usuarios, factu
 
 ### S2. Registro `ALCANCE` y alcance por sede (kernel)
 
+> **2026-10-17:** `ALCANCE` nace antes, en la pieza 1 de [antipatrones](../antipatrones/spec.md) (A1), solo con `tienda` y `global`. Esa pieza cierra S2.1, S2.2, S2.5 y S2.6 a nivel tienda. Esta spec le agrega los valores `sede`, `sede:<padre>`, `presencia` y `razon_social`.
+
 - **S2.1** `kernel/tenant/alcance.js` declara, por cada tabla con `tienda_id`, dónde vive. Es la respuesta única a "¿dónde vive X?":
 
   | Valor | Significa | Filtro automático |

@@ -19,13 +19,9 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ query: liveQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const row = await liveService.get(req.tiendaId, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIVE_GET", data: serializeLive(row) });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const row = await liveService.get(req.tiendaId, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIVE_GET", data: serializeLive(row) });
   }
 );
 
@@ -35,13 +31,9 @@ router.put(
   authMiddleware,
   requireTiendaAccess("editor"),
   validate({ query: liveQuerySchema, body: updateLinksSchema }),
-  async (req, res, next) => {
-    try {
-      const row = await liveService.updateLinks(req.tiendaId, req.body, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIVE_LINKS_SAVED", data: serializeLive(row) });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const row = await liveService.updateLinks(req.tiendaId, req.body, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIVE_LINKS_SAVED", data: serializeLive(row) });
   }
 );
 
@@ -51,13 +43,9 @@ router.post(
   authMiddleware,
   requireTiendaAccess("editor"),
   validate({ query: liveQuerySchema, body: startLiveSchema }),
-  async (req, res, next) => {
-    try {
-      const row = await liveService.start(req.tiendaId, req.body, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIVE_STARTED", data: serializeLive(row) });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const row = await liveService.start(req.tiendaId, req.body, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIVE_STARTED", data: serializeLive(row) });
   }
 );
 
@@ -67,13 +55,9 @@ router.post(
   authMiddleware,
   requireTiendaAccess("editor"),
   validate({ query: liveQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const row = await liveService.extend(req.tiendaId, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIVE_EXTENDED", data: serializeLive(row) });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const row = await liveService.extend(req.tiendaId, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIVE_EXTENDED", data: serializeLive(row) });
   }
 );
 
@@ -83,13 +67,9 @@ router.post(
   authMiddleware,
   requireTiendaAccess("editor"),
   validate({ query: liveQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const row = await liveService.stop(req.tiendaId, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIVE_STOPPED", data: serializeLive(row) });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const row = await liveService.stop(req.tiendaId, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIVE_STOPPED", data: serializeLive(row) });
   }
 );
 

@@ -10,17 +10,13 @@ const router = Router();
 router.get(
   "/validar/:codigo",
   validate({ params: codigoParamSchema, query: validarCuponQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const { codigo } = req.params;
-      const { tiendaId, subtotal, whatsappNumero } = req.query;
+  async (req, res) => {
+    const { codigo } = req.params;
+    const { tiendaId, subtotal, whatsappNumero } = req.query;
 
-      const data = await validarCupon(tiendaId, codigo, subtotal, whatsappNumero);
+    const data = await validarCupon(tiendaId, codigo, subtotal, whatsappNumero);
 
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUPON_VALIDADO", data });
-    } catch (error) {
-      next(error);
-    }
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUPON_VALIDADO", data });
   }
 );
 

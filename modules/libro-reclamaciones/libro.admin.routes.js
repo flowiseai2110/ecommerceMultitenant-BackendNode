@@ -34,13 +34,9 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ query: tiendaQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const data = await resumenHojas(req.tiendaId);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_RESUMEN", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await resumenHojas(req.tiendaId);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_RESUMEN", data });
   }
 );
 
@@ -53,18 +49,14 @@ router.get(
   authMiddleware,
   requireTiendaAccess("admin"),
   validate({ query: exportarQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const { desde, hasta } = req.validatedQuery;
-      const csv = await exportarHojasCsv(req.tiendaId, { desde, hasta });
-      const nombre = `libro-reclamaciones${desde ? `-${desde}` : ""}${hasta ? `-a-${hasta}` : ""}.csv`;
-      res.set("Content-Type", "text/csv; charset=utf-8");
-      res.set("Content-Disposition", `attachment; filename="${nombre}"`);
-      res.set("Cache-Control", "private, no-store");
-      return res.status(200).send(csv);
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const { desde, hasta } = req.validatedQuery;
+    const csv = await exportarHojasCsv(req.tiendaId, { desde, hasta });
+    const nombre = `libro-reclamaciones${desde ? `-${desde}` : ""}${hasta ? `-a-${hasta}` : ""}.csv`;
+    res.set("Content-Type", "text/csv; charset=utf-8");
+    res.set("Content-Disposition", `attachment; filename="${nombre}"`);
+    res.set("Cache-Control", "private, no-store");
+    return res.status(200).send(csv);
   }
 );
 
@@ -76,13 +68,9 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ query: listarAdminQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const { data, meta } = await listarHojasAdmin(req.tiendaId, req.validatedQuery);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_LIST", data, meta });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const { data, meta } = await listarHojasAdmin(req.tiendaId, req.validatedQuery);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_LIST", data, meta });
   }
 );
 
@@ -94,13 +82,9 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ params: idParamSchema, query: tiendaQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const data = await detalleHoja(req.tiendaId, req.params.id);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_HOJA", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await detalleHoja(req.tiendaId, req.params.id);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_HOJA", data });
   }
 );
 
@@ -112,13 +96,9 @@ router.patch(
   authMiddleware,
   requireTiendaAccess("admin"),
   validate({ params: idParamSchema, body: cambiarEstadoSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await marcarEnAtencion(req.tiendaId, req.params.id, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_ESTADO_UPDATED", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await marcarEnAtencion(req.tiendaId, req.params.id, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_ESTADO_UPDATED", data });
   }
 );
 
@@ -130,13 +110,9 @@ router.post(
   authMiddleware,
   requireTiendaAccess("admin"),
   validate({ params: idParamSchema, body: vistaPreviaSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await vistaPreviaRespuesta(req.tiendaId, req.params.id, req.body);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_VISTA_PREVIA", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await vistaPreviaRespuesta(req.tiendaId, req.params.id, req.body);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_VISTA_PREVIA", data });
   }
 );
 
@@ -148,13 +124,9 @@ router.post(
   authMiddleware,
   requireTiendaAccess("admin"),
   validate({ params: idParamSchema, body: responderSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await responderHoja(req.tiendaId, req.params.id, req.body, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_HOJA_RESPONDIDA", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await responderHoja(req.tiendaId, req.params.id, req.body, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "LIBRO_HOJA_RESPONDIDA", data });
   }
 );
 

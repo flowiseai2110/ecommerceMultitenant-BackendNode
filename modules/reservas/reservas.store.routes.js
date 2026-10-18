@@ -89,251 +89,199 @@ async function reservaDelToken(req) {
 }
 
 // GET /config?tiendaId= — reglas visibles en la vitrina (cobro, horarios, política)
-router.get("/config", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    const { tiendaId } = req.validatedQuery;
-    res.set("Cache-Control", "public, max-age=60");
-    return ok(res, "RESERVAS_CONFIG", configPublica(await obtenerConfig(tiendaId), langDe(req)));
-  } catch (error) { next(error); }
+router.get("/config", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res) => {
+  const { tiendaId } = req.validatedQuery;
+  res.set("Cache-Control", "public, max-age=60");
+  return ok(res, "RESERVAS_CONFIG", configPublica(await obtenerConfig(tiendaId), langDe(req)));
 });
 
 // GET /habitaciones?tiendaId= — vitrina del hotel
-router.get("/habitaciones", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    res.set("Cache-Control", "public, max-age=60");
-    return ok(res, "HABITACIONES_LIST", await listarHabitacionesStore(req.validatedQuery.tiendaId, langDe(req)));
-  } catch (error) { next(error); }
+router.get("/habitaciones", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res) => {
+  res.set("Cache-Control", "public, max-age=60");
+  return ok(res, "HABITACIONES_LIST", await listarHabitacionesStore(req.validatedQuery.tiendaId, langDe(req)));
 });
 
 // GET /ahora?tiendaId= — hostal al paso (docs/specs/recepcion R8): tipos, tarifas y
 // si hay una habitación libre ahora. Caché corto: cambia con cada entrada y salida.
-router.get("/ahora", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    res.set("Cache-Control", "public, max-age=20");
-    return ok(res, "RESERVAS_AHORA", await ahoraPublico(req.validatedQuery.tiendaId, langDe(req)));
-  } catch (error) { next(error); }
+router.get("/ahora", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res) => {
+  res.set("Cache-Control", "public, max-age=20");
+  return ok(res, "RESERVAS_AHORA", await ahoraPublico(req.validatedQuery.tiendaId, langDe(req)));
 });
 
 // GET /tarifas?tiendaId= — extras reservables y temporadas vigentes del hotel
 // (hospedaje-completo B2, B3): la ficha ofrece los extras y avisa el mínimo de noches.
-router.get("/tarifas", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    const { tiendaId } = req.validatedQuery;
-    res.set("Cache-Control", "public, max-age=60");
-    const lang = langDe(req);
-    const [extras, temporadas, planes] = await Promise.all([extrasPublicos(tiendaId, lang), temporadasPublicas(tiendaId, new Date(), lang), planesPublicos(tiendaId, lang)]);
-    return ok(res, "TARIFAS_HOTEL", { extras, temporadas, planes });
-  } catch (error) { next(error); }
+router.get("/tarifas", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res) => {
+  const { tiendaId } = req.validatedQuery;
+  res.set("Cache-Control", "public, max-age=60");
+  const lang = langDe(req);
+  const [extras, temporadas, planes] = await Promise.all([extrasPublicos(tiendaId, lang), temporadasPublicas(tiendaId, new Date(), lang), planesPublicos(tiendaId, lang)]);
+  return ok(res, "TARIFAS_HOTEL", { extras, temporadas, planes });
 });
 
 // GET /habitaciones-disponibilidad?tiendaId=&desde=&hasta= — libres por tipo y noche
 // (C1): la grilla oculta los tipos llenos para la búsqueda. Solo tipos con inventario.
-router.get("/habitaciones-disponibilidad", validate({ query: disponibilidadQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    const { tiendaId, desde, hasta } = req.validatedQuery;
-    res.set("Cache-Control", "public, max-age=30");
-    const lista = await disponibilidadTienda(tiendaId, desde, hasta);
-    return ok(res, "DISPONIBILIDAD", lista.map(t => ({
-      productoId: t.productoId,
-      libres: Object.fromEntries(Object.entries(t.fechas).map(([f, v]) => [f, v.libres]))
-    })));
-  } catch (error) { next(error); }
+router.get("/habitaciones-disponibilidad", validate({ query: disponibilidadQuerySchema }), scopeQueryToTienda, async (req, res) => {
+  const { tiendaId, desde, hasta } = req.validatedQuery;
+  res.set("Cache-Control", "public, max-age=30");
+  const lista = await disponibilidadTienda(tiendaId, desde, hasta);
+  return ok(res, "DISPONIBILIDAD", lista.map(t => ({
+    productoId: t.productoId,
+    libres: Object.fromEntries(Object.entries(t.fechas).map(([f, v]) => [f, v.libres]))
+  })));
 });
 
 // GET /habitaciones-precios?tiendaId=&desde=&hasta= — precio por noche de cada tipo
 // para el calendario (reserva-hotel-mejoras H1); null = cerrado.
-router.get("/habitaciones-precios", validate({ query: disponibilidadQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    const { tiendaId, desde, hasta } = req.validatedQuery;
-    res.set("Cache-Control", "public, max-age=60");
-    return ok(res, "PRECIOS_NOCHE", await preciosPorNoche(tiendaId, desde, hasta));
-  } catch (error) { next(error); }
+router.get("/habitaciones-precios", validate({ query: disponibilidadQuerySchema }), scopeQueryToTienda, async (req, res) => {
+  const { tiendaId, desde, hasta } = req.validatedQuery;
+  res.set("Cache-Control", "public, max-age=60");
+  return ok(res, "PRECIOS_NOCHE", await preciosPorNoche(tiendaId, desde, hasta));
 });
 
 // GET /habitaciones/:slug?tiendaId= — ficha con modalidades
 router.get("/habitaciones/:slug", validate({ params: slugParamSchema, query: tiendaQuerySchema }), scopeQueryToTienda,
-  async (req, res, next) => {
-    try {
-      res.set("Cache-Control", "public, max-age=60");
-      return ok(res, "HABITACION", await obtenerHabitacionStore(req.validatedQuery.tiendaId, req.params.slug, langDe(req)));
-    } catch (error) { next(error); }
+  async (req, res) => {
+    res.set("Cache-Control", "public, max-age=60");
+    return ok(res, "HABITACION", await obtenerHabitacionStore(req.validatedQuery.tiendaId, req.params.slug, langDe(req)));
   });
 
 // GET /tours?tiendaId= — vitrina de la agencia
-router.get("/tours", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    res.set("Cache-Control", "public, max-age=60");
-    return ok(res, "TOURS_LIST", await listarToursStore(req.validatedQuery.tiendaId, langDe(req)));
-  } catch (error) { next(error); }
+router.get("/tours", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res) => {
+  res.set("Cache-Control", "public, max-age=60");
+  return ok(res, "TOURS_LIST", await listarToursStore(req.validatedQuery.tiendaId, langDe(req)));
 });
 
 // GET /tours/:slug?tiendaId= — ficha con días y horas de salida y tipos de pasajero
 router.get("/tours/:slug", validate({ params: slugParamSchema, query: tiendaQuerySchema }), scopeQueryToTienda,
-  async (req, res, next) => {
-    try {
-      res.set("Cache-Control", "public, max-age=60");
-      return ok(res, "TOUR", await obtenerTourStore(req.validatedQuery.tiendaId, req.params.slug, langDe(req)));
-    } catch (error) { next(error); }
+  async (req, res) => {
+    res.set("Cache-Control", "public, max-age=60");
+    return ok(res, "TOUR", await obtenerTourStore(req.validatedQuery.tiendaId, req.params.slug, langDe(req)));
   });
 
 // GET /eventos?tiendaId= — próximos eventos con sus funciones
-router.get("/eventos", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    // Cache corto: el cupo cambia con cada compra.
-    res.set("Cache-Control", "public, max-age=15");
-    return ok(res, "EVENTOS_LIST", await listarEventosStore(req.validatedQuery.tiendaId));
-  } catch (error) { next(error); }
+router.get("/eventos", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res) => {
+  // Cache corto: el cupo cambia con cada compra.
+  res.set("Cache-Control", "public, max-age=15");
+  return ok(res, "EVENTOS_LIST", await listarEventosStore(req.validatedQuery.tiendaId));
 });
 
 // GET /eventos/:slug?tiendaId= — ficha con funciones y entradas (disponible / últimas / agotado)
 router.get("/eventos/:slug", validate({ params: slugParamSchema, query: tiendaQuerySchema }), scopeQueryToTienda,
-  async (req, res, next) => {
-    try {
-      res.set("Cache-Control", "no-store");
-      return ok(res, "EVENTO", await obtenerEventoStore(req.validatedQuery.tiendaId, req.params.slug));
-    } catch (error) { next(error); }
+  async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    return ok(res, "EVENTO", await obtenerEventoStore(req.validatedQuery.tiendaId, req.params.slug));
   });
 
 // GET /locales/salones?tiendaId= — salones del local de eventos (alquiler-locales R2)
-router.get("/locales/salones", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    res.set("Cache-Control", "public, max-age=60");
-    return ok(res, "SALONES_LIST", await listarSalonesStore(req.validatedQuery.tiendaId));
-  } catch (error) { next(error); }
+router.get("/locales/salones", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res) => {
+  res.set("Cache-Control", "public, max-age=60");
+  return ok(res, "SALONES_LIST", await listarSalonesStore(req.validatedQuery.tiendaId));
 });
 
 // GET /locales/disponibilidad?tiendaId=&fecha= — estado de cada salón ese día (plantillas-por-rubro E9)
-router.get("/locales/disponibilidad", validate({ query: disponibilidadDiaSchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    res.set("Cache-Control", "public, max-age=30");
-    return ok(res, "SALONES_DISPONIBILIDAD", await disponibilidadSalones(req.validatedQuery.tiendaId, req.validatedQuery.fecha));
-  } catch (error) { next(error); }
+router.get("/locales/disponibilidad", validate({ query: disponibilidadDiaSchema }), scopeQueryToTienda, async (req, res) => {
+  res.set("Cache-Control", "public, max-age=30");
+  return ok(res, "SALONES_DISPONIBILIDAD", await disponibilidadSalones(req.validatedQuery.tiendaId, req.validatedQuery.fecha));
 });
 
 // GET /locales/salones/:slug?tiendaId= — ficha con turnos, paquetes y servicios
 router.get("/locales/salones/:slug", validate({ params: slugParamSchema, query: tiendaQuerySchema }), scopeQueryToTienda,
-  async (req, res, next) => {
-    try {
-      res.set("Cache-Control", "public, max-age=60");
-      return ok(res, "SALON", await obtenerSalonStore(req.validatedQuery.tiendaId, req.params.slug));
-    } catch (error) { next(error); }
+  async (req, res) => {
+    res.set("Cache-Control", "public, max-age=60");
+    return ok(res, "SALON", await obtenerSalonStore(req.validatedQuery.tiendaId, req.params.slug));
   });
 
 // GET /locales/salones/:slug/calendario?tiendaId=&desde=&hasta= — libre / parcial / ocupada / cerrada por fecha y turno (R3.1)
 router.get("/locales/salones/:slug/calendario", validate({ params: slugParamSchema, query: calendarioStoreQuerySchema }), scopeQueryToTienda,
-  async (req, res, next) => {
-    try {
-      const { tiendaId, desde, hasta } = req.validatedQuery;
-      // Corto: la disponibilidad cambia con cada solicitud. Se revalida al cotizar y al enviar (R3.5).
-      res.set("Cache-Control", "public, max-age=15");
-      return ok(res, "SALON_CALENDARIO", await calendarioStore(tiendaId, req.params.slug, { desde, hasta }));
-    } catch (error) { next(error); }
+  async (req, res) => {
+    const { tiendaId, desde, hasta } = req.validatedQuery;
+    // Corto: la disponibilidad cambia con cada solicitud. Se revalida al cotizar y al enviar (R3.5).
+    res.set("Cache-Control", "public, max-age=15");
+    return ok(res, "SALON_CALENDARIO", await calendarioStore(tiendaId, req.params.slug, { desde, hasta }));
   });
 
 // POST /locales/cotizaciones — cotiza y guarda con precio congelado (R4.2). 409 con alternativas si la franja está ocupada.
-router.post("/locales/cotizaciones", cotizacionesLimiter, scopeBodyToTienda, validate({ body: cotizacionLocalSchema }), async (req, res, next) => {
-  try {
-    const { tiendaId, ...datos } = req.body;
-    return ok(res, "COTIZACION_CREADA", await crearCotizacion(tiendaId, datos, { creadaPor: "cliente" }), 201);
-  } catch (error) { next(error); }
+router.post("/locales/cotizaciones", cotizacionesLimiter, scopeBodyToTienda, validate({ body: cotizacionLocalSchema }), async (req, res) => {
+  const { tiendaId, ...datos } = req.body;
+  return ok(res, "COTIZACION_CREADA", await crearCotizacion(tiendaId, datos, { creadaPor: "cliente" }), 201);
 });
 
 // GET /locales/cotizaciones/:token — la cotización (vigente, vencida o usada) y si la fecha sigue libre
-router.get("/locales/cotizaciones/:token", validate({ params: tokenParamSchema }), async (req, res, next) => {
-  try {
-    res.set("Cache-Control", "private, no-store");
-    return ok(res, "COTIZACION", await obtenerCotizacionStore(req.params.token, req.tiendaId ?? null));
-  } catch (error) { next(error); }
+router.get("/locales/cotizaciones/:token", validate({ params: tokenParamSchema }), async (req, res) => {
+  res.set("Cache-Control", "private, no-store");
+  return ok(res, "COTIZACION", await obtenerCotizacionStore(req.params.token, req.tiendaId ?? null));
 });
 
 // GET /canchas?tiendaId= — canchas del complejo con formato y precio día/noche (alquiler-canchas R1)
-router.get("/canchas", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    res.set("Cache-Control", "public, max-age=60");
-    return ok(res, "CANCHAS_LIST", await listarCanchasStore(req.validatedQuery.tiendaId));
-  } catch (error) { next(error); }
+router.get("/canchas", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res) => {
+  res.set("Cache-Control", "public, max-age=60");
+  return ok(res, "CANCHAS_LIST", await listarCanchasStore(req.validatedQuery.tiendaId));
 });
 
 // GET /canchas/agenda?tiendaId=&fecha= — bloques de 30 min del día (tarifa, pasados) y los ocupados de cada cancha (R3, R4)
-router.get("/canchas/agenda", validate({ query: agendaCanchasStoreQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    const { tiendaId, fecha } = req.validatedQuery;
-    // Corto: cambia con cada reserva. Se revalida al cotizar y al enviar (la BD decide).
-    res.set("Cache-Control", "public, max-age=15");
-    return ok(res, "CANCHAS_AGENDA", await agendaCanchasStore(tiendaId, fecha));
-  } catch (error) { next(error); }
+router.get("/canchas/agenda", validate({ query: agendaCanchasStoreQuerySchema }), scopeQueryToTienda, async (req, res) => {
+  const { tiendaId, fecha } = req.validatedQuery;
+  // Corto: cambia con cada reserva. Se revalida al cotizar y al enviar (la BD decide).
+  res.set("Cache-Control", "public, max-age=15");
+  return ok(res, "CANCHAS_AGENDA", await agendaCanchasStore(tiendaId, fecha));
 });
 
 // GET /canchas/:slug?tiendaId= — ficha de la cancha
 router.get("/canchas/:slug", validate({ params: slugParamSchema, query: tiendaQuerySchema }), scopeQueryToTienda,
-  async (req, res, next) => {
-    try {
-      res.set("Cache-Control", "public, max-age=60");
-      return ok(res, "CANCHA", await obtenerCanchaStore(req.validatedQuery.tiendaId, req.params.slug));
-    } catch (error) { next(error); }
+  async (req, res) => {
+    res.set("Cache-Control", "public, max-age=60");
+    return ok(res, "CANCHA", await obtenerCanchaStore(req.validatedQuery.tiendaId, req.params.slug));
   });
 
 // GET /cierres?tiendaId=&desde=&hasta=&productoId= — fechas no elegibles del calendario
-router.get("/cierres", validate({ query: cierresQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    const { tiendaId, ...filtros } = req.validatedQuery;
-    return ok(res, "RESERVAS_CIERRES", await cierresPublicos(tiendaId, filtros));
-  } catch (error) { next(error); }
+router.get("/cierres", validate({ query: cierresQuerySchema }), scopeQueryToTienda, async (req, res) => {
+  const { tiendaId, ...filtros } = req.validatedQuery;
+  return ok(res, "RESERVAS_CIERRES", await cierresPublicos(tiendaId, filtros));
 });
 
 // POST /cotizar — total, desglose, salida calculada, aviso y errores (sin crear nada)
-router.post("/cotizar", scopeBodyToTienda, validate({ body: cotizarSchema }), conIdioma, async (req, res, next) => {
-  try {
-    return ok(res, "RESERVA_COTIZACION", await cotizar(req.body));
-  } catch (error) { next(error); }
+router.post("/cotizar", scopeBodyToTienda, validate({ body: cotizarSchema }), conIdioma, async (req, res) => {
+  return ok(res, "RESERVA_COTIZACION", await cotizar(req.body));
 });
 
 // POST / — enviar la solicitud de reserva
 router.post("/", solicitudesLimiter, optionalAuth, scopeBodyToTienda, validate({ body: crearSolicitudSchema }), conIdioma,
-  async (req, res, next) => {
-    try {
-      // Honeypot: al bot se le responde como si se hubiera creado, para que no aprenda a evitarlo.
-      if (req.body.sitioWeb) {
-        logger.warn(`🪤 Reservas: honeypot activado en la tienda ${req.body.tiendaId}`);
-        return ok(res, "RESERVA_SOLICITADA", { codigo: null, token: null }, 201);
-      }
-      const resultado = await crearSolicitud(req.body, { authUserId: req.user?.id ?? null });
-      if (resultado.nueva) notificarSolicitud(resultado);
-      return ok(res, "RESERVA_SOLICITADA", {
-        codigo: resultado.pedido.numeroPedido,
-        token: resultado.token,
-        url: urlSeguimiento(resultado.tienda.slug, resultado.token)
-      }, resultado.nueva ? 201 : 200);
-    } catch (error) { next(error); }
+  async (req, res) => {
+    // Honeypot: al bot se le responde como si se hubiera creado, para que no aprenda a evitarlo.
+    if (req.body.sitioWeb) {
+      logger.warn(`🪤 Reservas: honeypot activado en la tienda ${req.body.tiendaId}`);
+      return ok(res, "RESERVA_SOLICITADA", { codigo: null, token: null }, 201);
+    }
+    const resultado = await crearSolicitud(req.body, { authUserId: req.user?.id ?? null });
+    if (resultado.nueva) notificarSolicitud(resultado);
+    return ok(res, "RESERVA_SOLICITADA", {
+      codigo: resultado.pedido.numeroPedido,
+      token: resultado.token,
+      url: urlSeguimiento(resultado.tienda.slug, resultado.token)
+    }, resultado.nueva ? 201 : 200);
   });
 
 // GET /seguimiento/:token — estado, datos de pago y confirmación
-router.get("/seguimiento/:token", validate({ params: tokenParamSchema }), async (req, res, next) => {
-  try {
-    const { pedidoId, tiendaId } = await reservaDelToken(req);
-    res.set("Cache-Control", "private, no-store");
-    return ok(res, "RESERVA", await obtenerSeguimiento(tiendaId, pedidoId));
-  } catch (error) { next(error); }
+router.get("/seguimiento/:token", validate({ params: tokenParamSchema }), async (req, res) => {
+  const { pedidoId, tiendaId } = await reservaDelToken(req);
+  res.set("Cache-Control", "private, no-store");
+  return ok(res, "RESERVA", await obtenerSeguimiento(tiendaId, pedidoId));
 });
 
 // POST /seguimiento/:token/captura — subir el comprobante del pago manual (multipart: captura, metodo, numeroOperacion)
 router.post("/seguimiento/:token/captura", solicitudesLimiter, validate({ params: tokenParamSchema }), uploadCaptura,
-  validate({ body: capturaBodySchema }), async (req, res, next) => {
-    try {
-      const { pedidoId, tiendaId } = await reservaDelToken(req);
-      const data = await subirCapturaCliente(tiendaId, pedidoId, { file: req.file, ...req.body });
-      return ok(res, "RESERVA_CAPTURA_SUBIDA", data);
-    } catch (error) { next(error); }
+  validate({ body: capturaBodySchema }), async (req, res) => {
+    const { pedidoId, tiendaId } = await reservaDelToken(req);
+    const data = await subirCapturaCliente(tiendaId, pedidoId, { file: req.file, ...req.body });
+    return ok(res, "RESERVA_CAPTURA_SUBIDA", data);
   });
 
 // POST /seguimiento/:token/pago — pago automático con la pasarela (docs/specs/pago-automatico R3):
 // { tokenId, metodo, cuotaId? }. Devuelve { pago, reserva }; un rechazo responde 422.
-router.post("/seguimiento/:token/pago", pagoLimiter, validate({ params: tokenParamSchema, body: pagarReservaSchema }), async (req, res, next) => {
-  try {
-    const { pedidoId, tiendaId } = await reservaDelToken(req);
-    res.set("Cache-Control", "private, no-store");
-    return ok(res, "RESERVA_PAGO", await pagarReserva(tiendaId, pedidoId, req.body), 201);
-  } catch (error) { next(error); }
+router.post("/seguimiento/:token/pago", pagoLimiter, validate({ params: tokenParamSchema, body: pagarReservaSchema }), async (req, res) => {
+  const { pedidoId, tiendaId } = await reservaDelToken(req);
+  res.set("Cache-Control", "private, no-store");
+  return ok(res, "RESERVA_PAGO", await pagarReserva(tiendaId, pedidoId, req.body), 201);
 });
 
 // Hotel antes de llegar (plantillas-por-rubro E8)
@@ -353,79 +301,61 @@ const cambioFechasSchema = z.object({
 });
 
 // POST /seguimiento/:token/checkin — datos de los acompañantes y hora de llegada
-router.post("/seguimiento/:token/checkin", solicitudesLimiter, validate({ params: tokenParamSchema, body: checkinSchema }), async (req, res, next) => {
-  try {
-    const { pedidoId, tiendaId } = await reservaDelToken(req);
-    return ok(res, "RESERVA_CHECKIN", await registrarCheckin(tiendaId, pedidoId, req.body));
-  } catch (error) { next(error); }
+router.post("/seguimiento/:token/checkin", solicitudesLimiter, validate({ params: tokenParamSchema, body: checkinSchema }), async (req, res) => {
+  const { pedidoId, tiendaId } = await reservaDelToken(req);
+  return ok(res, "RESERVA_CHECKIN", await registrarCheckin(tiendaId, pedidoId, req.body));
 });
 
 // POST /seguimiento/:token/cambio-fechas — pide otras fechas (el hotel decide)
-router.post("/seguimiento/:token/cambio-fechas", solicitudesLimiter, validate({ params: tokenParamSchema, body: cambioFechasSchema }), async (req, res, next) => {
-  try {
-    const { pedidoId, tiendaId } = await reservaDelToken(req);
-    return ok(res, "RESERVA_CAMBIO_SOLICITADO", await solicitarCambioFechas(tiendaId, pedidoId, req.body));
-  } catch (error) { next(error); }
+router.post("/seguimiento/:token/cambio-fechas", solicitudesLimiter, validate({ params: tokenParamSchema, body: cambioFechasSchema }), async (req, res) => {
+  const { pedidoId, tiendaId } = await reservaDelToken(req);
+  return ok(res, "RESERVA_CAMBIO_SOLICITADO", await solicitarCambioFechas(tiendaId, pedidoId, req.body));
 });
 
 // Pago dividido de canchas (plantillas-por-rubro E7)
 // POST /seguimiento/:token/dividir { partes } — divide el total entre N jugadores
-router.post("/seguimiento/:token/dividir", solicitudesLimiter, validate({ params: tokenParamSchema, body: dividirPagoSchema }), async (req, res, next) => {
-  try {
-    const { pedidoId, tiendaId } = await reservaDelToken(req);
-    await dividirPago(tiendaId, pedidoId, req.body.partes);
-    return ok(res, "RESERVA_DIVIDIDA", await partesDeReserva(tiendaId, pedidoId));
-  } catch (error) { next(error); }
+router.post("/seguimiento/:token/dividir", solicitudesLimiter, validate({ params: tokenParamSchema, body: dividirPagoSchema }), async (req, res) => {
+  const { pedidoId, tiendaId } = await reservaDelToken(req);
+  await dividirPago(tiendaId, pedidoId, req.body.partes);
+  return ok(res, "RESERVA_DIVIDIDA", await partesDeReserva(tiendaId, pedidoId));
 });
 
 // GET /seguimiento/:token/partes — las partes con sus links para compartir
-router.get("/seguimiento/:token/partes", validate({ params: tokenParamSchema }), async (req, res, next) => {
-  try {
-    const { pedidoId, tiendaId } = await reservaDelToken(req);
-    res.set("Cache-Control", "private, no-store");
-    return ok(res, "RESERVA_PARTES", await partesDeReserva(tiendaId, pedidoId));
-  } catch (error) { next(error); }
+router.get("/seguimiento/:token/partes", validate({ params: tokenParamSchema }), async (req, res) => {
+  const { pedidoId, tiendaId } = await reservaDelToken(req);
+  res.set("Cache-Control", "private, no-store");
+  return ok(res, "RESERVA_PARTES", await partesDeReserva(tiendaId, pedidoId));
 });
 
 // GET /partes/:token — lo que ve un jugador con su link de pago
-router.get("/partes/:token", validate({ params: tokenParamSchema }), async (req, res, next) => {
-  try {
-    res.set("Cache-Control", "private, no-store");
-    return ok(res, "RESERVA_PARTE", await obtenerParte(req.params.token));
-  } catch (error) { next(error); }
+router.get("/partes/:token", validate({ params: tokenParamSchema }), async (req, res) => {
+  res.set("Cache-Control", "private, no-store");
+  return ok(res, "RESERVA_PARTE", await obtenerParte(req.params.token));
 });
 
 // POST /partes/:token/pago { tokenId, metodo } — el jugador paga su parte
-router.post("/partes/:token/pago", pagoLimiter, validate({ params: tokenParamSchema, body: pagarReservaSchema }), async (req, res, next) => {
-  try {
-    res.set("Cache-Control", "private, no-store");
-    return ok(res, "RESERVA_PARTE_PAGO", await pagarParte(req.params.token, req.body), 201);
-  } catch (error) { next(error); }
+router.post("/partes/:token/pago", pagoLimiter, validate({ params: tokenParamSchema, body: pagarReservaSchema }), async (req, res) => {
+  res.set("Cache-Control", "private, no-store");
+  return ok(res, "RESERVA_PARTE_PAGO", await pagarParte(req.params.token, req.body), 201);
 });
 
 // POST /seguimiento/:token/contrato — el cliente acepta el contrato que leyó (versión + hash, R8.3)
-router.post("/seguimiento/:token/contrato", validate({ params: tokenParamSchema, body: aceptarContratoSchema }), async (req, res, next) => {
-  try {
-    const { pedidoId, tiendaId } = await reservaDelToken(req);
-    return ok(res, "RESERVA_CONTRATO_ACEPTADO", await aceptarContrato(tiendaId, pedidoId, req.body, { ip: clientIp(req) ?? null }));
-  } catch (error) { next(error); }
+router.post("/seguimiento/:token/contrato", validate({ params: tokenParamSchema, body: aceptarContratoSchema }), async (req, res) => {
+  const { pedidoId, tiendaId } = await reservaDelToken(req);
+  return ok(res, "RESERVA_CONTRATO_ACEPTADO", await aceptarContrato(tiendaId, pedidoId, req.body, { ip: clientIp(req) ?? null }));
 });
 
 // POST /seguimiento/:token/cuotas/:cuotaId/captura — pago manual de una cuota (multipart: captura opcional, metodo, numeroOperacion)
 router.post("/seguimiento/:token/cuotas/:cuotaId/captura", solicitudesLimiter, validate({ params: cuotaStoreParamSchema }), uploadCaptura,
-  validate({ body: capturaCuotaBodySchema }), async (req, res, next) => {
-    try {
-      const { pedidoId, tiendaId } = await reservaDelToken(req);
-      return ok(res, "RESERVA_CUOTA_CAPTURA", await subirCapturaCuota(tiendaId, pedidoId, req.params.cuotaId, { file: req.file, ...req.body }));
-    } catch (error) { next(error); }
+  validate({ body: capturaCuotaBodySchema }), async (req, res) => {
+    const { pedidoId, tiendaId } = await reservaDelToken(req);
+    return ok(res, "RESERVA_CUOTA_CAPTURA", await subirCapturaCuota(tiendaId, pedidoId, req.params.cuotaId, { file: req.file, ...req.body }));
   });
 
 // POST /seguimiento/:token/cancelar — el cliente cancela antes de confirmar
-router.post("/seguimiento/:token/cancelar", validate({ params: tokenParamSchema }), async (req, res, next) => {
-  try {
-    const { pedidoId, tiendaId } = await reservaDelToken(req);
-    return ok(res, "RESERVA_CANCELADA", await cancelarPorCliente(tiendaId, pedidoId));
-  } catch (error) { next(error); }
+router.post("/seguimiento/:token/cancelar", validate({ params: tokenParamSchema }), async (req, res) => {
+  const { pedidoId, tiendaId } = await reservaDelToken(req);
+  return ok(res, "RESERVA_CANCELADA", await cancelarPorCliente(tiendaId, pedidoId));
 });
 
 export default router;

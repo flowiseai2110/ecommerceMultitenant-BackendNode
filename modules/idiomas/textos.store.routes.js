@@ -15,23 +15,19 @@ import { opcionesTraducidas } from "../traducciones/opciones.js";
 const router = Router();
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-router.get("/", async (req, res, next) => {
-  try {
-    const tiendaId = req.tiendaId ?? (UUID.test(req.query.tiendaId ?? "") ? req.query.tiendaId : null);
-    if (!tiendaId) throw new ValidationError("Falta la tienda", { message: "Falta la tienda" });
-    // Cambia solo cuando el dueño guarda una traducción: un minuto basta.
-    res.set("Cache-Control", "public, max-age=60");
-    return apiResponse(res, {
-      status: 200, type: "SUCCESS", code: "TEXTOS_TIENDA",
-      data: {
-        idioma: req.idioma,
-        textos: await diccionario(tiendaId, req.idioma),
-        opciones: await opcionesTraducidas(tiendaId, req.idioma)
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
+router.get("/", async (req, res) => {
+  const tiendaId = req.tiendaId ?? (UUID.test(req.query.tiendaId ?? "") ? req.query.tiendaId : null);
+  if (!tiendaId) throw new ValidationError("Falta la tienda", { message: "Falta la tienda" });
+  // Cambia solo cuando el dueño guarda una traducción: un minuto basta.
+  res.set("Cache-Control", "public, max-age=60");
+  return apiResponse(res, {
+    status: 200, type: "SUCCESS", code: "TEXTOS_TIENDA",
+    data: {
+      idioma: req.idioma,
+      textos: await diccionario(tiendaId, req.idioma),
+      opciones: await opcionesTraducidas(tiendaId, req.idioma)
+    }
+  });
 });
 
 export default router;

@@ -49,23 +49,19 @@ function invalidateProductoCacheOnSuccess(req, res, next) {
 // metadata.opciones, que el formulario no manda (docs/specs/video-producto).
 function fusionarVideo(modo) {
   return async (req, res, next) => {
-    try {
-      if (!("video" in req.body)) return next();
-      const { video, ...datos } = req.body;
-      if (modo === "crear" && !video) {
-        req.body = datos;
-        return next();
-      }
-      let base = datos.metadata;
-      if (base === undefined && modo === "editar") {
-        const actual = await prisma.productos.findUnique({ where: { id: req.params.id }, select: { metadata: true } });
-        base = actual?.metadata;
-      }
-      req.body = { ...datos, metadata: metadataConVideo(base, video) };
-      next();
-    } catch (error) {
-      next(error);
+    if (!("video" in req.body)) return next();
+    const { video, ...datos } = req.body;
+    if (modo === "crear" && !video) {
+      req.body = datos;
+      return next();
     }
+    let base = datos.metadata;
+    if (base === undefined && modo === "editar") {
+      const actual = await prisma.productos.findUnique({ where: { id: req.params.id }, select: { metadata: true } });
+      base = actual?.metadata;
+    }
+    req.body = { ...datos, metadata: metadataConVideo(base, video) };
+    next();
   };
 }
 
@@ -73,16 +69,12 @@ function fusionarVideo(modo) {
 // sus productos de la marca de otra tienda con solo conocer su UUID. Va después de
 // prepararProductoDelRubro, que ya descartó la marca en rubros sin la capacidad.
 async function validarMarca(req, res, next) {
-  try {
-    const { marcaId } = req.body;
-    if (marcaId) {
-      const marca = await prisma.marcas.findUnique({ where: { id: marcaId }, select: { tiendaId: true } });
-      if (marca?.tiendaId !== req.tiendaId) throw errorDeCampo("marcaId", "La marca no existe en esta tienda");
-    }
-    next();
-  } catch (error) {
-    next(error);
+  const { marcaId } = req.body;
+  if (marcaId) {
+    const marca = await prisma.marcas.findUnique({ where: { id: marcaId }, select: { tiendaId: true } });
+    if (marca?.tiendaId !== req.tiendaId) throw errorDeCampo("marcaId", "La marca no existe en esta tienda");
   }
+  next();
 }
 
 const MARCA_SELECT = { select: { id: true, nombre: true, slug: true, logoUrl: true } };
@@ -194,13 +186,9 @@ router.get(
   "/opciones",
   authMiddleware,
   requireTiendaAccess("viewer"),
-  async (req, res, next) => {
-    try {
-      const opciones = await opcionesUsadasPorTienda(req.tiendaId);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "OPCIONES_FOUND", data: opciones });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const opciones = await opcionesUsadasPorTienda(req.tiendaId);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "OPCIONES_FOUND", data: opciones });
   }
 );
 
@@ -250,24 +238,20 @@ router.put(
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: sincronizarVariantesSchema }),
   invalidateProductoCacheOnSuccess,
-  async (req, res, next) => {
-    try {
-      const resultado = await sincronizarVariantes({
-        productoId: req.params.id,
-        tiendaId: req.tiendaId,
-        opciones: req.body.opciones,
-        variantes: req.body.variantes,
-        user: req.user
-      });
-      return apiResponse(res, {
-        status: 200,
-        type: "SUCCESS",
-        code: "VARIANTES_SINCRONIZADAS",
-        data: { ...resultado, variantes: resultado.variantes.map(serializeVarianteAdmin) }
-      });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const resultado = await sincronizarVariantes({
+      productoId: req.params.id,
+      tiendaId: req.tiendaId,
+      opciones: req.body.opciones,
+      variantes: req.body.variantes,
+      user: req.user
+    });
+    return apiResponse(res, {
+      status: 200,
+      type: "SUCCESS",
+      code: "VARIANTES_SINCRONIZADAS",
+      data: { ...resultado, variantes: resultado.variantes.map(serializeVarianteAdmin) }
+    });
   }
 );
 

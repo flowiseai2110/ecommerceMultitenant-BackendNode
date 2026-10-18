@@ -56,23 +56,15 @@ router.get("/plantillas", requirePlatformAdmin, validate({ query: listarQuery })
 });
 
 // POST /admin/diseno/plantillas — Plantilla nueva con el diseño de una tienda (P4, P5).
-router.post("/plantillas", requirePlatformAdmin, validate({ body: crearPlantillaSchema }), async (req, res, next) => {
-  try {
-    const data = await crearPlantilla(req.body, req.user);
-    return apiResponse(res, { status: 201, type: "SUCCESS", code: "DISENO_PLANTILLA_CREADA", data });
-  } catch (error) {
-    next(error);
-  }
+router.post("/plantillas", requirePlatformAdmin, validate({ body: crearPlantillaSchema }), async (req, res) => {
+  const data = await crearPlantilla(req.body, req.user);
+  return apiResponse(res, { status: 201, type: "SUCCESS", code: "DISENO_PLANTILLA_CREADA", data });
 });
 
 // PUT /admin/diseno/plantillas/:id — Datos, orden, visibilidad o diseño (P6, P7).
-router.put("/plantillas/:id", requirePlatformAdmin, validate({ params: plantillaIdParams, body: actualizarPlantillaSchema }), async (req, res, next) => {
-  try {
-    const data = await actualizarPlantilla(req.params.id, req.body, req.user);
-    return apiResponse(res, { status: 200, type: "SUCCESS", code: "DISENO_PLANTILLA_ACTUALIZADA", data });
-  } catch (error) {
-    next(error);
-  }
+router.put("/plantillas/:id", requirePlatformAdmin, validate({ params: plantillaIdParams, body: actualizarPlantillaSchema }), async (req, res) => {
+  const data = await actualizarPlantilla(req.params.id, req.body, req.user);
+  return apiResponse(res, { status: 200, type: "SUCCESS", code: "DISENO_PLANTILLA_ACTUALIZADA", data });
 });
 
 export default router;

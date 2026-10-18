@@ -26,23 +26,19 @@ const manualSchema = z.object({
   texto: z.union([z.string().max(5000), z.array(z.string().max(100)).max(30)])
 });
 
-router.get("/", requireTiendaAccess("viewer"), validate({ query: tiendaQuery }), async (req, res, next) => {
-  try { return ok(res, "TRADUCCIONES", await listarTextos(req.tiendaId, req.validatedQuery.idioma)); } catch (error) { next(error); }
+router.get("/", requireTiendaAccess("viewer"), validate({ query: tiendaQuery }), async (req, res) => {
+  return ok(res, "TRADUCCIONES", await listarTextos(req.tiendaId, req.validatedQuery.idioma));
 });
 
-router.put("/", requireTiendaAccess("admin"), validate({ body: manualSchema }), async (req, res, next) => {
-  try {
-    const idioma = await guardarManual(req.tiendaId, req.body, req.user);
-    return ok(res, "TRADUCCION_GUARDADA", await listarTextos(req.tiendaId, idioma.codigo));
-  } catch (error) { next(error); }
+router.put("/", requireTiendaAccess("admin"), validate({ body: manualSchema }), async (req, res) => {
+  const idioma = await guardarManual(req.tiendaId, req.body, req.user);
+  return ok(res, "TRADUCCION_GUARDADA", await listarTextos(req.tiendaId, idioma.codigo));
 });
 
 // "Traducir con IA" lo que falta: síncrono, para que el dueño vea el resultado al terminar.
-router.post("/generar", requireTiendaAccess("admin"), validate({ body: tiendaQuery }), async (req, res, next) => {
-  try {
-    const traducidos = await traducirPendientes(req.tiendaId, req.body.idioma);
-    return ok(res, "TRADUCCIONES_GENERADAS", { traducidos, ...(await listarTextos(req.tiendaId, req.body.idioma)) });
-  } catch (error) { next(error); }
+router.post("/generar", requireTiendaAccess("admin"), validate({ body: tiendaQuery }), async (req, res) => {
+  const traducidos = await traducirPendientes(req.tiendaId, req.body.idioma);
+  return ok(res, "TRADUCCIONES_GENERADAS", { traducidos, ...(await listarTextos(req.tiendaId, req.body.idioma)) });
 });
 
 export default router;

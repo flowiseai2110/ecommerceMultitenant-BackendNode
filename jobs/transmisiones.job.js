@@ -4,6 +4,7 @@ import { cicloTransmisiones } from "../modules/transmisiones/transmisiones.enviv
 import { cicloGrabaciones } from "../modules/transmisiones/transmisiones.grabaciones.js";
 import { revisarAlmacenamiento } from "../modules/transmisiones/transmisiones.plataforma.js";
 import { getStreamingProvider } from "../services/streaming/index.js";
+import { runUnscoped } from "../kernel/tenant/tenant-store.js";
 
 /**
  * Job de transmisiones en vivo (docs/specs/transmision-eventos, Fase 2): cada
@@ -27,11 +28,15 @@ async function tick() {
   corriendo = true;
   const antes = getStreamingProvider().consumoApi().llamadas;
   try {
-    await cicloTransmisiones(new Date());
-    // Grabaciones (Fase 4): partes, MP4, avisos, copia a R2 y vencimientos.
-    await cicloGrabaciones(new Date());
-    // Almacenamiento de video casi lleno: aviso a la plataforma (cada 10 min).
-    await revisarAlmacenamiento(new Date());
+    // Recorre las transmisiones de todas las tiendas a propósito: sin el
+    // auto-scope de tienda (docs/specs/antipatrones A1.6).
+    await runUnscoped(async () => {
+      await cicloTransmisiones(new Date());
+      // Grabaciones (Fase 4): partes, MP4, avisos, copia a R2 y vencimientos.
+      await cicloGrabaciones(new Date());
+      // Almacenamiento de video casi lleno: aviso a la plataforma (cada 10 min).
+      await revisarAlmacenamiento(new Date());
+    });
   } catch (error) {
     logger.error(`Job de transmisiones: ${error.message}`, { stack: error.stack });
   } finally {

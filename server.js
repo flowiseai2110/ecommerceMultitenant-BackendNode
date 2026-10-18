@@ -16,7 +16,6 @@ import { swaggerSpec } from "./config/swagger.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 import { performanceMiddleware, getRouteMetrics, resetRouteMetrics } from "./middlewares/performance.middleware.js";
 import { iniciarJobTransmisiones } from "./jobs/transmisiones.job.js";
-import { iniciarJobResenasReservas } from "./jobs/resenas-reservas.job.js";
 import { iniciarRecargaPlantillas } from "./modules/diseno/plantillas.repo.js";
 import { sincronizarClavesAlIniciar } from "./modules/idiomas/claves.service.js";
 
@@ -236,7 +235,6 @@ async function startServer() {
 
     // Corte, señal y limpieza de las transmisiones en vivo (plan Privado).
     iniciarJobTransmisiones();
-    iniciarJobResenasReservas();
     // Plantillas de diseño de la base sobre las del código (editor-diseno-en-vivo P2).
     iniciarRecargaPlantillas();
     // Catálogo de textos fijos = el del código desplegado (docs/specs/idiomas D8). No bloquea el arranque.

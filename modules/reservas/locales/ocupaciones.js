@@ -60,10 +60,10 @@ export async function ocupacionesVigentes(tiendaId, productoIds, desde, hasta, {
 export async function ocupar(tx, { tiendaId, productoId, pedidoId = null, tipo, inicio, fin, expiraEn = null, motivo = null, usuario = null }) {
   await tx.$executeRaw`
     UPDATE local_ocupaciones SET activo = false
-    WHERE producto_id = ${productoId}::uuid AND activo AND expira_en IS NOT NULL AND expira_en <= now()
+    WHERE tienda_id = ${tiendaId}::uuid AND producto_id = ${productoId}::uuid AND activo AND expira_en IS NOT NULL AND expira_en <= now()
       AND franja && tstzrange(${inicio}::timestamptz, ${fin}::timestamptz, '[)')`;
   if (pedidoId) {
-    await tx.$executeRaw`UPDATE local_ocupaciones SET activo = false WHERE pedido_id = ${pedidoId}::uuid AND activo`;
+    await tx.$executeRaw`UPDATE local_ocupaciones SET activo = false WHERE tienda_id = ${tiendaId}::uuid AND pedido_id = ${pedidoId}::uuid AND activo`;
   }
   try {
     const [fila] = await tx.$queryRaw`

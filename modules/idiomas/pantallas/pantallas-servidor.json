@@ -40,13 +40,6 @@
         ]
       },
       {
-        "id": "pedido-de-resena",
-        "nombre": "Pedido de reseña",
-        "grupos": [
-          "correos"
-        ]
-      },
-      {
         "id": "partes-comunes-de-los-correos",
         "nombre": "Partes comunes de los correos",
         "grupos": [

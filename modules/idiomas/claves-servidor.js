@@ -47,7 +47,6 @@ export const PANTALLAS_SERVIDOR = {
     "Reserva aceptada": [`${CORREOS}#aceptadaEmail`],
     "Reserva rechazada": [`${CORREOS}#rechazadaEmail`],
     "Reserva confirmada": [`${CORREOS}#confirmadaEmail`],
-    "Pedido de reseña": [`${CORREOS}#pedirResenaEmail`],
     "Partes comunes de los correos": [
       `${CORREOS}#fechaHora`, `${CORREOS}#DIAS_CORTOS`, `${CORREOS}#VOZ`, `${CORREOS}#VOZ_ALOJAMIENTO`,
       `${CORREOS}#VOZ_HOTEL`, `${CORREOS}#textoPersonas`, `${CORREOS}#estadia`, `${CORREOS}#resumen`

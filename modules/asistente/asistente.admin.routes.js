@@ -29,13 +29,9 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ query: asistenteQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const data = await obtenerProgreso(req.tiendaId);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "ASISTENTE_PROGRESO", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await obtenerProgreso(req.tiendaId);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "ASISTENTE_PROGRESO", data });
   }
 );
 
@@ -46,22 +42,18 @@ router.post(
   requireTiendaAccess("viewer"),
   validate({ query: asistenteQuerySchema, body: mensajeAsistenteSchema }),
   asistenteLimiter,
-  async (req, res, next) => {
-    try {
-      const { mensaje, historial, rutaActual } = req.body;
-      // Cuenta 1 consulta del mes (402 QUOTA_EXCEEDED si ya no quedan).
-      const { resultado: turno, consumo } = await conConsulta(req.tiendaId, "asistente", () =>
-        responderTurno({ tiendaId: req.tiendaId, rutaActual, mensaje, historial })
-      );
-      return apiResponse(res, {
-        status: 200,
-        type: "SUCCESS",
-        code: "ASISTENTE_RESPUESTA",
-        data: { mensaje: turno.mensaje, acciones: turno.acciones, consumo }
-      });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const { mensaje, historial, rutaActual } = req.body;
+    // Cuenta 1 consulta del mes (402 QUOTA_EXCEEDED si ya no quedan).
+    const { resultado: turno, consumo } = await conConsulta(req.tiendaId, "asistente", () =>
+      responderTurno({ tiendaId: req.tiendaId, rutaActual, mensaje, historial })
+    );
+    return apiResponse(res, {
+      status: 200,
+      type: "SUCCESS",
+      code: "ASISTENTE_RESPUESTA",
+      data: { mensaje: turno.mensaje, acciones: turno.acciones, consumo }
+    });
   }
 );
 

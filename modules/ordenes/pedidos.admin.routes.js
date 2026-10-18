@@ -23,15 +23,11 @@ const router = Router();
 
 // Resuelve tiendaId desde el pedido cuando no viene en la request
 async function resolvePedidoTiendaId(req, res, next) {
-  try {
-    if (!req.body?.tiendaId && !req.params?.tiendaId && !req.query?.tiendaId) {
-      const tiendaId = await pedidosService.resolveTiendaId(req.params.id);
-      if (tiendaId) req.params.tiendaId = tiendaId;
-    }
-    next();
-  } catch (error) {
-    next(error);
+  if (!req.body?.tiendaId && !req.params?.tiendaId && !req.query?.tiendaId) {
+    const tiendaId = await pedidosService.resolveTiendaId(req.params.id);
+    if (tiendaId) req.params.tiendaId = tiendaId;
   }
+  next();
 }
 
 // GET / - Listar pedidos (requiere tiendaId en query)
@@ -40,14 +36,10 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ query: paginationSchema }),
-  async (req, res, next) => {
-    try {
-      const query = req.validatedQuery || req.query;
-      const { data, meta } = await pedidosService.findAll(query);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDOS_LIST", data, meta });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const query = req.validatedQuery || req.query;
+    const { data, meta } = await pedidosService.findAll(query);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDOS_LIST", data, meta });
   }
 );
 
@@ -57,14 +49,10 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ query: listaQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const query = req.validatedQuery || req.query;
-      const { data, meta } = await pedidosService.findLista(query);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDOS_LISTA", data, meta });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const query = req.validatedQuery || req.query;
+    const { data, meta } = await pedidosService.findLista(query);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDOS_LISTA", data, meta });
   }
 );
 
@@ -75,25 +63,21 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ query: pendientesCountQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const { tiendaId } = req.validatedQuery || req.query;
+  async (req, res) => {
+    const { tiendaId } = req.validatedQuery || req.query;
 
-      let total = getPendientesCount(tiendaId);
-      if (total === null) {
-        total = await pedidosService.countPendientes(tiendaId);
-        setPendientesCount(tiendaId, total);
-      }
-
-      return apiResponse(res, {
-        status: 200,
-        type: "SUCCESS",
-        code: "PEDIDOS_PENDIENTES_COUNT",
-        data: { total }
-      });
-    } catch (error) {
-      next(error);
+    let total = getPendientesCount(tiendaId);
+    if (total === null) {
+      total = await pedidosService.countPendientes(tiendaId);
+      setPendientesCount(tiendaId, total);
     }
+
+    return apiResponse(res, {
+      status: 200,
+      type: "SUCCESS",
+      code: "PEDIDOS_PENDIENTES_COUNT",
+      data: { total }
+    });
   }
 );
 
@@ -103,13 +87,9 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ params: idParamSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await pedidosService.findById(req.params.id, req.tiendaId);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_FOUND", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await pedidosService.findById(req.params.id, req.tiendaId);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_FOUND", data });
   }
 );
 
@@ -120,16 +100,12 @@ router.put(
   resolvePedidoTiendaId,
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateEstadoSchema }),
-  async (req, res, next) => {
-    try {
-      const { estado, notas } = req.body;
-      const data = await pedidosService.updateEstado(
-        req.params.id, estado, notas, req.user, req.tiendaId
-      );
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_ESTADO_UPDATED", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const { estado, notas } = req.body;
+    const data = await pedidosService.updateEstado(
+      req.params.id, estado, notas, req.user, req.tiendaId
+    );
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_ESTADO_UPDATED", data });
   }
 );
 
@@ -140,16 +116,12 @@ router.put(
   resolvePedidoTiendaId,
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateEstadoPagoSchema }),
-  async (req, res, next) => {
-    try {
-      const { estadoPago, referenciaPago, metodoPago } = req.body;
-      const data = await pedidosService.updatePago(
-        req.params.id, estadoPago, referenciaPago, metodoPago, req.user, req.tiendaId
-      );
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_PAGO_UPDATED", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const { estadoPago, referenciaPago, metodoPago } = req.body;
+    const data = await pedidosService.updatePago(
+      req.params.id, estadoPago, referenciaPago, metodoPago, req.user, req.tiendaId
+    );
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_PAGO_UPDATED", data });
   }
 );
 
@@ -160,15 +132,11 @@ router.put(
   resolvePedidoTiendaId,
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateDetallesSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await pedidosService.updateDetalles(
-        req.params.id, req.body, req.user, req.tiendaId
-      );
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_DETALLES_UPDATED", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await pedidosService.updateDetalles(
+      req.params.id, req.body, req.user, req.tiendaId
+    );
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_DETALLES_UPDATED", data });
   }
 );
 
@@ -179,13 +147,9 @@ router.delete(
   resolvePedidoTiendaId,
   requireTiendaAccess("admin"),
   validate({ params: idParamSchema }),
-  async (req, res, next) => {
-    try {
-      await pedidosService.delete(req.params.id, req.tiendaId);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_DELETED", data: null });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    await pedidosService.delete(req.params.id, req.tiendaId);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_DELETED", data: null });
   }
 );
 

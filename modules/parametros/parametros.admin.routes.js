@@ -19,12 +19,12 @@ const ok = (res, code, data) => apiResponse(res, { status: 200, type: "SUCCESS",
 const claveParams = z.object({ clave: z.string().min(1).max(60).regex(/^[a-z0-9_.]+$/, "Clave inválida") });
 const valorBody = z.object({ valor: z.unknown() }).refine(b => b.valor !== undefined, { message: "Falta el valor", path: ["valor"] });
 
-router.get("/", requirePlatformAdmin, async (_req, res, next) => {
-  try { return ok(res, "PARAMETROS_LIST", await listarParametros()); } catch (error) { next(error); }
+router.get("/", requirePlatformAdmin, async (_req, res) => {
+  return ok(res, "PARAMETROS_LIST", await listarParametros());
 });
 
-router.put("/:clave", requirePlatformAdmin, validate({ params: claveParams, body: valorBody }), async (req, res, next) => {
-  try { return ok(res, "PARAMETRO_UPDATED", await cambiarParametro(req.params.clave, req.body.valor, req.user)); } catch (error) { next(error); }
+router.put("/:clave", requirePlatformAdmin, validate({ params: claveParams, body: valorBody }), async (req, res) => {
+  return ok(res, "PARAMETRO_UPDATED", await cambiarParametro(req.params.clave, req.body.valor, req.user));
 });
 
 export default router;

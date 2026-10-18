@@ -10,7 +10,8 @@
 ## Pieza 1 — Datos, `ALCANCE` y alcance por sede (Backend, nada visible)
 - [ ] Prisma: `sedes`, `razones_sociales`, `config_sede`; `sede_id` en las tablas `sede` de S3; `usuario_tiendas.sedes`
 - [ ] `docs/sql/multi_sede_fase_1.sql`: idempotente, en transacción; sede principal + razón social por defecto por tienda; copia de los campos operativos de `config_reservas`; llena `sede_id` y después `NOT NULL`
-- [ ] `kernel/tenant/alcance.js` con la clasificación de S3; `config/prisma.js` arma las listas desde ahí (cierra S2.6)
+- [ ] Requiere: pieza 1 de [antipatrones](../antipatrones/tasks.md) (`ALCANCE` con `tienda`/`global` y auto-scope ya armado desde ahí)
+- [ ] `kernel/tenant/alcance.js`: agregar la clasificación por sede de S3; `config/prisma.js` arma `SEDE_SCOPED_MODELS` desde ahí
 - [ ] Contexto: `sedeId` / `sedesPermitidas` en el ALS; error `SEDE_REQUERIDA`
 - [ ] Revisar los `$queryRaw` de reservas, recepción y caja para que reciban la sede como parámetro obligatorio (S2.7)
 - [ ] Escrituras por id validan la sede del registro (S2.7)

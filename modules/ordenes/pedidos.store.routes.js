@@ -37,18 +37,14 @@ router.post(
   optionalAuth,
   scopeBodyToTienda,
   validate({ body: createPedidoSchema }),
-  async (req, res, next) => {
-    try {
-      // idioma: el de la vitrina, ya resuelto (docs/specs/idiomas D11); el admin lo muestra.
-      const data = await pedidosService.create(req.body, { authUserId: req.user?.id ?? null, idioma: req.idioma?.codigo });
+  async (req, res) => {
+    // idioma: el de la vitrina, ya resuelto (docs/specs/idiomas D11); el admin lo muestra.
+    const data = await pedidosService.create(req.body, { authUserId: req.user?.id ?? null, idioma: req.idioma?.codigo });
 
-      // Fire-and-forget: la respuesta del checkout no espera al email
-      pedidosService.notifyNewOrder(data);
+    // Fire-and-forget: la respuesta del checkout no espera al email
+    pedidosService.notifyNewOrder(data);
 
-      return apiResponse(res, { status: 201, type: "SUCCESS", code: "PEDIDO_CREATED", data });
-    } catch (error) {
-      next(error);
-    }
+    return apiResponse(res, { status: 201, type: "SUCCESS", code: "PEDIDO_CREATED", data });
   }
 );
 
@@ -92,20 +88,16 @@ router.get(
   optionalAuth,
   validate({ params: rastrearParamSchema, query: rastrearQuerySchema }),
   limiteVerificacion,
-  async (req, res, next) => {
-    try {
-      const { numeroPedido } = req.params;
-      const { tiendaId, verificacion } = req.validatedQuery;
+  async (req, res) => {
+    const { numeroPedido } = req.params;
+    const { tiendaId, verificacion } = req.validatedQuery;
 
-      const pedido = await pedidosService.rastrear(tiendaId, numeroPedido, {
-        verificacion,
-        authUserId: req.user?.id ?? null
-      });
+    const pedido = await pedidosService.rastrear(tiendaId, numeroPedido, {
+      verificacion,
+      authUserId: req.user?.id ?? null
+    });
 
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_FOUND", data: pedido });
-    } catch (error) {
-      next(error);
-    }
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_FOUND", data: pedido });
   }
 );
 

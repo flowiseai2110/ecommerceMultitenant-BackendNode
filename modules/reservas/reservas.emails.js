@@ -250,35 +250,6 @@ export function nuevaReservaEmail(r) {
   };
 }
 
-const NOMBRES_FUENTE = {
-  google: "Google", booking: "Booking.com", tripadvisor: "Tripadvisor", airbnb: "Airbnb", facebook: "Facebook",
-  getyourguide: "GetYourGuide", viator: "Viator"
-};
-
-/**
- * "¿Cómo te fue?" tras la estadía o el tour (hospedaje-completo C6), en el
- * idioma en que reservó. `externa` es la primera reseña en otro sitio que
- * configuró el negocio: se invita a dejarla también ahí.
- */
-export function pedirResenaEmail({ nombre, negocio, producto, tipo = "hotel", externa = null, idioma }, url, t = TRADUCTOR_BASE) {
-  const tour = tipo === "tour";
-  const sitio = externa ? NOMBRES_FUENTE[externa.fuente] ?? externa.fuente : null;
-  return {
-    subject: t(tour ? clave("¿Cómo te fue con {negocio}?|tour") : clave("¿Cómo te fue con {negocio}?|estadía"), { negocio }),
-    html: layout({
-      lang: idioma,
-      titulo: e(t(clave("¿Cómo te fue?"))),
-      intro: texto(html(t, clave("Hola {nombre}, gracias por elegir {negocio}. Tu reseña toma un minuto y ayuda a otros viajeros a decidir."),
-        { nombre: e(nombre), negocio: b(e(negocio)) }))
-        + (producto ? texto(`${e(t(tour ? clave("Tu reserva|tour") : clave("Tu reserva|estadía")))}: ${b(e(producto))}`) : ""),
-      cuerpo: boton(url, e(t(clave("Dejar mi reseña"))))
-        + (externa ? texto(html(t, clave("¿Tienes un minuto más? Tu reseña en {sitio} nos ayuda mucho."),
-          { sitio: `<a href="${e(externa.url)}" style="color: #2563eb;">${e(sitio)}</a>` })) : ""),
-      pie: e(t(clave("Una reseña por reserva. El link es personal.")))
-    })
-  };
-}
-
 /** Al cliente: aceptada, toca pagar. */
 export function aceptadaEmail(r, url, t = TRADUCTOR_BASE) {
   const v = voz(r, t);

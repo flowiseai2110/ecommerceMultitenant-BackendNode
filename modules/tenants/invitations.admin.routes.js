@@ -31,17 +31,13 @@ router.get(
   "/tienda/:tiendaId",
   authMiddleware,
   validate({ params: tiendaIdParamSchema, query: listInvitacionesQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const { invitations, total } = await listInvitaciones(
-        req.user,
-        req.params.tiendaId,
-        req.validatedQuery || req.query
-      );
-      res.json({ success: true, invitations, total });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const { invitations, total } = await listInvitaciones(
+      req.user,
+      req.params.tiendaId,
+      req.validatedQuery || req.query
+    );
+    res.json({ success: true, invitations, total });
   }
 );
 
@@ -50,18 +46,14 @@ router.post(
   "/",
   authMiddleware,
   validate({ body: createInvitacionSchema }),
-  async (req, res, next) => {
-    try {
-      const { invitacion, emailSent } = await createInvitacion(req.user, req.body);
-      res.status(201).json({
-        success: true,
-        data: invitacion,
-        emailSent,
-        message: "Invitación creada exitosamente"
-      });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const { invitacion, emailSent } = await createInvitacion(req.user, req.body);
+    res.status(201).json({
+      success: true,
+      data: invitacion,
+      emailSent,
+      message: "Invitación creada exitosamente"
+    });
   }
 );
 
@@ -70,18 +62,14 @@ router.post(
   "/:id/resend",
   authMiddleware,
   validate({ params: idParamSchema }),
-  async (req, res, next) => {
-    try {
-      const { invitacion, emailSent } = await resendInvitacion(req.user, req.params.id);
-      res.json({
-        success: true,
-        data: invitacion,
-        emailSent,
-        message: "Invitación reenviada exitosamente"
-      });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const { invitacion, emailSent } = await resendInvitacion(req.user, req.params.id);
+    res.json({
+      success: true,
+      data: invitacion,
+      emailSent,
+      message: "Invitación reenviada exitosamente"
+    });
   }
 );
 
@@ -90,13 +78,9 @@ router.delete(
   "/:id",
   authMiddleware,
   validate({ params: idParamSchema }),
-  async (req, res, next) => {
-    try {
-      await cancelInvitacion(req.user, req.params.id);
-      res.json({ success: true, message: "Invitación cancelada exitosamente" });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    await cancelInvitacion(req.user, req.params.id);
+    res.json({ success: true, message: "Invitación cancelada exitosamente" });
   }
 );
 
@@ -104,13 +88,9 @@ router.delete(
 router.get(
   "/validate/:token",
   validate({ params: tokenParamSchema }),
-  async (req, res, next) => {
-    try {
-      const invitation = await validateToken(req.params.token);
-      res.json({ success: true, invitation, valid: true });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const invitation = await validateToken(req.params.token);
+    res.json({ success: true, invitation, valid: true });
   }
 );
 
@@ -118,13 +98,9 @@ router.get(
 router.post(
   "/accept",
   validate({ body: acceptInvitacionSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await acceptInvitacion(req.body);
-      res.json({ success: true, message: "Invitación aceptada exitosamente", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await acceptInvitacion(req.body);
+    res.json({ success: true, message: "Invitación aceptada exitosamente", data });
   }
 );
 
@@ -133,13 +109,9 @@ router.post(
   "/accept-authenticated",
   authMiddleware,
   validate({ body: acceptAuthenticatedSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await acceptInvitacionAuthenticated(req.user, req.body.token);
-      res.json({ success: true, message: "Invitación aceptada exitosamente", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await acceptInvitacionAuthenticated(req.user, req.body.token);
+    res.json({ success: true, message: "Invitación aceptada exitosamente", data });
   }
 );
 

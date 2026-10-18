@@ -25,20 +25,16 @@ router.get(
   authMiddleware,
   validate({ query: tiendaQuerySchema }),
   scopeQueryToTienda,
-  async (req, res, next) => {
-    try {
-      const { tiendaId } = req.validatedQuery || req.query;
-      const ultimoContacto = await pedidosService.ultimoContacto(tiendaId, req.user.id);
+  async (req, res) => {
+    const { tiendaId } = req.validatedQuery || req.query;
+    const ultimoContacto = await pedidosService.ultimoContacto(tiendaId, req.user.id);
 
-      return apiResponse(res, {
-        status: 200,
-        type: "SUCCESS",
-        code: "CUENTA_PERFIL",
-        data: { ultimoContacto }
-      });
-    } catch (error) {
-      next(error);
-    }
+    return apiResponse(res, {
+      status: 200,
+      type: "SUCCESS",
+      code: "CUENTA_PERFIL",
+      data: { ultimoContacto }
+    });
   }
 );
 
@@ -50,15 +46,11 @@ router.get(
   authMiddleware,
   validate({ query: tiendaQuerySchema }),
   scopeQueryToTienda,
-  async (req, res, next) => {
-    try {
-      const { tiendaId } = req.validatedQuery || req.query;
-      const data = await pedidosService.listByAuthUser(tiendaId, req.user.id);
+  async (req, res) => {
+    const { tiendaId } = req.validatedQuery || req.query;
+    const data = await pedidosService.listByAuthUser(tiendaId, req.user.id);
 
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUENTA_PEDIDOS", data });
-    } catch (error) {
-      next(error);
-    }
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUENTA_PEDIDOS", data });
   }
 );
 
@@ -70,15 +62,11 @@ router.get(
   authMiddleware,
   validate({ query: tiendaQuerySchema }),
   scopeQueryToTienda,
-  async (req, res, next) => {
-    try {
-      const { tiendaId } = req.validatedQuery || req.query;
-      const data = await listarReservasCuenta(tiendaId, req.user.id);
+  async (req, res) => {
+    const { tiendaId } = req.validatedQuery || req.query;
+    const data = await listarReservasCuenta(tiendaId, req.user.id);
 
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUENTA_RESERVAS", data });
-    } catch (error) {
-      next(error);
-    }
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUENTA_RESERVAS", data });
   }
 );
 

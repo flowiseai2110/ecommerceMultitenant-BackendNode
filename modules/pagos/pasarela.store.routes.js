@@ -27,13 +27,9 @@ const pagoLimiter = crearLimitador({
 // GET /config - Cómo cobra la tienda (pago-automatico R2.3). Sin caché: el
 // dueño puede cambiar el modo y la tienda debe verlo en el siguiente pago.
 // ============================================
-router.get("/config", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res, next) => {
-  try {
-    const data = await configPublica(req.query.tiendaId);
-    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PAGOS_CONFIG", data });
-  } catch (error) {
-    next(error);
-  }
+router.get("/config", validate({ query: tiendaQuerySchema }), scopeQueryToTienda, async (req, res) => {
+  const data = await configPublica(req.query.tiendaId);
+  return apiResponse(res, { status: 200, type: "SUCCESS", code: "PAGOS_CONFIG", data });
 });
 
 // ============================================
@@ -46,18 +42,14 @@ router.post(
   pagoLimiter,
   scopeBodyToTienda,
   validate({ body: crearCargoSchema }),
-  async (req, res, next) => {
-    try {
-      const { tiendaId, pedidoId, tokenId, metodo, email, antifraud } = req.body;
-      const { proveedor } = await exigirAutomatico(tiendaId);
-      const pago = await pasarelaService.crearCargo({
-        tiendaId, pedidoId, tokenId, metodo, proveedor, email, antifraud
-      });
+  async (req, res) => {
+    const { tiendaId, pedidoId, tokenId, metodo, email, antifraud } = req.body;
+    const { proveedor } = await exigirAutomatico(tiendaId);
+    const pago = await pasarelaService.crearCargo({
+      tiendaId, pedidoId, tokenId, metodo, proveedor, email, antifraud
+    });
 
-      return apiResponse(res, { status: 201, type: "SUCCESS", code: "PAGO_CREATED", data: pago });
-    } catch (error) {
-      next(error);
-    }
+    return apiResponse(res, { status: 201, type: "SUCCESS", code: "PAGO_CREATED", data: pago });
   }
 );
 

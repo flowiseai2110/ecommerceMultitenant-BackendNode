@@ -70,27 +70,23 @@ router.get(
   "/",
   authMiddleware,
   validate({ query: paginationSchema }),
-  async (req, res, next) => {
-    try {
-      const query = req.validatedQuery || req.query;
-      const page = parseInt(query.page) || 1;
-      const limit = Math.min(parseInt(query.limit) || 10, 100);
+  async (req, res) => {
+    const query = req.validatedQuery || req.query;
+    const page = parseInt(query.page) || 1;
+    const limit = Math.min(parseInt(query.limit) || 10, 100);
 
-      const cacheKey = buildTiendasListCacheKey(req.user.id, query, page, limit);
-      const cached = getTiendasAdminList(cacheKey);
-      if (cached) {
-        return apiResponse(res, cached);
-      }
-
-      const { data, meta } = await listTiendasForUser(req.user.id, query);
-
-      const responsePayload = { status: 200, type: "SUCCESS", code: "TIENDAS_LIST", data, meta };
-      setTiendasAdminList(cacheKey, responsePayload);
-
-      return apiResponse(res, responsePayload);
-    } catch (error) {
-      next(error);
+    const cacheKey = buildTiendasListCacheKey(req.user.id, query, page, limit);
+    const cached = getTiendasAdminList(cacheKey);
+    if (cached) {
+      return apiResponse(res, cached);
     }
+
+    const { data, meta } = await listTiendasForUser(req.user.id, query);
+
+    const responsePayload = { status: 200, type: "SUCCESS", code: "TIENDAS_LIST", data, meta };
+    setTiendasAdminList(cacheKey, responsePayload);
+
+    return apiResponse(res, responsePayload);
   }
 );
 
@@ -101,13 +97,9 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ params: tiendaIdParamSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await armarDashboard(req.params.tiendaId, { rol: req.tiendaRol });
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DASHBOARD", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await armarDashboard(req.params.tiendaId, { rol: req.tiendaRol });
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DASHBOARD", data });
   }
 );
 
@@ -128,30 +120,26 @@ router.post(
   requireAnyMembership(),
   validate({ body: createTiendaSchema }),
   invalidateTiendasListCache,
-  async (req, res, next) => {
+  async (req, res) => {
+    const record = await tiendaService.create(req.body, req.user);
+
+    // Precargar métodos de pago sugeridos para que el dueño solo los
+    // active/complete. Un fallo aquí no debe deshacer la tienda creada.
     try {
-      const record = await tiendaService.create(req.body, req.user);
-
-      // Precargar métodos de pago sugeridos para que el dueño solo los
-      // active/complete. Un fallo aquí no debe deshacer la tienda creada.
-      try {
-        await seedMetodosPagoParaTienda(record.id);
-      } catch (error) {
-        logger.error(`No se pudieron precargar los métodos de pago de la tienda ${record.id}:`, error);
-      }
-
-      // Precargar métodos de envío sugeridos (Recojo en tienda activo,
-      // couriers desactivados hasta que el dueño confirme que trabaja con ellos).
-      try {
-        await seedMetodosEnvioParaTienda(record.id);
-      } catch (error) {
-        logger.error(`No se pudieron precargar los métodos de envío de la tienda ${record.id}:`, error);
-      }
-
-      return apiResponse(res, { status: 201, type: "SUCCESS", code: "TIENDAS_CREATED", data: record });
+      await seedMetodosPagoParaTienda(record.id);
     } catch (error) {
-      next(error);
+      logger.error(`No se pudieron precargar los métodos de pago de la tienda ${record.id}:`, error);
     }
+
+    // Precargar métodos de envío sugeridos (Recojo en tienda activo,
+    // couriers desactivados hasta que el dueño confirme que trabaja con ellos).
+    try {
+      await seedMetodosEnvioParaTienda(record.id);
+    } catch (error) {
+      logger.error(`No se pudieron precargar los métodos de envío de la tienda ${record.id}:`, error);
+    }
+
+    return apiResponse(res, { status: 201, type: "SUCCESS", code: "TIENDAS_CREATED", data: record });
   }
 );
 
@@ -162,27 +150,23 @@ router.put(
   resolveTiendaIdFromId,
   requireTiendaAccess("admin"),
   invalidateTiendasListCache,
-  async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      await validarCambioTipoNegocio(id, req.body.tipoNegocio);
-      if (req.body.idiomas) {
-        req.body.idiomas = await validarIdiomasDeTienda(req.body.idiomas);
-        // Quitar un idioma lo despublica (docs/specs/idiomas, P5 refinada).
-        req.body.idiomasPublicados = await despublicadosAlCambiar(id, req.body.idiomas);
-      }
-      // tiendas es la raíz del tenant: no tiene campo tiendaId propio.
-      // requireTiendaAccess ya verificó el acceso, así que no se pasa tiendaId.
-      const record = await tiendaService.update(id, req.body, req.user, null);
-      // Un idioma recién elegido que ya está completo (p. ej. inglés, con el de la plataforma) se publica.
-      if (req.body.idiomas) {
-        invalidarIdiomasDeTienda();
-        await publicarCompletos(id);
-      }
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDAS_UPDATED", data: record });
-    } catch (error) {
-      next(error);
+  async (req, res) => {
+    const { id } = req.params;
+    await validarCambioTipoNegocio(id, req.body.tipoNegocio);
+    if (req.body.idiomas) {
+      req.body.idiomas = await validarIdiomasDeTienda(req.body.idiomas);
+      // Quitar un idioma lo despublica (docs/specs/idiomas, P5 refinada).
+      req.body.idiomasPublicados = await despublicadosAlCambiar(id, req.body.idiomas);
     }
+    // tiendas es la raíz del tenant: no tiene campo tiendaId propio.
+    // requireTiendaAccess ya verificó el acceso, así que no se pasa tiendaId.
+    const record = await tiendaService.update(id, req.body, req.user, null);
+    // Un idioma recién elegido que ya está completo (p. ej. inglés, con el de la plataforma) se publica.
+    if (req.body.idiomas) {
+      invalidarIdiomasDeTienda();
+      await publicarCompletos(id);
+    }
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDAS_UPDATED", data: record });
   }
 );
 
@@ -193,13 +177,9 @@ router.get(
   validate({ params: idParamSchema }),
   resolveTiendaIdFromId,
   requireTiendaAccess("viewer"),
-  async (req, res, next) => {
-    try {
-      const diseno = await getDisenoAdmin(req.params.id, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO", data: diseno });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const diseno = await getDisenoAdmin(req.params.id, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO", data: diseno });
   }
 );
 
@@ -211,17 +191,13 @@ router.put(
   resolveTiendaIdFromId,
   requireTiendaAccess("admin"),
   invalidateTiendasListCache,
-  async (req, res, next) => {
-    try {
-      // Solo secciones y layout del tipo de negocio de la tienda (diseno-por-rubro H3,
-      // layout-por-rubro RU8): se guarda la estructura ya normalizada a su rubro.
-      const estructura = await validarEstructuraDeTienda(req.params.id, req.body.estructura);
-      const body = req.body.estructura ? { ...req.body, estructura } : req.body;
-      const diseno = disenoAdmin(await saveDiseno(req.params.id, body, req.user));
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_UPDATED", data: diseno });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    // Solo secciones y layout del tipo de negocio de la tienda (diseno-por-rubro H3,
+    // layout-por-rubro RU8): se guarda la estructura ya normalizada a su rubro.
+    const estructura = await validarEstructuraDeTienda(req.params.id, req.body.estructura);
+    const body = req.body.estructura ? { ...req.body, estructura } : req.body;
+    const diseno = disenoAdmin(await saveDiseno(req.params.id, body, req.user));
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_UPDATED", data: diseno });
   }
 );
 
@@ -234,13 +210,9 @@ router.post(
   validate({ params: idParamSchema, body: aplicarPlantillaSchema }),
   resolveTiendaIdFromId,
   requireTiendaAccess("admin"),
-  async (req, res, next) => {
-    try {
-      const copia = await copiaDePlantilla(req.params.id, req.body.plantillaId);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_COPIA", data: copia });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const copia = await copiaDePlantilla(req.params.id, req.body.plantillaId);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_COPIA", data: copia });
   }
 );
 
@@ -254,13 +226,9 @@ router.post(
   resolveTiendaIdFromId,
   requireTiendaAccess("admin"),
   invalidateTiendasListCache,
-  async (req, res, next) => {
-    try {
-      const diseno = await aplicarPlantilla(req.params.id, req.body.plantillaId, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_UPDATED", data: diseno });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const diseno = await aplicarPlantilla(req.params.id, req.body.plantillaId, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_UPDATED", data: diseno });
   }
 );
 
@@ -273,13 +241,9 @@ router.post(
   resolveTiendaIdFromId,
   requireTiendaAccess("admin"),
   invalidateTiendasListCache,
-  async (req, res, next) => {
-    try {
-      const diseno = await deshacerEstructura(req.params.id, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_UPDATED", data: diseno });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const diseno = await deshacerEstructura(req.params.id, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_UPDATED", data: diseno });
   }
 );
 
@@ -291,13 +255,9 @@ router.get(
   validate({ params: idParamSchema, query: calendarioQuerySchema }),
   resolveTiendaIdFromId,
   requireTiendaAccess("viewer"),
-  async (req, res, next) => {
-    try {
-      const data = await getCalendario(req.params.id, req.validatedQuery.anio);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_CAMPANAS_CALENDARIO", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await getCalendario(req.params.id, req.validatedQuery.anio);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_CAMPANAS_CALENDARIO", data });
   }
 );
 
@@ -310,13 +270,9 @@ router.get(
   validate({ params: idParamSchema, query: vistaPreviaQuerySchema }),
   resolveTiendaIdFromId,
   requireTiendaAccess("editor"),
-  async (req, res, next) => {
-    try {
-      const data = await getVistaPrevia(req.params.id, req.validatedQuery.fecha);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_VISTA_PREVIA", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await getVistaPrevia(req.params.id, req.validatedQuery.fecha);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_VISTA_PREVIA", data });
   }
 );
 
@@ -327,13 +283,9 @@ router.get(
   validate({ params: idParamSchema }),
   resolveTiendaIdFromId,
   requireTiendaAccess("viewer"),
-  async (req, res, next) => {
-    try {
-      const plantillas = await getPlantillasWhatsapp(req.params.id);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_PLANTILLAS_WHATSAPP", data: plantillas });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const plantillas = await getPlantillasWhatsapp(req.params.id);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_PLANTILLAS_WHATSAPP", data: plantillas });
   }
 );
 
@@ -344,13 +296,9 @@ router.put(
   validate({ params: idParamSchema, body: updatePlantillasWhatsappSchema }),
   resolveTiendaIdFromId,
   requireTiendaAccess("admin"),
-  async (req, res, next) => {
-    try {
-      const plantillas = await savePlantillasWhatsapp(req.params.id, req.body, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_PLANTILLAS_WHATSAPP_UPDATED", data: plantillas });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const plantillas = await savePlantillasWhatsapp(req.params.id, req.body, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_PLANTILLAS_WHATSAPP_UPDATED", data: plantillas });
   }
 );
 

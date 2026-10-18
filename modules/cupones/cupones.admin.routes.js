@@ -24,14 +24,10 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ query: paginationSchema }),
-  async (req, res, next) => {
-    try {
-      const { page, limit, activo } = req.query;
-      const { data, meta } = await listCupones(req.tiendaId, { page, limit, activo });
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUPONES_LIST", data, meta });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const { page, limit, activo } = req.query;
+    const { data, meta } = await listCupones(req.tiendaId, { page, limit, activo });
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUPONES_LIST", data, meta });
   }
 );
 
@@ -41,13 +37,9 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ params: idParamSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await getCupon(req.tiendaId, req.params.id);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUPON_FOUND", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await getCupon(req.tiendaId, req.params.id);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUPON_FOUND", data });
   }
 );
 
@@ -57,13 +49,9 @@ router.post(
   authMiddleware,
   requireTiendaAccess("editor"),
   validate({ body: createCuponSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await createCupon(req.body);
-      return apiResponse(res, { status: 201, type: "SUCCESS", code: "CUPON_CREATED", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await createCupon(req.body);
+    return apiResponse(res, { status: 201, type: "SUCCESS", code: "CUPON_CREATED", data });
   }
 );
 
@@ -73,13 +61,9 @@ router.put(
   authMiddleware,
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: updateCuponSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await updateCupon(req.tiendaId, req.params.id, req.body);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUPON_UPDATED", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await updateCupon(req.tiendaId, req.params.id, req.body);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUPON_UPDATED", data });
   }
 );
 
@@ -89,13 +73,9 @@ router.delete(
   authMiddleware,
   requireTiendaAccess("admin"),
   validate({ params: idParamSchema }),
-  async (req, res, next) => {
-    try {
-      await deleteCupon(req.tiendaId, req.params.id);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUPON_DELETED", data: null });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    await deleteCupon(req.tiendaId, req.params.id);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "CUPON_DELETED", data: null });
   }
 );
 

@@ -31,14 +31,10 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ query: listarAdminQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const { estado, page, limit } = req.validatedQuery || req.query;
-      const { data, meta } = await listarResenasAdmin(req.tiendaId, { estado, page, limit });
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENAS_LIST", data, meta });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const { estado, page, limit } = req.validatedQuery || req.query;
+    const { data, meta } = await listarResenasAdmin(req.tiendaId, { estado, page, limit });
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENAS_LIST", data, meta });
   }
 );
 
@@ -50,13 +46,9 @@ router.get(
   authMiddleware,
   requireTiendaAccess("viewer"),
   validate({ query: tiendaQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const moderacion = await getModoModeracion(req.tiendaId);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENAS_CONFIG", data: { moderacion } });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const moderacion = await getModoModeracion(req.tiendaId);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENAS_CONFIG", data: { moderacion } });
   }
 );
 
@@ -68,13 +60,9 @@ router.put(
   authMiddleware,
   requireTiendaAccess("admin"),
   validate({ body: configModeracionSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await setModoModeracion(req.tiendaId, req.body.moderacion, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENAS_CONFIG_UPDATED", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await setModoModeracion(req.tiendaId, req.body.moderacion, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENAS_CONFIG_UPDATED", data });
   }
 );
 
@@ -87,13 +75,9 @@ router.get(
   authMiddleware,
   requireTiendaAccess("editor"),
   validate({ params: pedidoParamSchema, query: tiendaQuerySchema }),
-  async (req, res, next) => {
-    try {
-      const data = await generarEnlaceResena(req.tiendaId, req.params.pedidoId);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENA_ENLACE", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await generarEnlaceResena(req.tiendaId, req.params.pedidoId);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENA_ENLACE", data });
   }
 );
 
@@ -105,13 +89,9 @@ router.patch(
   authMiddleware,
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: cambiarEstadoSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await cambiarEstadoResena(req.tiendaId, req.params.id, req.body.estado, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENA_ESTADO_UPDATED", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await cambiarEstadoResena(req.tiendaId, req.params.id, req.body.estado, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENA_ESTADO_UPDATED", data });
   }
 );
 
@@ -123,13 +103,9 @@ router.put(
   authMiddleware,
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: responderSchema }),
-  async (req, res, next) => {
-    try {
-      const data = await responderResena(req.tiendaId, req.params.id, req.body.respuesta, req.user);
-      return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENA_RESPONDIDA", data });
-    } catch (error) {
-      next(error);
-    }
+  async (req, res) => {
+    const data = await responderResena(req.tiendaId, req.params.id, req.body.respuesta, req.user);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "RESENA_RESPONDIDA", data });
   }
 );
 
