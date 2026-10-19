@@ -1472,6 +1472,15 @@
     ]
   },
   {
+    "clave": "Así trabaja {courier}: dejamos tu paquete en la agencia y tú pagas el envío cuando lo recoges.",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "compra/envio-a-agencia"
+    ]
+  },
+  {
     "clave": "Aumentar cantidad",
     "grupos": [
       "comun"
@@ -1723,16 +1732,7 @@
     ]
   },
   {
-    "clave": "Buscar mi agencia Shalom",
-    "grupos": [
-      "productos"
-    ],
-    "ubicaciones": [
-      "compra/envio-a-agencia"
-    ]
-  },
-  {
-    "clave": "Buscar mi agencia u agente Olva",
+    "clave": "Buscar mi agencia {courier}",
     "grupos": [
       "productos"
     ],
@@ -2665,7 +2665,7 @@
     ]
   },
   {
-    "clave": "coordina por WhatsApp el local y el horario para recoger tu pedido. (Selección de local — funcionalidad pendiente.)",
+    "clave": "coordina por WhatsApp el local y el horario para recoger tu pedido.",
     "grupos": [
       "productos"
     ],
@@ -2913,6 +2913,15 @@
     ],
     "ubicaciones": [
       "compra/datos-y-entrega"
+    ]
+  },
+  {
+    "clave": "Dejamos tu paquete en la agencia y tú pagas el envío cuando lo recoges.",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "compra/envio-a-agencia"
     ]
   },
   {
@@ -3409,7 +3418,7 @@
     ]
   },
   {
-    "clave": "Ej: Juan Perez",
+    "clave": "Ej: Juan Pérez",
     "grupos": [
       "productos"
     ],
@@ -4219,21 +4228,12 @@
     ]
   },
   {
-    "clave": "Envio",
-    "grupos": [
-      "productos"
-    ],
-    "ubicaciones": [
-      "carrito/carrito",
-      "compra/datos-y-entrega"
-    ]
-  },
-  {
     "clave": "Envío",
     "grupos": [
       "productos"
     ],
     "ubicaciones": [
+      "carrito/carrito",
       "compra/datos-y-entrega",
       "pedido/seguimiento"
     ]
@@ -4284,7 +4284,7 @@
     ]
   },
   {
-    "clave": "Envio y entrega",
+    "clave": "Envío y entrega",
     "grupos": [
       "productos"
     ],
@@ -7207,7 +7207,7 @@
     ]
   },
   {
-    "clave": "Numero de Pedido",
+    "clave": "Número de Pedido",
     "grupos": [
       "productos"
     ],
@@ -9348,7 +9348,7 @@
     ]
   },
   {
-    "clave": "Telefono",
+    "clave": "Teléfono",
     "grupos": [
       "productos"
     ],
@@ -9357,7 +9357,7 @@
     ]
   },
   {
-    "clave": "Telefono / WhatsApp",
+    "clave": "Teléfono / WhatsApp",
     "grupos": [
       "productos"
     ],
@@ -9628,15 +9628,6 @@
     ]
   },
   {
-    "clave": "Tu carrito esta vacio",
-    "grupos": [
-      "productos"
-    ],
-    "ubicaciones": [
-      "compra/datos-y-entrega"
-    ]
-  },
-  {
     "clave": "Tu carrito está vacío",
     "grupos": [
       "comun",
@@ -9644,7 +9635,8 @@
     ],
     "ubicaciones": [
       "carrito/carrito",
-      "carrito/carrito-lateral"
+      "carrito/carrito-lateral",
+      "compra/datos-y-entrega"
     ]
   },
   {

@@ -1,0 +1,880 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Campañas · el cuándo (Fase 1) — v1 2026-10-19</title>
+<style>
+/* Prototipo de docs/specs/campanas-cuando/diseno.md. Un solo scroll, sin toggles de vista, enlaces inertes.
+   Las fechas del Cyber Wow son de EJEMPLO (no oficiales). "Hoy" del prototipo: lunes 19 oct 2026. */
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;background:#eceef2;color:#111827}
+a{color:inherit}
+.pagina{max-width:1120px;margin:0 auto;padding:24px 16px 80px}
+.cab{background:#111827;color:#fff;padding:20px 16px}
+.cab div{max-width:1120px;margin:0 auto}
+.cab h1{margin:0 0 4px;font-size:20px}
+.cab p{margin:0;color:#d1d5db;font-size:13px}
+.toc{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13px}
+.toc a{color:#93c5fd}
+h2{font-size:18px;margin:40px 0 4px}
+h2 small{font-weight:400;color:#4b5563;font-size:13px}
+.sub{margin:0 0 16px;color:#4b5563;font-size:13px;max-width:78ch}
+.par{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.frame{background:transparent;margin:0 0 22px}
+.frame>.cap{font-size:12px;font-weight:600;color:#374151;margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}
+.frame>.cap em{font-style:normal;color:#1d4ed8}
+.nota{margin:8px 0 0;padding:8px 12px;border-left:3px solid #2563eb;background:#eff6ff;color:#1e3a8a;font-size:12.5px;border-radius:0 8px 8px 0;max-width:78ch}
+.nota b{background:#2563eb;color:#fff;border-radius:4px;padding:0 5px;margin-right:4px;font-size:11px}
+
+/* ---------- ADMIN ---------- */
+.adm{background:#f9fafb;border:1px solid #d1d5db;border-radius:12px;overflow:hidden;color:#111827}
+.adm-head{background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.adm-head h4{margin:0;font-size:18px;font-weight:600}
+.adm-head .tag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#4338ca}
+.adm-head .sp{flex:1}
+.btn{font:inherit;font-size:14px;font-weight:500;border-radius:8px;padding:0 14px;min-height:36px;border:1px solid #d1d5db;background:#fff;color:#374151;cursor:pointer}
+.btn.m{min-height:44px}
+.btn.pri{background:#2563eb;border-color:#2563eb;color:#fff}
+.btn.pri[disabled]{opacity:.5;cursor:not-allowed}
+.btn.link{border:0;background:none;color:#1d4ed8;padding:0 6px}
+.btn.ghost{border:0;background:none;color:#4b5563}
+.btn.peligro{border:0;background:none;color:#b91c1c}
+.anio{display:flex;align-items:center;gap:4px}
+.anio b{width:56px;text-align:center;font-weight:500}
+.resumen{margin:16px 20px;background:#f3f4f6;border-radius:8px;padding:10px 14px;font-size:13.5px;color:#374151}
+.cal{background:#fff;margin:0 20px 20px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.12);overflow:hidden}
+.cal.sin{margin:0;border-radius:0;box-shadow:none}
+.cabm{display:grid;grid-template-columns:3rem 13rem minmax(0,1fr) 10rem;gap:0 16px;padding:8px 20px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b7280}
+.cabm .meses{display:grid;grid-template-columns:repeat(12,1fr)}
+.cabm .meses span{padding-left:4px;border-left:1px solid #e5e7eb}
+.fila{display:grid;grid-template-columns:3rem 13rem minmax(0,1fr) 10rem;gap:8px 16px;align-items:center;padding:10px 20px;border-top:1px solid #f3f4f6;background:#fff}
+.fila.abierta{background:#f9fafb}
+.fila.muda .nom,.fila.muda .rg{color:#6b7280}
+.sw{position:relative;width:44px;height:24px;border-radius:12px;background:#d1d5db;border:0;padding:0}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.sw.on{background:#22c55e}.sw.on::after{left:22px}
+.nom{font-size:14px;font-weight:500;margin:0}
+.rg{margin-top:2px;display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:12px;color:#4b5563;font-variant-numeric:tabular-nums}
+.chip{border-radius:999px;padding:2px 8px;font-size:11px;font-weight:500;white-space:nowrap}
+.c-amber{background:#fef3c7;color:#92400e}.c-blue{background:#eff6ff;color:#1d4ed8}.c-gray{background:#f3f4f6;color:#4b5563}
+.c-dash{border:1px dashed #6b7280;color:#374151;background:#fff}
+.barra{position:relative;height:24px;border-radius:6px;background:repeating-linear-gradient(to right,transparent 0,transparent calc(100%/12 - 1px),#e5e7eb calc(100%/12 - 1px),#e5e7eb calc(100%/12))}
+.seg{position:absolute;top:5px;height:14px;border-radius:4px}
+.seg.off{background-image:repeating-linear-gradient(45deg,#d1d5db 0 4px,transparent 4px 8px);border:1px solid #d1d5db}
+.seg.pasada{opacity:.35}
+.seg.espera{border:1px dashed #6b7280;background:transparent}
+.hoy{position:absolute;top:-4px;bottom:-4px;width:2px;border-radius:2px;background:#d97706}
+.ef{display:flex;align-items:center;gap:8px;font-size:12px;color:#4b5563;justify-content:flex-end}
+.ef i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.pie-cal{display:flex;flex-wrap:wrap;gap:6px 20px;border-top:1px solid #f3f4f6;padding:10px 20px;font-size:12px;color:#4b5563}
+.det{border-top:1px solid #f3f4f6;background:#f9fafb;padding:20px 20px 20px 76px}
+.det .in{max-width:672px;display:grid;gap:22px}
+.det.plano{padding-left:20px}
+.lbl{display:block;font-size:14px;font-weight:500;color:#374151;margin-bottom:4px}
+.lbl small{font-weight:400;color:#4b5563;font-size:12px;margin-left:4px}
+.inp{width:100%;height:44px;border:1px solid #d1d5db;border-radius:8px;padding:0 12px;font:inherit;background:#fff;color:#111827}
+.inp.err{border-color:#dc2626}
+.per{display:flex;justify-content:space-between;align-items:center;width:100%;height:44px;border:1px solid #d1d5db;border-radius:8px;padding:0 12px;background:#fff;font:inherit;text-align:left;color:#111827}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;gap:14px}
+.ayuda{margin:4px 0 0;font-size:12.5px;color:#4b5563}
+.error{margin:6px 0 0;font-size:13px;color:#b91c1c;display:flex;gap:6px;align-items:flex-start}
+.error::before{content:"!";flex:none;width:16px;height:16px;margin-top:1px;border-radius:50%;background:#b91c1c;color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:16px}
+h5{margin:0 0 2px;font-size:14px;font-weight:600}
+.tit-sec{margin:0 0 2px;font-size:14px;font-weight:600}
+/* hora: Todo el día / A las */
+.hora .ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hora .sg{display:inline-flex;border:1px solid #d1d5db;border-radius:8px;overflow:hidden;background:#fff}
+.hora .sg label{position:relative;cursor:pointer}
+.hora .sg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.hora .sg span{display:flex;align-items:center;height:42px;padding:0 14px;font-size:14px;color:#374151;white-space:nowrap}
+.hora .sg label+label span{border-left:1px solid #d1d5db}
+.hora .sg input:checked+span{background:#dbeafe;color:#1e3a8a;font-weight:600}
+.hora .sg input:focus-visible+span{outline:2px solid #2563eb;outline-offset:-2px}
+.hora input[type=time]{height:44px;width:120px;border:1px solid #d1d5db;border-radius:8px;padding:0 10px;font:inherit}
+.hora[data-modo=dia] .t-hora,.hora[data-modo=dia] input[type=time]{display:none}
+.hora[data-modo=hora] .t-dia{display:none}
+.hora .t-med{display:none}
+.hora.med .t-med{display:block}.hora.med .t-hora{display:none}
+.uso{border:1px solid #d1d5db;border-radius:10px;background:#fff;padding:14px 16px;display:grid;gap:12px}
+.uso .vista{background:#f3f4f6;border-radius:8px;padding:8px 12px;font-size:13px;color:#374151}
+.uso .vista q{font-weight:600;color:#111827}
+.num{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px}
+.num input{width:84px;height:44px;border:1px solid #d1d5db;border-radius:8px;padding:0 10px;font:inherit}
+.acc{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;border-top:1px solid #e5e7eb;padding-top:16px}
+.acc .sp{flex:1}
+.radio-l{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin:6px 0}
+.radio-l small{display:block;color:#4b5563;font-size:12px}
+.edic{list-style:none;margin:0;padding:0;border:1px solid #e5e7eb;border-radius:8px;background:#fff}
+.edic li{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;padding:10px 14px;border-top:1px solid #f3f4f6;font-size:14px}
+.edic li:first-child{border-top:0}
+.edic li b{min-width:92px}
+.edic li .f{color:#374151;font-variant-numeric:tabular-nums}
+.edic li .sp{flex:1}
+.aviso{border-radius:8px;padding:10px 14px;font-size:13.5px}
+.aviso.info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a}
+.aviso.warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.aviso.rojo{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+/* plataforma */
+.pl{padding:20px;display:grid;gap:16px;max-width:880px}
+.pl-card{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.pl-card>h4{margin:0;padding:12px 20px;font-size:14px;font-weight:600;border-bottom:1px solid #f3f4f6;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pl-row{display:grid;grid-template-columns:7rem minmax(0,1fr) auto;gap:6px 16px;align-items:center;padding:12px 20px;border-top:1px solid #f3f4f6}
+.pl-row:first-of-type{border-top:0}
+.pl-row .quien{font-size:12px;color:#4b5563}
+.hist{margin:0;padding:10px 20px 14px 20px;background:#f9fafb;border-top:1px solid #f3f4f6;font-size:12.5px;color:#374151;list-style:none}
+.hist li{padding:3px 0}
+.dlg{width:min(420px,100%);background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:20px}
+.dlg h5{font-size:16px}
+.dlg p{margin:8px 0 16px;color:#374151;font-size:14px}
+.fondo-dlg{background:rgba(17,24,39,.45);border-radius:12px;padding:30px 16px;display:flex;justify-content:center}
+
+/* ---------- TIENDA ---------- */
+.tienda{--p:#18181b;--fg:#18181b;--mut:#52525b;--line:#e4e4e7;--sup:#f4f4f5;background:#fff;color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;border:1px solid #d4d4d8;border-radius:12px;overflow:hidden}
+.phone{width:360px;max-width:100%}
+.desk{width:100%}
+.t-top{background:var(--p);color:#fff;font-size:12px;text-align:center;padding:6px 10px}
+.t-head{display:flex;align-items:center;gap:10px;padding:0 14px;height:56px;border-bottom:1px solid var(--line);background:#fff}
+.t-head b{flex:1;font-size:16px}
+.t-head span{min-width:44px;min-height:44px;display:grid;place-items:center;font-size:12px;color:var(--mut);border-radius:8px}
+.t-hero{background:linear-gradient(120deg,#27272a,#09090b);color:#fff;padding:30px 18px}
+.t-hero h3{margin:0 0 6px;font-size:26px}
+.t-hero p{margin:0 0 14px;color:#e4e4e7;font-size:14px}
+.t-btn{display:inline-flex;align-items:center;min-height:44px;padding:0 20px;border-radius:10px;font-weight:600;background:#fff;color:#18181b;font-size:14px}
+.t-btn.osc{background:var(--fg);color:#fff}
+.t-oferta{background:var(--sup);padding:22px 18px;display:grid;gap:14px;text-align:center}
+.t-oferta h4{margin:0;font-size:20px}
+.t-oferta p{margin:2px 0 0;color:var(--mut);font-size:14px}
+.t-oferta .uso-l{margin:8px 0 0;color:var(--fg);font-weight:600;font-size:14px;display:inline-flex;gap:8px;align-items:flex-start;justify-content:center;text-align:left}
+.t-oferta .cierra{margin:8px 0 0;font-size:13px;color:var(--mut)}
+.timer{display:flex;gap:8px;justify-content:center}
+.timer div{width:60px;background:#fff;border-radius:10px;padding:6px 0}
+.timer b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.timer small{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+.timer.fin b{color:var(--mut)}
+.d .t-oferta{grid-template-columns:1fr auto auto;text-align:left;align-items:center;gap:28px;padding:26px 36px}
+.d .t-hero{padding:40px 36px}
+.d .t-head{padding:0 36px}
+.rombo{display:inline-block;width:8px;height:8px;background:var(--p);transform:rotate(45deg);flex:none;margin-top:6px}
+.tienda .rombo.b{margin-top:0}
+.leyenda{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--mut);margin:8px 0 0;align-items:center}
+.leyenda span{display:inline-flex;gap:6px;align-items:center}
+.leyenda .pt{width:6px;height:6px;border-radius:50%;background:#059669}
+.pad{padding:14px}
+.t-cap{font-size:13px;font-weight:600;margin:0 0 8px}
+/* calendario */
+.gr{width:100%}
+.gh,.gb{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.gh span{font-size:12px;color:#71717a;text-align:center;padding:4px 0}
+.gb{margin-top:2px}
+.dia{position:relative;height:46px;border:0;border-radius:8px;background:#fff;font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--fg);cursor:default;padding:0}
+.dia b{font-weight:500;font-size:14px;line-height:1}
+.dia small{font-size:10px;font-weight:600;line-height:1;color:#52525b}
+.dia.dis{color:#a1a1aa}
+.dia.dis small{display:none}
+.dia.oc b{text-decoration:line-through}
+.dia.pocos{background:#fffbeb}
+.dia .rombo{position:absolute;top:5px;left:5px;margin:0;width:7px;height:7px}
+.dia .pt{position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:#059669}
+.dia.rango{background:#e4e4e7;border-radius:0}
+.dia.ext{background:var(--p);color:#fff;border-radius:999px}
+.dia.ext small{color:#e4e4e7}
+.dia.ext .rombo{background:#fff;top:9px;left:11px}
+.dia.sel{background:var(--p);color:#fff}
+.dia.sel small{color:#e4e4e7}
+.dia.sel .rombo{background:#fff}
+.mes-t{text-align:center;font-weight:600;margin:0 0 6px}.mes-t span{text-transform:none}
+.campos{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.campos div{padding:8px 12px}
+.campos div+div{border-left:1px solid var(--line)}
+.campos small{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#52525b;letter-spacing:.04em}
+.pie-r{margin-top:10px;padding-top:10px;border-top:1px solid #f4f4f5;display:grid;gap:4px}
+.pie-r .l1{display:flex;justify-content:space-between;font-size:13px}
+.pie-r .l1 b{font-size:14px}
+.pie-r .camp{display:flex;gap:8px;align-items:center;font-size:13px;font-weight:600;color:var(--fg)}
+.pie-r .camp .rombo{margin-top:0}
+.pie-r .nada{font-size:12px;color:#52525b}
+.fun{display:grid;gap:8px}
+.fun button{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;text-align:left;padding:10px 14px;min-height:56px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;color:var(--fg);cursor:default}
+.fun button.on{border-color:var(--p);box-shadow:inset 0 0 0 1px var(--p)}
+.fun button.ag{opacity:.6}
+.fun .d1{font-weight:600}
+.fun .d2{color:var(--mut);font-size:13px}
+.etq{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:600;color:var(--fg);background:var(--sup);border-radius:999px;padding:3px 10px 3px 8px}
+.etq .rombo{margin-top:0;width:7px;height:7px}
+.tira{display:flex;gap:8px;overflow:hidden;padding-bottom:4px}
+.tira button{position:relative;flex:none;width:58px;height:70px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;color:var(--fg);padding:0;cursor:default}
+.tira button small{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#52525b}
+.tira button b{display:block;font-size:24px}
+.tira button.on{background:#18181b;color:#fff;border-color:#18181b}
+.tira button.on small{color:#e4e4e7}
+.tira .rombo{position:absolute;top:6px;right:6px;margin:0;width:7px;height:7px}
+.tira button.on .rombo{background:#fff}
+.sb{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.sb .tienda{font-size:12px}
+.sb .cp{font-size:12px;color:#374151;margin:6px 0 0}
+.fade{opacity:.5}
+@media (max-width:860px){
+  .cabm{display:none}
+  .fila{grid-template-columns:3rem minmax(0,1fr)}
+  .fila .barra,.fila .ef{grid-column:1 / -1}
+  .det{padding:16px}
+  .g2{grid-template-columns:1fr}
+  .sb{grid-template-columns:1fr 1fr}
+  .pl-row{grid-template-columns:1fr}
+  .d .t-oferta{grid-template-columns:1fr;text-align:center}
+}
+:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+</style>
+</head>
+<body>
+
+<div class="cab"><div>
+  <h1>Campañas · el cuándo — Fase 1 (P1 horas · P2 fechas por año · P3 fechas de uso)</h1>
+  <p>Prototipo v1 · 2026-10-19 · Diseño: <code>docs/specs/campanas-cuando/diseno.md</code> · Datos de ejemplo; las fechas del Cyber Wow no son oficiales · "Hoy" = lunes 19 oct 2026</p>
+  <nav class="toc" aria-label="Contenido">
+    <a href="#a1">1 Admin › Campañas: calendario</a><a href="#a2">2 Panel de campaña propia</a><a href="#a3">3 Panel del catálogo</a>
+    <a href="#a4">4 Cyber Wow y "por anunciar"</a><a href="#a5">5 Plataforma: fechas por año</a>
+    <a href="#t1">6 Tienda: portada</a><a href="#t2">7 Selectores de fecha por rubro</a><a href="#t3">8 Cambio con la pestaña abierta</a>
+  </nav>
+</div></div>
+
+<div class="pagina">
+
+<!-- ======================= 1. ADMIN CALENDARIO ======================= -->
+<h2 id="a1">1 · Admin › Campañas: calendario <small>(todas las tiendas)</small></h2>
+<p class="sub">Sale de la pantalla actual. Cambia: la hora aparece en el texto del rango solo si existe; chips nuevos "Terminó" y "Por anunciar"; la fila de Cyber Wow lleva una barra por edición; "Empieza hoy a las 20:00" cuando la hora importa.</p>
+
+<div class="frame">
+<p class="cap">Admin · escritorio</p>
+<div class="adm">
+  <div class="adm-head">
+    <h4>Campañas</h4><span style="font-size:13px;color:#6b7280">Cuándo cambia tu tienda y con qué efecto</span><span class="sp"></span>
+    <div class="anio"><button class="btn" aria-label="Año anterior">‹</button><b>2026</b><button class="btn" aria-label="Año siguiente">›</button></div>
+    <button class="btn">+ Campaña propia</button>
+  </div>
+  <div class="resumen"><strong>Hoy, 19 oct:</strong> tus clientes ven Halloween, con murciélagos el 31 oct, hasta las 14:00.</div>
+  <div class="cal">
+    <div class="cabm"><span></span><span>Campaña</span><div class="meses"><span>ene</span><span>feb</span><span>mar</span><span>abr</span><span>may</span><span>jun</span><span>jul</span><span>ago</span><span>sep</span><span>oct</span><span>nov</span><span>dic</span></div><span style="text-align:right">Efecto</span></div>
+
+    <!-- Halloween: en curso, con horas -->
+    <div class="fila">
+      <button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Halloween"></button>
+      <div><p class="nom">Halloween</p><div class="rg"><span>15 oct, 8:00 – 31 oct, 14:00</span><span class="chip c-amber">En curso</span></div></div>
+      <div class="barra" aria-hidden="true"><span class="seg" style="left:78.9%;width:4.5%;background:#7c3aed"></span><span class="hoy" style="left:79.9%"></span></div>
+      <div class="ef"><i style="background:#7c3aed"></i>Murciélagos</div>
+    </div>
+
+    <!-- Oferta flash propia: empieza hoy a las 20:00 -->
+    <div class="fila">
+      <button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Oferta flash"></button>
+      <div><p class="nom">Oferta flash</p><div class="rg"><span>19 oct, 20:00 – 19 oct, 23:00</span><span class="chip c-blue">Empieza hoy a las 20:00</span><span class="chip c-gray">Campaña propia</span></div></div>
+      <div class="barra" aria-hidden="true"><span class="seg" style="left:79.7%;width:.6%;background:#dc2626"></span><span class="hoy" style="left:79.9%"></span></div>
+      <div class="ef"><i style="background:#dc2626"></i>Lluvia de ofertas</div>
+    </div>
+
+    <!-- Cyber Wow: 3 ediciones -->
+    <div class="fila">
+      <button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Cyber Wow"></button>
+      <div><p class="nom">Cyber Wow</p><div class="rg"><span>Próxima: noviembre · 2 – 5 nov</span><span class="chip c-blue">Empieza en 11 días</span><span class="chip c-gray">3 ediciones en 2026</span></div></div>
+      <div class="barra" aria-hidden="true">
+        <span class="seg pasada" style="left:25.5%;width:1.9%;background:#dc2626"></span>
+        <span class="seg pasada" style="left:52.1%;width:1.9%;background:#dc2626"></span>
+        <span class="seg" style="left:82.7%;width:2%;background:#dc2626"></span>
+        <span class="hoy" style="left:79.9%"></span>
+      </div>
+      <div class="ef"><i style="background:#dc2626"></i>Lluvia de ofertas</div>
+    </div>
+
+    <!-- Black Friday -->
+    <div class="fila">
+      <button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Black Friday"></button>
+      <div><p class="nom">Black Friday</p><div class="rg"><span>20 nov – 30 nov</span></div></div>
+      <div class="barra" aria-hidden="true"><span class="seg" style="left:88.5%;width:3%;background:#18181b"></span><span class="hoy" style="left:79.9%"></span></div>
+      <div class="ef"><i style="background:#dc2626"></i>Lluvia de ofertas</div>
+    </div>
+
+    <!-- Cyber Monday: apagada -->
+    <div class="fila">
+      <button class="sw" role="switch" aria-checked="false" aria-label="Activar Cyber Monday"></button>
+      <div><p class="nom">Cyber Monday</p><div class="rg"><span>30 nov</span><span class="chip c-blue">Sugerida para tu rubro</span></div></div>
+      <div class="barra" aria-hidden="true"><span class="seg off" style="left:91.2%;width:.6%"></span><span class="hoy" style="left:79.9%"></span></div>
+      <div class="ef"><i style="background:#9ca3af"></i>Sin efecto</div>
+    </div>
+
+    <!-- Vencida -->
+    <div class="fila muda">
+      <button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Aniversario"></button>
+      <div><p class="nom">Aniversario de la tienda</p><div class="rg"><span>1 mar – 7 mar</span><span class="chip c-gray">Terminó</span><span class="chip c-gray">Campaña propia</span></div></div>
+      <div class="barra" aria-hidden="true"><span class="seg pasada" style="left:16.2%;width:1.9%;background:#e0559b"></span><span class="hoy" style="left:79.9%"></span></div>
+      <div class="ef"><i style="background:#e0559b"></i>Globos y confeti</div>
+    </div>
+    <div class="pie-cal"><span>5 campañas activas.</span><span>Si dos se cruzan (Cyber Wow dentro de Halloween), se muestra la más importante.</span></div>
+  </div>
+</div>
+<p class="nota"><b>D1</b>Sin hora, el texto del rango queda como hoy ("20 nov – 30 nov"). Con hora: "15 oct, 8:00 – 31 oct, 14:00". Un fin a las 00:00 se lee "30 nov, medianoche" (R3.14), nunca "1 dic, 0:00".</p>
+</div>
+
+<div class="frame">
+<p class="cap">Admin · año 2027 (la plataforma aún no carga el Cyber Wow)</p>
+<div class="adm"><div class="cal sin">
+  <div class="fila">
+    <button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Cyber Wow"></button>
+    <div><p class="nom">Cyber Wow</p><div class="rg"><span>Fechas de 2027 por anunciar</span><span class="chip c-dash">Por anunciar</span></div></div>
+    <div class="barra" aria-hidden="true">
+      <span class="seg espera" style="left:25.5%;width:1.9%"></span><span class="seg espera" style="left:52.1%;width:1.9%"></span><span class="seg espera" style="left:82.7%;width:2%"></span>
+    </div>
+    <div class="ef"><i style="background:#dc2626"></i>Lluvia de ofertas</div>
+  </div>
+</div></div>
+<p class="nota"><b>D2</b>El interruptor sigue activable: cuando la plataforma cargue las fechas, la tienda se viste sola. Los recuadros punteados marcan, sin inventar fechas, en qué meses suelen caer las ediciones.</p>
+</div>
+
+<!-- ======================= 2. PANEL PROPIA ======================= -->
+<h2 id="a2">2 · Panel de una campaña propia <small>(un Guardar por campaña, sin barra fija)</small></h2>
+<p class="sub">Orden del panel: Nombre → Cuándo se ve (fechas y horas) → Fechas de uso (solo reservas) → Cuándo se ve el efecto → pie con Guardar. Todo lo que cambia entre rubros sale del perfil: aquí, "Estadías" (hotel).</p>
+
+<div class="par">
+<div class="frame" style="flex:1 1 640px">
+<p class="cap">Hotel · con cambios sin guardar · con fechas de uso</p>
+<div class="adm"><div class="cal sin">
+  <div class="fila abierta">
+    <button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Black Friday del hotel"></button>
+    <div><p class="nom">Black Friday del hotel</p><div class="rg"><span>20 nov, 10:00 – 3 dic, 22:00</span><span class="chip c-gray">Campaña propia</span></div></div>
+    <div class="barra" aria-hidden="true"><span class="seg" style="left:88.5%;width:3.4%;background:#18181b"></span></div>
+    <div class="ef"><i style="background:#dc2626"></i>Lluvia de ofertas</div>
+  </div>
+  <div class="det"><div class="in">
+    <label class="lbl" for="n1" style="margin:0">Nombre<input id="n1" class="inp" style="margin-top:4px" value="Black Friday del hotel"></label>
+
+    <div>
+      <h5>Cuándo se ve tu tienda con esta campaña</h5>
+      <span class="lbl" style="margin-top:8px">Fechas (desde y hasta, incluidas)</span>
+      <button class="per"><span>20 nov – 3 dic · 14 días</span><span aria-hidden="true">▾</span></button>
+      <div class="g2" style="margin-top:12px">
+        <div class="hora" data-modo="hora">
+          <span class="lbl">Hora de inicio <small>hora de Lima</small></span>
+          <div class="ctl" role="group" aria-label="Hora de inicio">
+            <div class="sg"><label><input type="radio" name="p1i" value="dia"><span>Todo el día</span></label><label><input type="radio" name="p1i" value="hora" checked><span>A las</span></label></div>
+            <input type="time" value="10:00" aria-label="Hora de inicio">
+          </div>
+          <p class="ayuda t-dia">Empieza a las 00:00 del primer día.</p>
+          <p class="ayuda t-hora">Empieza el vie 20 nov a las 10:00.</p>
+        </div>
+        <div class="hora" data-modo="hora">
+          <span class="lbl">Hora de fin <small>hora de Lima</small></span>
+          <div class="ctl" role="group" aria-label="Hora de fin">
+            <div class="sg"><label><input type="radio" name="p1f" value="dia"><span>Todo el día</span></label><label><input type="radio" name="p1f" value="hora" checked><span>A las</span></label></div>
+            <input type="time" value="22:00" aria-label="Hora de fin">
+          </div>
+          <p class="ayuda t-dia">Termina al acabar el último día.</p>
+          <p class="ayuda t-hora">Se ve hasta las 21:59; a las 22:00 ya no.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="uso">
+      <div><h5>Fechas de uso</h5>
+        <p class="ayuda" style="margin:0">Hasta cuándo se usa lo que tus clientes reservan durante la campaña. Les orienta en tu portada y en el calendario; no cambia tus precios ni limita las reservas.</p></div>
+      <div class="g2">
+        <div><label class="lbl" for="ud">Estadías desde <small>opcional</small></label><button class="per" id="ud"><span style="color:#6b7280">Desde que reservan</span><span aria-hidden="true">▾</span></button></div>
+        <div><label class="lbl" for="uh">Estadías hasta</label><button class="per" id="uh"><span>mié 31 mar 2027</span><span aria-hidden="true">▾</span></button>
+          <p class="ayuda">Máximo: 3 dic 2027 (un año después de que termina la campaña).</p></div>
+      </div>
+      <p class="vista">Así lo verá tu cliente en la portada: <q>Reserva hasta el 3 dic · para alojarte hasta el 31 mar</q></p>
+      <div><button class="btn link">Quitar fechas de uso</button></div>
+    </div>
+
+    <div>
+      <h5>Cuándo se ve el efecto</h5>
+      <p class="ayuda" style="margin:0 0 4px">● Lluvia de ofertas · "¡Llegó el Black Friday!"</p>
+      <label class="radio-l"><input type="radio" name="m1" checked><span>Solo el día clave<small>20 nov</small></span></label>
+      <label class="radio-l"><input type="radio" name="m1"><span>Toda la campaña<small>20 nov, 10:00 – 3 dic, 22:00</small></span></label>
+    </div>
+
+    <div class="acc"><button class="btn pri m">Guardar</button><button class="btn ghost m">Descartar</button><span class="sp"></span><span style="font-size:12.5px;color:#4b5563">Guarda primero para editar cómo se ve</span></div>
+  </div></div>
+</div></div>
+<p class="nota"><b>D3</b>"Todo el día / A las" en vez de un campo de hora vacío: dice qué pasa sin hora y evita el reloj nativo vacío ("--:--"). La hora se escribe con el selector nativo del equipo.</p>
+<p class="nota"><b>D4</b>El enunciado de las fechas de uso se lee igual en cualquier rubro; solo cambia la palabra ("Estadías", "Salidas", "Funciones", "Eventos", "Partidos") y viene del perfil del rubro.</p>
+</div>
+
+<div style="flex:1 1 340px;max-width:380px">
+<div class="frame">
+<p class="cap">Mismo panel en el celular (360 px)</p>
+<div class="adm" style="width:360px;max-width:100%"><div class="cal sin">
+  <div class="det plano" style="padding:16px"><div class="in" style="gap:18px">
+    <div>
+      <h5>Cuándo se ve tu tienda con esta campaña</h5>
+      <span class="lbl" style="margin-top:8px">Fechas</span>
+      <button class="per"><span>20 nov – 3 dic · 14 días</span><span aria-hidden="true">▾</span></button>
+      <div class="g3" style="margin-top:12px">
+        <div class="hora" data-modo="hora"><span class="lbl">Hora de inicio <small>hora de Lima</small></span>
+          <div class="ctl"><div class="sg"><label><input type="radio" name="m1i" value="dia"><span>Todo el día</span></label><label><input type="radio" name="m1i" value="hora" checked><span>A las</span></label></div><input type="time" value="10:00" aria-label="Hora de inicio"></div></div>
+        <div class="hora" data-modo="dia"><span class="lbl">Hora de fin <small>hora de Lima</small></span>
+          <div class="ctl"><div class="sg"><label><input type="radio" name="m1f" value="dia" checked><span>Todo el día</span></label><label><input type="radio" name="m1f" value="hora"><span>A las</span></label></div><input type="time" aria-label="Hora de fin"></div>
+          <p class="ayuda t-dia">Termina al acabar el último día.</p></div>
+      </div>
+    </div>
+    <div class="acc"><button class="btn pri m" style="flex:1">Guardar</button><button class="btn ghost m">Descartar</button></div>
+  </div></div>
+</div></div>
+<p class="nota"><b>D5</b>Una columna; cada control de 44 px. Guardar queda al pie del panel, no en una barra fija.</p>
+</div>
+</div>
+</div>
+
+<div class="par">
+<div class="frame" style="flex:1 1 440px">
+<p class="cap">Error de validación (inline, Guardar deshabilitado)</p>
+<div class="adm"><div class="det plano"><div class="in">
+  <div class="g2">
+    <div class="hora" data-modo="hora"><span class="lbl">Hora de inicio</span>
+      <div class="ctl"><div class="sg"><label><input type="radio" name="e1" value="dia"><span>Todo el día</span></label><label><input type="radio" name="e1" value="hora" checked><span>A las</span></label></div><input type="time" value="22:00" aria-label="Hora de inicio"></div></div>
+    <div class="hora" data-modo="hora"><span class="lbl">Hora de fin</span>
+      <div class="ctl"><div class="sg"><label><input type="radio" name="e2" value="dia"><span>Todo el día</span></label><label><input type="radio" name="e2" value="hora" checked><span>A las</span></label></div><input type="time" value="18:00" aria-label="Hora de fin" style="border-color:#dc2626"></div></div>
+  </div>
+  <p class="error" role="alert" style="margin-top:-10px">La fecha y hora de fin deben ser posteriores al inicio.</p>
+  <div class="acc"><button class="btn pri m" disabled>Guardar</button><button class="btn ghost m">Descartar</button></div>
+</div></div></div>
+</div>
+
+<div class="frame" style="flex:1 1 440px">
+<p class="cap">Fin a las 00:00 (R3.14) y tienda de productos (sin fechas de uso)</p>
+<div class="adm"><div class="det plano"><div class="in">
+  <div class="hora med" data-modo="hora"><span class="lbl">Hora de fin <small>hora de Lima</small></span>
+    <div class="ctl"><div class="sg"><label><input type="radio" name="z1" value="dia"><span>Todo el día</span></label><label><input type="radio" name="z1" value="hora" checked><span>A las</span></label></div><input type="time" value="00:00" aria-label="Hora de fin"></div>
+    <p class="ayuda t-med">A las 00:00 la campaña ya terminó: se verá hasta la medianoche del lun 30 nov. Para incluir el mar 1 dic, elige otra hora o "Todo el día".</p></div>
+  <p class="ayuda" style="margin:0;padding-top:10px;border-top:1px dashed #d1d5db">En una tienda de productos el panel termina aquí: no hay sección "Fechas de uso" (y el servidor la rechaza).</p>
+</div></div></div>
+</div>
+</div>
+
+<!-- ======================= 3. CATALOGO ======================= -->
+<h2 id="a3">3 · Panel de una campaña del catálogo <small>(Halloween, Black Friday…)</small></h2>
+<p class="sub">Dos columnas: a la izquierda cuándo empieza, a la derecha cuándo termina. Cada columna junta los días con su hora. Las fechas de uso son días relativos (se repiten cada año).</p>
+
+<div class="frame">
+<p class="cap">Hotel · Halloween</p>
+<div class="adm"><div class="cal sin">
+  <div class="fila abierta">
+    <button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Halloween"></button>
+    <div><p class="nom">Halloween</p><div class="rg"><span>15 oct, 8:00 – 31 oct, 14:00</span><span class="chip c-amber">En curso</span><span class="chip c-gray">Personalizada</span></div></div>
+    <div class="barra" aria-hidden="true"><span class="seg" style="left:78.9%;width:4.5%;background:#7c3aed"></span><span class="hoy" style="left:79.9%"></span></div>
+    <div class="ef"><i style="background:#7c3aed"></i>Murciélagos</div>
+  </div>
+  <div class="det"><div class="in">
+    <div>
+      <h5>Cuándo se ve tu tienda con esta campaña</h5>
+      <p class="ayuda" style="margin:0 0 10px">El día clave es el 31 oct. Hora de Lima.</p>
+      <div class="g2">
+        <div>
+          <label class="lbl" for="ab">Empieza (días antes)</label><input id="ab" class="inp" type="number" value="16">
+          <div class="hora" data-modo="hora" style="margin-top:12px"><span class="lbl">Hora de inicio <small>el primer día</small></span>
+            <div class="ctl"><div class="sg"><label><input type="radio" name="c1i" value="dia"><span>Todo el día</span></label><label><input type="radio" name="c1i" value="hora" checked><span>A las</span></label></div><input type="time" value="08:00" aria-label="Hora de inicio"></div>
+            <p class="ayuda t-hora">Empieza el jue 15 oct a las 8:00.</p></div>
+        </div>
+        <div>
+          <label class="lbl" for="de">Sigue (días después)</label><input id="de" class="inp" type="number" value="0">
+          <div class="hora" data-modo="hora" style="margin-top:12px"><span class="lbl">Hora de fin <small>el último día</small></span>
+            <div class="ctl"><div class="sg"><label><input type="radio" name="c1f" value="dia"><span>Todo el día</span></label><label><input type="radio" name="c1f" value="hora" checked><span>A las</span></label></div><input type="time" value="14:00" aria-label="Hora de fin"></div>
+            <p class="ayuda t-hora">Se ve hasta las 13:59 del sáb 31 oct.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="uso">
+      <div><h5>Fechas de uso</h5>
+        <p class="ayuda" style="margin:0">Hasta cuándo se usa lo que tus clientes reservan durante la campaña. Les orienta en tu portada y en el calendario; no cambia tus precios ni limita las reservas. Como Halloween se repite, se escribe en días.</p></div>
+      <div class="num"><span>Estadías hasta</span><input type="number" value="60" aria-label="Días después de que termina la campaña"><span>días después de que termina la campaña</span></div>
+      <div class="num"><span>Desde</span><input type="number" placeholder="0" aria-label="Días después de que empieza la campaña"><span>días después de que empieza <small style="color:#4b5563">(opcional)</small></span></div>
+      <p class="ayuda" style="margin:0">Este año: hasta el 30 dic 2026. El año que viene se recalcula solo.</p>
+      <p class="vista">Así lo verá tu cliente: <q>Reserva hasta el 31 oct · para alojarte hasta el 30 dic</q></p>
+    </div>
+
+    <div>
+      <h5>Cuándo se ve el efecto</h5>
+      <p class="ayuda" style="margin:0 0 4px">● Murciélagos · "¡Feliz Halloween!"</p>
+      <label class="radio-l"><input type="radio" name="m2" checked><span>Solo el día clave<small>31 oct, hasta las 14:00</small></span></label>
+      <label class="radio-l"><input type="radio" name="m2"><span>Toda la campaña<small>15 oct, 8:00 – 31 oct, 14:00</small></span></label>
+    </div>
+    <div class="acc"><button class="btn pri m">Guardar</button><button class="btn ghost m">Descartar</button><span class="sp"></span><span style="font-size:12.5px;color:#4b5563">Guarda primero para editar cómo se ve</span></div>
+  </div></div>
+</div></div>
+<p class="nota"><b>D6</b>Las horas acompañan a los días en la misma columna (R3.12). El efecto en "solo el día clave" también termina a las 14:00 (R3.7): el texto lo dice.</p>
+<p class="nota"><b>D7</b>El panel del catálogo pasa a ordenar Cuándo → Fechas de uso → Efecto (hoy el efecto va antes que los días). Es un cambio de orden propuesto para que las dos clases de campaña se lean igual.</p>
+</div>
+
+<!-- ======================= 4. CYBER WOW ======================= -->
+<h2 id="a4">4 · Cyber Wow: una campaña, varias ediciones <small>(y "por anunciar")</small></h2>
+<p class="sub">El dueño no carga fechas: ve las ediciones que cargó la plataforma, solo de lectura, y ajusta lo suyo (días antes/después y horas). Las horas de la tienda, si las cambia, valen para todas las ediciones; vacías, manda la plataforma.</p>
+
+<div class="par">
+<div class="frame" style="flex:1 1 520px">
+<p class="cap">Año 2026 · tres ediciones cargadas</p>
+<div class="adm"><div class="cal sin">
+  <div class="fila abierta">
+    <button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Cyber Wow"></button>
+    <div><p class="nom">Cyber Wow</p><div class="rg"><span>Próxima: noviembre · 2 – 5 nov</span><span class="chip c-blue">Empieza en 11 días</span></div></div>
+    <div class="barra" aria-hidden="true"><span class="seg pasada" style="left:25.5%;width:1.9%;background:#dc2626"></span><span class="seg pasada" style="left:52.1%;width:1.9%;background:#dc2626"></span><span class="seg" style="left:82.7%;width:2%;background:#dc2626"></span><span class="hoy" style="left:79.9%"></span></div>
+    <div class="ef"><i style="background:#dc2626"></i>Lluvia de ofertas</div>
+  </div>
+  <div class="det"><div class="in">
+    <div>
+      <h5>Ediciones de 2026</h5>
+      <ul class="edic" style="margin-top:6px">
+        <li><b>Abril</b><span class="f">6 – 9 abr</span><span class="sp"></span><span class="chip c-gray">Terminó</span></li>
+        <li><b>Julio</b><span class="f">13 jul – 16 jul, medianoche</span><span class="sp"></span><span class="chip c-gray">Terminó</span></li>
+        <li><b>Noviembre</b><span class="f">2 – 5 nov</span><span class="sp"></span><span class="chip c-blue">Próxima</span></li>
+      </ul>
+      <p class="ayuda">Las fechas las carga la plataforma cuando el IAB Perú las anuncia. Si cambian, tu tienda se actualiza sola.
+        <a href="#a5" class="btn link" style="display:inline">Cargar o corregir fechas (plataforma) →</a></p>
+    </div>
+    <div class="g2">
+      <div><label class="lbl" for="cw1">Empieza (días antes de cada edición)</label><input id="cw1" class="inp" type="number" value="3">
+        <div class="hora" data-modo="dia" style="margin-top:12px"><span class="lbl">Hora de inicio <small>el primer día</small></span>
+          <div class="ctl"><div class="sg"><label><input type="radio" name="w1i" value="dia" checked><span>Según la plataforma</span></label><label><input type="radio" name="w1i" value="hora"><span>A las</span></label></div><input type="time" aria-label="Hora de inicio"></div></div></div>
+      <div><label class="lbl" for="cw2">Sigue (días después de cada edición)</label><input id="cw2" class="inp" type="number" value="0">
+        <div class="hora" data-modo="dia" style="margin-top:12px"><span class="lbl">Hora de fin <small>el último día</small></span>
+          <div class="ctl"><div class="sg"><label><input type="radio" name="w1f" value="dia" checked><span>Según la plataforma</span></label><label><input type="radio" name="w1f" value="hora"><span>A las</span></label></div><input type="time" aria-label="Hora de fin"></div></div></div>
+    </div>
+    <div class="acc"><button class="btn pri m" disabled>Guardar</button><span class="sp"></span><button class="btn link m">Editar cómo se ve →</button></div>
+  </div></div>
+</div></div>
+<p class="nota"><b>D8</b>La lista de ediciones es informativa, no un formulario: un dato, un lugar (se edita solo en el panel de plataforma). En Cyber Wow la opción sin hora dice "Según la plataforma", no "Todo el día", porque la plataforma puede traer su propia hora.</p>
+</div>
+
+<div class="frame" style="flex:1 1 400px">
+<p class="cap">Año 2027 · todavía sin fechas</p>
+<div class="adm"><div class="cal sin">
+  <div class="fila abierta" style="grid-template-columns:3rem minmax(0,1fr)">
+    <button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Cyber Wow"></button>
+    <div><p class="nom">Cyber Wow</p><div class="rg"><span>Fechas de 2027 por anunciar</span><span class="chip c-dash">Por anunciar</span></div></div>
+  </div>
+  <div class="det plano"><div class="in">
+    <p class="aviso info" style="margin:0">Todavía no hay fechas de 2027. <strong>Déjala activada:</strong> cuando se anuncien, tu tienda se vestirá sola, sin que hagas nada.</p>
+    <div>
+      <h5>Ediciones de 2027</h5>
+      <ul class="edic" style="margin-top:6px">
+        <li><b>Abril</b><span class="f" style="color:#4b5563">Por anunciar</span></li>
+        <li><b>Julio</b><span class="f" style="color:#4b5563">Por anunciar</span></li>
+        <li><b>Noviembre</b><span class="f" style="color:#4b5563">Por anunciar</span></li>
+      </ul>
+    </div>
+  </div></div>
+  <div class="det plano" style="border-top:1px dashed #d1d5db"><div class="in">
+    <p class="ayuda" style="margin:0"><strong>Caso: abril y julio cargados, noviembre no.</strong> Abril y julio muestran sus fechas; noviembre dice "Por anunciar" en la misma lista.</p>
+  </div></div>
+</div></div>
+</div>
+</div>
+
+<!-- ======================= 5. PLATAFORMA ======================= -->
+<h2 id="a5">5 · Plataforma: fechas por año <small>(solo el administrador de la plataforma)</small></h2>
+<p class="sub">Pantalla nueva <code>/campanas-plataforma</code>, con el estilo de "Parámetros de la plataforma". Se llega desde el panel del Cyber Wow (si eres de la plataforma) y desde el aviso de la bitácora. Sin menú propio, como las otras pantallas de plataforma.</p>
+
+<div class="par">
+<div class="frame" style="flex:1 1 640px">
+<p class="cap">Año 2026 · ediciones cargadas, con quién las cambió</p>
+<div class="adm">
+  <div class="adm-head"><h4>Fechas por año</h4><span class="tag">Plataforma · solo tú ves esto</span><span class="sp"></span>
+    <div class="anio"><button class="btn" aria-label="Año anterior">‹</button><b>2026</b><button class="btn" aria-label="Año siguiente">›</button></div></div>
+  <div class="pl">
+    <p style="margin:0;color:#374151">Un cambio llega a todas las tiendas que tienen la campaña activa en menos de 5 minutos.</p>
+    <div class="pl-card">
+      <h4>Cyber Wow · IAB Perú <span class="chip c-gray">hasta 3 ediciones al año</span></h4>
+      <div class="pl-row"><b>Abril</b><div><div>6 abr – 9 abr <span style="color:#4b5563">· 4 días</span></div><div class="quien">Cargada por Diego A. el 2 abr, 10:14</div></div><div><button class="btn m">Editar</button></div></div>
+      <div class="pl-row"><b>Julio</b><div><div>13 jul – 16 jul, medianoche <span style="color:#4b5563">· 4 días</span></div><div class="quien">Cambiada por Diego A. el 14 jul, 09:12 · <button class="btn link" style="min-height:44px">Ver historial (2)</button></div></div><div><button class="btn m">Editar</button></div></div>
+      <ul class="hist" aria-label="Historial de la edición de julio">
+        <li><strong>14 jul, 09:12 · Diego A.</strong> — Fin: 16 jul 12:00 → 16 jul, medianoche</li>
+        <li><strong>2 jul, 16:40 · Diego A.</strong> — Cargada: 13 jul – 16 jul, 12:00</li>
+      </ul>
+      <div class="pl-row"><b>Noviembre</b><div><div>2 nov – 5 nov <span style="color:#4b5563">· 4 días</span></div><div class="quien">Cargada por Diego A. el 12 oct, 15:20 · <span class="chip c-blue">Empieza en 14 días</span></div></div><div><button class="btn m">Editar</button></div></div>
+    </div>
+  </div>
+</div></div>
+
+<div style="flex:1 1 340px;max-width:380px">
+<div class="frame">
+<p class="cap">Celular (360 px)</p>
+<div class="adm" style="width:360px;max-width:100%"><div class="pl" style="padding:14px">
+  <div class="pl-card">
+    <h4>Cyber Wow · 2026</h4>
+    <div class="pl-row" style="grid-template-columns:1fr"><b>Noviembre</b><div><div>2 nov – 5 nov · 4 días</div><div class="quien">Cargada por Diego A. el 12 oct, 15:20</div></div><div><button class="btn m" style="width:100%">Editar</button></div></div>
+  </div>
+</div></div></div>
+<div class="frame">
+<p class="cap">Sin permiso (403)</p>
+<div class="adm" style="padding:16px"><p class="aviso warn" style="margin:0">Solo el administrador de la plataforma puede ver esta pantalla. <a href="#a1" style="font-weight:600">Volver</a></p></div>
+</div>
+</div>
+</div>
+
+<div class="par">
+<div class="frame" style="flex:1 1 640px">
+<p class="cap">Año 2027 · nada cargado, editando una edición con errores</p>
+<div class="adm"><div class="pl">
+  <p class="aviso info" style="margin:0"><strong>Faltan fechas:</strong> abril, julio y noviembre de 2027. Cada vez que falta una, queda anotado en la bitácora y, a 60 días del inicio previsto, se avisa por correo.</p>
+  <div class="pl-card">
+    <h4>Cyber Wow · IAB Perú</h4>
+    <div class="pl-row" style="grid-template-columns:7rem minmax(0,1fr) auto"><b>Abril</b><div style="color:#4b5563">Por anunciar</div><div></div></div>
+    <div style="padding:16px 20px;background:#f9fafb;border-top:1px solid #f3f4f6;display:grid;gap:14px">
+      <div class="g2">
+        <div><label class="lbl" for="pn">Nombre de la edición</label><input id="pn" class="inp" value="Abril"></div>
+        <div><span class="lbl">Año</span><input class="inp" value="2027" disabled style="background:#f3f4f6"></div>
+      </div>
+      <div class="g2">
+        <div>
+          <span class="lbl">Empieza</span>
+          <button class="per"><span>lun 5 abr 2027</span><span aria-hidden="true">▾</span></button>
+          <div class="hora" data-modo="dia" style="margin-top:10px"><span class="lbl">Hora <small>opcional</small></span>
+            <div class="ctl"><div class="sg"><label><input type="radio" name="pl1i" value="dia" checked><span>Todo el día</span></label><label><input type="radio" name="pl1i" value="hora"><span>A las</span></label></div><input type="time" aria-label="Hora de inicio"></div></div>
+        </div>
+        <div>
+          <span class="lbl">Termina</span>
+          <button class="per" style="border-color:#dc2626"><span>mié 12 may 2027</span><span aria-hidden="true">▾</span></button>
+          <div class="hora" data-modo="dia" style="margin-top:10px"><span class="lbl">Hora <small>opcional</small></span>
+            <div class="ctl"><div class="sg"><label><input type="radio" name="pl1f" value="dia" checked><span>Todo el día</span></label><label><input type="radio" name="pl1f" value="hora"><span>A las</span></label></div><input type="time" aria-label="Hora de fin"></div></div>
+        </div>
+      </div>
+      <p class="error" role="alert" style="margin:0">Una edición dura como máximo 30 días (esta dura 38).</p>
+      <p class="ayuda" style="margin:0">Duración: 38 días</p>
+      <div class="acc"><button class="btn pri m" disabled>Guardar</button><button class="btn ghost m">Descartar</button></div>
+    </div>
+    <div class="pl-row"><b>Julio</b><div style="color:#4b5563">Por anunciar</div><div><button class="btn m">Cargar fechas</button></div></div>
+    <div class="pl-row"><b>Noviembre</b><div style="color:#4b5563">Por anunciar</div><div><button class="btn m">Cargar fechas</button></div></div>
+  </div>
+</div></div></div>
+
+<div class="frame" style="flex:1 1 380px;max-width:460px">
+<p class="cap">Confirmar un cambio de una edición en curso o con tiendas activas</p>
+<div class="fondo-dlg"><div class="dlg" role="alertdialog" aria-label="Confirmar cambio de fechas">
+  <h5>Cambiar las fechas de Noviembre</h5>
+  <p>El fin pasa del <strong>5 nov</strong> al <strong>4 nov, 12:00</strong>. Lo verán las <strong>14 tiendas</strong> que tienen el Cyber Wow activo, en menos de 5 minutos. Quedará anotado a tu nombre.</p>
+  <div class="acc" style="border:0;padding:0"><button class="btn pri m">Cambiar fechas</button><button class="btn ghost m">Cancelar</button></div>
+</div></div>
+<p class="nota"><b>D9</b>Un solo diálogo, solo si la edición ya está cargada y cambia. Cargar una edición nueva no pide confirmación. El conteo de tiendas requiere un dato del API (propuesta P1 del diseño).</p>
+</div>
+</div>
+
+<!-- ======================= 6. TIENDA PORTADA ======================= -->
+<h2 id="t1">6 · Tienda: la portada <small>(la campaña se ve sin cambiar la estructura)</small></h2>
+<p class="sub">La línea de fechas de uso va dentro del bloque de la campaña, una sola vez. El fin de la campaña también se escribe una sola vez: en esa línea si existe; si no, bajo la cuenta regresiva. Colores: los de la campaña vigente (aquí Black Friday).</p>
+
+<div class="par">
+<div class="frame" style="flex:2 1 640px">
+<p class="cap">Hotel · escritorio</p>
+<div class="tienda desk d">
+  <div class="t-top">Black Friday: los mejores precios del año</div>
+  <div class="t-head"><b>Hotel Killa</b><span>Habitaciones</span><span>ES · EN</span><span>Cuenta</span></div>
+  <div class="t-hero"><h3>Black Friday</h3><p>Los mejores precios del año, solo por pocos días.</p><span class="t-btn">Ver habitaciones</span></div>
+  <div class="t-oferta">
+    <div><h4>Black Friday termina pronto</h4><p>Aprovecha antes de que el contador llegue a cero.</p>
+      <p class="uso-l"><i class="rombo" aria-hidden="true"></i><span>Reserva hasta el 3 dic, 22:00 · para alojarte hasta el 31 mar</span></p></div>
+    <div class="timer" role="timer" aria-label="Tiempo restante"><div><b>08</b><small>días</small></div><div><b>04</b><small>horas</small></div><div><b>12</b><small>min</small></div><div><b>09</b><small>seg</small></div></div>
+    <span class="t-btn osc">Ver habitaciones</span>
+  </div>
+</div>
+<p class="nota"><b>D10</b>El rombo ◆ es el símbolo de "fechas de la campaña": el mismo que verá el cliente en el calendario, así la línea y las marcas se reconocen. Hotel con inglés: "Book until 3 Dec, 10:00 pm · to stay until 31 Mar".</p>
+</div>
+
+<div class="frame" style="flex:1 1 340px">
+<p class="cap">Hotel · celular (360 px)</p>
+<div class="tienda phone">
+  <div class="t-top">Black Friday: los mejores precios del año</div>
+  <div class="t-head"><b>Hotel Killa</b><span>ES · EN</span><span>Cuenta</span></div>
+  <div class="t-hero"><h3>Black Friday</h3><p>Los mejores precios del año.</p><span class="t-btn">Ver habitaciones</span></div>
+  <div class="t-oferta">
+    <div><h4>Black Friday termina pronto</h4><p>Aprovecha antes de que el contador llegue a cero.</p>
+      <p class="uso-l"><i class="rombo" aria-hidden="true"></i><span>Reserva hasta el 3 dic, 22:00 · para alojarte hasta el 31 mar</span></p></div>
+    <div class="timer" role="timer" aria-label="Tiempo restante"><div><b>08</b><small>días</small></div><div><b>04</b><small>horas</small></div><div><b>12</b><small>min</small></div></div>
+  </div>
+</div>
+<p class="nota"><b>D11</b>El header sigue visible con cuenta e idioma. La línea se parte en dos renglones como máximo; no es un botón.</p>
+</div>
+</div>
+
+<div class="par">
+<div class="frame" style="flex:1 1 360px">
+<p class="cap">Tienda de productos · fin a las 00:00</p>
+<div class="tienda phone">
+  <div class="t-oferta" style="padding:20px 14px">
+    <div><h4>Black Friday termina pronto</h4><p>Aprovecha antes de que el contador llegue a cero.</p></div>
+    <div class="timer" role="timer" aria-label="Tiempo restante"><div><b>03</b><small>días</small></div><div><b>18</b><small>horas</small></div><div><b>40</b><small>min</small></div></div>
+    <p class="cierra" style="margin:0">Termina el lunes 30 a medianoche</p>
+  </div>
+</div>
+<p class="nota"><b>D12</b>Sin ventana de uso (productos no recibe reservas): el fin se escribe bajo la cuenta regresiva. Con fin a las 22:00: "Termina el domingo 22 a las 22:00"; sin hora: "Termina el domingo 22".</p>
+</div>
+
+<div class="frame" style="flex:1 1 360px">
+<p class="cap">Portada sin fechas de uso o con otra campaña sin oferta</p>
+<div class="tienda phone">
+  <div class="t-top">Halloween: truco o trato</div>
+  <div class="t-head"><b>Hotel Killa</b><span>ES · EN</span><span>Cuenta</span></div>
+  <div class="t-hero" style="background:linear-gradient(120deg,#5b21b6,#2e1065)"><h3>Halloween</h3><p>Truco o trato.</p><span class="t-btn">Ver habitaciones</span></div>
+  <div class="pad" style="background:var(--sup);text-align:center;--p:#5b21b6"><p style="margin:0;display:inline-flex;gap:8px;align-items:flex-start;font-weight:600;font-size:14px;text-align:left"><i class="rombo" aria-hidden="true" style="background:#5b21b6"></i><span>Reserva hasta el 31 oct · para alojarte hasta el 30 dic</span></p></div>
+</div>
+<p class="nota"><b>D13</b>Si la campaña no trae bloque de cuenta regresiva, la línea va sola en una banda delgada bajo el hero. Mismo texto, mismo símbolo.</p>
+</div>
+</div>
+
+<!-- ======================= 7. SELECTORES ======================= -->
+<h2 id="t2">7 · Selectores de fecha por rubro <small>(la marca ◆ "Fechas de {campaña}")</small></h2>
+<p class="sub">Un símbolo, una leyenda, cinco rubros. La marca va solo sobre lo que el cliente ya puede elegir; no cambia precio, cupo ni reglas; no dice "oferta", "descuento" ni "disponible". El día sigue eligiéndose igual fuera del uso.</p>
+
+<div class="par">
+<div class="frame" style="flex:1 1 360px">
+<p class="cap">Hotel · estadía completa dentro del uso</p>
+<div class="tienda phone"><div class="pad">
+  <div class="campos"><div><small>Entrada</small>sáb 12 dic</div><div><small>Salida</small>mar 15 dic</div></div>
+  <p class="leyenda" style="justify-content:flex-end;margin:0 0 6px"><span>Precio por noche (S/)</span><span><i class="pt"></i>Tarifa más baja</span><span><i class="rombo b"></i>Fechas de Black Friday</span></p>
+  <p class="mes-t" style="text-transform:capitalize">diciembre 2026</p>
+  <div id="cal-hotel"></div>
+  <div class="pie-r" aria-live="polite">
+    <div class="l1"><span style="color:#52525b">12 – 15 dic · 3 noches</span><b>S/ 540</b></div>
+    <div class="camp"><i class="rombo" aria-hidden="true"></i>Tu estadía entra en Black Friday</div>
+  </div>
+</div></div>
+<p class="nota"><b>D14</b>La frase vive en el pie del rango, que ya es zona <code>aria-live</code>: el lector de pantalla la anuncia al elegir. Solo aparece si <em>todas</em> las noches están dentro del uso (R1.8); el rombo de cada noche se pinta aparte.</p>
+</div>
+
+<div class="frame" style="flex:1 1 360px">
+<p class="cap">Hotel · una noche cae fuera del uso</p>
+<div class="tienda phone"><div class="pad">
+  <div class="campos"><div><small>Entrada</small>mar 30 mar</div><div><small>Salida</small>vie 2 abr</div></div>
+  <p class="leyenda" style="justify-content:flex-end;margin:0 0 6px"><span>Precio por noche (S/)</span><span><i class="rombo b"></i>Fechas de Black Friday</span></p>
+  <p class="mes-t">marzo 2027 <span style="font-weight:400;color:#52525b;font-size:12px">(la salida es el 2 abr)</span></p>
+  <div id="cal-hotel2"></div>
+  <div class="pie-r" aria-live="polite">
+    <div class="l1"><span style="color:#52525b">30 mar – 2 abr · 3 noches</span><b>S/ 540</b></div>
+    <p class="nada" style="margin:0">Sin frase: la noche del 31 mar entra, pero las del 1 y 2 abr no.</p>
+  </div>
+</div></div>
+<p class="nota"><b>D15</b>No hay aviso de "parcial" ni de error: la frase simplemente no aparece. Las noches de marzo conservan su rombo; las de abril no.</p>
+</div>
+</div>
+
+<div class="par">
+<div class="frame" style="flex:1 1 300px">
+<p class="cap">Tours · marzo 2027 (salen los sábados)</p>
+<div class="tienda phone" style="--p:#0f766e;width:330px"><div class="pad">
+  <p class="mes-t">marzo 2027</p>
+  <div id="cal-tours"></div>
+  <p class="leyenda"><span><i class="rombo b"></i>Fechas de Cyber Wow</span></p>
+</div></div>
+</div>
+<div class="frame" style="flex:1 1 300px">
+<p class="cap">Tours · abril 2027 (fuera del uso)</p>
+<div class="tienda phone" style="--p:#0f766e;width:330px"><div class="pad">
+  <p class="mes-t">abril 2027</p>
+  <div id="cal-tours2"></div>
+</div></div>
+<p class="nota"><b>D16</b>Sin marcas en el mes, no hay leyenda (como las otras leyendas). El texto de la marca nunca habla de cupo ni de disponibilidad: la agencia confirma cada solicitud. El sábado de abril se puede pedir igual, sin aviso.</p>
+</div>
+
+<div class="frame" style="flex:1 1 300px">
+<p class="cap">Locales · febrero 2027 (solo fechas libres)</p>
+<div class="tienda phone" style="--p:#9a3412;width:330px"><div class="pad">
+  <p class="mes-t">febrero 2027</p>
+  <div id="cal-locales"></div>
+  <p class="leyenda"><span><i class="rombo b"></i>Fechas de Aniversario</span><span style="text-decoration:line-through">12</span><span>Ocupado</span></p>
+</div></div>
+</div>
+</div>
+
+<div class="par">
+<div class="frame" style="flex:1 1 380px">
+<p class="cap">Eventos · funciones (una etiqueta por función)</p>
+<div class="tienda phone" style="--p:#6d28d9"><div class="pad">
+  <p class="t-cap">Noche de salsa · elige la función</p>
+  <div class="fun" role="radiogroup" aria-label="Función">
+    <button class="on" role="radio" aria-checked="true"><span class="d1">vie 11 dic · 21:00</span><span class="etq"><i class="rombo" aria-hidden="true"></i>Fechas de Cyber Wow</span><span class="d2" style="flex-basis:100%">Desde S/ 60</span></button>
+    <button class="ag" role="radio" aria-checked="false"><span class="d1">sáb 12 dic · 21:00</span><span class="d2">Agotada</span></button>
+    <button role="radio" aria-checked="false"><span class="d1">vie 19 mar · 21:00</span><span class="etq"><i class="rombo" aria-hidden="true"></i>Fechas de Cyber Wow</span><span class="d2" style="flex-basis:100%">Desde S/ 60</span></button>
+    <button role="radio" aria-checked="false"><span class="d1">vie 9 abr · 21:00</span><span class="d2" style="flex-basis:100%">Desde S/ 60</span></button>
+  </div>
+</div></div>
+<p class="nota"><b>D17</b>Etiqueta con el mismo símbolo y la misma leyenda dentro de la función; no hay calendario. La agotada o cerrada no la lleva aunque su fecha esté en el rango (CA-1.6). La etiqueta se lee junto a la fecha: "viernes 11 de diciembre, 21:00, Fechas de Cyber Wow".</p>
+</div>
+
+<div class="frame" style="flex:1 1 380px">
+<p class="cap">Canchas · selector de día (tira horizontal)</p>
+<div class="tienda phone" style="--p:#15803d"><div class="pad">
+  <p class="t-cap">1 · Día</p>
+  <div class="tira" role="group" aria-label="Día">
+    <button class="on" aria-pressed="true"><i class="rombo"></i><small>Hoy</small><b>25</b></button>
+    <button aria-pressed="false"><i class="rombo"></i><small>jue</small><b>26</b></button>
+    <button aria-pressed="false"><i class="rombo"></i><small>vie</small><b>27</b></button>
+    <button aria-pressed="false"><i class="rombo"></i><small>sáb</small><b>28</b></button>
+    <button aria-pressed="false"><small>dom</small><b>29</b></button>
+    <button aria-pressed="false"><small>lun</small><b>30</b></button>
+  </div>
+  <p class="leyenda"><span><i class="rombo b"></i>Fechas de Aniversario del club</span></p>
+</div></div>
+<p class="nota"><b>D18</b>El rombo va en la esquina de cada día de la tira; la leyenda, debajo. Un horario ocupado dentro de un día marcado sigue sin poder elegirse. El día elegido (oscuro) pinta el rombo en blanco.</p>
+</div>
+</div>
+
+<!-- ======================= 8. TRANSICION ======================= -->
+<h2 id="t3">8 · Con la pestaña abierta, a la hora frontera <small>(Black Friday → Cyber Monday, 30 nov 23:59:50 → 00:00:15)</small></h2>
+<p class="sub">El cliente no se mueve de lugar ni ve el diseño normal por un instante. Al llegar al fin, la tienda conserva la vista hasta que el servidor responda la campaña siguiente (máx. 15 s) y entonces cambia una sola vez, con un fundido de 300 ms y sin mover el scroll.</p>
+
+<div class="sb">
+  <div><div class="tienda" style="--p:#18181b"><div class="t-top">Black Friday: los mejores precios</div><div class="t-oferta" style="padding:14px 10px"><h4 style="font-size:15px">Black Friday termina pronto</h4><div class="timer"><div style="width:44px"><b style="font-size:16px">00</b><small>h</small></div><div style="width:44px"><b style="font-size:16px">00</b><small>min</small></div><div style="width:44px"><b style="font-size:16px">10</b><small>seg</small></div></div></div></div>
+    <p class="cp"><b>1 · 23:59:50</b> Cuenta regresiva normal.</p></div>
+  <div><div class="tienda" style="--p:#18181b"><div class="t-top">Black Friday: los mejores precios</div><div class="t-oferta" style="padding:14px 10px"><h4 style="font-size:15px">Black Friday termina pronto</h4><div class="timer fin"><div style="width:44px"><b style="font-size:16px">00</b><small>h</small></div><div style="width:44px"><b style="font-size:16px">00</b><small>min</small></div><div style="width:44px"><b style="font-size:16px">00</b><small>seg</small></div></div><p class="cierra" style="margin:0;font-size:12px">Terminando…</p></div></div>
+    <p class="cp"><b>2 · 00:00:00 a 00:00:15</b> Todo igual; la cuenta dice "Terminando…". No parpadea al diseño normal.</p></div>
+  <div><div class="tienda" style="--p:#b91c1c"><div class="t-top" style="background:#b91c1c">Cyber Monday: último día</div><div class="t-oferta" style="padding:14px 10px"><h4 style="font-size:15px">Cyber Monday termina hoy</h4><div class="timer"><div style="width:44px"><b style="font-size:16px">23</b><small>h</small></div><div style="width:44px"><b style="font-size:16px">59</b><small>min</small></div><div style="width:44px"><b style="font-size:16px">42</b><small>seg</small></div></div></div></div>
+    <p class="cp"><b>3 · llega la respuesta</b> Un fundido de colores y textos (300 ms). Con "reducir movimiento", cambio directo.</p></div>
+  <div><div class="tienda" style="--p:#18181b"><div class="t-top" style="background:#18181b">Hotel Killa</div><div class="pad" style="font-size:12px;color:#52525b;min-height:78px">Diseño normal de la tienda (1 dic, 00:00).</div></div>
+    <p class="cp"><b>4 · al terminar la última</b> Mismo fundido hacia el diseño normal.</p></div>
+</div>
+<p class="nota"><b>D19</b>Reglas: (1) nunca mostrar el diseño normal entre dos campañas seguidas; (2) los bloques que se agregan o quitan arriba de lo que el cliente está viendo no lo desplazan (se compensa el scroll; Safari no lo hace solo); (3) el efecto festivo no se dispara en una pestaña ya abierta, se verá en la próxima visita; (4) en el carrito y el pago solo cambian los colores; (5) no se anuncia nada con voz: es decorativo.</p>
+
+</div>
+
+<script>
+/* Interruptor "Todo el día / A las" (solo demostración del control) */
+document.querySelectorAll('.hora').forEach(function(h){
+  h.addEventListener('change',function(e){ if(e.target.type==='radio'){ h.dataset.modo=e.target.value; h.classList.remove('med'); } });
+});
+/* Calendarios de ejemplo (solo dibujo; los botones son inertes). */
+function cal(id,y,m,fn){
+  var el=document.getElementById(id); if(!el) return;
+  var first=new Date(Date.UTC(y,m,1)), off=(first.getUTCDay()+6)%7, dim=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+  var h='<div class="gr"><div class="gh">'+['Lu','Ma','Mi','Ju','Vi','Sá','Do'].map(function(d){return '<span>'+d+'</span>'}).join('')+'</div><div class="gb">';
+  for(var i=0;i<off;i++) h+='<span></span>';
+  for(var d=1;d<=dim;d++){
+    var c=fn(d,new Date(Date.UTC(y,m,d)).getUTCDay())||{};
+    var cls=['dia',c.dis?'dis':'',c.oc?'oc':'',c.pocos?'pocos':'',c.sel?'sel':'',c.rango?'rango':'',c.ext?'ext':''].join(' ');
+    h+='<button type="button" class="'+cls+'"'+(c.dis?' aria-disabled="true"':'')+'>'+(c.mark?'<i class="rombo" aria-hidden="true"></i>':'')+(c.best?'<i class="pt" aria-hidden="true"></i>':'')+'<b>'+d+'</b>'+(c.sub?'<small>'+c.sub+'</small>':'')+'</button>';
+  }
+  el.innerHTML=h+'</div></div>';
+}
+/* Hotel: dic 2026, hoy 25 nov; ocupadas 8 y 9; tarifa más baja 10 y 11; uso hasta 31 mar */
+cal('cal-hotel',2026,11,function(d){
+  if(d===8||d===9) return {dis:1,oc:1};
+  var base={sub:(d>=10&&d<=11)?'150':'180',mark:1,best:(d>=10&&d<=11)};
+  if(d===12) base.ext=1; else if(d===13||d===14) base.rango=1; else if(d===15) base.ext=1;
+  return base;
+});
+/* Hotel 2: 30 mar – 2 abr (marzo con marca, abril sin) — se dibuja marzo completo para ver el corte */
+cal('cal-hotel2',2027,2,function(d){
+  var r={sub:'180',mark:d<=31};
+  if(d===30) r.ext=1; else if(d===31) r.rango=1;
+  return r;
+});
+/* Tours: sábados salen; marzo con marca, abril sin */
+cal('cal-tours',2027,2,function(d,w){ return w===6?{mark:1}:{dis:1}; });
+cal('cal-tours2',2027,3,function(d,w){ return w===6?{}:{dis:1}; });
+/* Locales: feb 2027; ocupados 6,7,20,21; parcial 13 */
+cal('cal-locales',2027,1,function(d){
+  if(d===6||d===7||d===20||d===21) return {dis:1,oc:1};
+  if(d===13) return {mark:1,sub:'1 turno',pocos:1};
+  return {mark:1};
+});
+</script>
+</body>
+</html>

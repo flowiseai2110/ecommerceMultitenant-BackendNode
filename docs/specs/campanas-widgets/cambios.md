@@ -1,5 +1,17 @@
 # Campañas y widgets — cambios
 
+## 2026-10-19 — Efecto y saludo solo en Diseño (Admin)
+
+- **Qué pasaba:** el efecto y el saludo se editaban en dos pantallas (Campañas, con "Guardar", y Diseño › Efecto y saludo,
+  con "Publicar"); Diego no sabía dónde guardarlos. "Cuándo se ve el efecto" solo estaba en Campañas.
+- **Qué cambió (aprobado por Diego):** cada dato vive en un solo lugar. **Campañas = el cuándo** (activar, fechas, días
+  antes/después, solo el día clave o toda la campaña). **Diseño = el cómo** (efecto, saludo, colores…), que se guarda con
+  "Publicar". En Campañas se quitaron la grilla de efectos, el campo de saludo y la vista previa del efecto; el efecto
+  queda como resumen bajo "Cuándo se ve el efecto" ("Murciélagos · "¡Feliz Halloween!"") y se edita con "Editar cómo se ve →".
+- **Archivos (FrontendAdmin):** `pages/campanas/campanas.component.html` y `.ts` (se quitaron `elegirEfecto`, `verEfecto`,
+  `borrador`, `efectos`, `urlTienda` y la vista previa).
+- **Probado en navegador:** panel de Halloween sin controles de efecto ni vista previa, con el resumen. Sin llaves ni SQL.
+
 ## 2026-10-19 — Guardado por campaña en Admin › Campañas (UX)
 
 - **Qué pasaba:** al editar una campaña (p. ej. Halloween → "Toda la campaña") no se veía cómo guardar. "Editar cómo se ve →"
