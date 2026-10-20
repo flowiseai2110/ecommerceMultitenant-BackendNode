@@ -1,0 +1,232 @@
+// Modelo de arquitectura (LikeC4). Una sola fuente: cada relación se escribe una vez
+// y aparece en todas las vistas que la incluyen. Ver docs/arquitectura/README.md.
+
+specification {
+  element persona {
+    style {
+      shape person
+    }
+  }
+  element sistema
+  element app {
+    style {
+      shape browser
+    }
+  }
+  element movil {
+    style {
+      shape mobile
+    }
+  }
+  element servicio
+  element modulo {
+    style {
+      color secondary
+    }
+  }
+  element rubro {
+    style {
+      color indigo
+    }
+  }
+  element basedatos {
+    style {
+      shape cylinder
+    }
+  }
+  element externo {
+    style {
+      color muted
+    }
+  }
+}
+
+model {
+  // --- Personas ---
+  comprador = persona "Comprador" {
+    description "Compra productos o reserva en la tienda pública de un negocio"
+  }
+  dueno = persona "Dueño / equipo de la tienda" {
+    description "owner, admin, editor o viewer en usuario_tiendas"
+  }
+  adminPlataforma = persona "Administrador de la plataforma" {
+    description "PLATFORM_ADMIN_EMAILS: parámetros y límites sin deploy"
+  }
+
+  // --- Nuestro sistema ---
+  ecommerce = sistema "Ecommerce multi-tenant" {
+    description "SaaS: cada tienda tiene un rubro (productos, hotel, tours, eventos, locales, canchas)"
+
+    store = app "FrontendStore" {
+      description "Angular con SSR. Tienda pública de cada negocio"
+      technology "Angular SSR · Vercel"
+    }
+    admin = app "FrontendAdmin" {
+      description "Angular. Panel de gestión de la tienda y de la plataforma"
+      technology "Angular · Vercel"
+    }
+    appTransmitir = movil "App Transmitir" {
+      description "Transmite en vivo con el celular; se vincula con un QR del admin"
+    }
+
+    backend = servicio "BackendNode" {
+      description "API REST /api/v1. Route → Controller → Service → Repository"
+      technology "Node.js · Express 5 · Prisma · Railway"
+
+      negocio = modulo "negocio" {
+        description "Contrato por rubro, registro (estrategiaDe), capacidades y datos"
+
+        productos = rubro "productos"
+        hotel = rubro "hotel"
+        tours = rubro "tours"
+        eventos = rubro "eventos"
+        locales = rubro "locales"
+        canchas = rubro "canchas"
+      }
+      tenants = modulo "tenants" {
+        description "Tiendas, configuración, usuarios y roles"
+      }
+      catalogo = modulo "catalogo" {
+        description "Categorías, marcas, productos, variantes, inventario y precios"
+      }
+      ordenes = modulo "ordenes" {
+        description "Pedidos, detalle e historial de estados"
+      }
+      reservas = modulo "reservas" {
+        description "Motor común + vertical por rubro (cotizar, estadoInicial, enTransaccion…)"
+      }
+      pagos = modulo "pagos" {
+        description "Métodos de pago, pasarela (PaymentProvider) y webhooks"
+      }
+      envios = modulo "envios" {
+        description "Métodos y zonas de envío"
+      }
+      campanas = modulo "campanas" {
+        description "Campañas, ediciones y su job programado"
+      }
+      transmisiones = modulo "transmisiones" {
+        description "Transmisión en vivo de eventos y canchas"
+      }
+      ia = modulo "agente / asistente / traducciones" {
+        description "IA siempre a pedido del usuario"
+      }
+      diseno = modulo "diseno" {
+        description "Layout de la tienda por rubro (layoutDeNegocio)"
+      }
+      dashboard = modulo "dashboard" {
+        description "Corre los widgets que declara cada rubro"
+      }
+      rucs = modulo "sunat" {
+        description "Consulta de RUC para facturación"
+      }
+      parametros = modulo "parametros" {
+        description "parametros_plataforma, cambiables sin deploy"
+      }
+    }
+
+    db = basedatos "PostgreSQL" {
+      description "Supabase. Todas las tablas filtran por tiendaId; RLS para Realtime"
+      technology "Supabase Postgres"
+    }
+  }
+
+  // --- Servicios externos ---
+  supabaseAuth = externo "Supabase Auth" {
+    description "Login; JWT verificado con JWKS"
+  }
+  storage = externo "Almacenamiento de archivos" {
+    description "Supabase Storage o Cloudflare R2 (STORAGE_DRIVER)"
+  }
+  resend = externo "Resend" {
+    description "Correos transaccionales"
+  }
+  culqi = externo "Culqi" {
+    description "Pasarela de pagos"
+  }
+  cloudflareStream = externo "Cloudflare Stream" {
+    description "Ingesta y reproducción de transmisiones"
+  }
+  youtube = externo "YouTube" {
+    description "Destino opcional de transmisiones"
+  }
+  anthropic = externo "Anthropic (Claude)" {
+    description "Agente y asistente"
+  }
+  gemini = externo "Google Gemini" {
+    description "Imágenes y textos con IA"
+  }
+  sunat = externo "Consulta RUC" {
+    description "Datos de facturación"
+  }
+  sentry = externo "Sentry" {
+    description "Errores en producción"
+  }
+
+  // --- Relaciones ---
+  comprador -> ecommerce.store "Compra y reserva"
+  dueno -> ecommerce.admin "Gestiona su tienda"
+  dueno -> ecommerce.appTransmitir "Transmite en vivo"
+  adminPlataforma -> ecommerce.admin "Cambia parámetros y límites"
+
+  ecommerce.store -> ecommerce.backend "Rutas /store" {
+    technology "HTTPS/JSON"
+  }
+  ecommerce.admin -> ecommerce.backend "Rutas /admin" {
+    technology "HTTPS/JSON + JWT"
+  }
+  ecommerce.appTransmitir -> ecommerce.backend.transmisiones "Vincula con QR y reporta estado"
+  ecommerce.appTransmitir -> cloudflareStream "Envía el video"
+  ecommerce.admin -> supabaseAuth "Inicia sesión"
+  ecommerce.store -> supabaseAuth "Inicia sesión (Google)"
+  ecommerce.store -> ecommerce.db "Realtime (en vivo)" {
+    technology "Supabase Realtime, RLS anon"
+  }
+
+  ecommerce.backend -> ecommerce.db "Lee y escribe" {
+    technology "Prisma"
+  }
+  ecommerce.backend -> supabaseAuth "Verifica JWT (JWKS)"
+  ecommerce.backend -> storage "Sube imágenes y archivos"
+  ecommerce.backend -> resend "Envía correos"
+  ecommerce.backend -> sentry "Reporta errores"
+
+  // Módulos
+  ecommerce.backend.reservas -> ecommerce.backend.negocio "estrategia.reservas del rubro"
+  ecommerce.backend.catalogo -> ecommerce.backend.negocio "prepararProducto del rubro"
+  ecommerce.backend.dashboard -> ecommerce.backend.negocio "estrategia.dashboard del rubro"
+  ecommerce.backend.diseno -> ecommerce.backend.negocio "Secciones por rubro"
+  ecommerce.backend.ia -> ecommerce.backend.negocio "estrategia.agente del rubro"
+  ecommerce.backend.ordenes -> ecommerce.backend.pagos "Cobra el pedido"
+  ecommerce.backend.reservas -> ecommerce.backend.pagos "Cobra la reserva"
+  ecommerce.backend.ordenes -> ecommerce.backend.envios "Calcula el envío"
+  ecommerce.backend.negocio -> ecommerce.backend.tenants "Rubro desde la BD (tiendaDe)"
+  ecommerce.backend.pagos -> culqi "Cobros y webhooks"
+  ecommerce.backend.transmisiones -> cloudflareStream "Crea entradas en vivo"
+  ecommerce.backend.transmisiones -> youtube "Retransmite"
+  ecommerce.backend.ia -> anthropic "Mensajes"
+  ecommerce.backend.ia -> gemini "Imágenes y textos"
+  ecommerce.backend.rucs -> sunat "Consulta RUC"
+  ecommerce.backend.campanas -> ecommerce.backend.parametros "Lee parámetros"
+}
+
+views {
+  view index {
+    title "Contexto: el sistema y su entorno"
+    include *
+  }
+
+  view contenedores of ecommerce {
+    title "Contenedores: apps, API y base de datos"
+    include *
+  }
+
+  view backend of ecommerce.backend {
+    title "BackendNode: módulos"
+    include *
+  }
+
+  view rubros of ecommerce.backend.negocio {
+    title "Lógica por rubro (Strategy)"
+    include *
+  }
+}

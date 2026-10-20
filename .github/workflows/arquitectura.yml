@@ -1,0 +1,39 @@
+# Valida el modelo de arquitectura (docs/arquitectura/modelo.c4) y arma su sitio.
+name: arquitectura
+
+on:
+  push:
+    branches: ["main"]
+    paths: ["docs/arquitectura/**"]
+  pull_request:
+    paths: ["docs/arquitectura/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  modelo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validar modelo
+        run: npx -y likec4@1.60.0 validate docs/arquitectura
+
+      - name: Armar sitio
+        run: npx -y likec4@1.60.0 build docs/arquitectura -o dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arquitectura-sitio
+          path: dist
+
+# Para publicarlo en GitHub Pages (Settings → Pages → Source: GitHub Actions):
+# agregar permisos `pages: write` e `id-token: write`, y reemplazar el upload-artifact por
+# actions/configure-pages@v5 + actions/upload-pages-artifact@v3 (path: dist) y un job con
+# actions/deploy-pages@v4. Pasar `--base <ruta del repo>` al build si no hay dominio propio.
