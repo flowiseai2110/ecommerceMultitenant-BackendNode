@@ -48,7 +48,7 @@ Flujo: cliente crea pedido (el stock se descuenta en el acto) > tienda confirma 
 | PRO-06 | "Agotado" (existe, stock 0) es distinto de "no existe" (combinación desmarcada) | tienda: selector de variantes | opciones-variantes R5.3 |
 | PRO-07 | Al crear el pedido se valida y **bloquea** el stock (FOR UPDATE) en la misma transacción; sin stock o variante inactiva rechaza el pedido; los servicios no descuentan | `modules/inventario/inventario.service.js` `validarYBloquearStock` | (código; sin spec propia) |
 | PRO-08 | Máx. 50 líneas por pedido y 100 unidades por línea | `modules/ordenes/pedidos.schema.js` | (código) |
-| PRO-09 | El costo de envío lo **calcula el servidor**; el `costoEnvio` del body se ignora. Si el método no llega al distrito, rechaza el pedido | `modules/ordenes/pedidos.service.js`, `modules/envios/cotizacion.js` | checkout-envio-pago R3.7 |
+| PRO-09 | El costo de envío lo **calcula el servidor** con el subtotal y el descuento del servidor (envío gratis desde un monto incluido); el body ya no trae `costoEnvio` ni el nombre del método. Si la tienda tiene métodos activos hay que elegir uno; sin métodos, el pedido va "Por coordinar". Si el método no llega al distrito, rechaza el pedido | `modules/ordenes/crear-pedido.js`, `modules/precios/cotizacion-compra.js`, `modules/envios/cotizacion.js` | checkout-envio-pago R3.7, precio-en-servidor C9 |
 | PRO-10 | Gana la zona más específica (distrito > provincia > depto > país); a igual especificidad, la de menor `orden` | `modules/envios/cotizacion.js` `resolverZona` | checkout-envio-pago R3.2 |
 | PRO-11 | Fuera de zona: `coordinar` (por WhatsApp, defecto) o `no_disponible` (el método se oculta). Método sin zonas = por coordinar | `modules/envios/cotizacion.js` | checkout-envio-pago R3.3, R3.4 |
 | PRO-12 | Envío gratis si subtotal - descuento >= `tiendas.envio_gratis_minimo`; `recojo_tienda` siempre gratis | `modules/envios/cotizacion.js` | checkout-envio-pago R3.5 |
@@ -57,7 +57,7 @@ Flujo: cliente crea pedido (el stock se descuenta en el acto) > tienda confirma 
 | PRO-15 | Solo se acepta factura si `tiendas.emite_factura`; si no: "Esta tienda solo emite boletas" | `modules/ordenes/pedidos.service.js` | checkout-envio-pago R2.4 |
 | PRO-16 | Factura: RUC (11 dígitos, prefijo 10/15/17/20, dígito verificador). Razón social y dirección fiscal salen del **padrón SUNAT**, no del navegador. RUC no ACTIVO bloquea la factura | `modules/sunat/ruc.service.js`, `pedidos.schema.js` | consulta-ruc |
 | PRO-17 | Comprobante y datos fiscales se guardan como snapshot en el pedido (no en `clientes`); el admin puede corregirlos | `modules/ordenes/pedidos.service.js` `updateDetalles` | checkout-envio-pago R2.5 |
-| PRO-18 | Cupón: debe estar activo, vigente, con usos disponibles y respetar mínimo de compra y máximo por cliente; tipo `porcentaje` o `monto_fijo`. No se usan cupones en rubros de reserva | `modules/cupones/cupones.service.js`, `pedidos.service.js` | (código) |
+| PRO-18 | Cupón: debe estar activo, vigente, con usos disponibles y respetar mínimo de compra y máximo por cliente; tipo `porcentaje` (máx. 100 %) o `monto_fijo`; el descuento nunca supera el subtotal. Una sola regla para mostrar y para cobrar (`evaluarCupon`), y el servidor calcula el monto. El uso se suma solo si queda cupo (dos pedidos con el último uso: uno sale "Cupón agotado"). Se suma a la oferta manual del producto. No se usan cupones en rubros de reserva | `modules/cupones/regla-cupon.js`, `cupones.service.js`, `modules/ordenes/crear-pedido.js` | precio-en-servidor C4, C5, D2 |
 | PRO-19 | Pago manual: Yape/Plin/transferencia con datos copiables, efectivo o contra entrega ("Pagas al recibir"). Con costo de envío por coordinar no se muestra el monto a pagar | `modules/pagos/metodos-pago.*`, tienda `features/checkout/checkout-page/checkout-page.component.ts` | checkout-envio-pago R4 |
 | PRO-20 | Pago automático (tarjeta/Yape): solo si la pasarela está lista; el monto sale de `pedido.total` en el servidor; el webhook es la fuente de verdad y es idempotente. Volver a manual siempre se puede | `modules/pagos/modo-pago.service.js`, `modules/pagos/pasarela/destinos.js` | pago-automatico R1, R4, R5 |
 | PRO-21 | Todas las tiendas tienen Libro de Reclamaciones visible y no ocultable; correlativo por tienda y año; plazo 15 días hábiles; la hoja no se edita ni borra | `modules/libro-reclamaciones/` | libro-reclamaciones R1-R6 |
@@ -122,14 +122,13 @@ Flujo: cliente crea pedido (el stock se descuenta en el acto) > tienda confirma 
 | D6 | Estado del pendiente | `docs/ESTADO.md` marca "SQL antes de desplegar" para checkout y libro; este documento asume que el código ya está activo |
 
 ### Riesgos de reglas (a confirmar en Preguntas)
-- **Precios y descuento confiados al navegador.** `createPedidoSchema` recibe `precioUnitario`, `descuento` por línea y `descuentoMonto`, y `PedidosService.create` los usa sin compararlos con el precio de BD ni recalcular el cupón. El envío sí lo calcula el servidor (PRO-09), el producto no. Un cliente malicioso podría comprar más barato. Archivos: `modules/ordenes/pedidos.schema.js`, `modules/ordenes/pedidos.service.js` (pasos 3 y 4). No encontré validación en otro punto.
 - **Reabrir un pedido cancelado.** `updateEstado` repone stock al pasar a `cancelado`, pero no encontré que vuelva a descontarlo si el admin lo saca de `cancelado`.
 - **Sin vencimiento de pedidos pendientes.** El stock se descuenta al crear el pedido y no vi un proceso que cancele pedidos sin pagar.
 - **Cancelación con pago automático.** Un pedido pagado por tarjeta se cancela sin reembolso (el método `refund` existe, no está conectado).
 
 ## Preguntas abiertas para Diego
 - [ ] ¿Qué tiendas demo de productos existen (slug, dueño de prueba)? No las encontré en código ni specs.
-- [ ] ¿Confirmas que el precio del producto y el descuento deben validarse en el servidor al crear el pedido (hoy los manda el navegador)? Si sí, requiere un requerimiento.
+- [x] ¿Confirmas que el precio del producto y el descuento deben validarse en el servidor al crear el pedido? Sí: [ADR-0001](../adr/ADR-0001-precio-calculado-en-servidor.md), implementado en `precio-en-servidor` piezas 1-2 (precio, oferta, cupón y envío los calcula el servidor; solo vende con carrito el rubro con la capacidad `carrito`).
 - [ ] ¿Un pedido pendiente sin pago debe vencer y devolver el stock? ¿A las cuántas horas?
 - [ ] ¿Reabrir un pedido cancelado debe volver a descontar stock, o está prohibido?
 - [ ] ¿Qué pasa con el dinero cuando se cancela un pedido ya pagado por pasarela: devolución manual o automática?

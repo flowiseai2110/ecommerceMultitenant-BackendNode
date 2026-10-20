@@ -6,7 +6,7 @@ import { validate } from "../../middlewares/validation.middleware.js";
 import { scopeBodyToTienda, optionalAuth } from "../../kernel/tenant/index.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import PedidosService from "./pedidos.service.js";
-import { createPedidoSchema } from "./pedidos.schema.js";
+import { createPedidoSchema, cotizarPedidoSchema } from "./pedidos.schema.js";
 import { clave } from "../idiomas/clave.js";
 
 const pedidosService = new PedidosService();
@@ -45,6 +45,31 @@ router.post(
     pedidosService.notifyNewOrder(data);
 
     return apiResponse(res, { status: 201, type: "SUCCESS", code: "PEDIDO_CREATED", data });
+  }
+);
+
+// ============================================
+// POST /cotizar - Cotización del carrito (público, docs/specs/precio-en-servidor pieza 4)
+// La misma carga y regla que crear el pedido, sin escribir nada: el carrito y
+// el pago muestran el precio del servidor. Es POST porque lleva las líneas,
+// pero cuenta como lectura en el límite global (server.js) y tiene el suyo:
+// el checkout re-cotiza en cada cambio del carrito, del cupón o del envío.
+// ============================================
+const limiteCotizar = crearLimitador({
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.cotizarMax,
+  code: "TOO_MANY_REQUESTS",
+  message: clave("Demasiadas consultas de precio, intenta más tarde")
+});
+
+router.post(
+  "/cotizar",
+  limiteCotizar,
+  scopeBodyToTienda,
+  validate({ body: cotizarPedidoSchema }),
+  async (req, res) => {
+    const data = await pedidosService.cotizar(req.body);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PEDIDO_COTIZADO", data });
   }
 );
 

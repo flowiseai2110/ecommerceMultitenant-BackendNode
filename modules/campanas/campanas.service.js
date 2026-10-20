@@ -5,6 +5,8 @@ import { calendarioAnual, disenoPublico } from "./resolver.js";
 import { CAMPANA_PRESETS } from "./presets.js";
 import { EFECTOS } from "./efectos.js";
 import { horaAMs, inicioDiaLima, parsearFecha } from "./calendario.js";
+import { datosDe } from "../negocio/datos.js";
+import { edicionesParaResolver } from "./ediciones.service.js";
 
 /**
  * Calendario de campañas de la tienda para un año (T3.3), con el catálogo
@@ -12,11 +14,11 @@ import { horaAMs, inicioDiaLima, parsearFecha } from "./calendario.js";
  * valores por defecto de lo que la tienda no personalizó.
  */
 export async function getCalendario(tiendaId, anio) {
-  const tienda = await prisma.tiendas.findUnique({ where: { id: tiendaId }, select: { rubro: true } });
+  const tienda = await prisma.tiendas.findUnique({ where: { id: tiendaId }, select: { rubro: true, tipoNegocio: true } });
   if (!tienda) throw new NotFoundError("Tienda no encontrada");
 
-  const { campanas } = await getDiseno(tiendaId);
-  return { anio, rubro: tienda.rubro ?? null, presets: CAMPANA_PRESETS, efectos: EFECTOS, campanas: calendarioAnual(campanas, tienda.rubro, anio) };
+  const [{ campanas }, ediciones] = await Promise.all([getDiseno(tiendaId), edicionesParaResolver()]);
+  return { anio, rubro: tienda.rubro ?? null, presets: CAMPANA_PRESETS, efectos: EFECTOS, campanas: calendarioAnual(campanas, tienda.rubro, anio, ediciones, datosDe(tienda.tipoNegocio).recibeReservas) };
 }
 
 /**
@@ -25,10 +27,11 @@ export async function getCalendario(tiendaId, anio) {
  * que caen a las 00:00. `fecha` ("YYYY-MM-DD") y `hora` ("HH:mm") llegan validadas.
  */
 export async function getVistaPrevia(tiendaId, fecha, hora) {
-  const [diseno, tienda] = await Promise.all([
+  const [diseno, tienda, ediciones] = await Promise.all([
     getDiseno(tiendaId),
-    prisma.tiendas.findUnique({ where: { id: tiendaId }, select: { tipoNegocio: true } })
+    prisma.tiendas.findUnique({ where: { id: tiendaId }, select: { tipoNegocio: true } }),
+    edicionesParaResolver()
   ]);
   const momento = new Date(inicioDiaLima(parsearFecha(fecha)).getTime() + (horaAMs(hora) ?? 12 * 3_600_000));
-  return { fecha, ...(hora ? { hora } : {}), ...disenoPublico(diseno, momento, tienda?.tipoNegocio) };
+  return { fecha, ...(hora ? { hora } : {}), ...disenoPublico(diseno, momento, tienda?.tipoNegocio, ediciones) };
 }

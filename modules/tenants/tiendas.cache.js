@@ -33,9 +33,14 @@ export function getTiendasStore(key) {
   return storeCache.get(key);
 }
 
-/** @param {string} key @param {*} payload */
-export function setTiendasStore(key, payload) {
-  storeCache.set(key, payload, STORE_TTL_MS);
+/**
+ * @param {string} key @param {*} payload
+ * @param {number} [ttlMs] - Vida de la entrada; nunca más de STORE_TTL_MS. La ruta
+ *   pasa `proximoCambio − ahora` para no servir una campaña pasada su frontera.
+ */
+export function setTiendasStore(key, payload, ttlMs = STORE_TTL_MS) {
+  const ttl = Math.min(STORE_TTL_MS, ttlMs);
+  if (ttl > 0) storeCache.set(key, payload, ttl);
 }
 
 /** Invalida solo la caché pública del storefront. */

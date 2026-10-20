@@ -67,8 +67,9 @@ describe("vigente", () => {
 
   it("a mayor prioridad gana la campaña (R1.3)", () => {
     expect(idVigente(CAMPANA_PRESETS, "2026-11-25T12:00")).toBe("black-friday");
-    // Black Friday sigue hasta el Cyber Monday (30 nov) y vuelve Navidad.
-    expect(idVigente(CAMPANA_PRESETS, "2026-11-30T23:00")).toBe("black-friday");
+    // Black Friday sigue hasta el Cyber Monday (30 nov), que gana ese día por ser de un solo día (CA-2.10); vuelve Navidad.
+    expect(idVigente(CAMPANA_PRESETS, "2026-11-29T23:00")).toBe("black-friday");
+    expect(idVigente(CAMPANA_PRESETS, "2026-11-30T23:00")).toBe("cyber-monday");
     expect(idVigente(CAMPANA_PRESETS, "2026-12-01T00:00")).toBe("navidad");
     expect(idVigente(CAMPANA_PRESETS, "2027-02-05T12:00")).toBe("amistad");
     expect(idVigente(CAMPANA_PRESETS, "2027-02-15T12:00")).toBe("verano");

@@ -55,6 +55,9 @@ export const config = {
     // los pedidos descuentan stock al crearse, así que este endpoint necesita un
     // tope mucho más agresivo que el global
     checkoutMax: parseInt(process.env.RATE_LIMIT_CHECKOUT_MAX) || 5,
+    // Cotizar el carrito (POST /store/pedidos/cotizar): no escribe nada, pero el
+    // checkout lo llama en cada cambio del carrito, del cupón o del envío.
+    cotizarMax: parseInt(process.env.RATE_LIMIT_COTIZAR_MAX) || 300,
     // Seguimiento público de pedidos (por ventana): consultas por IP, y
     // verificaciones FALLIDAS por pedido. Los 4 dígitos del WhatsApp son 10.000
     // combinaciones: el tope por pedido frena la fuerza bruta desde muchas IPs.

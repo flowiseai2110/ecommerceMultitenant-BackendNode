@@ -16,6 +16,7 @@ import { swaggerSpec } from "./config/swagger.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 import { performanceMiddleware, getRouteMetrics, resetRouteMetrics } from "./middlewares/performance.middleware.js";
 import { iniciarJobTransmisiones } from "./jobs/transmisiones.job.js";
+import { iniciarJobCampanas } from "./jobs/campanas.job.js";
 import { iniciarRecargaPlantillas } from "./modules/diseno/plantillas.repo.js";
 import { sincronizarClavesAlIniciar } from "./modules/idiomas/claves.service.js";
 
@@ -66,7 +67,10 @@ app.use(cors((req, callback) => callback(null, esRutaStore(req)
 // contadores separados: navegar el catálogo no debe consumir el cupo de
 // escrituras, y las escrituras sensibles (checkout, reseñas...) tienen además
 // su propio límite por ruta.
-const esLectura = (req) => req.method === "GET" || req.method === "HEAD";
+// Cotizar el carrito es POST (lleva las líneas) pero no escribe nada: cuenta
+// como lectura aquí y tiene su propio límite en su ruta.
+const CONSULTAS_POR_POST = new Set(["/api/v1/store/pedidos/cotizar"]);
+const esLectura = (req) => req.method === "GET" || req.method === "HEAD" || CONSULTAS_POR_POST.has(req.path);
 const mensajeLimiteGlobal = { code: "TOO_MANY_REQUESTS", message: "Demasiadas solicitudes, intente más tarde" };
 app.use(crearLimitador({
   windowMs: config.rateLimit.windowMs,
@@ -235,6 +239,8 @@ async function startServer() {
 
     // Corte, señal y limpieza de las transmisiones en vivo (plan Privado).
     iniciarJobTransmisiones();
+    // Aviso de fechas por año sin cargar (Cyber Wow, docs/specs/campanas-cuando R2.6.4).
+    iniciarJobCampanas();
     // Plantillas de diseño de la base sobre las del código (editor-diseno-en-vivo P2).
     iniciarRecargaPlantillas();
     // Catálogo de textos fijos = el del código desplegado (docs/specs/idiomas D8). No bloquea el arranque.

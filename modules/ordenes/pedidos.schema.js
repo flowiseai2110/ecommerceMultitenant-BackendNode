@@ -1,16 +1,14 @@
 import { z } from "zod";
 
-// Schema para un item del detalle del pedido
+// Un item del detalle del pedido: qué y cuánto. El precio, el nombre y los
+// descuentos los pone el servidor desde la BD (docs/specs/precio-en-servidor);
+// lo que mande el navegador además de esto se descarta.
 const detalleItemSchema = z.object({
-  productoId: z.string().uuid("ID de producto inválido").optional().nullable(),
+  productoId: z.string({ required_error: "El producto es requerido" }).uuid("ID de producto inválido"),
   varianteId: z.string().uuid("ID de variante inválido").optional().nullable(),
-  productoNombre: z.string({ required_error: "El nombre del producto es requerido" }).min(1).max(200),
-  varianteNombre: z.string().max(100).optional().nullable(),
   // El máximo aplica sobre todo a servicios (sin stock físico); para productos
   // con stock la validación real es contra el stock disponible
-  cantidad: z.coerce.number({ required_error: "La cantidad es requerida" }).int().min(1, "La cantidad mínima es 1").max(100, "La cantidad máxima por producto es 100"),
-  precioUnitario: z.coerce.number({ required_error: "El precio unitario es requerido" }).min(0),
-  descuento: z.coerce.number().min(0).optional().default(0)
+  cantidad: z.coerce.number({ required_error: "La cantidad es requerida" }).int().min(1, "La cantidad mínima es 1").max(100, "La cantidad máxima por producto es 100")
 });
 
 // El destino de entrega es una anotación para el vendedor (no afecta el total):
@@ -67,8 +65,7 @@ export const createPedidoSchema = z.object({
     .max(50, "Un pedido no puede tener más de 50 productos distintos"),
   // Info de envío y pago
   metodoPago: z.string().max(50).optional().nullable(),
-  metodoEnvio: z.string().max(50).optional().nullable(),
-  // Con el id, el backend cotiza el envío por zonas (costoEnvio del body se ignora)
+  // El backend cotiza el envío por zonas y pone el nombre del método (C9)
   metodoEnvioId: z.string().uuid("ID de método de envío inválido").nullish(),
   direccionEnvio: z.string().optional().nullable(),
   // Destino de entrega (ver textoDestino/coordenada arriba)
@@ -81,12 +78,23 @@ export const createPedidoSchema = z.object({
   referencia: textoDestino(1000),
   latitud: coordenada(90),
   longitud: coordenada(180),
-  costoEnvio: z.coerce.number().min(0).optional().default(0),
-  descuentoMonto: z.coerce.number().min(0).optional().default(0),
   notas: z.string().optional().nullable(),
   origen: z.string().max(20).optional().default("web"),
   codigoCupon: z.string().max(50).optional().nullable(),
-  comprobante: comprobanteSchema.nullish()
+  comprobante: comprobanteSchema.nullish(),
+  // Total que vio el cliente. No se usa para calcular: si el real es mayor, 409 PRECIO_CAMBIO (D1).
+  totalEsperado: z.coerce.number().min(0).nullish()
+});
+
+// Cotizar el carrito (POST /store/pedidos/cotizar, pieza 4): lo mismo que define
+// el total al crear el pedido, nada más. Sin cliente: los usos del cupón por
+// cliente se revisan al crear.
+export const cotizarPedidoSchema = createPedidoSchema.pick({
+  tiendaId: true,
+  detalles: true,
+  metodoEnvioId: true,
+  ubigeoCode: true,
+  codigoCupon: true
 });
 
 // Schema para actualizar estado del pedido

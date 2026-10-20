@@ -390,6 +390,15 @@
     ]
   },
   {
+    "clave": "{d} {mes}|día y mes corto",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "formatos/fechas-y-horas"
+    ]
+  },
+  {
     "clave": "{d} de {mes}|día y mes",
     "grupos": [
       "comun"
@@ -1043,6 +1052,15 @@
     ]
   },
   {
+    "clave": "Aceptamos devoluciones dentro de los primeros 7 días posteriores a la compra. El producto debe estar en su empaque original y sin uso.",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "producto/ficha"
+    ]
+  },
+  {
     "clave": "Aceptar contrato",
     "grupos": [
       "reservas"
@@ -1231,6 +1249,15 @@
     ]
   },
   {
+    "clave": "ahora",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "compra/datos-y-entrega"
+    ]
+  },
+  {
     "clave": "Aimara|idioma del guía",
     "grupos": [
       "reservas"
@@ -1382,6 +1409,15 @@
     ],
     "ubicaciones": [
       "catalogo/tarjetas-de-producto"
+    ]
+  },
+  {
+    "clave": "Antes",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "compra/datos-y-entrega"
     ]
   },
   {
@@ -2414,6 +2450,15 @@
     ]
   },
   {
+    "clave": "Compra tus entradas hasta el {fin}",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "negocio/frases-de-los-eventos"
+    ]
+  },
+  {
     "clave": "Compra verificada",
     "grupos": [
       "comun"
@@ -2671,6 +2716,15 @@
     ],
     "ubicaciones": [
       "compra/recojo-en-tienda"
+    ]
+  },
+  {
+    "clave": "Coordinamos la entrega contigo directamente vía WhatsApp. Los tiempos de envío pueden variar según tu ubicación.",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "producto/ficha"
     ]
   },
   {
@@ -3400,6 +3454,15 @@
     ]
   },
   {
+    "clave": "Efectivo",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "compra/datos-y-entrega"
+    ]
+  },
+  {
     "clave": "Ej: 987 654 321",
     "grupos": [
       "comun"
@@ -3720,6 +3783,15 @@
     ],
     "ubicaciones": [
       "reclamos/formulario"
+    ]
+  },
+  {
+    "clave": "El total cambió",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "compra/datos-y-entrega"
     ]
   },
   {
@@ -4742,6 +4814,23 @@
     ],
     "ubicaciones": [
       "reservar/datos-de-la-reserva"
+    ]
+  },
+  {
+    "clave": "Fechas de {campana}",
+    "grupos": [
+      "canchas",
+      "eventos",
+      "hotel",
+      "locales",
+      "tours"
+    ],
+    "ubicaciones": [
+      "negocio/frases-del-hotel",
+      "negocio/frases-de-los-tours",
+      "negocio/frases-de-los-eventos",
+      "negocio/frases-del-local",
+      "negocio/frases-de-la-cancha"
     ]
   },
   {
@@ -6638,6 +6727,15 @@
     ]
   },
   {
+    "clave": "Ningún método de envío llega a tu distrito. Elige otro distrito o escríbenos por WhatsApp para coordinarlo.",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "compra/datos-y-entrega"
+    ]
+  },
+  {
     "clave": "Ningún tour sale ese día para esa cantidad de personas. Prueba otra fecha o escríbenos.",
     "grupos": [
       "tours"
@@ -6978,6 +7076,15 @@
     ],
     "ubicaciones": [
       "compra/factura-ruc"
+    ]
+  },
+  {
+    "clave": "No se cobró nada. Revisa tu pedido y confírmalo si estás de acuerdo.",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "compra/datos-y-entrega"
     ]
   },
   {
@@ -7735,6 +7842,42 @@
     ]
   },
   {
+    "clave": "para alojarte del {desde} al {hasta}",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "negocio/frases-del-hotel"
+    ]
+  },
+  {
+    "clave": "para alojarte hasta el {hasta}",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "negocio/frases-del-hotel"
+    ]
+  },
+  {
+    "clave": "para asistir a funciones del {desde} al {hasta}",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "negocio/frases-de-los-eventos"
+    ]
+  },
+  {
+    "clave": "para asistir a funciones hasta el {hasta}",
+    "grupos": [
+      "eventos"
+    ],
+    "ubicaciones": [
+      "negocio/frases-de-los-eventos"
+    ]
+  },
+  {
     "clave": "Para confirmar tu reserva, paga {monto} y sube la captura antes de {inicio}.",
     "grupos": [
       "reservas"
@@ -7762,6 +7905,42 @@
     ]
   },
   {
+    "clave": "para eventos del {desde} al {hasta}",
+    "grupos": [
+      "locales"
+    ],
+    "ubicaciones": [
+      "negocio/frases-del-local"
+    ]
+  },
+  {
+    "clave": "para eventos hasta el {hasta}",
+    "grupos": [
+      "locales"
+    ],
+    "ubicaciones": [
+      "negocio/frases-del-local"
+    ]
+  },
+  {
+    "clave": "para jugar del {desde} al {hasta}",
+    "grupos": [
+      "canchas"
+    ],
+    "ubicaciones": [
+      "negocio/frases-de-la-cancha"
+    ]
+  },
+  {
+    "clave": "para jugar hasta el {hasta}",
+    "grupos": [
+      "canchas"
+    ],
+    "ubicaciones": [
+      "negocio/frases-de-la-cancha"
+    ]
+  },
+  {
     "clave": "Para tu llegada",
     "grupos": [
       "hotel"
@@ -7786,6 +7965,24 @@
     ],
     "ubicaciones": [
       "pedido/seguimiento"
+    ]
+  },
+  {
+    "clave": "para viajar del {desde} al {hasta}",
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "negocio/frases-de-los-tours"
+    ]
+  },
+  {
+    "clave": "para viajar hasta el {hasta}",
+    "grupos": [
+      "tours"
+    ],
+    "ubicaciones": [
+      "negocio/frases-de-los-tours"
     ]
   },
   {
@@ -8674,6 +8871,21 @@
     ],
     "ubicaciones": [
       "seguimiento/seguimiento"
+    ]
+  },
+  {
+    "clave": "Reserva hasta el {fin}",
+    "grupos": [
+      "canchas",
+      "hotel",
+      "locales",
+      "tours"
+    ],
+    "ubicaciones": [
+      "negocio/frases-del-hotel",
+      "negocio/frases-de-los-tours",
+      "negocio/frases-del-local",
+      "negocio/frases-de-la-cancha"
     ]
   },
   {
@@ -9677,6 +9889,15 @@
   },
   {
     "clave": "Tu estadía",
+    "grupos": [
+      "hotel"
+    ],
+    "ubicaciones": [
+      "negocio/frases-del-hotel"
+    ]
+  },
+  {
+    "clave": "Tu estadía entra en {campana}",
     "grupos": [
       "hotel"
     ],

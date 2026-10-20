@@ -4,7 +4,7 @@ import { createPedidoSchema } from "../pedidos.schema.js";
 const base = {
   tiendaId: "8f14e45f-ceea-467a-9a36-dedd4bea2543",
   cliente: { nombre: "Ana", whatsappNumero: "987654321" },
-  detalles: [{ productoNombre: "Polo", cantidad: 1, precioUnitario: 30 }],
+  detalles: [{ productoId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", cantidad: 1 }],
   metodoEnvio: "Shalom"
 };
 

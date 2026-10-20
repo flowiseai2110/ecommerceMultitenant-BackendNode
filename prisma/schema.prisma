@@ -812,6 +812,10 @@ model pedido_detalles {
   precioUnitario Decimal @map("precio_unitario") @db.Decimal(10, 2)
   descuento      Decimal @default(0) @db.Decimal(10, 2)
   total          Decimal @db.Decimal(10, 2)
+  // Snapshot del precio (precio-en-servidor, ADR-0001 punto 5; docs/sql/precio_en_servidor.sql).
+  // NULL = pedido anterior al cambio.
+  precioRegular  Decimal? @map("precio_regular") @db.Decimal(10, 2)
+  precioOrigen   String?  @map("precio_origen") @db.VarChar(20) // regular | oferta
 
   // Relaciones
   pedido pedidos @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
@@ -2208,12 +2212,61 @@ model parametros_plataforma {
 
 // Avisos a la plataforma (almacenamiento de video casi lleno o lleno). La clave
 // única ("cuota-80:2026-10-15") hace que cada aviso salga una sola vez, aunque
-// corran varias réplicas o el proceso se reinicie.
-model transmision_avisos_plataforma {
+// corran varias réplicas o el proceso se reinicie. Sirve a cualquier aviso de la
+// plataforma (modules/plataforma/avisos.js); la tabla conserva su nombre original.
+model avisos_plataforma {
   id            String    @id @default(uuid()) @db.Uuid
   clave         String    @unique @db.VarChar(80)
   detalle       Json?     @db.JsonB
   fechaRegistro DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+
+  @@map("transmision_avisos_plataforma")
+}
+
+// ── Campañas: fechas por año (docs/specs/campanas-cuando R2; docs/sql/campanas_ediciones.sql) ──
+
+// Ediciones de las campañas del catálogo cuya fecha no se calcula (Cyber Wow). Las
+// carga el administrador de la plataforma. Sin tienda_id: son de la plataforma.
+// Qué ediciones se esperan cada año vive en modules/campanas/presets.js.
+model campana_ediciones {
+  id          String    @id @default(uuid()) @db.Uuid
+  presetId    String    @map("preset_id") @db.VarChar(60)
+  anio        Int       @db.SmallInt
+  clave       String    @db.VarChar(30)
+  nombre      String    @db.VarChar(60)
+  fechaInicio DateTime  @map("fecha_inicio") @db.Date
+  horaInicio  DateTime? @map("hora_inicio") @db.Time(6)
+  fechaFin    DateTime  @map("fecha_fin") @db.Date
+  horaFin     DateTime? @map("hora_fin") @db.Time(6)
+  fuente      String?   @db.VarChar(500)
+
+  // Auditoría
+  fechaRegistro        DateTime? @default(now()) @map("fecha_registro") @db.Timestamptz
+  usuarioRegistro      String?   @map("usuario_registro") @db.VarChar(100)
+  fechaActualizacion   DateTime? @map("fecha_actualizacion") @db.Timestamptz
+  usuarioActualizacion String?   @map("usuario_actualizacion") @db.VarChar(100)
+
+  historial campana_ediciones_historial[]
+
+  @@unique([presetId, anio, clave], map: "uq_campana_ediciones")
+}
+
+// Quién cargó, cambió o borró cada edición, con el valor anterior y el nuevo (R2.7).
+model campana_ediciones_historial {
+  id         String   @id @default(uuid()) @db.Uuid
+  edicionId  String?  @map("edicion_id") @db.Uuid
+  presetId   String   @map("preset_id") @db.VarChar(60)
+  anio       Int      @db.SmallInt
+  clave      String   @db.VarChar(30)
+  accion     String   @db.VarChar(10)
+  antes      Json?    @db.JsonB
+  despues    Json?    @db.JsonB
+  usuario    String   @db.VarChar(100)
+  fecha      DateTime @default(now()) @db.Timestamptz
+
+  edicion campana_ediciones? @relation(fields: [edicionId], references: [id], onDelete: SetNull)
+
+  @@index([presetId, anio, clave, fecha(sort: Desc)], map: "idx_campana_ediciones_historial")
 }
 
 // Código de un solo uso del QR "Transmitir con este celular" (App Transmitir,

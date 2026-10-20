@@ -16,6 +16,7 @@
 | Cancha Los Cedros | [alquiler-canchas](../specs/alquiler-canchas/spec.md) | Tienda · vista del cliente | [v1 2026-10-12](cancha-los-cedros/v1-2026-10-12.html) | [maqueta](https://claude.ai/artifact/1pvieL2mWPLwB4XYJHwb98) | Sí |
 | Propuestas de calendario | [selector-fechas](../specs/selector-fechas/spec.md) | Tienda · selector de fechas (propuestas 0–4 + mapa de uso) | [v1](selector-fechas/v1.html) | [prototipo](https://claude.ai/artifact/MGNhGAvQ1HfgtXVJdYazkd) | Por verificar |
 | Campañas: el cuándo (Fase 1) | [campanas-cuando](../specs/campanas-cuando/spec.md) | Admin · Campañas (horas, fechas de uso, Cyber Wow) y Plataforma · fechas por año; Tienda · portada, selectores de fecha de los 5 rubros con reserva, cambio con pestaña abierta | [v1 2026-10-19](campanas-cuando/v1-2026-10-19.html) (aprobado 2026-10-19) | — (dibujado en el repo) | No |
+| Campañas en 3 pasos y promoción de precios | [campanas-descuento](../specs/campanas-descuento/spec.md) (borrador) | Admin · Campañas (centro de 3 pasos, paso 3 con alcance en lote, confirmación), productos y cupones; Tienda · listado, ficha, carrito y pago con precio de campaña | [v1 2026-10-20](campanas-descuento/v1-2026-10-20.html) (aprobado 2026-10-20) | — (dibujado en el repo; parte de campanas-cuando v1) | No |
 
 "Implementado" sale de la memoria de sesiones anteriores: confirmarlo con el `qa`.
 

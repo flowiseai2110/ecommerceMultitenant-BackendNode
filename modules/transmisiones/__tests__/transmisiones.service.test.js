@@ -27,7 +27,7 @@ const prisma = {
   transmision_paquetes: { findMany: jest.fn(), update: jest.fn() },
   transmision_excedentes: { findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn(), upsert: jest.fn() },
   transmision_grabaciones: { createMany: jest.fn(), findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
-  transmision_avisos_plataforma: { create: jest.fn() },
+  avisos_plataforma: { create: jest.fn() },
   parametros_plataforma: { findMany: jest.fn() },
   transmision_cargos: { upsert: jest.fn(), updateMany: jest.fn(), create: jest.fn() },
   transmision_destinos: { create: jest.fn(), findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn(), delete: jest.fn() }
@@ -72,7 +72,7 @@ const correo = {
   sendTransmisionAvisoFinEmail: jest.fn(async () => ({ success: true })),
   sendTransmisionGrabacionEmail: jest.fn(async () => ({ success: true })),
   sendTransmisionErrorSenalEmail: jest.fn(async () => ({ success: true })),
-  sendTransmisionAlertaPlataformaEmail: jest.fn(async () => ({ success: true })),
+  sendAlertaPlataformaEmail: jest.fn(async () => ({ success: true })),
   escapeHtml: (v) => String(v),
   default: {}
 };
@@ -766,7 +766,7 @@ describe("problemas de la señal (A2)", () => {
 
   beforeEach(() => {
     correo.sendTransmisionErrorSenalEmail.mockClear();
-    correo.sendTransmisionAlertaPlataformaEmail.mockClear();
+    correo.sendAlertaPlataformaEmail.mockClear();
     prisma.tiendas.findUnique.mockResolvedValue({ nombre: "Fiestas Mateo", email: "negocio@test.com" });
     prisma.evento_transmisiones.update.mockImplementation(async ({ data }) => ({ ...conContacto(), ...data }));
   });
@@ -784,7 +784,7 @@ describe("problemas de la señal (A2)", () => {
       to: ["negocio@test.com", "tia@test.com"], evento: "Cumpleaños de Mateo", mensaje: expect.stringMatching(/keyframe/)
     }));
     // Un problema de quien graba no es de la plataforma.
-    expect(prisma.transmision_avisos_plataforma.create).not.toHaveBeenCalled();
+    expect(prisma.avisos_plataforma.create).not.toHaveBeenCalled();
   });
 
   it("el mismo problema repetido al reintentar no manda otro correo", async () => {
@@ -800,20 +800,20 @@ describe("problemas de la señal (A2)", () => {
   it("almacenamiento lleno: avisa a la plataforma una vez por hora, aunque la entrada no sea de una transmisión", async () => {
     proveedor.verificarWebhook.mockReturnValue(errored("ERR_STORAGE_QUOTA_EXHAUSTED"));
     prisma.evento_transmisiones.findFirst.mockResolvedValue(null);
-    prisma.transmision_avisos_plataforma.create.mockResolvedValueOnce({})
+    prisma.avisos_plataforma.create.mockResolvedValueOnce({})
       .mockRejectedValueOnce(Object.assign(new Prisma.PrismaClientKnownRequestError("dup"), { code: "P2002" }));
 
     await envivo.procesarWebhook(req, new Date("2026-10-17T16:10:00-05:00"));
-    expect(prisma.transmision_avisos_plataforma.create).toHaveBeenCalledWith({
+    expect(prisma.avisos_plataforma.create).toHaveBeenCalledWith({
       data: { clave: "ERR_STORAGE_QUOTA_EXHAUSTED:2026-10-17T21", detalle: { codigo: "ERR_STORAGE_QUOTA_EXHAUSTED", entradaId: "in-1" } }
     });
-    expect(correo.sendTransmisionAlertaPlataformaEmail).toHaveBeenCalledWith(expect.objectContaining({
+    expect(correo.sendAlertaPlataformaEmail).toHaveBeenCalledWith(expect.objectContaining({
       to: ["plataforma@test.com"], titulo: expect.stringMatching(/almacenamiento/)
     }));
 
-    correo.sendTransmisionAlertaPlataformaEmail.mockClear();
+    correo.sendAlertaPlataformaEmail.mockClear();
     await envivo.procesarWebhook(req, new Date("2026-10-17T16:20:00-05:00"));
-    expect(correo.sendTransmisionAlertaPlataformaEmail).not.toHaveBeenCalled();
+    expect(correo.sendAlertaPlataformaEmail).not.toHaveBeenCalled();
   });
 
   it("la App Transmitir ve qué corregir mientras no se conecte bien", async () => {
@@ -870,11 +870,11 @@ describe("almacenamiento de video (A1)", () => {
 
   it("al pasar el 80 % avisa a la plataforma, una vez por día, y no bloquea nada", async () => {
     proveedor.usoAlmacenamiento.mockResolvedValue({ usadoMin: 850, limiteMin: 1000 });
-    prisma.transmision_avisos_plataforma.create.mockResolvedValue({});
+    prisma.avisos_plataforma.create.mockResolvedValue({});
     const r = await plataforma.revisarAlmacenamiento(new Date("2026-10-17T10:00:00-05:00"));
     expect(r.pct).toBe(85);
-    expect(prisma.transmision_avisos_plataforma.create).toHaveBeenCalledWith({ data: expect.objectContaining({ clave: "cuota-80:2026-10-17" }) });
-    expect(correo.sendTransmisionAlertaPlataformaEmail).toHaveBeenCalledWith(expect.objectContaining({ titulo: "El almacenamiento de video está al 85 %" }));
+    expect(prisma.avisos_plataforma.create).toHaveBeenCalledWith({ data: expect.objectContaining({ clave: "cuota-80:2026-10-17" }) });
+    expect(correo.sendAlertaPlataformaEmail).toHaveBeenCalledWith(expect.objectContaining({ titulo: "El almacenamiento de video está al 85 %" }));
 
     // Dentro de los 10 min no vuelve a consultar.
     proveedor.usoAlmacenamiento.mockClear();
@@ -885,7 +885,7 @@ describe("almacenamiento de video (A1)", () => {
   it("debajo del 80 % no avisa, y un error del proveedor no rompe el job", async () => {
     proveedor.usoAlmacenamiento.mockResolvedValue({ usadoMin: 500, limiteMin: 1000 });
     await plataforma.revisarAlmacenamiento(new Date("2026-10-17T10:00:00-05:00"));
-    expect(prisma.transmision_avisos_plataforma.create).not.toHaveBeenCalled();
+    expect(prisma.avisos_plataforma.create).not.toHaveBeenCalled();
 
     plataforma.reiniciarRevision();
     proveedor.usoAlmacenamiento.mockRejectedValue(new Error("sin red"));

@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+// Un cupón de porcentaje no pasa de 100 % (precio-en-servidor C4: un 150 % dejaba el total negativo).
+export const PORCENTAJE_MAXIMO = 100;
+const porcentajeValido = (data, ctx) => {
+  if (data.tipo === "porcentaje" && data.valor > PORCENTAJE_MAXIMO) {
+    ctx.addIssue({ code: "custom", path: ["valor"], message: `El porcentaje no puede pasar de ${PORCENTAJE_MAXIMO}` });
+  }
+};
+
 export const codigoParamSchema = z.object({
   codigo: z.string().min(1).max(50)
 });
@@ -21,7 +29,7 @@ export const createCuponSchema = z.object({
   fechaInicio: z.coerce.date().nullable().optional(),
   fechaFin: z.coerce.date().nullable().optional(),
   activo: z.boolean().optional().default(true)
-});
+}).superRefine(porcentajeValido);
 
 export const updateCuponSchema = z.object({
   codigo: z.string().min(1).max(50).transform(v => v.toUpperCase()).optional(),
@@ -36,7 +44,7 @@ export const updateCuponSchema = z.object({
 }).refine(
   (data) => Object.keys(data).length > 0,
   { message: "Debe proporcionar al menos un campo para actualizar" }
-);
+).superRefine(porcentajeValido);
 
 export const idParamSchema = z.object({
   id: z.string().uuid("ID inválido")

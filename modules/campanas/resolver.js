@@ -6,8 +6,10 @@
 // de Lima. Ver docs/specs/campanas-widgets (R3, R4.6, R6).
 
 import { CAMPANA_PRESETS, buscarPreset, sugeridoPara } from "./presets.js";
-import { aIsoLima, ventanas, ventanaEfecto, vigente } from "./calendario.js";
+import { aIsoLima, proximoCambio, ventanas, ventanaEfecto, vigente } from "./calendario.js";
 import { resolverTema } from "../diseno/resolver.js";
+import { datosDe } from "../negocio/datos.js";
+import { usoResuelto } from "./uso.js";
 
 const ANCLAS_ORDEN = ["hero-arriba-derecha", "hero-abajo-derecha", "hero-arriba-izquierda", "flotante-izquierda", "junto-logo"];
 
@@ -27,7 +29,11 @@ export function efectiva(c) {
     presetId: c.presetId ?? null,
     nombre: c.nombre || base.nombre || "Campaña",
     // Calendario: los presets se repiten con su regla; las propias tienen fechas.
-    ...(preset
+    // Un preset con "Mis fechas" (campanas-cuando R2.9) usa las fechas de la
+    // tienda como una propia y conserva la prioridad y el aspecto del preset.
+    ...(preset && c.inicio && c.fin
+      ? { inicio: c.inicio, fin: c.fin, prioridad: preset.prioridad }
+      : preset
       ? {
           regla: preset.regla,
           anticipacionDias: c.anticipacionDias ?? preset.anticipacionDias,
@@ -53,7 +59,9 @@ export function efectiva(c) {
     efecto: c.efecto ?? base.efecto ?? "ninguno",
     efectoModo: c.efectoModo ?? "clave",
     diasEfecto: base.diasEfecto ?? [0],
-    saludo: c.saludo ?? base.saludo ?? null
+    saludo: c.saludo ?? base.saludo ?? null,
+    // Ventana de uso (R1): sin resolver todavía; ver usoResuelto().
+    uso: c.uso ?? null
   };
 }
 
@@ -96,8 +104,8 @@ export function campanasAplicables(campanasTienda = [], _contexto = {}) {
  * Campaña vigente en `ahora` entre las activas de la tienda, lista para el
  * storefront, o null (R3.1, R3.3).
  */
-export function resolverCampana(campanasTienda = [], widgetsTienda = [], ahora) {
-  const v = vigente(campanasAplicables(campanasTienda), ahora);
+export function resolverCampana(campanasTienda = [], widgetsTienda = [], ahora, ediciones = null, conUso = false) {
+  const v = vigente(campanasAplicables(campanasTienda), ahora, ediciones);
   if (!v) return null;
 
   const { campana: c } = v;
@@ -114,23 +122,34 @@ export function resolverCampana(campanasTienda = [], widgetsTienda = [], ahora) 
     cinta: c.cinta,
     oferta: c.oferta,
     widgets: mezclarWidgets(widgetsTienda, c.widgets),
-    efecto: efectoVigente(c, v, ahora)
+    efecto: efectoVigente(c, v, ahora),
+    // Solo en rubros que reciben reservas (R1.1); sin ventana de uso, la clave no viaja.
+    ...(conUso ? conClaveUso(usoResuelto(c.uso, Boolean(c.presetId), v)) : {})
   };
+}
+
+/**
+ * Próximo instante (Date) en que cambia la campaña que ve la tienda, o null
+ * (R3.9.1). La tienda programa su recarga a esa hora.
+ */
+export function proximoCambioDe(campanasTienda = [], ahora, ediciones = null) {
+  return proximoCambio(campanasAplicables(campanasTienda), ahora, ediciones);
 }
 
 /**
  * Diseño tal como lo recibe el storefront en `ahora`: sin la lista de
  * campañas (nunca se publican las futuras) y con la vigente resuelta.
  * `tipoNegocio` elige la estructura por defecto (docs/specs/diseno-por-rubro).
+ * `ediciones` son las fechas por año de la plataforma (R2); sin ellas, el Cyber Wow no aparece.
  */
-export function disenoPublico(diseno = {}, ahora, tipoNegocio) {
+export function disenoPublico(diseno = {}, ahora, tipoNegocio, ediciones = null) {
   // tema/estructura viajan resueltos en `tema` (docs/specs/estructura-tienda);
   // la estructura anterior (para "Deshacer") es solo del admin.
   // Las traducciones se aplican en la ruta pública según ?lang (hospedaje-completo C3).
   const { campanas, tema, estructura, estructura_anterior, traducciones, ...publico } = diseno;
   return {
     ...publico,
-    campana: resolverCampana(campanas, publico.widgets, ahora),
+    campana: resolverCampana(campanas, publico.widgets, ahora, ediciones, datosDe(tipoNegocio).recibeReservas),
     tema: resolverTema({ tema, estructura, hero: publico.hero, tipoNegocio }, ahora)
   };
 }
@@ -138,18 +157,23 @@ export function disenoPublico(diseno = {}, ahora, tipoNegocio) {
 /**
  * Calendario de un año para el admin (R2.5): cada preset con su ventana,
  * si la tienda lo activó y si se le sugiere por su rubro, más las campañas
- * propias que tocan ese año. Ordenado por fecha de inicio.
+ * propias que tocan ese año. Ordenado por fecha de inicio. Una fila "por año"
+ * trae una ventana por edición cargada, las `ediciones` (solo lectura para el
+ * dueño, decisión I) y las que `porAnunciar` (R2.6.2).
  */
-export function calendarioAnual(campanasTienda = [], rubro, anio) {
+export function calendarioAnual(campanasTienda = [], rubro, anio, ediciones = null, conUso = false) {
   const porPreset = new Map((campanasTienda ?? []).filter((c) => c.presetId).map((c) => [c.presetId, c]));
 
   const presets = CAMPANA_PRESETS.map((preset) => {
     const propia = porPreset.get(preset.id);
     const ef = efectiva(propia ?? { id: null, presetId: preset.id });
     // Si las horas dejaran la ventana vacía (el schema lo impide al guardar), se muestra sin horas.
-    const lista = ventanas(ef, anio);
-    const vs = lista.length ? lista : ventanas({ ...ef, horaInicio: null, horaFin: null }, anio);
-    const v = vs[0];
+    const misFechas = !ef.regla;
+    const lista = ventanas(ef, anio, ediciones);
+    const vs = lista.length || misFechas || preset.regla.tipo === "porAnio"
+      ? lista
+      : ventanas({ ...ef, horaInicio: null, horaFin: null }, anio);
+    const v = vs[0] ?? null;
     return {
       presetId: preset.id,
       campanaId: propia?.id ?? null,
@@ -157,8 +181,11 @@ export function calendarioAnual(campanasTienda = [], rubro, anio) {
       activa: propia?.activa ?? false,
       personalizada: Boolean(propia),
       sugerida: sugeridoPara(preset, rubro),
+      misFechas,
       ...datosVentana(vs, ef),
-      ...datosEfecto(ef, v)
+      ...datosEfecto(ef, v),
+      ...(conUso ? conClaveUso(usoResuelto(ef.uso, true, v)) : {}),
+      ...(preset.regla.tipo === "porAnio" ? datosEdiciones(preset, anio, ediciones) : {})
     };
   });
 
@@ -175,10 +202,36 @@ export function calendarioAnual(campanasTienda = [], rubro, anio) {
       personalizada: true,
       sugerida: false,
       ...datosVentana([v], efectiva(c)),
-      ...datosEfecto(efectiva(c), v)
+      ...datosEfecto(efectiva(c), v),
+      ...(conUso ? conClaveUso(usoResuelto(c.uso, false, v)) : {})
     }));
 
-  return [...presets, ...propias].sort((a, b) => a.inicio.localeCompare(b.inicio));
+  return [...presets, ...propias].sort((a, b) => claveOrden(a, anio).localeCompare(claveOrden(b, anio)));
+}
+
+/** `{ uso }` si lo hay; sin ventana de uso la clave no viaja. */
+const conClaveUso = (uso) => (uso ? { uso } : {});
+
+/** Orden de una fila: su inicio; una "por año" sin fechas, el mes de su primera edición esperada. */
+function claveOrden(fila, anio) {
+  if (fila.inicio) return fila.inicio;
+  const mes = fila.porAnunciar?.[0]?.mes ?? 12;
+  return `${anio}-${String(mes).padStart(2, "0")}-01`;
+}
+
+/**
+ * Ediciones de una campaña "por año" en ese año: las cargadas (con su fecha y
+ * hora, para la lista de solo lectura) y las esperadas que faltan (R2.6.2).
+ */
+function datosEdiciones(preset, anio, ediciones) {
+  const delAnio = (ediciones ?? []).filter((e) => e.presetId === preset.id && e.anio === anio);
+  const cargadas = new Set(delAnio.map((e) => e.clave));
+  return {
+    ediciones: delAnio
+      .map(({ clave, nombre, inicio, horaInicio, fin, horaFin }) => ({ clave, nombre, inicio, horaInicio, fin, horaFin }))
+      .sort((a, b) => a.inicio.localeCompare(b.inicio)),
+    porAnunciar: preset.regla.edicionesEsperadas.filter((e) => !cargadas.has(e.clave))
+  };
 }
 
 /**
@@ -186,7 +239,14 @@ export function calendarioAnual(campanasTienda = [], rubro, anio) {
  * `inicio/fechaClave/fin` de la primera. Las horas viajan para mostrarlas.
  */
 function datosVentana(vs, c) {
-  const iso = (v) => ({ inicio: aIsoLima(v.inicio), fechaClave: aIsoLima(v.fechaClave), fin: aIsoLima(v.fin) });
+  const iso = (v) => ({
+    inicio: aIsoLima(v.inicio),
+    fechaClave: aIsoLima(v.fechaClave),
+    fin: aIsoLima(v.fin),
+    ...(v.edicion ? { edicion: v.edicion } : {})
+  });
+  // Una campaña "por año" sin ediciones cargadas no tiene fechas: "por anunciar".
+  if (!vs.length) return { inicio: null, fechaClave: null, fin: null, horaInicio: c.horaInicio, horaFin: c.horaFin, ventanas: [] };
   return { ...iso(vs[0]), horaInicio: c.horaInicio, horaFin: c.horaFin, ventanas: vs.map(iso) };
 }
 

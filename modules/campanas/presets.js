@@ -7,7 +7,9 @@
 // portó): mantener ambos en sincronía hasta que el storefront deje de usar
 // su copia fuera del selector de desarrollo.
 //
-// regla: cómo se calcula la fecha clave de cada año (ver calendario.js).
+// regla: cómo se calcula la fecha clave de cada año (ver calendario.js). "porAnio" no se
+// calcula: la plataforma carga las ediciones de cada año (docs/specs/campanas-cuando R2,
+// tabla campana_ediciones) y `edicionesEsperadas` dice cuáles se esperan (R7.1).
 // rubros: rubros de tienda (modules/tenants/rubros.js) donde se sugiere; "*" = todos.
 // efecto / diasEfecto / saludo: efecto festivo al entrar (docs/specs/efectos-festivos).
 // diasEfecto son desplazamientos desde la fecha clave: [-1, 0] = la víspera y el día.
@@ -181,6 +183,50 @@ export const CAMPANA_PRESETS = congelar([
     cinta: ["Black Friday", "Cyber Monday", "Solo por pocos días", PAGO],
     oferta: { titulo: "Black Friday termina pronto", texto: "Aprovecha antes de que el contador llegue a cero.", textoBoton: "Ver ofertas" },
     widgets: w(["etiqueta", "balanceo"], [{ tipo: "sello", texto: "Ofertas", forma: "estrella" }, "latir"], ["etiqueta", "balanceo"])
+  },
+  {
+    // Lunes siguiente al Black Friday: jueves 4.º de noviembre + 4 días. Misma prioridad
+    // que Black Friday, pero de un solo día: gana por ser la ventana más corta (CA-2.10).
+    id: "cyber-monday",
+    nombre: "Cyber Monday",
+    regla: { tipo: "nEsimoDia", mes: 11, diaSemana: 4, n: 4, desfase: 4 },
+    anticipacionDias: 0,
+    despuesDias: 0,
+    prioridad: 2,
+    rubros: "*",
+    paleta: { primario: "#4f46e5", neutro: "slate", fondos: MARCO },
+    efecto: "etiquetas", diasEfecto: [0], saludo: "¡Llegó el Cyber Monday!",
+    topBar: "Cyber Monday: último día de ofertas online",
+    hero: { titulo: "Cyber Monday", subtitulo: "Ofertas online por un solo día.", textoBoton: "Ver ofertas" },
+    cinta: ["Cyber Monday", "Solo por hoy", ENVIO, PAGO],
+    oferta: { titulo: "Cyber Monday termina hoy", texto: "Aprovecha antes de que el contador llegue a cero.", textoBoton: "Ver ofertas" },
+    widgets: w(["etiqueta", "balanceo"], [{ tipo: "sello", texto: "Online", forma: "estrella" }, "latir"], ["etiqueta", "balanceo"])
+  },
+  {
+    // Campaña del IAB Perú con varias ediciones al año (abril, julio y noviembre) cuyas
+    // fechas se anuncian y se cargan a mano (R2). Sin fechas cargadas no se muestra.
+    // Cae dentro de otras (la de julio en Fiestas Patrias): prioridad 2 como Black Friday.
+    id: "cyber-wow",
+    nombre: "Cyber Wow",
+    regla: {
+      tipo: "porAnio",
+      edicionesEsperadas: [
+        { clave: "abril", nombre: "Abril", mes: 4 },
+        { clave: "julio", nombre: "Julio", mes: 7 },
+        { clave: "noviembre", nombre: "Noviembre", mes: 11 }
+      ]
+    },
+    anticipacionDias: 3,
+    despuesDias: 0,
+    prioridad: 2,
+    rubros: "*",
+    paleta: { primario: "#7c3aed", neutro: "slate", fondos: MARCO },
+    efecto: "etiquetas", diasEfecto: [0], saludo: "¡Llegó el Cyber Wow!",
+    topBar: "Cyber Wow: ofertas online por pocos días",
+    hero: { titulo: "Cyber Wow", subtitulo: "Tres veces al año, ofertas online por pocos días.", textoBoton: "Ver ofertas" },
+    cinta: ["Cyber Wow", "Solo por pocos días", ENVIO, PAGO],
+    oferta: { titulo: "El Cyber Wow termina pronto", texto: "Aprovecha antes de que el contador llegue a cero.", textoBoton: "Ver ofertas" },
+    widgets: w(["etiqueta", "balanceo"], [{ tipo: "sello", texto: "Wow", forma: "estrella" }, "latir"], ["etiqueta", "balanceo"])
   },
   {
     id: "navidad",

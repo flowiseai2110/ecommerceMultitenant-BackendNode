@@ -1,5 +1,9 @@
 import { prisma } from "../../config/prisma.js";
-import { NotFoundError } from "../../utils/errors.js";
+import { NotFoundError, ValidationError } from "../../utils/errors.js";
+import { PORCENTAJE_MAXIMO } from "./cupones.schema.js";
+import { TRADUCTOR_BASE } from "../idiomas/traductor.js";
+import { aCentimos, aSoles } from "../precios/precio-vigente.js";
+import { evaluarCupon } from "./regla-cupon.js";
 
 /**
  * Servicio de Cupones (promociones). CRUD admin scopeado por tienda y validación
@@ -71,6 +75,12 @@ export async function createCupon(data) {
 export async function updateCupon(tiendaId, id, data) {
   const cupon = await prisma.cupones.findUnique({ where: { id } });
   if (!cupon || cupon.tiendaId !== tiendaId) throw new NotFoundError("Cupón");
+  // El schema solo ve lo que llega: aquí se cruza con lo guardado (solo cambia el valor, o solo el tipo).
+  const tipo = data.tipo ?? cupon.tipo;
+  const valor = Number(data.valor ?? cupon.valor);
+  if (tipo === "porcentaje" && valor > PORCENTAJE_MAXIMO) {
+    throw new ValidationError("Errores de validación", { body: { valor: [`El porcentaje no puede pasar de ${PORCENTAJE_MAXIMO}`] } });
+  }
   return prisma.cupones.update({ where: { id }, data });
 }
 
@@ -97,43 +107,28 @@ export async function deleteCupon(tiendaId, id) {
  * @returns {Promise<object>} { valido, mensaje, cupon?, descuento? }
  */
 export async function validarCupon(tiendaId, codigo, subtotal, whatsappNumero) {
-  const now = new Date();
-
   const cupon = await prisma.cupones.findFirst({
     where: { tiendaId, codigo: codigo.toUpperCase() }
   });
 
-  const invalido = (mensaje) => ({ valido: false, mensaje });
-
-  if (!cupon) return invalido("Cupón no válido");
-  if (!cupon.activo) return invalido("Cupón inactivo");
-  if (cupon.fechaInicio && cupon.fechaInicio > now) return invalido("Cupón aún no vigente");
-  if (cupon.fechaFin && cupon.fechaFin < now) return invalido("Cupón expirado");
-  if (cupon.usoMaximo !== null && cupon.usoActual >= cupon.usoMaximo)
-    return invalido("Cupón agotado");
-  if (Number(cupon.minimoCompra) > 0 && subtotal < Number(cupon.minimoCompra))
-    return invalido(`Compra mínima requerida: ${cupon.minimoCompra}`);
-
-  // Verificar límite por cliente si se envía el WhatsApp y el cupón tiene límite
-  if (whatsappNumero && cupon.usoMaximoPorCliente !== null) {
+  // Usos del cliente solo si se envía el WhatsApp y el cupón tiene límite.
+  let usosCliente = null;
+  if (cupon && whatsappNumero && cupon.usoMaximoPorCliente !== null) {
     const cliente = await prisma.clientes.findFirst({
       where: { tiendaId, whatsappNumero },
       select: { id: true }
     });
     if (cliente) {
-      const usosCliente = await prisma.pedidos.count({
+      usosCliente = await prisma.pedidos.count({
         where: { tiendaId, clienteId: cliente.id, codigoCupon: cupon.codigo }
       });
-      if (usosCliente >= cupon.usoMaximoPorCliente) {
-        return invalido("Ya usaste este cupón el máximo de veces permitido");
-      }
     }
   }
 
-  const descuento =
-    cupon.tipo === "porcentaje"
-      ? Math.round(subtotal * (Number(cupon.valor) / 100) * 100) / 100
-      : Math.min(Number(cupon.valor), subtotal);
+  // La misma regla con la que se cobra el pedido (regla-cupon.js), en céntimos.
+  const r = evaluarCupon(cupon, { subtotal: aCentimos(subtotal), ahora: new Date(), usosCliente });
+  if (!r.valido) return { valido: false, mensaje: TRADUCTOR_BASE(r.clave, r.params) };
+  const descuento = aSoles(r.descuento);
 
   return {
     valido: true,

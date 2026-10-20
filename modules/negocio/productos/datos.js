@@ -16,6 +16,8 @@ export const productos = {
   gruposTextos: Object.freeze(["comun", "productos", "correos", "errores"]),
   // Cómo se llama su catálogo en Traducciones ("Tu contenido"; docs/specs/idiomas, diseno.md A1).
   nombreCatalogo: "Productos",
+  // Vende con carrito: crea pedidos de compra (docs/specs/precio-en-servidor D4).
+  carrito: true,
   recibeReservas: false,
   planDePagos: false,
   transmisiones: false,

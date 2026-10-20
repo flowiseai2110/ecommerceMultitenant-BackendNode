@@ -76,11 +76,21 @@ const paletaSchema = z.object({
   })
 });
 
-const fechaSchema = z.string().refine((f) => parsearFecha(f) !== null, "Fecha inválida (YYYY-MM-DD)");
+export const fechaSchema = z.string().refine((f) => parsearFecha(f) !== null, "Fecha inválida (YYYY-MM-DD)");
 // HH:mm de Lima, al minuto (R3.1). null/ausente = todo el día (R3.5).
-const HORA_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
-const horaSchema = z.string().regex(HORA_RE, "Hora en formato HH:mm").nullable().optional();
+export const HORA_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+export const horaSchema = z.string().regex(HORA_RE, "Hora en formato HH:mm").nullable().optional();
 const diasSchema = z.number().int().min(0).max(60).nullable().optional();
+
+// Ventana de uso (R1): la propia lleva fechas; la del catálogo, días relativos.
+export const MAX_DIAS_USO = 365;
+const diasUsoSchema = z.number().int().min(0).max(MAX_DIAS_USO);
+export const usoSchema = z.object({
+  desde: fechaSchema.nullable().optional(),
+  hasta: fechaSchema.optional(),
+  hastaDiasDespues: diasUsoSchema.optional(),
+  desdeDiasDespuesInicio: diasUsoSchema.nullable().optional()
+});
 
 export const campanaTiendaSchema = z
   .object({
@@ -117,7 +127,9 @@ export const campanaTiendaSchema = z
     // null = "clave": solo los días clave del efecto.
     efectoModo: z.enum(MODOS_EFECTO).nullable().optional(),
     // null = el del preset; "" = sin saludo.
-    saludo: z.string().trim().max(MAX_SALUDO, `El saludo admite hasta ${MAX_SALUDO} caracteres`).nullable().optional()
+    saludo: z.string().trim().max(MAX_SALUDO, `El saludo admite hasta ${MAX_SALUDO} caracteres`).nullable().optional(),
+    // Ventana de uso (solo tiendas con reservas: lo valida validarCampanasDeTienda). null = sin ella.
+    uso: usoSchema.nullable().optional()
   })
   .superRefine((c, ctx) => {
     const issue = (path, message) => ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message });
@@ -125,11 +137,25 @@ export const campanaTiendaSchema = z
     if (c.presetId !== null) {
       const preset = buscarPreset(c.presetId);
       if (!preset) issue("presetId", `No existe la campaña "${c.presetId}"`);
-      // Los presets se repiten cada año: sus fechas salen de la regla.
-      if (c.inicio || c.fin) issue("inicio", "Las campañas del calendario no llevan fechas fijas; ajusta la anticipación");
+      // Los presets se repiten cada año con su regla, o usan "Mis fechas" (R2.9):
+      // inicio y fin juntos, con las mismas reglas que una propia.
+      const misFechas = Boolean(c.inicio || c.fin);
+      if (misFechas) {
+        if (!c.inicio) issue("inicio", "Indica la fecha de inicio");
+        if (!c.fin) issue("fin", "Indica la fecha de fin");
+        if (c.anticipacionDias != null || c.despuesDias != null) {
+          issue("anticipacionDias", "Con tus propias fechas no se usan los días antes y después");
+        }
+        validarFechas(c, issue);
+      }
       // R7.3: para incluir el último día completo está "todo el día".
-      if (c.horaFin === "00:00") issue("horaFin", "Para incluir el último día completo elige «Todo el día»");
-      else if (preset?.regla && !c.inicio && !c.fin) {
+      else if (c.horaFin === "00:00") issue("horaFin", "Para incluir el último día completo elige «Todo el día»");
+      if (c.uso) {
+        if (c.uso.hastaDiasDespues == null) issue("uso", "Indica hasta cuántos días después de que termina la campaña");
+        if (c.uso.desde || c.uso.hasta) issue("uso", "Las campañas del calendario usan días, no fechas, para las fechas de uso");
+      }
+      // "Por año" no se puede probar sin ediciones: el resolver descarta una ventana vacía.
+      else if (preset?.regla && preset.regla.tipo !== "porAnio" && !c.inicio && !c.fin) {
         // R3.6: ninguna combinación de días y horas deja la ventana vacía. El
         // largo no depende del año: basta probar uno.
         const probe = {
@@ -155,18 +181,36 @@ export const campanaTiendaSchema = z
     }
     const inicio = parsearFecha(c.inicio);
     const fin = parsearFecha(c.fin);
-    if (inicio && fin) {
-      const [v] = ventanas({ inicio: c.inicio, fin: c.fin, horaInicio: c.horaInicio, horaFin: c.horaFin });
-      if (inicioDiaLima(fin) < inicioDiaLima(inicio)) issue("fin", "La fecha de fin no puede ser anterior al inicio");
-      else if (!v) issue("fin", "La fecha y hora de fin deben ser posteriores al inicio");
-      else {
-        // Días de calendario que toca [inicio, fin): con o sin horas (CA-3.6).
-        const ultimo = fechaCivilLima(new Date(v.fin.getTime() - 1));
-        const dias = (inicioDiaLima(ultimo) - inicioDiaLima(inicio)) / 86_400_000 + 1;
-        if (dias > MAX_DIAS_CAMPANA_PROPIA) issue("fin", `Una campaña puede durar hasta ${MAX_DIAS_CAMPANA_PROPIA} días`);
+    if (c.uso) {
+      const { desde, hasta } = c.uso;
+      const dUso = parsearFecha(desde);
+      const hUso = parsearFecha(hasta);
+      if (c.uso.hastaDiasDespues != null || c.uso.desdeDiasDespuesInicio != null) {
+        issue("uso", "Una campaña propia usa fechas para las fechas de uso, no días");
+      } else if (!hUso) issue("uso", "Indica hasta cuándo se usa");
+      else if (dUso && inicioDiaLima(hUso) < inicioDiaLima(dUso)) issue("uso", "El uso no puede terminar antes de empezar");
+      else if (fin && (inicioDiaLima(hUso) - inicioDiaLima(fin)) / 86_400_000 > MAX_DIAS_USO) {
+        issue("uso", "El uso no puede pasar de un año después de que termina la campaña");
       }
     }
+    validarFechas(c, issue);
   });
+
+/** Fechas explícitas (propia o "Mis fechas", R2.9.3): fin posterior al inicio y hasta 90 días. */
+function validarFechas(c, issue) {
+  const inicio = parsearFecha(c.inicio);
+  const fin = parsearFecha(c.fin);
+  if (!inicio || !fin) return;
+  const [v] = ventanas({ inicio: c.inicio, fin: c.fin, horaInicio: c.horaInicio, horaFin: c.horaFin });
+  if (inicioDiaLima(fin) < inicioDiaLima(inicio)) issue("fin", "La fecha de fin no puede ser anterior al inicio");
+  else if (!v) issue("fin", "La fecha y hora de fin deben ser posteriores al inicio");
+  else {
+    // Días de calendario que toca [inicio, fin): con o sin horas (CA-3.6).
+    const ultimo = fechaCivilLima(new Date(v.fin.getTime() - 1));
+    const dias = (inicioDiaLima(ultimo) - inicioDiaLima(inicio)) / 86_400_000 + 1;
+    if (dias > MAX_DIAS_CAMPANA_PROPIA) issue("fin", `Una campaña puede durar hasta ${MAX_DIAS_CAMPANA_PROPIA} días`);
+  }
+}
 
 export const listaCampanasSchema = z
   .array(campanaTiendaSchema)

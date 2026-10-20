@@ -7,12 +7,14 @@ import { apiResponse } from "../../utils/apiResponse.js";
 import { validate } from "../../middlewares/validation.middleware.js";
 import { idParamSchema, paginationSchema } from "./tiendas.schema.js";
 import { getDiseno } from "../../services/tienda-diseno.service.js";
-import { disenoPublico } from "../campanas/resolver.js";
+import { disenoPublico, proximoCambioDe } from "../campanas/resolver.js";
+import { aIsoLima } from "../campanas/calendario.js";
 import { getTiendasStore, setTiendasStore } from "./tiendas.cache.js";
 import { localizar } from "../traducciones/localizar.js";
 import { FUENTES } from "../traducciones/fuentes.js";
 import { elegirIdioma, idiomasDePeticion } from "../idiomas/idiomas-tienda.js";
 import { getComunicadosPublicos } from "../comunicados/comunicados.service.js";
+import { edicionesParaResolver } from "../campanas/ediciones.service.js";
 
 const tiendasRepository = new GenericRepository(prisma.tiendas, "Tienda");
 const tiendasService = new GenericService(tiendasRepository, {
@@ -43,12 +45,22 @@ router.get("/", validate({ query: paginationSchema }), async (req, res) => {
   // su personalización visual (barra de anuncios, hero) para evitar un
   // segundo request público. La invalidación llega vía
   // invalidateTiendasStoreCache() al guardar el diseño en el admin.
+  // Hasta cuándo vale lo que se calculó (el cambio de campaña más cercano).
+  let ttlMs;
   if (query.slug && data.length === 1) {
     // Sin la lista de campañas (nunca se publican las futuras) y con la
     // vigente ya resuelta en hora de Lima. La caché de 60 s hace que un
     // cambio de campaña tarde como máximo un minuto en verse (R3.4).
     const diseno = await getDiseno(data[0].id);
-    data[0].diseno = disenoPublico(diseno, new Date(), data[0].tipoNegocio);
+    const ahora = new Date();
+    // Fechas por año de la plataforma (Cyber Wow): caché de 60 s que se limpia al cargar una edición.
+    const ediciones = await edicionesParaResolver();
+    data[0].diseno = disenoPublico(diseno, ahora, data[0].tipoNegocio, ediciones);
+    // R3.9.1: la tienda abierta programa su recarga a esta hora; la caché HTTP y
+    // la de memoria no la pasan.
+    const cambio = proximoCambioDe(diseno.campanas, ahora, ediciones);
+    data[0].proximoCambio = cambio ? aIsoLima(cambio) : null;
+    if (cambio) ttlMs = cambio.getTime() - ahora.getTime();
     // Comunicados vigentes, ya resueltos en hora de Lima (docs/specs/comunicados R2.1).
     data[0].comunicados = await getComunicadosPublicos(data[0].id);
     // Idiomas del selector y textos del diseño en el idioma pedido (docs/specs/idiomas D2, D5).
@@ -65,7 +77,7 @@ router.get("/", validate({ query: paginationSchema }), async (req, res) => {
   }
 
   const responsePayload = { status: 200, type: "SUCCESS", code: "TIENDA_LIST", data, meta };
-  if (conCache) setTiendasStore(cacheKey, responsePayload);
+  if (conCache) setTiendasStore(cacheKey, responsePayload, ttlMs);
 
   return apiResponse(res, responsePayload);
 });

@@ -41,8 +41,12 @@ const rastrear = jest.fn(async (tiendaId, numero, solicitante) => {
   if (numero !== PEDIDO.numeroPedido) throw new NotFoundError("Pedido");
   return serializarRastreo(PEDIDO, nivelDeAcceso(PEDIDO, solicitante));
 });
+const cotizar = jest.fn(async () => ({ subtotal: 160, descuentoCupon: 0, costoEnvio: 0, total: 160, lineas: [], envio: null, cuponRechazado: null }));
 jest.unstable_mockModule("../pedidos.service.js", () => ({
-  default: class { rastrear(...args) { return rastrear(...args); } }
+  default: class {
+    rastrear(...args) { return rastrear(...args); }
+    cotizar(...args) { return cotizar(...args); }
+  }
 }));
 
 const { default: config } = await import("../../../config/index.js");
@@ -144,5 +148,38 @@ describe("GET /store/pedidos/rastrear/:numero", () => {
     } finally {
       PEDIDO.numeroPedido = "PED-0007";
     }
+  });
+});
+
+// Cotizar el carrito (docs/specs/precio-en-servidor pieza 4): la ruta solo valida y
+// pasa al servicio lo que define el total; montos y cliente del body se descartan.
+describe("POST /store/pedidos/cotizar", () => {
+  const PRODUCTO = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+
+  it("200 con la cotización del servicio; el body pasa por el schema", async () => {
+    const res = await fetch(`${baseUrl}/store/pedidos/cotizar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Forwarded-For": "10.9.0.1" },
+      body: JSON.stringify({
+        tiendaId: TIENDA, codigoCupon: "PROMO", totalEsperado: 1, costoEnvio: 0,
+        detalles: [{ productoId: PRODUCTO, cantidad: 2, precioUnitario: 1 }]
+      })
+    });
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.code).toBe("PEDIDO_COTIZADO");
+    expect(body.data.total).toBe(160);
+    expect(cotizar).toHaveBeenCalledWith({ tiendaId: TIENDA, codigoCupon: "PROMO", ubigeoCode: null, detalles: [{ productoId: PRODUCTO, cantidad: 2 }] });
+  });
+
+  it("sin líneas → 400 y no cotiza", async () => {
+    cotizar.mockClear();
+    const res = await fetch(`${baseUrl}/store/pedidos/cotizar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Forwarded-For": "10.9.0.2" },
+      body: JSON.stringify({ tiendaId: TIENDA, detalles: [] })
+    });
+    expect(res.status).toBe(400);
+    expect(cotizar).not.toHaveBeenCalled();
   });
 });

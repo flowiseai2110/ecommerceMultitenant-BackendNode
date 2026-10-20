@@ -32,7 +32,7 @@ describe("contrato", () => {
   });
 
   it("detecta lo que falta", () => {
-    expect(faltantesDelContrato({})).toEqual(expect.arrayContaining([...CONTRATO, "recibeReservas", "diseno.secciones", "agente", "dashboard", "reservas"]));
+    expect(faltantesDelContrato({})).toEqual(expect.arrayContaining([...CONTRATO, "carrito", "recibeReservas", "diseno.secciones", "agente", "dashboard", "reservas"]));
     // Dashboard por rubro (docs/specs/dashboard-por-rubro DR2): lista no vacía de widgets.
     expect(faltantesDelContrato({ ...ESTRATEGIAS.productos, dashboard: [] })).toEqual(["dashboard"]);
     expect(faltantesDelContrato({ ...ESTRATEGIAS.productos, dashboard: [{}] })).toEqual(["dashboard"]);
@@ -44,6 +44,7 @@ describe("contrato", () => {
 
   it("capacidades por rubro", () => {
     const con = (c) => Object.keys(ESTRATEGIAS).filter((t) => ESTRATEGIAS[t][c]);
+    expect(con("carrito")).toEqual(["productos"]);
     expect(con("recibeReservas")).toEqual(["hotel", "tours", "eventos", "locales", "canchas"]);
     expect(con("planDePagos")).toEqual(["locales"]);
     expect(con("transmisiones")).toEqual(["eventos"]);

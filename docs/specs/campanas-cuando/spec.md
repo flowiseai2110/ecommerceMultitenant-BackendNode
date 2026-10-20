@@ -5,6 +5,7 @@
 > Extiende: [campanas-widgets](../campanas-widgets/spec.md) y [efectos-festivos](../efectos-festivos/spec.md).
 > Relacionadas: [reserva-hotel-mejoras](../reserva-hotel-mejoras/spec.md) (H3, código promocional), [multi-sede](../multi-sede/spec.md), [selector-fechas](../selector-fechas/spec.md).
 > Regla vigente desde 2026-10-19: **Campañas es el cuándo; Diseño es el cómo** (ver `campanas-widgets/cambios.md`). Todo lo de esta spec se configura en Campañas, junto a las fechas que ya se editan allí.
+> **Actualización 2026-10-20:** esa regla fue reemplazada por [ADR-0002](../../adr/ADR-0002-campana-en-tres-pasos.md) (la campaña en tres pasos). El **R5** (descuento real) se especifica ahora en [campanas-descuento](../campanas-descuento/spec.md), que también cambia el aviso R8.7.
 
 ## Por qué
 
@@ -118,6 +119,12 @@ El orden de construcción de la Fase 1 (P1, P2, P3) difiere del orden en que Die
 - R2.7 **Cambiar fechas ya cargadas** (el IAB reprograma) es posible. Las tiendas lo ven en el plazo de la caché (hasta 5 min). Si la edición estaba en curso y se acorta, termina en el nuevo fin. Queda registrado quién la cambió y cuándo.
 - R2.8 El sistema **no consulta** el sitio del IAB ni ninguna fuente externa: las fechas las carga una persona (ver el contexto: las fuentes de prensa no coinciden).
 
+- R2.9 **"Mis fechas" sobre una campaña del catálogo (2026-10-20).** Toda campaña del catálogo (por regla o por año) se puede usar con **"Fechas oficiales"** (por defecto: la regla o las ediciones de la plataforma, como hasta ahora) o con **"Mis fechas"**: el dueño elige inicio y fin, con hora opcional, hasta 90 días, igual que una campaña propia, y **conserva todo el aspecto del preset** (colores, portada, cinta, adornos, efecto). Motivo: cada tienda planea su Cyber Wow (u otra) en fechas distintas y no debe depender de la plataforma.
+  - R2.9.1 Con "Mis fechas" no se usan los días antes/después ni las ediciones; la prioridad sigue siendo la del preset. El efecto "solo el día clave" toma como día clave el **último día** (como una propia).
+  - R2.9.2 Las fechas de uso siguen en días relativos (R1.4), contados desde las fechas de la tienda.
+  - R2.9.3 Validación: inicio y fin van juntos; las mismas reglas que una propia (fin posterior al inicio, hasta 90 días); no se mezclan con días antes/después.
+  - R2.9.4 Volver a "Fechas oficiales" borra las fechas de la tienda.
+
 ### R3. Hora de inicio y de fin (Fase 1, pieza P1)
 
 - R3.1 Toda campaña, del catálogo o propia, puede tener **hora de inicio** y **hora de fin** (HH:mm, al minuto), en **hora de Lima**.
@@ -191,6 +198,23 @@ Requisitos:
 - R7.6 (P8) El efecto festivo no se reproduce en un cambio en caliente; se verá en la próxima visita.
 - R7.7 (P1) Al cambiar una edición ya cargada, el diálogo dice cuántas tiendas tienen activa la campaña.
 - R7.8 (P7) Cada edición tiene un campo opcional "Fuente" (enlace del anuncio).
+
+### R8. Validaciones de sentido común (2026-10-20)
+
+Para que un error de quien maneja el marketing no termine en "el sistema me lo permitió". Al guardar, solo se revisan las campañas que cambian (nuevas, o con fechas, horas, uso o estado distintos), para que una vieja no bloquee otros cambios.
+
+**Bloquean (backend, `modules/campanas/sentido.js`; el Admin muestra el mensaje al guardar o activar):**
+- R8.1 Una campaña activa con fechas de la tienda (propia o "Mis fechas") que **ya terminó**: "… ya terminó el 5 oct 2025. Revisa el año, o apágala si ya no la usas."
+- R8.2 Una que **empieza en más de un año**: "… empieza el …, en más de un año. Revisa el año."
+- R8.3 Fechas de uso (propia) que **terminan antes de que empiece la campaña**.
+- R8.4 Fechas de uso (propia, activa) que **ya pasaron**.
+- R8.5 **Cruce:** dos campañas activas que se cruzan, si al menos una tiene fechas de la tienda: "Aniversario se cruza con Black Friday del 25 nov al 28 nov. Apaga una de las dos o cambia las fechas." Los cruces entre campañas del catálogo con fechas oficiales se permiten (Black Friday con Cyber Monday, Cyber Wow con Fiestas Patrias): los diseñó el sistema y gana la regla de R3.10.
+
+**Avisan sin bloquear (Admin, Diseño en modo campaña, en la parte abierta):**
+- R8.7 La tienda escribió una **promesa de descuento** ("%", "descuento", "dscto", "rebaja", "2x1") en el anuncio, la portada, la cinta, la cuenta regresiva o un sello: "Tu campaña no cambia precios… anunciar uno que no existe es publicidad engañosa."
+- R8.8 El **color principal no se lee** sobre blanco (contraste WCAG < 3:1).
+
+(El aviso "editar una campaña en curso para que termine en el pasado" queda cubierto por R8.1: para quitarla ya, se apaga.)
 
 ## Criterios de aceptación
 
@@ -353,6 +377,9 @@ Verificadas en internet el 2026-10-19 (fuentes al final de la sección). Diego a
 | 2026-10-19 | Una campaña sin hora es un día completo (compatibilidad). | No migrar datos guardados. | Convertir los datos antiguos a horas |
 | 2026-10-19 | Diego aprueba la spec y las 12 respuestas verificadas (Q1-Q12). Horas frontera exactas (R3.9); P-b (precio en el servidor, productos) se trata como bug crítico aparte. | Verificación en internet y en el código. | Aceptar el retraso de la caché; dejar P-b para la Fase 2 |
 | 2026-10-19 | Diego aprueba el diseño v1 (decisiones A–I) y las propuestas P1–P8; P4 como recomendó la sesión principal (sin 00:00 de fin en el catálogo). Se agregan como R7. | Revisión del diseño. | 00:00 = todo el día |
+| 2026-10-20 | "Mis fechas" sobre cualquier campaña del catálogo (R2.9); "Fechas oficiales" por defecto. | Al probar, Diego vio que cada tienda quiere su Cyber Wow en otras fechas y no debe escribirle a la plataforma para eso. | Que la plataforma cargue fechas por tienda; obligar a crear una propia y perder el aspecto del preset |
+| 2026-10-20 | El cruce de campañas se queda como está: la tienda muestra una sola (mayor prioridad del catálogo y, a igual prioridad, la más corta). No hay prioridad numérica ni aviso de cruce; quien maneja el marketing decide qué activa. | Una tienda no corre varias campañas pagadas a la vez; los cruces reales (Black Friday/Cyber Monday, Cyber Wow/Fiestas Patrias, Navidad/Año Nuevo) ya los resuelve la regla. Investigado: Shopify y Adobe prohíben el cruce; Marketo, Intershop y Magento usan prioridad numérica. | Lo fechado a mano gana a lo calculado; prioridad numérica; prohibir el cruce |
+| 2026-10-20 | Validaciones de sentido común R8. **Se prohíbe el cruce** de campañas activas cuando una tiene fechas de la tienda (reemplaza "no hay aviso de cruce" de la decisión anterior); los cruces del catálogo se siguen permitiendo. Aviso de descuento prometido y de color ilegible. | Diego: el sistema no debe permitir errores de un marketero descuidado ("el sistema me lo permitió"). | Prohibir todos los cruces (rompe Black Friday/Cyber Monday); solo avisar |
 
 ## Para el manual
 

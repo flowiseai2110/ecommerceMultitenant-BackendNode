@@ -6,6 +6,7 @@ export const locales = {
   gruposTextos: Object.freeze(["comun", "reservas", "locales", "correos", "errores"]),
   // Cómo se llama su catálogo en Traducciones ("Tu contenido"; docs/specs/idiomas, diseno.md A1).
   nombreCatalogo: "Salones",
+  carrito: false,
   recibeReservas: true,
   // Separación, cuotas, garantía, tramos de cancelación y contrato (R1.2, R7, R8, R10).
   planDePagos: true,

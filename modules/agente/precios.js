@@ -1,3 +1,5 @@
+import { precioVigente, aSoles } from "../precios/precio-vigente.js";
+
 /**
  * El LLM no recibe ni escribe precios (docs/specs/agente-ventas/spec.md, R6).
  *
@@ -7,11 +9,9 @@
  * recibe precios, cualquier precio en su texto es inventado.
  */
 
-/** Precio que paga el cliente: la oferta si existe y es menor. */
+/** Precio que paga el cliente: la misma regla que cobra el pedido (precios/precio-vigente.js). */
 export function precioEfectivo(p) {
-  const base = Number(p.precioBase);
-  const oferta = p.precioOferta == null ? null : Number(p.precioOferta);
-  return oferta !== null && oferta > 0 && oferta < base ? oferta : base;
+  return aSoles(precioVigente(p).unitario);
 }
 
 /**

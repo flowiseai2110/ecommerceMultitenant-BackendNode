@@ -6,6 +6,7 @@ export const tours = {
   gruposTextos: Object.freeze(["comun", "reservas", "tours", "correos", "errores"]),
   // Cómo se llama su catálogo en Traducciones ("Tu contenido"; docs/specs/idiomas, diseno.md A1).
   nombreCatalogo: "Tours",
+  carrito: false,
   recibeReservas: true,
   planDePagos: false,
   transmisiones: false,

@@ -80,8 +80,20 @@ describe("campanaTiendaSchema (R2)", () => {
     expect(mensajes(campanaTiendaSchema.safeParse(madre({ presetId: "dia-del-gato" })))).toContain('No existe la campaña "dia-del-gato"');
   });
 
-  it("un preset no lleva fechas fijas", () => {
-    expect(campanaTiendaSchema.safeParse(madre({ inicio: "2027-05-01", fin: "2027-05-09" })).success).toBe(false);
+  // campanas-cuando R2.9: "Mis fechas" sobre un preset (antes se rechazaba).
+  it("un preset acepta 'Mis fechas': inicio y fin juntos, con hora y fin a las 00:00", () => {
+    expect(campanaTiendaSchema.safeParse(madre({ inicio: "2027-05-01", fin: "2027-05-09" })).success).toBe(true);
+    expect(campanaTiendaSchema.safeParse(madre({ inicio: "2027-05-01", fin: "2027-05-09", horaFin: "00:00" })).success).toBe(true);
+  });
+
+  it("'Mis fechas' en un preset: inicio y fin juntos, sin días antes/después y hasta 90 días (R2.9.3)", () => {
+    expect(mensajes(campanaTiendaSchema.safeParse(madre({ inicio: "2027-05-01" })))).toContain("Indica la fecha de fin");
+    expect(mensajes(campanaTiendaSchema.safeParse(madre({ inicio: "2027-05-01", fin: "2027-05-09", anticipacionDias: 3 }))))
+      .toContain("Con tus propias fechas no se usan los días antes y después");
+    expect(mensajes(campanaTiendaSchema.safeParse(madre({ inicio: "2027-05-09", fin: "2027-05-01" }))))
+      .toContain("La fecha de fin no puede ser anterior al inicio");
+    expect(mensajes(campanaTiendaSchema.safeParse(madre({ inicio: "2027-01-01", fin: "2027-04-30" }))))
+      .toContain("Una campaña puede durar hasta 90 días");
   });
 
   it("campaña propia: válida con nombre y fechas", () => {

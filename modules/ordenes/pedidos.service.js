@@ -1,24 +1,17 @@
 import { prisma, Prisma } from "../../config/prisma.js";
-import { NotFoundError, ValidationError } from "../../utils/errors.js";
+import { NotFoundError } from "../../utils/errors.js";
 import { invalidatePendientesCount } from "./pedidos-pendientes-cache.js";
+import { crearPedido, cotizarPedido } from "./crear-pedido.js";
 import emailService from "../../services/email.service.js";
 import { logger } from "../../config/logger.js";
-import { validarYBloquearStock, descontarStock, reponerStock } from "../inventario/inventario.service.js";
-import { cotizarMetodoEnvio } from "../envios/cotizacion.service.js";
+import { reponerStock } from "../inventario/inventario.service.js";
 import { nivelDeAcceso, serializarRastreo } from "./rastreo.js";
-import { datosFactura } from "../sunat/ruc.service.js";
-import { clave } from "../idiomas/clave.js";
-import { errorConClave } from "../idiomas/errores.js";
-import { IDIOMA_BASE } from "../idiomas/idioma.js";
 
 // Columnas del destino de entrega en `pedidos` (ver schema.prisma).
-const CAMPOS_DESTINO = [
+export const CAMPOS_DESTINO = [
   "courier", "agenciaTexto", "departamento", "provincia", "distrito",
   "ubigeoCode", "referencia", "latitud", "longitud"
 ];
-
-// Desde este total (S/) SUNAT exige DNI/CE del adquiriente en la boleta.
-const MONTO_BOLETA_CON_DOCUMENTO = 700;
 
 // Campos que el admin puede corregir con updateDetalles.
 const CAMPOS_DETALLES = [
@@ -103,218 +96,17 @@ export async function upsertCliente(tiendaId, clienteData, tx) {
 }
 
 class PedidosService {
-  async #generarNumeroPedido(tiendaId, tx) {
-    return generarNumeroPedido(tiendaId, tx);
-  }
-
-  async #upsertCliente(tiendaId, clienteData, tx) {
-    return upsertCliente(tiendaId, clienteData, tx);
-  }
-
   /**
-   * Crea un pedido completo en una sola transacción:
-   * 1. Valida y bloquea stock (Inventario)
-   * 2. Upsert cliente
-   * 3. Calcula totales
-   * 4. Valida cupón
-   * 5. Genera número de pedido (sin race condition)
-   * 6. Crea pedido + detalles + historial
-   * 7. Descuenta stock (Inventario)
-   * 8. Actualiza estadísticas del cliente
-   *
-   * `authUserId` viene del JWT verificado (nunca del body): si el comprador
-   * inició sesión en el storefront, el pedido queda en su "Mis pedidos".
+   * Crea un pedido de compra: el caso de uso vive en crear-pedido.js
+   * (docs/specs/precio-en-servidor; precios calculados en el servidor).
    */
-  async create(data, { authUserId = null, idioma = IDIOMA_BASE } = {}) {
-    const {
-      tiendaId,
-      cliente: clienteData,
-      detalles,
-      // costoEnvio del body NO se usa: el envío lo cotiza el backend (paso 3)
-      descuentoMonto = 0,
-      notas,
-      metodoPago,
-      metodoEnvio,
-      metodoEnvioId = null,
-      direccionEnvio,
-      origen = "web",
-      codigoCupon = null,
-      comprobante = null
-    } = data;
-    // Destino de entrega: ya viene normalizado por createPedidoSchema.
-    const destino = {};
-    for (const campo of CAMPOS_DESTINO) destino[campo] = data[campo] ?? null;
+  async create(data, opciones) {
+    return crearPedido(data, opciones);
+  }
 
-    // Factura: los datos salen del padrón de SUNAT, nunca del body. Se consulta
-    // fuera de la transacción para no tener filas bloqueadas esperando la red
-    // (casi siempre es un acierto de caché: el checkout lo acaba de consultar).
-    const factura = comprobante?.tipo === "factura" ? await datosFactura(comprobante.docNumero) : null;
-
-    return await prisma.$transaction(async (tx) => {
-      // 1. Validar stock y bloquear las filas involucradas (FOR UPDATE).
-      const { variantesADescontar, productosADescontar } =
-        await validarYBloquearStock(tx, tiendaId, detalles);
-
-      // 2. Buscar o crear cliente
-      const cliente = await this.#upsertCliente(tiendaId, clienteData, tx);
-
-      // 3. Calcular totales
-      const itemsConTotal = detalles.map(item => {
-        const totalItem = (item.precioUnitario * item.cantidad) - (item.descuento || 0);
-        return { ...item, total: Math.round(totalItem * 100) / 100 };
-      });
-
-      const subtotal = itemsConTotal.reduce((sum, item) => sum + item.total, 0);
-
-      // Envío cotizado por zonas en el servidor: el cliente no puede fijar su
-      // propio costo. Sin metodoEnvioId (clientes antiguos) o en modo
-      // "coordinar"/"destino" no suma al total.
-      let costoEnvio = 0;
-      let metodoEnvioNombre = metodoEnvio || null;
-      if (metodoEnvioId) {
-        const cotizacion = await cotizarMetodoEnvio(tx, tiendaId, metodoEnvioId, {
-          ubigeo: destino.ubigeoCode,
-          subtotal: subtotal - descuentoMonto
-        });
-        if (!cotizacion) throw errorConClave(ValidationError, clave("El método de envío ya no está disponible"));
-        if (!cotizacion.disponible) {
-          throw errorConClave(ValidationError, clave("{metodo} no llega a tu distrito. Elige otro método de envío."), { metodo: cotizacion.nombre });
-        }
-        costoEnvio = cotizacion.modo === "fijo" ? cotizacion.costo : 0;
-        metodoEnvioNombre = cotizacion.nombre;
-      }
-
-      const total = Math.round((subtotal - descuentoMonto + costoEnvio) * 100) / 100;
-
-      // 3.1 Comprobante: SUNAT exige identificar al adquiriente de una boleta
-      // desde S/ 700, y la factura solo si el régimen de la tienda la permite.
-      if (comprobante?.tipo === "boleta" && total >= MONTO_BOLETA_CON_DOCUMENTO && !comprobante.docNumero) {
-        throw errorConClave(ValidationError, clave("Para boletas desde S/ {monto} se requiere DNI o CE"), { monto: MONTO_BOLETA_CON_DOCUMENTO });
-      }
-      if (comprobante?.tipo === "factura") {
-        const tienda = await tx.tiendas.findUnique({ where: { id: tiendaId }, select: { emiteFactura: true } });
-        if (!tienda?.emiteFactura) throw errorConClave(ValidationError, clave("Esta tienda solo emite boletas"));
-      }
-
-      // 4. Validar cupón e incrementar uso si viene en el pedido
-      let codigoCuponGuardado = null;
-      if (codigoCupon) {
-        const codigoNorm = codigoCupon.toUpperCase();
-        const now = new Date();
-        const cupon = await tx.cupones.findFirst({
-          where: { tiendaId, codigo: codigoNorm, activo: true }
-        });
-
-        if (!cupon) throw errorConClave(ValidationError, clave("Cupón no válido"));
-        if (cupon.fechaInicio && cupon.fechaInicio > now) throw errorConClave(ValidationError, clave("Cupón aún no vigente"));
-        if (cupon.fechaFin && cupon.fechaFin < now) throw errorConClave(ValidationError, clave("Cupón expirado"));
-        if (cupon.usoMaximo !== null && cupon.usoActual >= cupon.usoMaximo)
-          throw errorConClave(ValidationError, clave("Cupón agotado"));
-
-        // Verificar límite por cliente (cliente ya fue creado/actualizado en paso 2)
-        if (cupon.usoMaximoPorCliente !== null) {
-          const usosCliente = await tx.pedidos.count({
-            where: { tiendaId, clienteId: cliente.id, codigoCupon: codigoNorm }
-          });
-          if (usosCliente >= cupon.usoMaximoPorCliente) {
-            throw errorConClave(ValidationError, clave("Ya usaste este cupón el máximo de veces permitido"));
-          }
-        }
-
-        await tx.cupones.update({
-          where: { id: cupon.id },
-          data: { usoActual: { increment: 1 } }
-        });
-        codigoCuponGuardado = codigoNorm;
-      }
-
-      // 5. Generar número de pedido con advisory lock (sin race condition)
-      const numeroPedido = await this.#generarNumeroPedido(tiendaId, tx);
-
-      // 6. Crear pedido con detalles e historial inicial
-      const pedido = await tx.pedidos.create({
-        data: {
-          tiendaId,
-          clienteId: cliente.id,
-          clienteNombre: clienteData.nombre,
-          clienteWhatsapp: clienteData.whatsappNumero,
-          clienteEmail: clienteData.email || null,
-          authUserId,
-          // Idioma en que compró (docs/specs/idiomas D11).
-          idioma,
-          numeroPedido,
-          estado: "pendiente",
-          subtotal,
-          descuentoMonto,
-          costoEnvio,
-          total,
-          metodoPago: metodoPago || null,
-          estadoPago: "pendiente",
-          metodoEnvio: metodoEnvioNombre,
-          direccionEnvio: direccionEnvio || null,
-          ...destino,
-          notas: notas || null,
-          origen,
-          codigoCupon: codigoCuponGuardado,
-          comprobante: comprobante?.tipo ?? null,
-          comprobanteDocTipo: comprobante?.docNumero ? comprobante.docTipo : null,
-          comprobanteDocNumero: comprobante?.docNumero || null,
-          razonSocial: factura?.razonSocial ?? null,
-          direccionFiscal: factura?.direccionFiscal ?? null,
-          fechaRegistro: new Date(),
-          usuarioRegistro: "storefront",
-          detalles: {
-            // createMany garantiza UN solo INSERT para todos los items,
-            // sin importar cuántas líneas tenga el pedido
-            createMany: {
-              data: itemsConTotal.map(item => ({
-              productoId: item.productoId || null,
-              varianteId: item.varianteId || null,
-              productoNombre: item.productoNombre,
-              varianteNombre: item.varianteNombre || null,
-              cantidad: item.cantidad,
-              precioUnitario: item.precioUnitario,
-              descuento: item.descuento || 0,
-              total: item.total
-              }))
-            }
-          },
-          historialEstados: {
-            create: { estado: "pendiente", notas: "Pedido creado desde storefront" }
-          }
-        },
-        include: {
-          detalles: true,
-          historialEstados: true,
-          cliente: true
-        }
-      });
-
-      // 7. Descontar stock en batch (filas ya bloqueadas y validadas en el paso 1)
-      await descontarStock(tx, variantesADescontar, productosADescontar);
-
-      // 8. Actualizar estadísticas del cliente
-      await tx.clientes.update({
-        where: { id: cliente.id },
-        data: {
-          totalPedidos: { increment: 1 },
-          totalGastado: { increment: total },
-          ultimoPedidoFecha: new Date()
-        }
-      });
-
-      return pedido;
-    }, {
-      // Red de seguridad, NO el fix principal: la transacción ahora hace un
-      // número fijo de round-trips (~10) sin importar el tamaño del carrito.
-      // El margen extra cubre latencia de red/pooler hacia Supabase.
-      maxWait: 5000,
-      timeout: 15000
-    }).then((pedido) => {
-      // Todo pedido nuevo nace "pendiente": el conteo cacheado del badge cambió
-      invalidatePendientesCount(tiendaId);
-      return pedido;
-    });
+  /** Cotiza el carrito sin escribir nada, con la misma regla que crear (crear-pedido.js). */
+  async cotizar(data) {
+    return cotizarPedido(data);
   }
 
   /**

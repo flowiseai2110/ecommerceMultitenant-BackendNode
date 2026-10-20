@@ -26,6 +26,7 @@ import {
 } from "./tiendas.schema.js";
 import { updateDisenoSchema } from "../../validators/tienda-diseno.validator.js";
 import { calendarioQuerySchema, vistaPreviaQuerySchema } from "../campanas/campanas.schema.js";
+import { validarCampanasDeTienda } from "../campanas/campanas.validacion.js";
 import { getCalendario, getVistaPrevia } from "../campanas/campanas.service.js";
 import { updatePlantillasWhatsappSchema } from "../../validators/tienda-plantillas-whatsapp.validator.js";
 import { listTiendasForUser } from "./tiendas.service.js";
@@ -194,6 +195,7 @@ router.put(
   async (req, res) => {
     // Solo secciones y layout del tipo de negocio de la tienda (diseno-por-rubro H3,
     // layout-por-rubro RU8): se guarda la estructura ya normalizada a su rubro.
+    await validarCampanasDeTienda(req.params.id, req.body.campanas);
     const estructura = await validarEstructuraDeTienda(req.params.id, req.body.estructura);
     const body = req.body.estructura ? { ...req.body, estructura } : req.body;
     const diseno = disenoAdmin(await saveDiseno(req.params.id, body, req.user));

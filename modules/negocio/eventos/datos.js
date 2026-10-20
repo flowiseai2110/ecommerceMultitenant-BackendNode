@@ -6,6 +6,7 @@ export const eventos = {
   gruposTextos: Object.freeze(["comun", "reservas", "eventos", "correos", "errores"]),
   // Cómo se llama su catálogo en Traducciones ("Tu contenido"; docs/specs/idiomas, diseno.md A1).
   nombreCatalogo: "Eventos",
+  carrito: false,
   recibeReservas: true,
   planDePagos: false,
   // Transmisión en vivo de la función (docs/specs/transmision-eventos).

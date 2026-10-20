@@ -41,7 +41,13 @@ router.use(resolverIdioma);
 
 // Rutas públicas del storefront — no requieren autenticación
 // Filtrar siempre por ?tiendaId= para scope multi-tenant
-router.use("/tiendas", cache(300), tiendasRoutes);
+// El max-age no pasa del próximo cambio de campaña (R3.9.1): se calcula al responder.
+router.use("/tiendas", cache(300, { hasta: (body) => body?.data?.[0]?.proximoCambio }), tiendasRoutes);
+// Hora del servidor para que la tienda corrija su reloj (D-1). Sin caché ni BD.
+router.get("/hora", (_req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.status(200).json({ ahora: new Date().toISOString() });
+});
 router.use("/textos", textosRoutes);              // textos fijos en el idioma pedido (docs/specs/idiomas D7); fija su propia caché
 router.use("/categorias", cache(300), cacheRespuesta("categorias"), categoriasRoutes);
 router.use("/marcas", cache(60), cacheRespuesta("marcas"), marcasRoutes);

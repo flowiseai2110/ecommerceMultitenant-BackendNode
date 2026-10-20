@@ -390,6 +390,15 @@
     ]
   },
   {
+    "clave": "Compra mínima requerida: {minimo}",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
     "clave": "Confirmada",
     "grupos": [
       "reservas"
@@ -426,6 +435,15 @@
     ]
   },
   {
+    "clave": "Cupón inactivo",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
     "clave": "Cupón no válido",
     "grupos": [
       "productos"
@@ -441,6 +459,15 @@
     ],
     "ubicaciones": [
       "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Demasiadas consultas de precio, intenta más tarde",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
     ]
   },
   {
@@ -579,6 +606,15 @@
     ]
   },
   {
+    "clave": "El precio cambió",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
     "clave": "El resto se paga en cuotas según el plan de pagos que verás en el link.",
     "grupos": [
       "locales"
@@ -621,6 +657,15 @@
     ],
     "ubicaciones": [
       "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "Elige un método de envío",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
     ]
   },
   {
@@ -828,6 +873,15 @@
     ],
     "ubicaciones": [
       "sistema/disponibilidad-y-precios"
+    ]
+  },
+  {
+    "clave": "Esta tienda no vende con carrito",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
     ]
   },
   {
@@ -1670,6 +1724,24 @@
     ]
   },
   {
+    "clave": "Producto no disponible",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
+    "clave": "Producto sin precio: {producto}",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
     "clave": "Próxima cuota: {monto} hasta el {fecha}.",
     "grupos": [
       "locales"
@@ -2065,6 +2137,15 @@
     ],
     "ubicaciones": [
       "sistema/salidas-de-los-tours"
+    ]
+  },
+  {
+    "clave": "Variante \"{producto}\" no disponible",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
     ]
   },
   {

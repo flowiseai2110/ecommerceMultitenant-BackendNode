@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Campañas en 3 pasos (Cuándo · Cómo se verá · Promoción) — v1 2026-10-20</title>
+<style>
+/* Prototipo de docs/specs/campanas-descuento/diseno.md. Un solo scroll, sin toggles de vista, enlaces inertes.
+   Parte de docs/disenos/campanas-cuando/v1-2026-10-19.html (mismas piezas de Admin y de Tienda). Datos de EJEMPLO. */
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;background:#eceef2;color:#111827}
+a{color:inherit}
+.pagina{max-width:1120px;margin:0 auto;padding:24px 16px 80px}
+.cab{background:#111827;color:#fff;padding:20px 16px}
+.cab div{max-width:1120px;margin:0 auto}
+.cab h1{margin:0 0 4px;font-size:20px}
+.cab p{margin:0;color:#d1d5db;font-size:13px}
+.toc{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13px}
+.toc a{color:#93c5fd}
+h2{font-size:18px;margin:40px 0 4px}
+h2 small{font-weight:400;color:#4b5563;font-size:13px}
+.sub{margin:0 0 16px;color:#4b5563;font-size:13px;max-width:78ch}
+.par{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.frame{background:transparent;margin:0 0 22px}
+.frame>.cap{font-size:12px;font-weight:600;color:#374151;margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}
+.frame>.cap em{font-style:normal;color:#1d4ed8}
+.nota{margin:8px 0 0;padding:8px 12px;border-left:3px solid #2563eb;background:#eff6ff;color:#1e3a8a;font-size:12.5px;border-radius:0 8px 8px 0;max-width:78ch}
+.nota b{background:#2563eb;color:#fff;border-radius:4px;padding:0 5px;margin-right:4px;font-size:11px}
+
+/* ---------- ADMIN ---------- */
+.adm{background:#f9fafb;border:1px solid #d1d5db;border-radius:12px;overflow:hidden;color:#111827}
+.adm-head{background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.adm-head h4{margin:0;font-size:18px;font-weight:600}
+.adm-head .tag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#4338ca}
+.adm-head .sp{flex:1}
+.btn{font:inherit;font-size:14px;font-weight:500;border-radius:8px;padding:0 14px;min-height:36px;border:1px solid #d1d5db;background:#fff;color:#374151;cursor:pointer}
+.btn.m{min-height:44px}
+.btn.pri{background:#2563eb;border-color:#2563eb;color:#fff}
+.btn.pri[disabled]{opacity:.5;cursor:not-allowed}
+.btn.link{border:0;background:none;color:#1d4ed8;padding:0 6px}
+.btn.ghost{border:0;background:none;color:#4b5563}
+.btn.peligro{border:0;background:none;color:#b91c1c}
+.anio{display:flex;align-items:center;gap:4px}
+.anio b{width:56px;text-align:center;font-weight:500}
+.resumen{margin:16px 20px;background:#f3f4f6;border-radius:8px;padding:10px 14px;font-size:13.5px;color:#374151}
+.cal{background:#fff;margin:0 20px 20px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.12);overflow:hidden}
+.cal.sin{margin:0;border-radius:0;box-shadow:none}
+.cabm{display:grid;grid-template-columns:3rem 13rem minmax(0,1fr) 10rem;gap:0 16px;padding:8px 20px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b7280}
+.cabm .meses{display:grid;grid-template-columns:repeat(12,1fr)}
+.cabm .meses span{padding-left:4px;border-left:1px solid #e5e7eb}
+.fila{display:grid;grid-template-columns:3rem 13rem minmax(0,1fr) 10rem;gap:8px 16px;align-items:center;padding:10px 20px;border-top:1px solid #f3f4f6;background:#fff}
+.fila.abierta{background:#f9fafb}
+.fila.muda .nom,.fila.muda .rg{color:#6b7280}
+.sw{position:relative;width:44px;height:24px;border-radius:12px;background:#d1d5db;border:0;padding:0}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.sw.on{background:#22c55e}.sw.on::after{left:22px}
+.nom{font-size:14px;font-weight:500;margin:0}
+.rg{margin-top:2px;display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:12px;color:#4b5563;font-variant-numeric:tabular-nums}
+.chip{border-radius:999px;padding:2px 8px;font-size:11px;font-weight:500;white-space:nowrap}
+.c-amber{background:#fef3c7;color:#92400e}.c-blue{background:#eff6ff;color:#1d4ed8}.c-gray{background:#f3f4f6;color:#4b5563}
+.c-dash{border:1px dashed #6b7280;color:#374151;background:#fff}
+.barra{position:relative;height:24px;border-radius:6px;background:repeating-linear-gradient(to right,transparent 0,transparent calc(100%/12 - 1px),#e5e7eb calc(100%/12 - 1px),#e5e7eb calc(100%/12))}
+.seg{position:absolute;top:5px;height:14px;border-radius:4px}
+.seg.off{background-image:repeating-linear-gradient(45deg,#d1d5db 0 4px,transparent 4px 8px);border:1px solid #d1d5db}
+.seg.pasada{opacity:.35}
+.seg.espera{border:1px dashed #6b7280;background:transparent}
+.hoy{position:absolute;top:-4px;bottom:-4px;width:2px;border-radius:2px;background:#d97706}
+.ef{display:flex;align-items:center;gap:8px;font-size:12px;color:#4b5563;justify-content:flex-end}
+.ef i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.pie-cal{display:flex;flex-wrap:wrap;gap:6px 20px;border-top:1px solid #f3f4f6;padding:10px 20px;font-size:12px;color:#4b5563}
+.det{border-top:1px solid #f3f4f6;background:#f9fafb;padding:20px 20px 20px 76px}
+.det .in{max-width:672px;display:grid;gap:22px}
+.det.plano{padding-left:20px}
+.lbl{display:block;font-size:14px;font-weight:500;color:#374151;margin-bottom:4px}
+.lbl small{font-weight:400;color:#4b5563;font-size:12px;margin-left:4px}
+.inp{width:100%;height:44px;border:1px solid #d1d5db;border-radius:8px;padding:0 12px;font:inherit;background:#fff;color:#111827}
+.inp.err{border-color:#dc2626}
+.per{display:flex;justify-content:space-between;align-items:center;width:100%;height:44px;border:1px solid #d1d5db;border-radius:8px;padding:0 12px;background:#fff;font:inherit;text-align:left;color:#111827}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;gap:14px}
+.ayuda{margin:4px 0 0;font-size:12.5px;color:#4b5563}
+.error{margin:6px 0 0;font-size:13px;color:#b91c1c;display:flex;gap:6px;align-items:flex-start}
+.error::before{content:"!";flex:none;width:16px;height:16px;margin-top:1px;border-radius:50%;background:#b91c1c;color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:16px}
+h5{margin:0 0 2px;font-size:14px;font-weight:600}
+.tit-sec{margin:0 0 2px;font-size:14px;font-weight:600}
+/* hora: Todo el día / A las */
+.hora .ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hora .sg{display:inline-flex;border:1px solid #d1d5db;border-radius:8px;overflow:hidden;background:#fff}
+.hora .sg label{position:relative;cursor:pointer}
+.hora .sg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.hora .sg span{display:flex;align-items:center;height:42px;padding:0 14px;font-size:14px;color:#374151;white-space:nowrap}
+.hora .sg label+label span{border-left:1px solid #d1d5db}
+.hora .sg input:checked+span{background:#dbeafe;color:#1e3a8a;font-weight:600}
+.hora .sg input:focus-visible+span{outline:2px solid #2563eb;outline-offset:-2px}
+.hora input[type=time]{height:44px;width:120px;border:1px solid #d1d5db;border-radius:8px;padding:0 10px;font:inherit}
+.hora[data-modo=dia] .t-hora,.hora[data-modo=dia] input[type=time]{display:none}
+.hora[data-modo=hora] .t-dia{display:none}
+.hora .t-med{display:none}
+.hora.med .t-med{display:block}.hora.med .t-hora{display:none}
+.uso{border:1px solid #d1d5db;border-radius:10px;background:#fff;padding:14px 16px;display:grid;gap:12px}
+.uso .vista{background:#f3f4f6;border-radius:8px;padding:8px 12px;font-size:13px;color:#374151}
+.uso .vista q{font-weight:600;color:#111827}
+.num{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px}
+.num input{width:84px;height:44px;border:1px solid #d1d5db;border-radius:8px;padding:0 10px;font:inherit}
+.acc{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;border-top:1px solid #e5e7eb;padding-top:16px}
+.acc .sp{flex:1}
+.radio-l{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin:6px 0}
+.radio-l small{display:block;color:#4b5563;font-size:12px}
+.edic{list-style:none;margin:0;padding:0;border:1px solid #e5e7eb;border-radius:8px;background:#fff}
+.edic li{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;padding:10px 14px;border-top:1px solid #f3f4f6;font-size:14px}
+.edic li:first-child{border-top:0}
+.edic li b{min-width:92px}
+.edic li .f{color:#374151;font-variant-numeric:tabular-nums}
+.edic li .sp{flex:1}
+.aviso{border-radius:8px;padding:10px 14px;font-size:13.5px}
+.aviso.info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a}
+.aviso.warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.aviso.rojo{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+/* plataforma */
+.pl{padding:20px;display:grid;gap:16px;max-width:880px}
+.pl-card{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.pl-card>h4{margin:0;padding:12px 20px;font-size:14px;font-weight:600;border-bottom:1px solid #f3f4f6;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pl-row{display:grid;grid-template-columns:7rem minmax(0,1fr) auto;gap:6px 16px;align-items:center;padding:12px 20px;border-top:1px solid #f3f4f6}
+.pl-row:first-of-type{border-top:0}
+.pl-row .quien{font-size:12px;color:#4b5563}
+.hist{margin:0;padding:10px 20px 14px 20px;background:#f9fafb;border-top:1px solid #f3f4f6;font-size:12.5px;color:#374151;list-style:none}
+.hist li{padding:3px 0}
+.dlg{width:min(420px,100%);background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:20px}
+.dlg h5{font-size:16px}
+.dlg p{margin:8px 0 16px;color:#374151;font-size:14px}
+.fondo-dlg{background:rgba(17,24,39,.45);border-radius:12px;padding:30px 16px;display:flex;justify-content:center}
+
+/* ---------- TIENDA ---------- */
+.tienda{--p:#18181b;--fg:#18181b;--mut:#52525b;--line:#e4e4e7;--sup:#f4f4f5;background:#fff;color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;border:1px solid #d4d4d8;border-radius:12px;overflow:hidden}
+.phone{width:360px;max-width:100%}
+.desk{width:100%}
+.t-top{background:var(--p);color:#fff;font-size:12px;text-align:center;padding:6px 10px}
+.t-head{display:flex;align-items:center;gap:10px;padding:0 14px;height:56px;border-bottom:1px solid var(--line);background:#fff}
+.t-head b{flex:1;font-size:16px}
+.t-head span{min-width:44px;min-height:44px;display:grid;place-items:center;font-size:12px;color:var(--mut);border-radius:8px}
+.t-hero{background:linear-gradient(120deg,#27272a,#09090b);color:#fff;padding:30px 18px}
+.t-hero h3{margin:0 0 6px;font-size:26px}
+.t-hero p{margin:0 0 14px;color:#e4e4e7;font-size:14px}
+.t-btn{display:inline-flex;align-items:center;min-height:44px;padding:0 20px;border-radius:10px;font-weight:600;background:#fff;color:#18181b;font-size:14px}
+.t-btn.osc{background:var(--fg);color:#fff}
+.t-oferta{background:var(--sup);padding:22px 18px;display:grid;gap:14px;text-align:center}
+.t-oferta h4{margin:0;font-size:20px}
+.t-oferta p{margin:2px 0 0;color:var(--mut);font-size:14px}
+.t-oferta .uso-l{margin:8px 0 0;color:var(--fg);font-weight:600;font-size:14px;display:inline-flex;gap:8px;align-items:flex-start;justify-content:center;text-align:left}
+.t-oferta .cierra{margin:8px 0 0;font-size:13px;color:var(--mut)}
+.timer{display:flex;gap:8px;justify-content:center}
+.timer div{width:60px;background:#fff;border-radius:10px;padding:6px 0}
+.timer b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.timer small{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+.timer.fin b{color:var(--mut)}
+.d .t-oferta{grid-template-columns:1fr auto auto;text-align:left;align-items:center;gap:28px;padding:26px 36px}
+.d .t-hero{padding:40px 36px}
+.d .t-head{padding:0 36px}
+.rombo{display:inline-block;width:8px;height:8px;background:var(--p);transform:rotate(45deg);flex:none;margin-top:6px}
+.tienda .rombo.b{margin-top:0}
+.leyenda{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--mut);margin:8px 0 0;align-items:center}
+.leyenda span{display:inline-flex;gap:6px;align-items:center}
+.leyenda .pt{width:6px;height:6px;border-radius:50%;background:#059669}
+.pad{padding:14px}
+.t-cap{font-size:13px;font-weight:600;margin:0 0 8px}
+/* calendario */
+.gr{width:100%}
+.gh,.gb{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.gh span{font-size:12px;color:#71717a;text-align:center;padding:4px 0}
+.gb{margin-top:2px}
+.dia{position:relative;height:46px;border:0;border-radius:8px;background:#fff;font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--fg);cursor:default;padding:0}
+.dia b{font-weight:500;font-size:14px;line-height:1}
+.dia small{font-size:10px;font-weight:600;line-height:1;color:#52525b}
+.dia.dis{color:#a1a1aa}
+.dia.dis small{display:none}
+.dia.oc b{text-decoration:line-through}
+.dia.pocos{background:#fffbeb}
+.dia .rombo{position:absolute;top:5px;left:5px;margin:0;width:7px;height:7px}
+.dia .pt{position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:#059669}
+.dia.rango{background:#e4e4e7;border-radius:0}
+.dia.ext{background:var(--p);color:#fff;border-radius:999px}
+.dia.ext small{color:#e4e4e7}
+.dia.ext .rombo{background:#fff;top:9px;left:11px}
+.dia.sel{background:var(--p);color:#fff}
+.dia.sel small{color:#e4e4e7}
+.dia.sel .rombo{background:#fff}
+.mes-t{text-align:center;font-weight:600;margin:0 0 6px}.mes-t span{text-transform:none}
+.campos{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.campos div{padding:8px 12px}
+.campos div+div{border-left:1px solid var(--line)}
+.campos small{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#52525b;letter-spacing:.04em}
+.pie-r{margin-top:10px;padding-top:10px;border-top:1px solid #f4f4f5;display:grid;gap:4px}
+.pie-r .l1{display:flex;justify-content:space-between;font-size:13px}
+.pie-r .l1 b{font-size:14px}
+.pie-r .camp{display:flex;gap:8px;align-items:center;font-size:13px;font-weight:600;color:var(--fg)}
+.pie-r .camp .rombo{margin-top:0}
+.pie-r .nada{font-size:12px;color:#52525b}
+.fun{display:grid;gap:8px}
+.fun button{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;text-align:left;padding:10px 14px;min-height:56px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;color:var(--fg);cursor:default}
+.fun button.on{border-color:var(--p);box-shadow:inset 0 0 0 1px var(--p)}
+.fun button.ag{opacity:.6}
+.fun .d1{font-weight:600}
+.fun .d2{color:var(--mut);font-size:13px}
+.etq{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:600;color:var(--fg);background:var(--sup);border-radius:999px;padding:3px 10px 3px 8px}
+.etq .rombo{margin-top:0;width:7px;height:7px}
+.tira{display:flex;gap:8px;overflow:hidden;padding-bottom:4px}
+.tira button{position:relative;flex:none;width:58px;height:70px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;color:var(--fg);padding:0;cursor:default}
+.tira button small{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#52525b}
+.tira button b{display:block;font-size:24px}
+.tira button.on{background:#18181b;color:#fff;border-color:#18181b}
+.tira button.on small{color:#e4e4e7}
+.tira .rombo{position:absolute;top:6px;right:6px;margin:0;width:7px;height:7px}
+.tira button.on .rombo{background:#fff}
+.sb{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.sb .tienda{font-size:12px}
+.sb .cp{font-size:12px;color:#374151;margin:6px 0 0}
+.fade{opacity:.5}
+@media (max-width:860px){
+  .cabm{display:none}
+  .fila{grid-template-columns:3rem minmax(0,1fr)}
+  .fila .barra,.fila .ef{grid-column:1 / -1}
+  .det{padding:16px}
+  .g2{grid-template-columns:1fr}
+  .sb{grid-template-columns:1fr 1fr}
+  .pl-row{grid-template-columns:1fr}
+  .d .t-oferta{grid-template-columns:1fr;text-align:center}
+}
+:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+/* ================= NUEVO EN v1 de campanas-descuento ================= */
+/* Centro de la campaña: tres pasos */
+.centro{padding:16px 20px 20px 76px;background:#f9fafb;border-top:1px solid #f3f4f6}
+.centro.plano{padding:14px}
+.centro .in{max-width:760px;display:grid;gap:10px}
+.paso{background:#fff;border:1px solid #d1d5db;border-radius:12px;overflow:hidden}
+.paso.abierto{border-color:#93c5fd;box-shadow:0 0 0 1px #bfdbfe}
+.paso-h{all:unset;box-sizing:border-box;display:grid;grid-template-columns:32px minmax(0,1fr) auto 20px;gap:4px 12px;align-items:center;width:100%;min-height:56px;padding:10px 16px;cursor:pointer}
+.paso-h:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.paso-h .n{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;background:#e5e7eb;color:#374151}
+.paso-h .n.ok{background:#dcfce7;color:#166534}
+.paso-h .n.pend{background:#fef3c7;color:#92400e}
+.paso-h .t{font-weight:600;font-size:15px}
+.paso-h .e{display:block;font-weight:400;font-size:13.5px;color:#374151;margin-top:1px}
+.paso-h .e.ok{color:#166534}.paso-h .e.pend{color:#92400e}.paso-h .e.mut{color:#4b5563}
+.paso-h .ch{color:#4b5563;font-size:14px;text-align:center}
+.paso-b{border-top:1px solid #e5e7eb;padding:16px;display:grid;gap:18px}
+.opc{font-size:11.5px;color:#4b5563;border:1px solid #d1d5db;border-radius:999px;padding:1px 8px;margin-left:6px;font-weight:500}
+.cta-fila{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:6px}
+.cta-fila .sp{flex:1}
+.cta-fila .por-que{font-size:13px;color:#92400e;flex-basis:100%}
+.btn.pri.grande{min-height:48px;padding:0 22px;font-size:15px;font-weight:600}
+.btn.sec{border-color:#2563eb;color:#1d4ed8}
+.toast{display:inline-flex;gap:8px;align-items:flex-start;background:#111827;color:#fff;border-radius:10px;padding:10px 14px;font-size:13.5px;max-width:420px}
+.toast.err{background:#7f1d1d}
+.fila.abierta .rg .rango-oculto{display:none}
+.chip.c-ambar2{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.chip.c-verde{background:#dcfce7;color:#166534}
+.chip.c-rojo{background:#fee2e2;color:#991b1b}
+/* radios en tarjeta (alcance) */
+.alc{display:grid;gap:8px}
+.alc label{display:flex;gap:10px;align-items:flex-start;border:1px solid #d1d5db;border-radius:10px;padding:10px 12px;min-height:56px;background:#fff;cursor:pointer}
+.alc label:has(input:checked){border-color:#2563eb;background:#eff6ff}
+.alc label:has(input:focus-visible){outline:2px solid #2563eb;outline-offset:2px}
+.alc input{margin-top:3px;width:18px;height:18px}
+.alc b{display:block;font-size:14px}.alc small{display:block;color:#4b5563;font-size:12.5px}
+.pct{display:flex;align-items:center;gap:8px}
+.pct input{width:96px;height:44px;border:1px solid #d1d5db;border-radius:8px;padding:0 10px;font:inherit;font-size:16px;text-align:right}
+.pct input.err{border-color:#dc2626}
+.pct span{font-size:16px;font-weight:600}
+.ejem{background:#f3f4f6;border-radius:8px;padding:10px 12px;font-size:13.5px;color:#111827;display:grid;gap:3px}
+.ejem b{font-variant-numeric:tabular-nums}
+.chk{display:flex;gap:10px;align-items:flex-start;min-height:44px;padding:6px 0;font-size:14px}
+.chk input{width:20px;height:20px;margin-top:2px;flex:none}
+.chk small{display:block;color:#4b5563;font-size:12.5px}
+.bloque{border:1px solid #d1d5db;border-radius:10px;padding:14px;display:grid;gap:12px;background:#fff}
+.bloque>h5{display:flex;align-items:center;flex-wrap:wrap}
+.arbol{list-style:none;margin:0;padding:0;border:1px solid #d1d5db;border-radius:10px;background:#fff;max-height:240px;overflow:auto}
+.arbol li{display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 12px;border-top:1px solid #f3f4f6;font-size:14px}
+.arbol li:first-child{border-top:0}
+.arbol li.sub{padding-left:40px}
+.arbol li .c{margin-left:auto;color:#4b5563;font-size:12.5px;font-variant-numeric:tabular-nums}
+.arbol input{width:20px;height:20px}
+.sel-res{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-size:13.5px}
+.pill{background:#e5e7eb;color:#111827;border-radius:999px;padding:3px 10px;font-size:12.5px}
+.skel{height:14px;border-radius:6px;background:linear-gradient(90deg,#e5e7eb,#f3f4f6,#e5e7eb);width:70%}
+.vacio{border:1px dashed #9ca3af;border-radius:10px;padding:14px;color:#374151;font-size:14px;display:grid;gap:10px;background:#fff}
+/* diálogo ancho + picker */
+.dlg.ancho{width:min(560px,100%)}
+.dlg.picker{width:min(760px,100%);padding:0;overflow:hidden}
+.dlg ul.av{margin:0 0 12px;padding:0;list-style:none;display:grid;gap:8px}
+.dlg ul.av li{border-radius:8px;padding:8px 12px;font-size:13.5px}
+.dlg dl{margin:0 0 12px;display:grid;grid-template-columns:7.5rem 1fr;gap:6px 12px;font-size:14px}
+.dlg dt{color:#4b5563}.dlg dd{margin:0;font-weight:500}
+.dlg .pie{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:6px}
+.tab{width:100%;border-collapse:collapse;font-size:13.5px}
+.tab th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:#4b5563;padding:8px 12px;background:#f9fafb;border-bottom:1px solid #e5e7eb}
+.tab td{padding:4px 12px;border-bottom:1px solid #f3f4f6;height:48px}
+.tab td.num{text-align:right;font-variant-numeric:tabular-nums}
+.tab input{width:20px;height:20px}
+.ph{width:32px;height:32px;border-radius:6px;background:#e5e7eb;display:inline-block;vertical-align:middle;margin-right:8px}
+.barra-sel{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 16px;background:#eff6ff;border-bottom:1px solid #bfdbfe;font-size:13.5px;color:#1e3a8a}
+.barra-sel .sp{flex:1}
+/* preview de la campaña (paso 2) */
+.prev{border:1px solid #d1d5db;border-radius:10px;overflow:hidden;background:#fff}
+.prev .top{background:#dc2626;color:#fff;font-size:12px;text-align:center;padding:5px 8px}
+.prev .hero{background:linear-gradient(120deg,#18181b,#3f3f46);color:#fff;padding:22px 18px;display:grid;gap:6px}
+.prev .hero h6{margin:0;font-size:22px}
+.prev .hero p{margin:0;font-size:13px;color:#e4e4e7}
+.prev .hero .b{display:inline-flex;min-height:36px;align-items:center;padding:0 14px;border-radius:8px;background:#fff;color:#18181b;font-weight:600;font-size:13px;width:max-content}
+.prev .tira-p{display:flex;gap:8px;padding:10px 14px;background:#f4f4f5}
+.prev .tira-p span{flex:1;height:44px;border-radius:6px;background:#e4e4e7}
+.prev-w{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,220px);gap:16px;align-items:start}
+.sello{display:inline-block;background:#fff;color:#dc2626;border-radius:6px;padding:1px 8px;font-size:12px;font-weight:700;width:max-content}
+.aviso b.k{font-weight:700}
+.aviso .ac{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+/* barra de retorno en Diseño */
+.dis-bar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;background:#fff;border-bottom:1px solid #e5e7eb;padding:8px 16px;font-size:14px}
+.dis-lay{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:150px}
+.dis-lay aside{background:#f9fafb;border-right:1px solid #e5e7eb;padding:12px;font-size:13px;color:#4b5563}
+.dis-lay aside b{display:block;color:#111827;margin-bottom:4px}
+.dis-lay .lienzo{padding:12px;background:#eceef2}
+.form-prod{padding:16px 20px;display:grid;gap:12px;max-width:560px}
+/* ---- Tienda: precios ---- */
+.tienda{--rojo:#b91c1c}
+.pcard{border:0;display:grid;gap:6px}
+.pcard .img{position:relative;aspect-ratio:1/1;background:#e4e4e7;border-radius:12px;overflow:hidden}
+.pcard .img i.dsc{position:absolute;top:8px;left:8px;background:var(--rojo);color:#fff;font-style:normal;font-weight:700;font-size:12px;border-radius:6px;padding:2px 8px}
+.pcard h6{margin:0;font-size:14px;font-weight:500}
+.pcard .cat{font-size:12px;color:var(--mut)}
+.pv{font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}
+.pv.camp{color:var(--rojo)}
+.pr{font-size:13px;color:#52525b;text-decoration:line-through;margin-left:6px;font-variant-numeric:tabular-nums}
+.pcard .cta-sube{position:absolute;left:0;right:0;bottom:0;min-height:44px;background:var(--fg);color:#fff;display:grid;place-items:center;font-weight:600;font-size:14px}
+.cond{border:1px solid var(--line);border-radius:10px;background:#fff;font-size:13px}
+.cond summary{min-height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;cursor:pointer;font-weight:600;color:var(--fg)}
+.cond summary:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.cond ul{margin:0;padding:0 12px 12px 28px;color:#3f3f46;display:grid;gap:3px}
+.franja{display:block;background:var(--sup);padding:8px 14px;font-size:13px}
+.franja details{display:block}
+.franja summary{display:inline-flex;min-height:44px;align-items:center;font-weight:600;text-decoration:underline;cursor:pointer}
+.lin{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:4px 12px;align-items:start;padding:12px 0;border-top:1px solid var(--line)}
+.lin:first-child{border-top:0}
+.lin .im{width:56px;height:56px;border-radius:8px;background:#e4e4e7}
+.lin h6{margin:0;font-size:14px;font-weight:500}
+.lin .sm{font-size:12px;color:var(--mut)}
+.lin .pp{text-align:right;font-variant-numeric:tabular-nums}
+.lin .cambio{grid-column:2 / -1;font-size:13px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:6px 10px}
+.tot{display:grid;gap:6px;border-top:1px solid var(--line);padding-top:10px;font-size:14px;font-variant-numeric:tabular-nums}
+.tot>div{display:flex;justify-content:space-between;gap:12px}
+.tot .ahorro{color:#166534;font-size:13px}
+.tot .tt{font-size:18px;font-weight:700;border-top:1px solid var(--line);padding-top:8px;margin-top:2px}
+.tot .nota-e{font-size:12.5px;color:var(--mut)}
+.alerta{border-radius:10px;padding:10px 12px;font-size:13.5px;display:grid;gap:2px}
+.alerta.sube{background:#fffbeb;border:1px solid #fde68a;color:#78350f}
+.alerta.baja{background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a}
+.alerta b{font-size:14px}
+.cup{display:flex;gap:8px}
+.cup input{flex:1;height:44px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit}
+.cup button{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--fg);background:#fff;font:inherit;font-weight:600}
+.msg-cup{font-size:13px;color:#3f3f46;margin:6px 0 0}
+.msg-cup.ok{color:#166534}
+.t-btn.ancho{display:flex;justify-content:center;width:100%;background:var(--fg);color:#fff}
+.sticky-nota{font-size:12.5px;color:var(--mut);text-align:center;margin:6px 0 0}
+.grid-p{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px}
+.d .grid-p{grid-template-columns:repeat(4,minmax(0,1fr));padding:20px 36px}
+.ficha{display:grid;gap:12px;padding:14px}
+.d .ficha{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;padding:24px 36px}
+.ficha .gal{aspect-ratio:1/1;background:#e4e4e7;border-radius:12px}
+.ficha h3{margin:0;font-size:22px}
+.ficha .precio{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
+.ficha .precio .pv{font-size:26px}
+.ficha .precio .pr{font-size:16px;margin-left:0}
+.ficha .precio .dsc2{background:var(--rojo);color:#fff;font-weight:700;font-size:13px;border-radius:6px;padding:2px 8px}
+.ficha .ah{font-size:13.5px;color:#166534}
+.res2{padding:14px;display:grid;gap:12px}
+.d .res2{padding:24px 36px;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);align-items:start}
+.cajita{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff}
+.sb2{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:860px){
+  .centro{padding:12px}
+  .prev-w{grid-template-columns:1fr}
+  .dis-lay{grid-template-columns:1fr}
+  .dis-lay aside{border-right:0;border-bottom:1px solid #e5e7eb}
+  .sb2{grid-template-columns:1fr}
+  .d .res2{grid-template-columns:1fr}
+  .d .ficha{grid-template-columns:1fr}
+  .d .grid-p{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dlg dl{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="cab"><div>
+  <h1>Campañas en 3 pasos: Cuándo · Cómo se verá · Promoción</h1>
+  <p>Prototipo v1 · 2026-10-20 · Diseño: <code>docs/specs/campanas-descuento/diseno.md</code> · Spec: campanas-descuento (borrador) · ADR-0001 y ADR-0002 · Datos de ejemplo · "Hoy" = martes 20 oct 2026 · Black Friday = vie 27 nov, Cyber Monday = lun 30 nov</p>
+  <nav class="toc" aria-label="Contenido">
+    <a href="#a1">1 Lista de campañas</a><a href="#a2">2 Centro de la campaña (3 pasos)</a><a href="#a3">3 Paso 1 · Cuándo</a><a href="#a4">4 Paso 2 · Cómo se verá</a>
+    <a href="#a5">5 Paso 3 · Promoción</a><a href="#a6">6 Elegir productos y categorías</a><a href="#a7">7 Confirmación</a><a href="#a8">8 Activar, guardar y estados</a>
+    <a href="#a9">9 Rubros con reserva (2 pasos)</a><a href="#a10">10 Productos y cupones (Admin)</a>
+    <a href="#t1">11 Tienda: listado</a><a href="#t2">12 Tienda: ficha</a><a href="#t3">13 Tienda: carrito</a><a href="#t4">14 Tienda: pago</a>
+  </nav>
+</div></div>
+
+<div class="pagina">
+
+<p class="nota"><b>Cómo leerlo</b>Un solo scroll, sin interruptores de vista: cada pantalla se dibuja en escritorio y en celular (360 px) lado a lado, porque en el producto el cambio es automático. Los botones y enlaces son inertes (las únicas interacciones son el control de hora y los radios de alcance). Las marcas <b style="background:#b45309">Q1</b> a <b style="background:#b45309">Q5</b> señalan lo que depende de las preguntas abiertas de la spec: <em>pendiente de Diego</em>.</p>
+
+<!-- ======================= 1. LISTA ======================= -->
+<h2 id="a1">1 · Admin › Campañas: la lista <small>(todas las tiendas · tienda de productos)</small></h2>
+<p class="sub">Parte del calendario del año de <code>campanas-cuando</code> v1. Cambian tres cosas: (1) chips nuevos de promoción, (2) cuando una fila está abierta su rango se lee en el paso 1 (no se repite), (3) el interruptor no puede saltarse la confirmación de una promoción (R2.5).</p>
+
+<div class="frame">
+<p class="cap">Admin · escritorio</p>
+<div class="adm">
+  <div class="adm-head">
+    <h4>Campañas</h4><span style="font-size:13px;color:#4b5563">Cuándo, cómo se ve y qué rebaja cada campaña</span><span class="sp"></span>
+    <div class="anio"><button class="btn" aria-label="Año anterior">‹</button><b>2026</b><button class="btn" aria-label="Año siguiente">›</button></div>
+    <button class="btn">+ Campaña propia</button>
+  </div>
+  <div class="resumen"><strong>Hoy, 20 oct:</strong> tus clientes ven Halloween, con murciélagos el 31 oct, hasta las 14:00. Ninguna promoción de precios está en curso.</div>
+  <div class="cal">
+    <div class="cabm"><span></span><span>Campaña</span><div class="meses"><span>ene</span><span>feb</span><span>mar</span><span>abr</span><span>may</span><span>jun</span><span>jul</span><span>ago</span><span>sep</span><span>oct</span><span>nov</span><span>dic</span></div><span style="text-align:right">Efecto</span></div>
+    <div class="fila">
+      <button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Halloween"></button>
+      <div><p class="nom">Halloween</p><div class="rg"><span>15 oct, 8:00 – 31 oct, 14:00</span><span class="chip c-amber">En curso</span></div></div>
+      <div class="barra" aria-hidden="true"><span class="seg" style="left:78.9%;width:4.5%;background:#7c3aed"></span><span class="hoy" style="left:80.2%"></span></div>
+      <div class="ef"><i style="background:#7c3aed"></i>Murciélagos</div>
+    </div>
+    <div class="fila">
+      <button class="sw" role="switch" aria-checked="false" aria-label="Activar Black Friday"></button>
+      <div><p class="nom">Black Friday</p><div class="rg"><span>27 nov – 30 nov</span><span class="chip c-ambar2">Promoción sin confirmar</span><span class="chip c-blue">Empieza en 38 días</span></div></div>
+      <div class="barra" aria-hidden="true"><span class="seg off" style="left:90.2%;width:1.4%"></span><span class="hoy" style="left:80.2%"></span></div>
+      <div class="ef"><i style="background:#dc2626"></i>Lluvia de ofertas</div>
+    </div>
+    <div class="fila">
+      <button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Cyber Wow"></button>
+      <div><p class="nom">Cyber Wow</p><div class="rg"><span>Próxima: noviembre · 2 – 5 nov</span><span class="chip c-ambar2">Confirma tu promoción de noviembre</span> <span class="chip c-gray">3 ediciones en 2026</span></div></div>
+      <div class="barra" aria-hidden="true">
+        <span class="seg pasada" style="left:25.5%;width:1.9%;background:#dc2626"></span><span class="seg pasada" style="left:52.1%;width:1.9%;background:#dc2626"></span><span class="seg" style="left:82.7%;width:2%;background:#dc2626"></span><span class="hoy" style="left:80.2%"></span>
+      </div>
+      <div class="ef"><i style="background:#dc2626"></i>Lluvia de ofertas</div>
+    </div>
+    <div class="fila">
+      <button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Cyber Monday"></button>
+      <div><p class="nom">Cyber Monday</p><div class="rg"><span>30 nov</span><span class="chip c-verde">−15 % en toda la tienda · confirmada</span></div></div>
+      <div class="barra" aria-hidden="true"><span class="seg" style="left:91.2%;width:.7%;background:#18181b"></span><span class="hoy" style="left:80.2%"></span></div>
+      <div class="ef"><i style="background:#dc2626"></i>Lluvia de ofertas</div>
+    </div>
+    <div class="pie-cal"><span>3 campañas activas.</span><span>Si dos se cruzan, se muestra la más importante; en un producto en común gana el mayor descuento.</span></div>
+  </div>
+</div>
+<p class="nota"><b>L1</b>Los chips de promoción solo existen en tiendas con carrito. "Promoción sin confirmar" = la campaña puede estar guardada pero no cambia ningún precio (R5.7, <em>Q11 pendiente de Diego</em>). Una promoción confirmada se resume en el chip; el detalle vive solo en el paso 3.</p>
+<p class="nota"><b>L2</b>Interruptor (R2.5): apagar es inmediato. Encender una campaña <em>sin promoción o con la promoción ya confirmada</em> es inmediato, como hoy. Encender Black Friday (promoción sin confirmar) <strong>abre la fila y la confirmación</strong> (pantalla 7); si el dueño cierra el diálogo, el interruptor vuelve a "apagado" y no queda nada encendido. Un solo diálogo para las dos entradas, el interruptor y el botón "Activar campaña".</p>
+<p class="nota"><b>L3</b>Cyber Wow (R9.6, <em>Q2 pendiente de Diego</em>): la confirmación vale solo para la edición en que se dio. La fila avisa con anticipación "Confirma tu promoción de noviembre"; mientras no confirme, noviembre se verá con el aspecto del catálogo y los precios no cambian.</p>
+</div>
+
+<div class="frame">
+<p class="cap">Admin · celular (360 px): mismas filas, la barra baja a su propia línea</p>
+<div class="adm" style="width:360px;max-width:100%"><div class="cal sin">
+  <div class="fila"><button class="sw" role="switch" aria-checked="false" aria-label="Activar Black Friday"></button>
+    <div><p class="nom">Black Friday</p><div class="rg"><span>27 nov – 30 nov</span><span class="chip c-ambar2">Promoción sin confirmar</span></div></div>
+    <div class="barra" aria-hidden="true"><span class="seg off" style="left:90.2%;width:1.4%"></span></div></div>
+  <div class="fila"><button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Cyber Monday"></button>
+    <div><p class="nom">Cyber Monday</p><div class="rg"><span>30 nov</span><span class="chip c-verde">−15 % en toda la tienda</span></div></div>
+    <div class="barra" aria-hidden="true"><span class="seg" style="left:91.2%;width:.7%;background:#18181b"></span></div></div>
+</div></div></div>
+
+<!-- ======================= 2. CENTRO ======================= -->
+<h2 id="a2">2 · El centro de la campaña: tres pasos con su estado <small>(se abre debajo de la fila, como hoy)</small></h2>
+<p class="sub">Al abrir una campaña se ven los tres pasos <strong>cerrados</strong>, cada uno con su estado en una línea (R2.1). Un solo paso se abre a la vez; el que se abre empuja a los demás hacia abajo. Un solo CTA, "Activar campaña", habilitado cuando el paso 1 está listo; los pasos 2 y 3 no lo bloquean.</p>
+
+<div class="par">
+<div class="frame" style="flex:1 1 640px">
+<p class="cap">Escritorio · Black Friday (catálogo) · lista para activar, promoción sin confirmar</p>
+<div class="adm"><div class="cal sin">
+  <div class="fila abierta">
+    <button class="sw" role="switch" aria-checked="false" aria-label="Activar Black Friday"></button>
+    <div><p class="nom">Black Friday</p><div class="rg"><span class="chip c-gray">Apagada</span><span class="chip c-blue">Empieza en 38 días</span></div></div>
+    <div class="barra" aria-hidden="true"><span class="seg off" style="left:90.2%;width:1.4%"></span></div>
+    <div class="ef"><i style="background:#dc2626"></i>Lluvia de ofertas</div>
+  </div>
+  <div class="centro"><div class="in">
+    <section class="paso" aria-labelledby="p1t">
+      <button class="paso-h" aria-expanded="false"><span class="n ok" aria-hidden="true">✓</span><span><span class="t" id="p1t">1. Cuándo</span><span class="e ok">Listo: 27–30 nov</span></span><span></span><span class="ch" aria-hidden="true">▾</span></button>
+    </section>
+    <section class="paso" aria-labelledby="p2t">
+      <button class="paso-h" aria-expanded="false"><span class="n" aria-hidden="true">2</span><span><span class="t" id="p2t">2. Cómo se verá</span><span class="e">Del catálogo</span></span><span></span><span class="ch" aria-hidden="true">▾</span></button>
+    </section>
+    <section class="paso" aria-labelledby="p3t">
+      <button class="paso-h" aria-expanded="false"><span class="n pend" aria-hidden="true">3</span><span><span class="t" id="p3t">3. Promoción <span class="opc">opcional</span></span><span class="e pend">−20 % en Zapatillas · sin confirmar</span></span><span></span><span class="ch" aria-hidden="true">▾</span></button>
+    </section>
+    <div class="cta-fila">
+      <button class="btn pri grande">Activar campaña</button>
+      <button class="btn ghost m">Guardar sin activar</button>
+      <span class="sp"></span>
+    </div>
+  </div></div>
+</div></div>
+<p class="nota"><b>C1</b>El nombre y las fechas no se repiten fuera del paso 1: con la fila abierta, su texto de rango se retira y el estado "Listo: 27–30 nov" es el único lugar donde se lee (con horas si las hay: "Listo: 27 nov 10:00 – 30 nov, medianoche"). La fila sigue mostrando el nombre, el estado de la campaña y la barra del año.</p>
+<p class="nota"><b>C2</b>El botón "Activar campaña" ve la promoción sin confirmar y abre la confirmación (pantalla 7); sin promoción, activa directo y dice "solo visual". "Guardar sin activar" guarda los tres pasos como borrador: es secundario y solo aparece con cambios o con la campaña apagada.</p>
+</div>
+
+<div style="flex:1 1 340px;max-width:380px">
+<div class="frame">
+<p class="cap">Celular (360 px): igual, de ancho completo</p>
+<div class="adm" style="width:360px;max-width:100%"><div class="cal sin">
+  <div class="fila abierta"><button class="sw" role="switch" aria-checked="false" aria-label="Activar Black Friday"></button>
+    <div><p class="nom">Black Friday</p><div class="rg"><span class="chip c-gray">Apagada</span></div></div></div>
+  <div class="centro plano"><div class="in">
+    <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n ok">✓</span><span><span class="t">1. Cuándo</span><span class="e ok">Listo: 27–30 nov</span></span><span></span><span class="ch">▾</span></button></section>
+    <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n">2</span><span><span class="t">2. Cómo se verá</span><span class="e">Personalizado</span></span><span></span><span class="ch">▾</span></button></section>
+    <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n">3</span><span><span class="t">3. Promoción</span><span class="e mut">Sin promoción</span></span><span></span><span class="ch">▾</span></button></section>
+    <div class="cta-fila"><button class="btn pri grande" style="flex:1">Activar campaña</button></div>
+  </div></div>
+</div></div>
+<p class="nota"><b>C3</b>Con tres pasos cerrados el CTA queda a la vista sin barra fija. Con un paso abierto en el celular, el CTA queda debajo del paso, a un desplazamiento: <strong>no se agrega barra fija en Admin</strong> (regla "guardar junto a lo editado").</p>
+</div>
+</div>
+</div>
+
+<div class="par">
+<div class="frame" style="flex:1 1 420px">
+<p class="cap">Campaña propia nueva · paso 1 pendiente · el CTA espera y dice por qué</p>
+<div class="adm"><div class="cal sin"><div class="centro plano"><div class="in">
+  <label class="lbl" for="nn" style="margin:0">Nombre de la campaña<input id="nn" class="inp" style="margin-top:4px" value="Aniversario de la tienda"></label>
+  <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n pend">1</span><span><span class="t">1. Cuándo</span><span class="e pend">Pendiente: falta la fecha de fin</span></span><span></span><span class="ch">▾</span></button></section>
+  <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n">2</span><span><span class="t">2. Cómo se verá</span><span class="e">Sin personalizar</span></span><span></span><span class="ch">▾</span></button></section>
+  <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n">3</span><span><span class="t">3. Promoción <span class="opc">opcional</span></span><span class="e mut">Sin promoción</span></span><span></span><span class="ch">▾</span></button></section>
+  <div class="cta-fila"><button class="btn pri grande" disabled aria-describedby="why1">Activar campaña</button><span class="por-que" id="why1">Completa las fechas del paso 1 para activarla.</span></div>
+</div></div></div></div>
+<p class="nota"><b>C4</b>El nombre de una campaña propia va encima de los pasos (no es "cuándo" ni "aspecto"); las del catálogo no lo muestran. "Sin personalizar" en una propia es la propuesta mía; la spec solo define "Del catálogo" y "Personalizado".</p>
+</div>
+
+<div class="frame" style="flex:1 1 420px">
+<p class="cap">Campaña ya activa · el CTA pasa a guardar cambios</p>
+<div class="adm"><div class="cal sin">
+  <div class="fila abierta"><button class="sw on" role="switch" aria-checked="true" aria-label="Desactivar Cyber Monday"></button>
+    <div><p class="nom">Cyber Monday</p><div class="rg"><span class="chip c-blue">Empieza en 41 días</span><span class="chip c-verde">Activa</span></div></div></div>
+  <div class="centro plano"><div class="in">
+    <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n ok">✓</span><span><span class="t">1. Cuándo</span><span class="e ok">Listo: 30 nov</span></span><span></span><span class="ch">▾</span></button></section>
+    <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n">2</span><span><span class="t">2. Cómo se verá</span><span class="e">Del catálogo</span></span><span></span><span class="ch">▾</span></button></section>
+    <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n ok">3</span><span><span class="t">3. Promoción <span class="opc">opcional</span></span><span class="e ok">−15 % en toda la tienda · confirmada</span></span><span></span><span class="ch">▾</span></button></section>
+    <div class="cta-fila"><button class="btn pri grande" disabled>Guardar cambios</button><span class="sp"></span></div>
+  </div></div>
+</div></div>
+<p class="nota"><b>C5</b>Con la campaña activa el CTA es "Guardar cambios" (R2.4), deshabilitado sin cambios; no se muestra un segundo botón "Desactivar" (ya está el interruptor de la fila). Si el cambio toca la promoción confirmada o las fechas de una campaña con promoción, "Guardar cambios" abre la confirmación (R9.5); cerrar el diálogo deja la promoción anterior vigente.</p>
+</div>
+</div>
+
+<!-- ======================= 3. PASO 1 ======================= -->
+<h2 id="a3">3 · Paso 1 · Cuándo <small>(lo que ya existe en <code>campanas-cuando</code>, sin cambios de regla)</small></h2>
+<p class="sub">Mismas piezas del v1-2026-10-19: "Fechas oficiales / Mis fechas" (R2.9), días antes y después, hora con "Todo el día | A las" y, solo si la tienda recibe reservas, las fechas de uso (se dibujan en la pantalla 9). Aquí en una tienda de productos: no hay fechas de uso y la sección no existe.</p>
+
+<div class="par">
+<div class="frame" style="flex:1 1 560px">
+<p class="cap">Escritorio · paso 1 abierto · "Fechas oficiales"</p>
+<div class="adm"><div class="cal sin"><div class="centro plano" style="padding:16px 20px"><div class="in">
+  <section class="paso abierto">
+    <button class="paso-h" aria-expanded="true"><span class="n ok">✓</span><span><span class="t">1. Cuándo</span></span><span class="chip c-verde">Listo</span><span class="ch">▴</span></button>
+    <div class="paso-b">
+      <fieldset style="border:0;padding:0;margin:0">
+        <legend class="lbl">¿Qué fechas usa tu tienda?</legend>
+        <label class="radio-l"><input type="radio" name="f1" checked><span>Fechas oficiales<small>Black Friday: vie 27 nov de 2026. Se recalcula solo cada año.</small></span></label>
+        <label class="radio-l"><input type="radio" name="f1"><span>Mis fechas<small>Eliges inicio y fin; conservas todo el aspecto de la campaña.</small></span></label>
+      </fieldset>
+      <div class="g2">
+        <div><label class="lbl" for="aa">Empieza (días antes)</label><div class="num"><input id="aa" type="number" value="0"> <span>días antes del día clave</span></div></div>
+        <div><label class="lbl" for="dd">Sigue (días después)</label><div class="num"><input id="dd" type="number" value="3"> <span>días después</span></div></div>
+      </div>
+      <div class="g2">
+        <div class="hora" data-modo="dia"><span class="lbl">Hora de inicio <small>hora de Lima</small></span>
+          <div class="ctl" role="group" aria-label="Hora de inicio"><div class="sg"><label><input type="radio" name="b1i" value="dia" checked><span>Todo el día</span></label><label><input type="radio" name="b1i" value="hora"><span>A las</span></label></div><input type="time" value="10:00" aria-label="Hora de inicio"></div>
+          <p class="ayuda t-dia">Empieza a las 00:00 del primer día.</p><p class="ayuda t-hora">Empieza el vie 27 nov a las 10:00.</p></div>
+        <div class="hora" data-modo="dia"><span class="lbl">Hora de fin <small>hora de Lima</small></span>
+          <div class="ctl" role="group" aria-label="Hora de fin"><div class="sg"><label><input type="radio" name="b1f" value="dia" checked><span>Todo el día</span></label><label><input type="radio" name="b1f" value="hora"><span>A las</span></label></div><input type="time" value="22:00" aria-label="Hora de fin"></div>
+          <p class="ayuda t-dia">Termina al acabar el último día.</p><p class="ayuda t-hora">Se ve hasta las 21:59; a las 22:00 ya no.</p></div>
+      </div>
+    </div>
+  </section>
+  <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n">2</span><span><span class="t">2. Cómo se verá</span><span class="e">Del catálogo</span></span><span></span><span class="ch">▾</span></button></section>
+  <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n">3</span><span><span class="t">3. Promoción</span><span class="e mut">Sin promoción</span></span><span></span><span class="ch">▾</span></button></section>
+</div></div></div></div>
+<p class="nota"><b>P1</b>Al abrir el paso, su estado en una línea se retira de la cabecera y queda la chip "Listo": el detalle ya está en los campos (nada se lee dos veces). Al cerrarlo, vuelve "Listo: 27–30 nov". Cambia el orden respecto a v1 de campanas-cuando: el efecto ya no cuelga de este panel; vive en el paso 2.</p>
+</div>
+
+<div class="frame" style="flex:1 1 420px">
+<p class="cap">"Mis fechas" · con errores de validación que se conservan (R8.1, R8.5)</p>
+<div class="adm"><div class="cal sin"><div class="centro plano" style="padding:16px"><div class="in">
+  <section class="paso abierto">
+    <button class="paso-h" aria-expanded="true"><span class="n pend">1</span><span><span class="t">1. Cuándo</span></span><span class="chip c-rojo">Revisar</span><span class="ch">▴</span></button>
+    <div class="paso-b">
+      <fieldset style="border:0;padding:0;margin:0"><legend class="lbl">¿Qué fechas usa tu tienda?</legend>
+        <label class="radio-l"><input type="radio" name="f2"><span>Fechas oficiales</span></label>
+        <label class="radio-l"><input type="radio" name="f2" checked><span>Mis fechas</span></label></fieldset>
+      <div><span class="lbl">Fechas (desde y hasta, incluidas)</span><button class="per"><span>25 nov – 29 nov · 5 días</span><span aria-hidden="true">▾</span></button></div>
+      <div role="alert" class="aviso rojo"><b class="k">Se cruza con otra campaña.</b> Black Friday se cruza con Cyber Monday del 29 nov al 29 nov. Apaga una de las dos o cambia las fechas.</div>
+    </div>
+  </section>
+</div></div></div></div>
+<p class="nota"><b>P2</b>Los mensajes bloqueantes de campanas-cuando R8 (cruce, ya terminó, empieza en más de un año, uso incoherente) aparecen <strong>dentro del paso 1</strong>, donde está el dato, con <code>role="alert"</code>. El paso queda "Revisar" (rojo) y "Activar campaña" deshabilitado con el motivo. Todas las validaciones se mantienen; solo cambia dónde se muestran.</p>
+</div>
+</div>
+
+<!-- ======================= 4. PASO 2 ======================= -->
+<h2 id="a4">4 · Paso 2 · Cómo se verá <small>(vista previa + "Editar aspecto"; el editor no se duplica)</small></h2>
+<p class="sub">Una vista previa de la portada con el aspecto de la campaña, a la hora y con los colores reales (en el producto es la vista previa del API, no un dibujo). Debajo, el único botón del paso: "Editar aspecto", que abre el editor en vivo de Diseño en modo campaña. Aquí vive también "Cuándo se ve el efecto" (antes colgaba del panel).</p>
+
+<div class="par">
+<div class="frame" style="flex:1 1 560px">
+<p class="cap">Escritorio · paso 2 abierto · con avisos cruzados</p>
+<div class="adm"><div class="cal sin"><div class="centro plano" style="padding:16px 20px"><div class="in">
+  <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n ok">✓</span><span><span class="t">1. Cuándo</span><span class="e ok">Listo: 27–30 nov</span></span><span></span><span class="ch">▾</span></button></section>
+  <section class="paso abierto">
+    <button class="paso-h" aria-expanded="true"><span class="n">2</span><span><span class="t">2. Cómo se verá</span></span><span class="chip c-gray">Personalizado</span><span class="ch">▴</span></button>
+    <div class="paso-b">
+      <div class="prev-w">
+        <div class="prev" role="img" aria-label="Vista previa de la portada de Black Friday">
+          <div class="top">¡Llegó el Black Friday!</div>
+          <div class="hero"><span class="sello">−30 %</span><h6>Black Friday</h6><p>Hasta 30 % de descuento en tus zapatillas favoritas</p><span class="b">Ver ofertas</span></div>
+          <div class="tira-p"><span></span><span></span><span></span><span></span></div>
+        </div>
+        <div style="display:grid;gap:10px">
+          <button class="btn sec m">Editar aspecto →</button>
+          <p class="ayuda" style="margin:0">Se abre el editor de Diseño en esta campaña. Al terminar vuelves aquí, a este paso.</p>
+        </div>
+      </div>
+      <div role="status" class="aviso warn"><b class="k">Tu portada promete un descuento pero esta campaña no tiene promoción.</b> Agrégala en el paso 3 o quita el texto. <span style="display:block;margin-top:2px;font-size:12.5px">Aparece en: sello "−30 %" y portada ("30 % de descuento").</span>
+        <div class="ac"><button class="btn m">Ir al paso 3</button><button class="btn m ghost">Editar aspecto</button></div></div>
+      <div role="status" class="aviso warn"><b class="k">El color principal casi no se lee sobre blanco</b> (contraste 2,3 a 1; se pide 3 a 1). Cámbialo en Diseño.</div>
+      <div>
+        <h5>Cuándo se ve el efecto</h5>
+        <p class="ayuda" style="margin:0 0 4px">● Lluvia de ofertas · "¡Llegó el Black Friday!"</p>
+        <label class="radio-l"><input type="radio" name="m4" checked><span>Solo el día clave<small>vie 27 nov</small></span></label>
+        <label class="radio-l"><input type="radio" name="m4"><span>Toda la campaña<small>27 nov – 30 nov</small></span></label>
+      </div>
+    </div>
+  </section>
+  <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n">3</span><span><span class="t">3. Promoción</span><span class="e mut">Sin promoción</span></span><span></span><span class="ch">▾</span></button></section>
+</div></div></div></div>
+<p class="nota"><b>V1</b>Dos avisos de sentido común, que <strong>no bloquean</strong>: (R3.2) la portada promete descuento y el paso 3 está vacío; (R8.8) color ilegible. Cada uno se muestra en el paso donde se resuelve y trae su atajo. El mismo aviso se ve en Diseño (modo campaña), como ya define campanas-cuando R8.7; aquí no se duplica porque son pantallas distintas.</p>
+<p class="nota"><b>V2</b>(R3.3) Si la portada dice "30 %" y la promoción es de 20 %, el aviso cambia a: <q>Tu portada dice 30 % pero la promoción de esta campaña es de 20 %.</q> con "Ir al paso 3" y "Editar aspecto". Con una promoción confirmada que coincide, ningún aviso. En tiendas sin paso 3 el aviso sigue siendo el de hoy: <q>Tu campaña no cambia precios…</q> (pantalla 9).</p>
+</div>
+
+<div style="flex:1 1 340px;max-width:380px">
+<div class="frame">
+<p class="cap">Celular (360 px) · con cambios sin guardar en el paso 1</p>
+<div class="adm" style="width:360px;max-width:100%"><div class="cal sin"><div class="centro plano"><div class="in">
+  <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n ok">✓</span><span><span class="t">1. Cuándo</span><span class="e ok">Listo: 27 nov 10:00 – 30 nov, medianoche</span></span><span></span><span class="ch">▾</span></button></section>
+  <section class="paso abierto">
+    <button class="paso-h" aria-expanded="true"><span class="n">2</span><span><span class="t">2. Cómo se verá</span></span><span class="chip c-gray">Del catálogo</span><span class="ch">▴</span></button>
+    <div class="paso-b">
+      <div class="prev"><div class="top">¡Llegó el Black Friday!</div><div class="hero"><h6>Black Friday</h6><p>Ofertas por tiempo limitado</p><span class="b">Ver ofertas</span></div></div>
+      <button class="btn sec m">Guardar y editar aspecto →</button>
+      <p class="ayuda" style="margin:0">Tienes cambios sin guardar: se guardan como borrador y abre el editor. No se activa nada.</p>
+    </div>
+  </section>
+</div></div></div></div>
+<p class="nota"><b>V3</b>"Editar aspecto" con cambios pendientes: en vez de deshabilitarse ("guarda primero", como hoy), el botón dice <strong>"Guardar y editar aspecto"</strong> y guarda como borrador sin activar. Evita un callejón sin salida en el celular.</p>
+</div>
+
+<div class="frame">
+<p class="cap">Diseño · modo campaña (único cambio: barra de retorno)</p>
+<div class="adm"><div class="dis-bar"><a href="#a4" class="btn link" style="min-height:44px;display:inline-flex;align-items:center">← Volver a Black Friday</a><span style="color:#4b5563">Estás editando el aspecto de <strong style="color:#111827">Black Friday</strong></span></div>
+<div class="dis-lay"><aside><b>Editor en vivo</b>Paleta · portada · cinta · adornos · efecto · saludo<br><br><em>Sin campos de fechas, de uso ni de promoción (un dato, un lugar).</em></aside><div class="lienzo"><div class="prev"><div class="top">¡Llegó el Black Friday!</div><div class="hero"><h6>Black Friday</h6><p>Ofertas por tiempo limitado</p></div></div></div></div></div>
+<p class="nota"><b>V4</b>Diseño agrega una sola cosa: la barra "← Volver a Black Friday", que lleva de regreso al centro en el <strong>paso 2</strong> (CA-1.3). Llegando desde el selector de campañas de Diseño (entrada directa) la barra no aparece. Requiere un cambio pequeño en Diseño (ruta de retorno).</p>
+</div>
+</div>
+</div>
+
+<!-- ======================= 5. PASO 3 ======================= -->
+<h2 id="a5">5 · Paso 3 · Promoción <small>(opcional · solo tiendas con carrito)</small></h2>
+<p class="sub">Una campaña tiene <strong>una</strong> promoción: un alcance y un porcentaje (R4.7). Se arma en cuatro bloques cortos: <strong>A qué se aplica → Cuánto → Cómo se combina → Cupón de la campaña (opcional)</strong>. Todo se guarda con el CTA único de la campaña; los permisos son casillas, no interruptores inmediatos. La pantalla pregunta por la capacidad "vende con carrito": en los demás rubros este paso no existe (pantalla 9).</p>
+
+<div class="par">
+<div class="frame" style="flex:1 1 360px;max-width:520px">
+<p class="cap">Vacío · "Sin promoción"</p>
+<div class="adm"><div class="cal sin"><div class="centro plano"><div class="in">
+  <section class="paso abierto">
+    <button class="paso-h" aria-expanded="true"><span class="n">3</span><span><span class="t">3. Promoción <span class="opc">opcional</span></span></span><span class="chip c-gray">Sin promoción</span><span class="ch">▴</span></button>
+    <div class="paso-b">
+      <div class="vacio">
+        <span>Esta campaña solo cambia cómo se ve tu tienda: <strong>los precios no cambian</strong>. Si quieres rebajar precios mientras dure, agrega una promoción.</span>
+        <div><button class="btn sec m">+ Agregar promoción</button></div>
+      </div>
+    </div>
+  </section>
+</div></div></div></div>
+<p class="nota"><b>E1</b>Sin promoción, activar la campaña es solo visual y sale directo (CA-2.4). El botón es secundario y no es un interruptor (misma lógica que "+ Agregar fechas de uso" de campanas-cuando). Quitarla después: "Quitar promoción" al final del bloque.</p>
+</div>
+
+<div class="frame" style="flex:1 1 640px">
+<p class="cap">Escritorio · promoción armada · categorías · aún sin confirmar</p>
+<div class="adm"><div class="cal sin"><div class="centro plano" style="padding:16px 20px"><div class="in">
+  <section class="paso abierto">
+    <button class="paso-h" aria-expanded="true"><span class="n pend">3</span><span><span class="t">3. Promoción <span class="opc">opcional</span></span></span><span class="chip c-ambar2">Sin confirmar</span><span class="ch">▴</span></button>
+    <div class="paso-b">
+
+      <fieldset style="border:0;padding:0;margin:0" class="alc">
+        <legend class="lbl">A qué productos se aplica</legend>
+        <label><input type="radio" name="al" value="t"><span><b>Toda la tienda</b><small>Todos los productos activos, también los que crees después.</small></span></label>
+        <label><input type="radio" name="al" value="c" checked><span><b>Categorías</b><small>Los productos de las categorías que elijas, con sus subcategorías y los que agregues después.</small></span></label>
+        <label><input type="radio" name="al" value="p"><span><b>Productos que elijo</b><small>Una lista fija: los productos nuevos no entran solos. Se eligen en lote.</small></span></label>
+      </fieldset>
+
+      <div>
+        <span class="lbl" id="catl">Categorías</span>
+        <ul class="arbol" aria-labelledby="catl">
+          <li><input type="checkbox" checked aria-label="Zapatillas"><span>Zapatillas</span><span class="c">34 productos</span></li>
+          <li class="sub"><input type="checkbox" checked aria-label="Running" disabled><span>Running <small style="color:#4b5563">· entra con Zapatillas</small></span><span class="c">12</span></li>
+          <li><input type="checkbox" aria-label="Camisas"><span>Camisas</span><span class="c">48 productos</span></li>
+          <li><input type="checkbox" aria-label="Accesorios"><span>Accesorios</span><span class="c">21 productos</span></li>
+        </ul>
+        <div class="sel-res" style="margin-top:8px"><span class="pill">Zapatillas ×</span><span style="color:#4b5563">1 categoría elegida</span></div>
+      </div>
+
+      <div>
+        <label class="lbl" for="pc">Descuento sobre el precio regular</label>
+        <div class="pct"><input id="pc" type="number" inputmode="numeric" value="20" min="1" max="90" aria-describedby="pcd"><span>%</span></div>
+        <p class="ayuda" id="pcd">Un número entero de 1 a 90. Desde 50 % te pedimos revisarlo al confirmar.</p>
+        <div class="ejem" style="margin-top:10px" aria-live="polite">
+          <span>Entran hoy <b>34 productos</b> de Zapatillas (los inactivos o sin stock no se cuentan).</span>
+          <span>Un producto de <b>S/ 100</b> pasa a <b>S/ 80</b>.</span>
+        </div>
+      </div>
+
+      <fieldset style="border:0;padding:0;margin:0">
+        <legend class="lbl">Cómo se combina <span class="opc" style="margin-left:6px">pendiente de Diego · Q1</span></legend>
+        <label class="chk"><input type="checkbox"><span>Permitir cupones sobre productos en promoción<small>Apagado: un cupón de tu tienda solo descuenta los productos sin promoción.</small></span></label>
+        <label class="chk"><input type="checkbox"><span>Permitir envío gratis en pedidos con productos en promoción<small>Apagado: un pedido con algún producto en promoción no recibe envío gratis por monto mínimo (el recojo en tienda sigue gratis).</small></span></label>
+      </fieldset>
+
+      <div class="bloque">
+        <h5>Cupón de la campaña <span class="opc">opcional</span></h5>
+        <div class="g2">
+          <div><label class="lbl" for="cc">Código</label><input id="cc" class="inp" value="BLACK10" style="text-transform:uppercase"></div>
+          <div><span class="lbl">Descuento del cupón</span>
+            <div class="hora" data-modo="hora"><div class="ctl" role="group" aria-label="Tipo de cupón"><div class="sg"><label><input type="radio" name="tc" value="dia" checked><span>Porcentaje</span></label><label><input type="radio" name="tc" value="hora"><span>Monto fijo</span></label></div><input type="number" value="10" style="width:90px" aria-label="Valor del cupón"></div></div></div>
+        </div>
+        <div class="g2">
+          <div><label class="lbl" for="cu">Límite de usos <small>opcional</small></label><input id="cu" class="inp" placeholder="Sin límite"></div>
+          <div><label class="lbl" for="cm">Compra mínima <small>opcional</small></label><input id="cm" class="inp" placeholder="Sin mínimo"></div>
+        </div>
+        <p class="ayuda" style="margin:0">Solo vale mientras dure la campaña. Aparecerá en Cupones como «de la campaña Black Friday» y se edita solo aquí.</p>
+        <div role="status" class="aviso warn">Este cupón solo valdrá en productos sin promoción, porque «Permitir cupones…» está apagado. <button class="btn link" style="min-height:44px">Permitirlo</button> <em style="font-size:12px">(Q5, pendiente de Diego)</em></div>
+        <div><button class="btn link" style="min-height:44px">Quitar cupón</button></div>
+      </div>
+
+      <div>
+        <span class="lbl">Así lo verá tu cliente</span>
+        <div class="tienda" style="border-radius:10px;max-width:200px"><div class="pad"><div class="pcard"><div class="img"><i class="dsc">−20 %</i></div><h6>Zapatillas Urban</h6><div><span class="pv camp">S/ 80,00</span><span class="pr">S/ 100,00</span></div></div></div></div>
+      </div>
+
+      <div style="border-top:1px solid #e5e7eb;padding-top:10px"><button class="btn peligro" style="min-height:44px">Quitar promoción</button></div>
+    </div>
+  </section>
+</div></div></div></div>
+<p class="nota"><b>E2</b>Los avisos de Indecopi, de costo y de ofertas propias <strong>no están aquí: llegan en la confirmación</strong> (pantalla 7), donde la spec los pide (R9.2, R10.2), para que el dueño los lea justo antes de confirmar y no se repitan dos veces. Aquí solo hay lo necesario para armar: cuántos productos entran y el ejemplo de precio (R4.6).</p>
+<p class="nota"><b>E3</b>Categorías con subcategorías entran juntas (Q6, recomendación de la spec): Running se muestra marcado y bloqueado, con "entra con Zapatillas", para que el dueño lo entienda sin desmarcarlo. <em>Q6 pendiente de Diego.</em> El rango 1–90 es Q7, <em>pendiente de Diego</em>. Las dos casillas apagadas por defecto son Q1 (a), <em>pendiente de Diego</em>.</p>
+<p class="nota"><b>E4</b>"Excluir productos de toda la tienda" no existe en esta fase (fuera de alcance de la spec): quien quiera excluir elige categorías o productos.</p>
+</div>
+</div>
+
+<div class="par">
+<div class="frame" style="flex:1 1 340px;max-width:380px">
+<p class="cap">Celular (360 px) · "Productos que elijo" ya con selección</p>
+<div class="adm" style="width:360px;max-width:100%"><div class="cal sin"><div class="centro plano"><div class="in">
+  <section class="paso abierto">
+    <button class="paso-h" aria-expanded="true"><span class="n pend">3</span><span><span class="t">3. Promoción</span></span><span class="chip c-ambar2">Sin confirmar</span><span class="ch">▴</span></button>
+    <div class="paso-b">
+      <fieldset style="border:0;padding:0;margin:0" class="alc"><legend class="lbl">A qué productos se aplica</legend>
+        <label><input type="radio" name="al2"><span><b>Toda la tienda</b></span></label>
+        <label><input type="radio" name="al2"><span><b>Categorías</b></span></label>
+        <label><input type="radio" name="al2" checked><span><b>Productos que elijo</b></span></label>
+      </fieldset>
+      <div class="bloque" style="gap:8px">
+        <div class="sel-res"><b>12 productos elegidos</b></div>
+        <div class="sel-res"><span class="pill">Zapatillas Urban</span><span class="pill">Zapatillas Trail</span><span class="pill">Polo Sport</span><span style="color:#4b5563">y 9 más</span></div>
+        <button class="btn sec m">Cambiar selección</button>
+      </div>
+      <div><label class="lbl" for="pc2">Descuento sobre el precio regular</label><div class="pct"><input id="pc2" type="number" value="25"><span>%</span></div></div>
+      <div class="ejem"><span>Entran hoy <b>12 productos</b>.</span><span>Un producto de <b>S/ 100</b> pasa a <b>S/ 75</b>.</span></div>
+    </div>
+  </section>
+</div></div></div></div>
+<p class="nota"><b>E5</b>Estado del paso al cerrarlo: <em>"−25 % en 12 productos"</em>. La lista se elige en una ventana aparte (pantalla 6); aquí solo se resume, sin 12 filas a editar.</p>
+</div>
+
+<div class="frame" style="flex:1 1 560px">
+<p class="cap">Estados del paso 3 (cada uno es una línea o un bloque dentro del paso)</p>
+<div class="adm"><div class="cal sin"><div class="centro plano" style="padding:16px"><div class="in" style="gap:12px">
+  <div class="ejem" aria-busy="true"><span>Contando los productos que entran…</span><span class="skel"></span></div>
+  <p class="nota" style="margin:0"><b>Cargando</b>El conteo y el ejemplo se piden al servidor al cambiar el alcance; el resto del paso sigue editable.</p>
+  <div role="alert" class="aviso rojo">No pudimos contar los productos de esta selección. <button class="btn link" style="min-height:44px">Reintentar</button></div>
+  <p class="nota" style="margin:0"><b>Error</b>No bloquea guardar como borrador, pero sí confirmar (la confirmación necesita el número).</p>
+  <div role="alert" class="aviso rojo">Esta selección no tiene productos activos con stock. Elige otras categorías o productos.</div>
+  <p class="nota" style="margin:0"><b>Alcance vacío</b>Bloquea "Activar campaña"; el estado del paso dice "Revisar".</p>
+  <div><div class="pct"><input type="number" class="err" value="91" aria-invalid="true" aria-label="Descuento"><span>%</span></div><p class="error" role="alert">Escribe un número entero de 1 a 90.</p></div>
+  <p class="nota" style="margin:0"><b>Porcentaje inválido</b>0, 91, 12,5 o texto no se aceptan (CA-4.1).</p>
+  <div class="aviso info"><b class="k">Promoción confirmada por Ana el 20 oct, 10:32</b> · −20 % en Zapatillas.<br>Mientras la promoción esté en curso no podrás subir el precio regular de esos productos (Q3, <em>pendiente de Diego</em>).</div>
+  <p class="nota" style="margin:0"><b>Confirmada / en curso</b>El estado del paso 3 pasa a verde: "−20 % en Zapatillas · confirmada". Cualquier cambio de porcentaje, alcance, permisos, cupón o fechas vuelve a "Sin confirmar" y pide confirmar de nuevo al guardar (R9.5).</p>
+  <div class="aviso warn"><b class="k">Confirma tu promoción de noviembre.</b> La de julio terminó. Tu campaña se verá sola, pero los precios no cambian hasta que confirmes esta edición. <button class="btn m">Revisar y confirmar</button> <em style="font-size:12px">(Q2, pendiente de Diego)</em></div>
+  <p class="nota" style="margin:0"><b>Edición nueva de una campaña que se repite</b>R9.6. El mismo recordatorio llega como chip en la fila (pantalla 1).</p>
+  <div class="aviso info">La campaña terminó el 30 nov: los precios ya volvieron al regular. La promoción queda solo para consulta.</div>
+  <p class="nota" style="margin:0"><b>Campaña terminada</b>Paso en solo lectura; el estado dice "−20 % en Zapatillas · terminó".</p>
+</div></div></div></div>
+</div>
+</div>
+
+<!-- ======================= 6. ELEGIR PRODUCTOS ======================= -->
+<h2 id="a6">6 · Elegir productos en lote <small>(ventana aparte; nunca uno por uno)</small></h2>
+<p class="sub">R4.4: buscar, filtrar por categoría, marcar varios, "seleccionar todos los resultados" y quitar varios a la vez. En el celular la ventana ocupa toda la pantalla; el resumen y el botón "Listo" quedan en un pie de la propia ventana (es un diálogo, no una barra fija de la página).</p>
+<div class="par">
+<div class="frame" style="flex:1 1 640px">
+<p class="cap">Escritorio · filtrada por Zapatillas · 40 resultados, 12 elegidos</p>
+<div class="fondo-dlg" style="border:1px solid #d1d5db"><div class="dlg picker" role="dialog" aria-modal="true" aria-labelledby="pk">
+  <div style="padding:16px 16px 10px"><h5 id="pk" style="font-size:16px">Elegir productos</h5>
+    <div class="g2" style="margin-top:8px"><div><label class="lbl" for="bq">Buscar</label><input id="bq" class="inp" placeholder="Nombre o código"></div>
+    <div><label class="lbl" for="bc">Categoría</label><select id="bc" class="inp"><option>Zapatillas (incluye Running)</option></select></div></div></div>
+  <div class="barra-sel"><label class="chk" style="min-height:44px;padding:0"><input type="checkbox" checked><span><b>Seleccionar los 40 resultados</b></span></label><span class="sp"></span><span>12 elegidos</span><button class="btn link" style="min-height:44px">Quitar los 40 resultados</button><button class="btn link" style="min-height:44px">Quitar todos</button></div>
+  <table class="tab"><thead><tr><th style="width:44px"></th><th>Producto</th><th>Categoría</th><th style="text-align:right">Precio regular</th></tr></thead><tbody>
+    <tr><td><input type="checkbox" checked aria-label="Zapatillas Urban"></td><td><span class="ph"></span>Zapatillas Urban</td><td>Zapatillas</td><td class="num">S/ 100,00</td></tr>
+    <tr><td><input type="checkbox" checked aria-label="Zapatillas Trail"></td><td><span class="ph"></span>Zapatillas Trail <span class="chip c-gray">Con oferta propia</span></td><td>Zapatillas</td><td class="num">S/ 100,00</td></tr>
+    <tr><td><input type="checkbox" aria-label="Zapatillas Running Pro"></td><td><span class="ph"></span>Running Pro</td><td>Running</td><td class="num">S/ 249,00</td></tr>
+    <tr><td><input type="checkbox" aria-label="Zapatillas Kids"></td><td><span class="ph"></span>Zapatillas Kids</td><td>Zapatillas</td><td class="num">S/ 79,00</td></tr>
+  </tbody></table>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid #e5e7eb"><span style="font-size:13px;color:#4b5563">Los inactivos o sin stock no aparecen.</span><span><button class="btn m ghost">Cancelar</button> <button class="btn pri m">Listo · 12 productos</button></span></div>
+</div></div>
+<p class="nota"><b>S1</b>La marca "Con oferta propia" adelanta lo que la confirmación contará (R10.7). Cerrar con "Cancelar" o Esc no cambia la selección anterior. Estados: cargando (filas en esqueleto) · sin resultados ("Ningún producto coincide con la búsqueda") · error ("No pudimos cargar los productos. Reintentar") · con 12 elegidos.</p>
+</div>
+</div>
+
+<!-- ======================= 7. CONFIRMACIÓN ======================= -->
+<h2 id="a7">7 · Confirmación de la promoción <small>(un solo diálogo, desde "Activar campaña", desde el interruptor y desde "Guardar cambios")</small></h2>
+<p class="sub">Es el único momento en que se reúnen todos los avisos que tocan precios (R9.2). Cerrar el diálogo, con la X o con Esc, equivale a <strong>no confirmar</strong> (R9.3): la campaña no se enciende y los cambios no se guardan como confirmados. La confirmación se registra con quién, cuándo y qué (R9.4). Este ejemplo es de un dueño que confirma el <strong>12 nov</strong>; el resto del prototipo usa hoy = 20 oct.</p>
+<div class="par">
+<div class="frame" style="flex:1 1 560px">
+<p class="cap">Escritorio · −20 % en Zapatillas</p>
+<div class="fondo-dlg" style="border:1px solid #d1d5db"><div class="dlg ancho" role="dialog" aria-modal="true" aria-labelledby="cf">
+  <h5 id="cf">¿Aplicar −20 % en Zapatillas?</h5>
+  <p style="margin:6px 0 12px">Cambia lo que cobras: revísalo antes de confirmar.</p>
+  <dl>
+    <dt>Qué</dt><dd>−20 % sobre el precio regular, en <b>34 productos</b> de la categoría Zapatillas</dd>
+    <dt>Desde</dt><dd>vie 27 nov, 00:00</dd>
+    <dt>Hasta</dt><dd>lun 30 nov, 23:59 (hora de Lima)</dd>
+    <dt>Ejemplo</dt><dd>Un producto de S/ 100 pasa a S/ 80</dd>
+    <dt>Se combina</dt><dd>No con cupones de la tienda · No con envío gratis por monto mínimo</dd>
+  </dl>
+  <ul class="av">
+    <li class="aviso info">Los precios de tus productos <b>no se modifican</b>: se rebajan solos mientras dura la campaña y vuelven solos al terminar.</li>
+    <li class="aviso warn"><b>2 productos subieron de precio regular en los 30 días previos al inicio:</b> Zapatillas Trail (S/ 80 → S/ 100, el 10 nov) y Running Pro (S/ 199 → S/ 249, el 3 nov). Indecopi pide calcular el descuento sobre el precio ordinario anterior. Te recomendamos dejarlos fuera de la promoción o esperar. <button class="btn link" style="min-height:44px">Ver los 2 productos</button></li>
+    <li class="aviso warn"><b>1 producto quedaría por debajo de su costo:</b> Zapatillas Kids (precio S/ 80 con promoción, costo S/ 85).</li>
+    <li class="aviso warn"><b>8 productos ya tienen un precio de oferta;</b> se aplicará el mayor descuento, no se suman.</li>
+    <li class="aviso" style="background:#f3f4f6;color:#374151">Aún no tenemos 30 días de historial de precios de 5 productos; no podemos avisarte si subieron.</li>
+  </ul>
+  <div class="pie"><button class="btn m">Volver y cambiar la promoción</button><button class="btn pri m">Sí, aplicar −20 %</button></div>
+</div></div>
+<p class="nota"><b>D1</b>Orden: primero lo que se cobra (qué, cuándo, ejemplo, combinación), luego los avisos de más grave a menos grave. Los avisos que no aplican <strong>no aparecen</strong> (CA-10.3). Cada aviso es informativo y no bloquea. El botón principal repite el porcentaje ("Sí, aplicar −20 %") para que sea imposible confirmar sin leerlo; el secundario regresa al paso 3.</p>
+<p class="nota"><b>D2</b>Los datos de esta ventana (porcentaje, alcance, fechas) ya están en la campaña, pero el diálogo es otra capa y existe para repetirlos una vez, de forma explícita, antes de tocar precios. No hay un segundo diálogo después.</p>
+</div>
+
+<div style="flex:1 1 340px;max-width:380px">
+<div class="frame">
+<p class="cap">Celular (360 px) · descuento muy alto (60 %)</p>
+<div class="fondo-dlg" style="border:1px solid #d1d5db;padding:12px 8px"><div class="dlg ancho" style="padding:16px" role="dialog" aria-modal="true" aria-labelledby="cf2">
+  <h5 id="cf2">¿Aplicar −60 % en toda la tienda?</h5>
+  <dl style="margin-top:10px"><dt>Qué</dt><dd>−60 % en <b>103 productos</b></dd><dt>Desde</dt><dd>vie 27 nov, 00:00</dd><dt>Hasta</dt><dd>lun 30 nov, 23:59</dd><dt>Ejemplo</dt><dd>S/ 100 pasa a S/ 40</dd></dl>
+  <ul class="av"><li class="aviso warn"><b>Es un descuento muy alto.</b> Verifica que 60 % es lo que quieres.</li></ul>
+  <label class="chk"><input type="checkbox"><span>Revisé que 60 % es correcto</span></label>
+  <div class="pie" style="flex-direction:column-reverse"><button class="btn m" style="width:100%">Volver</button><button class="btn pri m" style="width:100%" disabled>Sí, aplicar −60 %</button></div>
+</div></div>
+<p class="nota"><b>D3</b>Desde 50 % el botón espera una casilla (R4.2); en el celular el diálogo es una hoja de ancho completo con botones apilados de 44 px.</p>
+</div>
+<div class="frame">
+<p class="cap">Si el dueño la cierra</p>
+<p class="nota" style="margin:0"><b>D4</b>La campaña sigue apagada (si entró por el interruptor, éste vuelve a apagado); si ya estaba activa y editó la promoción, los cambios quedan sin guardar y la promoción anterior sigue vigente. Mensaje en el panel: <q>No se aplicó la promoción. La campaña sigue como estaba.</q></p>
+</div>
+</div>
+</div>
+
+<!-- ======================= 8. ESTADOS ======================= -->
+<h2 id="a8">8 · Activar, guardar y estados de la acción <small>(un CTA, sin barra fija)</small></h2>
+<table class="tab" style="background:#fff;border:1px solid #d1d5db;border-radius:10px;overflow:hidden;margin-bottom:12px"><thead><tr><th>Situación</th><th>Botón principal</th><th>Secundarios</th><th>Qué pasa</th></tr></thead><tbody>
+<tr><td>Campaña apagada, paso 1 pendiente</td><td>"Activar campaña" deshabilitado + motivo en texto</td><td>Guardar sin activar (si hay cambios)</td><td>El motivo es una línea visible: "Completa las fechas del paso 1 para activarla."</td></tr>
+<tr><td>Apagada, paso 1 listo, sin promoción</td><td>"Activar campaña"</td><td>Guardar sin activar · Descartar</td><td>Activa directo (solo visual). Toast: "Campaña activada. Tu tienda se actualiza en unos minutos." Si empieza más tarde: "Campaña activada. Empezará el vie 27 nov."</td></tr>
+<tr><td>Apagada, promoción sin confirmar</td><td>"Activar campaña"</td><td>Guardar sin activar · Descartar</td><td>Abre la confirmación (pantalla 7). Confirmar activa y confirma en un solo paso.</td></tr>
+<tr><td>Activa, sin cambios</td><td>"Guardar cambios" deshabilitado</td><td>Restablecer lo sugerido / Eliminar (si aplican)</td><td>Se apaga con el interruptor de la fila.</td></tr>
+<tr><td>Activa, cambió solo el paso 1 o 2</td><td>"Guardar cambios"</td><td>Descartar</td><td>Guarda directo. Si la campaña tiene promoción confirmada y cambió una fecha: confirmación (R9.5).</td></tr>
+<tr><td>Activa, cambió la promoción</td><td>"Guardar cambios"</td><td>Descartar</td><td>Abre la confirmación; el diálogo dice qué cambió ("de −20 % a −25 %").</td></tr>
+<tr><td>Guardando</td><td>"Guardando…" deshabilitado</td><td>—</td><td>El panel no se cierra.</td></tr>
+<tr><td>Error del servidor</td><td>Se vuelve a habilitar</td><td>—</td><td>Toast con el mensaje del API; el panel queda abierto. Si el API rechaza la promoción por tienda sin carrito: "Esta tienda no usa promociones de precio."</td></tr>
+</tbody></table>
+<div class="par">
+<div class="frame"><p class="cap">Éxito</p><span class="toast" role="status">Campaña activada. Empezará el vie 27 nov. Los precios cambian solos ese día y vuelven solos al terminar.</span></div>
+<div class="frame"><p class="cap">Interruptor apagado</p><span class="toast" role="status">Campaña apagada. Los precios vuelven al regular en unos minutos.</span></div>
+<div class="frame"><p class="cap">Error</p><span class="toast err" role="alert">No se pudo activar: Black Friday se cruza con Aniversario del 27 al 28 nov. Apaga una de las dos o cambia las fechas.</span></div>
+</div>
+<p class="nota"><b>A1</b>Apagar una campaña con promoción en curso corta el descuento en el siguiente cálculo del servidor; los pedidos ya creados y los precios congelados al empezar a pagar se respetan (R8.4, R8.6). La caché pública de la tienda puede mostrar el precio viejo hasta 5 minutos, pero lo que se cobra lo decide el servidor: por eso el toast dice "en unos minutos".</p>
+
+<!-- ======================= 9. RESERVA ======================= -->
+<h2 id="a9">9 · Rubros con reserva: dos pasos <small>(hotel, tours, eventos, locales, canchas)</small></h2>
+<p class="sub">Misma pantalla, sin paso 3 (R1.4, R11.1). No hay mensaje que explique la ausencia, como ya se hace con las fechas de uso en productos. El componente pregunta por la <strong>capacidad</strong> "vende con carrito", no por el rubro; los textos ("Estadías", "Salidas"…) siguen saliendo del perfil. Las <strong>fechas de uso</strong> viven dentro del paso 1 (R1.2).</p>
+<div class="par">
+<div class="frame" style="flex:1 1 560px">
+<p class="cap">Hotel · escritorio · paso 1 abierto con fechas de uso</p>
+<div class="adm"><div class="cal sin"><div class="centro plano" style="padding:16px 20px"><div class="in">
+  <section class="paso abierto">
+    <button class="paso-h" aria-expanded="true"><span class="n ok">✓</span><span><span class="t">1. Cuándo</span></span><span class="chip c-verde">Listo</span><span class="ch">▴</span></button>
+    <div class="paso-b">
+      <div><span class="lbl">Fechas (desde y hasta, incluidas)</span><button class="per"><span>27 nov – 30 nov · 4 días</span><span aria-hidden="true">▾</span></button></div>
+      <div class="uso">
+        <div><h5>Fechas de uso</h5><p class="ayuda" style="margin:0">Hasta cuándo se usa lo que tus clientes reservan durante la campaña. Les orienta en tu portada y en el calendario; no cambia tus precios ni limita las reservas.</p></div>
+        <div class="g2"><div><span class="lbl">Estadías desde <small>opcional</small></span><button class="per"><span style="color:#6b7280">Desde que reservan</span><span aria-hidden="true">▾</span></button></div>
+          <div><span class="lbl">Estadías hasta</span><button class="per"><span>mié 31 mar 2027</span><span aria-hidden="true">▾</span></button></div></div>
+        <p class="vista">Así lo verá tu cliente en la portada: <q>Reserva hasta el 30 nov · para alojarte hasta el 31 mar</q></p>
+      </div>
+    </div>
+  </section>
+  <section class="paso"><button class="paso-h" aria-expanded="false"><span class="n">2</span><span><span class="t">2. Cómo se verá</span><span class="e">Personalizado</span></span><span></span><span class="ch">▾</span></button></section>
+  <div role="status" class="aviso warn"><b class="k">Tu portada menciona un descuento, pero esta campaña no cambia precios.</b> Anunciar un descuento que no existe es publicidad engañosa. Quita el texto en Diseño.</div>
+  <div class="cta-fila"><button class="btn pri grande">Activar campaña</button><span class="sp"></span></div>
+</div></div></div></div>
+<p class="nota"><b>R1</b>Solo dos pasos, la numeración queda 1 y 2. El aviso es el de hoy (campanas-cuando R8.7, texto sin cambio); aparece junto al paso 2 y en Diseño. El CTA sigue siendo "Activar campaña", habilitado con el paso 1 listo.</p>
+</div>
+</div>
+
+<!-- ======================= 10. PRODUCTOS Y CUPONES ======================= -->
+<h2 id="a10">10 · Efectos en otras pantallas de Admin <small>(productos y cupones)</small></h2>
+<p class="sub">La promoción obliga a tres pequeños cambios fuera de Campañas. Ninguno agrega un lugar donde editar la promoción (R1.6).</p>
+<div class="par">
+<div class="frame" style="flex:1 1 420px">
+<p class="cap">Productos · subir el precio regular antes de una promoción programada (R10.3)</p>
+<div class="adm"><div class="form-prod">
+  <label class="lbl" for="pp1" style="margin:0">Precio regular<input id="pp1" class="inp" style="margin-top:4px" value="S/ 100,00 → S/ 120,00"></label>
+  <div role="status" class="aviso warn"><b class="k">Esta subida cae en los 30 días previos a la promoción Black Friday</b> (empieza el vie 27 nov). Indecopi pide que el descuento parta del precio ordinario anterior. Puedes guardar igual.</div>
+  <div class="acc" style="border:0;padding:0"><button class="btn pri m">Guardar</button><button class="btn ghost m">Descartar</button></div>
+</div></div></div>
+
+<div class="frame" style="flex:1 1 420px">
+<p class="cap">Productos · promoción en curso (R10.5) <em style="color:#b45309">Q3 pendiente de Diego</em></p>
+<div class="adm"><div class="form-prod">
+  <label class="lbl" for="pp2" style="margin:0">Precio regular<input id="pp2" class="inp err" aria-invalid="true" aria-describedby="pe2" style="margin-top:4px" value="S/ 120,00"></label>
+  <p class="error" id="pe2" role="alert">Este producto está en la promoción Black Friday hasta el lun 30 nov, 23:59. Para cambiar su precio regular, apaga la promoción o espera a que termine. Bajarlo sí se puede.</p>
+  <div class="acc" style="border:0;padding:0"><button class="btn pri m" disabled>Guardar</button><button class="btn link" style="min-height:44px">Ir a Black Friday →</button></div>
+</div></div></div>
+
+<div class="frame" style="flex:1 1 420px">
+<p class="cap">Cupones · el cupón de una campaña</p>
+<div class="adm"><div class="cal sin">
+  <div class="fila" style="grid-template-columns:minmax(0,1fr) auto;"><div><p class="nom">BLACK10</p><div class="rg"><span>−10 % · hasta el lun 30 nov, 23:59</span><span class="chip c-gray">De la campaña Black Friday</span></div></div><button class="btn link" style="min-height:44px">Editar en la campaña →</button></div>
+  <div class="fila" style="grid-template-columns:minmax(0,1fr) auto;"><div><p class="nom">BIENVENIDO</p><div class="rg"><span>−10 % · sin vencimiento</span></div></div><button class="btn m">Editar</button></div>
+</div></div>
+<p class="nota"><b>X1</b>El cupón de campaña se ve en la lista pero no se edita ahí (un dato, un lugar): el botón lleva al paso 3.</p>
+</div>
+</div>
+
+<!-- ======================= TIENDA ======================= -->
+<h2 id="t1" style="margin-top:56px">11 · Tienda › Listado y categorías <small>(tienda de productos · precio tachado, precio de campaña y etiqueta)</small></h2>
+<p class="sub">Una sola forma de mostrar un descuento, venga de la campaña o de la oferta del producto: <strong>precio vigente en negrita, precio regular tachado, etiqueta "−N %" sobre la imagen</strong> (R6.2). El porcentaje se calcula sobre el precio regular; si gana la oferta propia del producto, la etiqueta dice el porcentaje de esa oferta (R6.3). Header visible (cuenta e idioma). En escritorio el botón de agregar sube desde abajo de la imagen, a todo el ancho.</p>
+
+<div class="frame">
+<p class="cap">Escritorio · categoría Zapatillas · la primera tarjeta con el cursor encima</p>
+<div class="tienda desk d">
+  <div class="t-top">¡Llegó el Black Friday!</div>
+  <div class="t-head"><b>Mi tienda</b><span>ES</span><span>Cuenta</span><span>Carrito (0)</span></div>
+  <div class="franja"><span><b>Black Friday</b> · −20 % en Zapatillas · hasta el lun 30 nov, 23:59</span>
+    <details open><summary>Ver condiciones</summary>
+      <div class="cond" style="margin:0 0 6px"><ul style="padding-top:10px">
+        <li>−20 % sobre el precio regular, en toda la categoría Zapatillas y sus subcategorías.</li>
+        <li>Vale hasta el lun 30 nov, 23:59 (hora de Lima).</li>
+        <li>No se combina con cupones de la tienda ni con envío gratis por monto mínimo.</li>
+        <li>El precio que ves es el precio final; el envío se muestra antes de pagar.</li>
+      </ul></div></details></div>
+  <div class="grid-p">
+    <div class="pcard"><div class="img"><i class="dsc">−20 %</i><span class="cta-sube">Agregar al carrito</span></div><span class="cat">Zapatillas</span><h6>Zapatillas Urban</h6><div><span class="pv camp">S/ 80,00</span><span class="pr"><span class="sr-only" style="position:absolute;left:-9999px">Precio regular </span>S/ 100,00</span></div></div>
+    <div class="pcard"><div class="img"><i class="dsc">−30 %</i></div><span class="cat">Zapatillas</span><h6>Zapatillas Trail</h6><div><span class="pv camp">S/ 70,00</span><span class="pr">S/ 100,00</span></div></div>
+    <div class="pcard"><div class="img"><i class="dsc">−20 %</i></div><span class="cat">Running</span><h6>Running Pro</h6><div><span class="pv camp">S/ 199,20</span><span class="pr">S/ 249,00</span></div></div>
+    <div class="pcard"><div class="img"></div><span class="cat">Zapatillas</span><h6>Zapatilla clásica (fuera de la promoción)</h6><div><span class="pv">S/ 120,00</span></div></div>
+  </div>
+</div>
+<p class="nota"><b>T1</b>"Zapatillas Trail": su oferta propia (S/ 70) es mejor que la promoción (S/ 80): gana la oferta, el tachado sigue siendo S/ 100 y la etiqueta dice −30 % (CA-5.3). El cliente no ve de dónde viene; el dueño sí, en la línea del pedido.</p>
+<p class="nota"><b>T2</b>Las condiciones (R6.5) están en una franja bajo el título de la categoría y se abren con "Ver condiciones" (objetivo táctil de 44 px, abierta o cerrada). Se arman solas desde la configuración, no las escribe el dueño. La franja solo aparece en páginas que listan productos de la promoción; el bloque de campaña de la portada no cambia (ya muestra el fin de la campaña).</p>
+</div>
+
+<div class="par">
+<div class="frame">
+<p class="cap">Celular (360 px) · listado</p>
+<div class="tienda phone">
+  <div class="t-head"><b>Mi tienda</b><span>ES</span><span>Cuenta</span><span>Carrito</span></div>
+  <div class="franja"><span><b>Black Friday</b> · −20 % en Zapatillas</span><details><summary>Ver condiciones</summary></details></div>
+  <div class="grid-p">
+    <div class="pcard"><div class="img"><i class="dsc">−20 %</i></div><h6>Zapatillas Urban</h6><div><span class="pv camp">S/ 80,00</span><span class="pr">S/ 100,00</span></div></div>
+    <div class="pcard"><div class="img"><i class="dsc">−30 %</i></div><h6>Zapatillas Trail</h6><div><span class="pv camp">S/ 70,00</span><span class="pr">S/ 100,00</span></div></div>
+  </div>
+</div>
+<p class="nota"><b>T3</b>En el celular la tarjeta no tiene botón sobre la imagen (no hay "hover"): se toca la tarjeta y se abre la ficha. La franja ocupa una línea con "Ver condiciones".</p>
+</div>
+
+<div class="frame">
+<p class="cap">Después del lun 30 nov, 23:59 · todo desaparece solo (R6.7)</p>
+<div class="tienda phone">
+  <div class="t-head"><b>Mi tienda</b><span>ES</span><span>Cuenta</span><span>Carrito</span></div>
+  <div class="grid-p">
+    <div class="pcard"><div class="img"></div><h6>Zapatillas Urban</h6><div><span class="pv">S/ 100,00</span></div></div>
+    <div class="pcard"><div class="img"><i class="dsc">−30 %</i></div><h6>Zapatillas Trail</h6><div><span class="pv camp">S/ 70,00</span><span class="pr">S/ 100,00</span></div></div>
+  </div>
+</div>
+<p class="nota"><b>T4</b>Sin franja, sin etiqueta de campaña; la oferta propia del producto sigue. Estados del listado: cargando (tarjetas en esqueleto) · vacío ("No hay productos en esta categoría") · error ("No pudimos cargar los productos. Reintentar"). Con la caché al día; hasta 5 minutos de desfase posible, que el carrito corrige (pantalla 13).</p>
+</div>
+</div>
+
+<!-- FICHA -->
+<h2 id="t2">12 · Tienda › Ficha del producto</h2>
+<p class="sub">El mismo trío (vigente, tachado, etiqueta) en grande, una línea de ahorro y las condiciones al alcance sin salir de la pantalla. <strong>Un solo CTA</strong>: "Agregar al carrito". Con variantes, el precio sigue a la variante elegida (cada una tiene su regular; R5.5); antes de elegir dice "Desde".</p>
+<div class="par">
+<div class="frame" style="flex:1 1 640px">
+<p class="cap">Escritorio</p>
+<div class="tienda desk d">
+  <div class="t-head"><b>Mi tienda</b><span>ES</span><span>Cuenta</span><span>Carrito (0)</span></div>
+  <div class="ficha">
+    <div class="gal"></div>
+    <div style="display:grid;gap:12px;align-content:start">
+      <span class="cat" style="font-size:13px;color:var(--mut)">Zapatillas</span>
+      <h3>Zapatillas Urban</h3>
+      <div class="precio"><span class="pv camp">S/ 80,00</span><span class="pr">S/ 100,00</span><span class="dsc2">−20 %</span></div>
+      <div class="ah">Ahorras S/ 20,00 con Black Friday</div>
+      <details class="cond" open><summary>Condiciones de la promoción</summary><ul>
+        <li>Black Friday: −20 % sobre el precio regular.</li><li>Vale hasta el lun 30 nov, 23:59 (hora de Lima).</li>
+        <li>Aplica a la categoría Zapatillas y sus subcategorías.</li><li>No se combina con cupones de la tienda ni con envío gratis por monto mínimo.</li>
+        <li>Precio final; el envío se muestra antes de pagar.</li></ul></details>
+      <div><span class="t-cap">Talla</span><div style="display:flex;gap:8px"><span class="etq" style="min-height:44px;padding:0 16px">38</span><span class="etq" style="min-height:44px;padding:0 16px">39</span><span class="etq" style="min-height:44px;padding:0 16px">40</span></div></div>
+      <span class="t-btn ancho">Agregar al carrito</span>
+    </div>
+  </div>
+</div>
+<p class="nota"><b>F1</b>Las condiciones (R6.5, CA-6.3) están abiertas por defecto en la ficha: es donde se decide la compra. Una línea de ahorro, no dos: el porcentaje va en la etiqueta y el monto en la frase. La oferta propia del producto (sin campaña) muestra el mismo trío sin "con Black Friday" ni condiciones de campaña.</p>
+</div>
+
+<div class="frame">
+<p class="cap">Celular (360 px)</p>
+<div class="tienda phone">
+  <div class="t-head"><b>Mi tienda</b><span>ES</span><span>Cuenta</span><span>Carrito</span></div>
+  <div class="ficha">
+    <div class="gal" style="aspect-ratio:4/3"></div>
+    <h3>Zapatillas Urban</h3>
+    <div class="precio"><span class="pv camp">S/ 80,00</span><span class="pr">S/ 100,00</span><span class="dsc2">−20 %</span></div>
+    <div class="ah">Ahorras S/ 20,00 con Black Friday</div>
+    <details class="cond"><summary>Condiciones de la promoción</summary><ul><li>−20 % sobre el precio regular.</li><li>Hasta el lun 30 nov, 23:59.</li></ul></details>
+    <span class="t-btn ancho">Agregar al carrito</span>
+  </div>
+</div>
+<p class="nota"><b>F2</b>El CTA está a la vista en la ficha del celular; la barra fija con "Agregar al carrito" aparece solo cuando ese botón sale de la pantalla (regla de la casa). En el celular las condiciones empiezan cerradas, con su resumen de una línea ya visible arriba (precio, tachado, etiqueta, ahorro).</p>
+</div>
+</div>
+
+<!-- CARRITO -->
+<h2 id="t3">13 · Tienda › Carrito</h2>
+<p class="sub">El servidor recalcula con cada cambio (agregar, quitar, cantidad, cupón, envío) y devuelve los precios vigentes; el navegador no manda precios (R8.1). Cada línea usa el mismo trío. Los totales suman lo que se ve, y el ahorro se informa <strong>una sola vez</strong>. Si algo cambió por una promoción que empezó o terminó, se dice <strong>antes de pagar</strong> (R6.6).</p>
+<div class="par">
+<div class="frame" style="flex:1 1 560px">
+<p class="cap">Escritorio · cupón aplicado solo a lo que no está en promoción · una línea con cambio de precio</p>
+<div class="tienda desk d">
+  <div class="t-head"><b>Mi tienda</b><span>ES</span><span>Cuenta</span><span>Carrito (2)</span></div>
+  <div class="res2">
+    <div class="cajita">
+      <div class="lin"><div class="im"></div><div><h6>Zapatillas Urban · 40</h6><div class="sm">Cantidad: 1</div></div><div class="pp"><b class="pv camp" style="display:block">S/ 80,00</b><span class="pr" style="margin:0">S/ 100,00</span></div></div>
+      <div class="lin"><div class="im"></div><div><h6>Polo Sport · M</h6><div class="sm">Cantidad: 1</div></div><div class="pp"><b class="pv" style="display:block">S/ 50,00</b></div></div>
+      <div class="lin"><div class="im"></div><div><h6>Running Pro · 41</h6><div class="sm">Cantidad: 1</div></div><div class="pp"><b class="pv" style="display:block">S/ 249,00</b></div>
+        <div class="cambio" role="status">El precio de Running Pro cambió: la promoción terminó. Antes S/ 199,20, ahora S/ 249,00.</div></div>
+    </div>
+    <div style="display:grid;gap:12px">
+      <div class="cajita">
+        <div class="cup"><input aria-label="Cupón" value="BIENVENIDO"><button>Aplicar</button></div>
+        <p class="msg-cup ok">Cupón BIENVENIDO: −S/ 5,00, solo sobre el Polo Sport. Los productos en promoción no admiten cupones.</p>
+      </div>
+      <div class="cajita tot">
+        <div><span>Subtotal</span><span>S/ 379,00</span></div>
+        <div class="ahorro"><span>Ya incluye −S/ 20,00 de Black Friday</span></div>
+        <div><span>Cupón BIENVENIDO</span><span>−S/ 5,00</span></div>
+        <div class="nota-e"><span>El envío se calcula al pagar. El envío gratis no aplica a pedidos con productos en promoción.</span></div>
+        <div class="tt"><span>Total</span><span>S/ 374,00</span></div>
+        <span class="t-btn ancho">Ir a pagar</span>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="nota"><b>K1</b>Un mismo mensaje para cupón y envío gratis en el carrito y en el pago (R7.6, CA-7.8): "Los productos en promoción no admiten cupones." y "El envío gratis no aplica a pedidos con productos en promoción." Con el permiso de la campaña encendido, esas dos frases no aparecen (<em>Q1 pendiente de Diego</em>). Si el pedido es solo de productos en promoción, el cupón se rechaza con la misma frase en rojo (CA-7.3).</p>
+<p class="nota"><b>K2</b>La línea con "cambió" usa <code>role="status"</code> (se anuncia sin mover el foco) y deja ver el antes y el ahora; el precio de la línea ya es el nuevo. El mini carrito usa el mismo trío.</p>
+</div>
+
+<div class="frame">
+<p class="cap">Celular (360 px)</p>
+<div class="tienda phone">
+  <div class="t-head"><b>Mi tienda</b><span>ES</span><span>Cuenta</span><span>Carrito</span></div>
+  <div class="res2">
+    <div class="cajita">
+      <div class="lin"><div class="im"></div><div><h6>Zapatillas Urban · 40</h6><div class="sm">Cantidad: 1</div></div><div class="pp"><b class="pv camp" style="display:block">S/ 80,00</b><span class="pr" style="margin:0">S/ 100,00</span></div></div>
+      <div class="lin"><div class="im"></div><div><h6>Polo Sport · M</h6><div class="sm">Cantidad: 1</div></div><div class="pp"><b class="pv" style="display:block">S/ 50,00</b></div></div>
+    </div>
+    <div class="cajita tot">
+      <div><span>Subtotal</span><span>S/ 130,00</span></div>
+      <div class="ahorro"><span>Ya incluye −S/ 20,00 de Black Friday</span></div>
+      <div class="tt"><span>Total</span><span>S/ 130,00</span></div>
+      <span class="t-btn ancho">Ir a pagar</span>
+    </div>
+  </div>
+</div>
+<p class="nota"><b>K3</b>Carrito vacío: el vacío de hoy, sin cambios. Cargando al recalcular: los importes se atenúan y el botón queda deshabilitado hasta recibir la respuesta. Error al recalcular: "No pudimos actualizar los precios. Reintentar" y no se puede ir a pagar con precios sin confirmar.</p>
+</div>
+</div>
+
+<!-- PAGO -->
+<h2 id="t4">14 · Tienda › Pago <small>(el total puede cambiar: se avisa y se espera)</small></h2>
+<p class="sub">El resumen del pago repite el carrito con el mismo trío. Al pagar, el servidor recalcula con sus datos (R8.2): si el total no es el que el cliente vio, <strong>el pedido no se crea</strong>; el cliente ve el nuevo total, el motivo, y vuelve a pulsar el mismo botón, ya con la cifra nueva. Un solo CTA, "Pagar S/ …". El header sigue visible.</p>
+<div class="par">
+<div class="frame" style="flex:1 1 560px">
+<p class="cap">Escritorio · el total subió porque la promoción terminó</p>
+<div class="tienda desk d">
+  <div class="t-head"><b>Mi tienda</b><span>ES</span><span>Cuenta</span><span>Carrito (1)</span></div>
+  <div class="res2">
+    <div class="cajita"><h6 style="margin:0 0 8px;font-size:15px">Datos de envío y pago</h6><div style="color:var(--mut);font-size:13px">(Dirección · método de envío · método de pago: sin cambios)</div></div>
+    <div style="display:grid;gap:12px">
+      <div class="alerta sube" role="alert"><b>El total cambió: la promoción Black Friday terminó.</b><span>Antes S/ 90,00 · ahora S/ 110,00. No se cobró nada. Revisa tu pedido y paga si estás de acuerdo.</span></div>
+      <div class="cajita">
+        <div class="lin"><div class="im"></div><div><h6>Zapatillas Urban · 40</h6><div class="sm">Cantidad: 1</div></div><div class="pp"><b class="pv" style="display:block">S/ 100,00</b></div></div>
+        <div class="tot">
+          <div><span>Subtotal</span><span>S/ 100,00</span></div>
+          <div><span>Envío</span><span>S/ 10,00</span></div>
+          <div class="tt"><span>Total</span><span>S/ 110,00</span></div>
+        </div>
+        <span class="t-btn ancho" style="margin-top:12px">Pagar S/ 110,00</span>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="nota"><b>G1</b>El botón no cambia de forma ni de nombre; solo su importe. Subir o bajar el total se avisa igual (rojo/ámbar si sube, azul si baja), nunca en silencio. El aviso es <code>role="alert"</code> y el foco se queda donde estaba.</p>
+</div>
+
+<div class="frame">
+<p class="cap">Celular (360 px) · el total bajó porque empezó la promoción</p>
+<div class="tienda phone">
+  <div class="t-head"><b>Mi tienda</b><span>ES</span><span>Cuenta</span><span>Carrito</span></div>
+  <div class="res2">
+    <div class="alerta baja" role="status"><b>Buenas noticias: empezó Black Friday.</b><span>Antes S/ 110,00 · ahora S/ 90,00.</span></div>
+    <div class="cajita">
+      <div class="lin"><div class="im"></div><div><h6>Zapatillas Urban · 40</h6><div class="sm">Cantidad: 1</div></div><div class="pp"><b class="pv camp" style="display:block">S/ 80,00</b><span class="pr" style="margin:0">S/ 100,00</span></div></div>
+      <div class="tot"><div><span>Subtotal</span><span>S/ 80,00</span></div><div class="ahorro"><span>Ya incluye −S/ 20,00 de Black Friday</span></div><div><span>Envío</span><span>S/ 10,00</span></div><div class="tt"><span>Total</span><span>S/ 90,00</span></div></div>
+      <details class="cond" style="margin-top:10px"><summary>Condiciones de la promoción</summary><ul><li>−20 % sobre el precio regular.</li><li>Hasta el lun 30 nov, 23:59.</li><li>No se combina con cupones ni con envío gratis por monto mínimo.</li></ul></details>
+      <span class="t-btn ancho" style="margin-top:12px">Pagar S/ 90,00</span>
+      <p class="sticky-nota">Precio asegurado mientras pagas (15 min) <em>· Q4 pendiente de Diego</em></p>
+    </div>
+  </div>
+</div>
+<p class="nota"><b>G2</b>"Precio asegurado" aparece cuando el cliente entra al pago (R8.4): si la campaña termina mientras paga, se respeta el precio que vio. Pasados los 15 minutos (duración propuesta, Q4), se recalcula y se avisa como en G1. Las condiciones están al alcance (R6.5). Estados del pago: cargando al recalcular (importes atenuados, botón deshabilitado) · error ("No pudimos confirmar el precio. Reintentar") · pedido creado (seguimiento con precio regular, precio cobrado y campaña por línea, R8.3).</p>
+</div>
+</div>
+
+<h2 style="margin-top:56px">Lo que este prototipo no dibuja</h2>
+<ul class="sub" style="max-width:90ch">
+<li>Portada de la tienda (bloque de campaña con cuenta regresiva): sin cambios respecto a <code>campanas-cuando</code> v1; el fin de la campaña ya se escribe una vez allí.</li>
+<li>Seguimiento del pedido y ficha del pedido en Admin: mismo trío por línea y "de dónde vino" (campaña / oferta del producto / ninguno) según R8.3; se diseña con la pieza C6.</li>
+<li>Buscador, filtros por precio y asesor IA: usan el precio vigente; no tienen diseño propio.</li>
+</ul>
+
+</div>
+<script>
+/* Control "Todo el día / A las" y selector de tipo de cupón (solo demostración) */
+document.querySelectorAll('.hora').forEach(function(h){
+  h.addEventListener('change',function(e){ if(e.target.type==='radio'){ h.dataset.modo=e.target.value; } });
+});
+</script>
+</body>
+</html>

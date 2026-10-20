@@ -55,7 +55,7 @@
 - [ ] **Usuario:** correr `docs/sql/antipatrones_claves_tildes.sql` en Supabase después de desplegar
 - [x] `ESTRATEGIAS_ENVIO` exhaustivo para `courier`, `delivery_propio` y `recojo_tienda` (A5.1): `FrontendStore/src/app/features/checkout/envio/`, panel por `NgComponentOutlet`, 23 tests sin DOM, fitness `scripts/anti-ramas-envio.mjs` en `npm test`; e2e 12 en verde (ver [cambios.md](cambios.md))
 - [x] `CheckoutStore` con signals (A5.2): `FrontendStore/src/app/features/checkout/checkout.store.ts`, provisto en el componente; textos de cotización en `envio/textos-cotizacion.ts` y comprobante en `checkout/comprobante.ts`; 17 tests sin DOM; e2e 12 en verde (ver [cambios.md](cambios.md))
-- [ ] Un componente por paso con su `.html` (A5.3)
+- [x] Un componente por paso con su `.html` (A5.3): `FrontendStore/src/app/features/checkout/pasos/` y `components/`, página como orquestador; store partido en `checkout/estado/` (borrador, contacto, cupón, pago, envío, pedido) con `CheckoutStore` como fachada; 21 tests sin DOM; e2e 12 en verde (ver [cambios.md](cambios.md))
 - [ ] Revisar las ramas del pago (A5.4)
 - [ ] Textos por defecto de envío y devoluciones fuera del template (A5.6)
 - [ ] Tests de estrategias y `CheckoutStore` sin DOM (A5.5)

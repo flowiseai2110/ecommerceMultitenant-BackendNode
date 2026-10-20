@@ -10,7 +10,8 @@ import { GRUPOS_TEXTOS } from "../idiomas/grupos.js";
  *
  * - prepararProducto(datos, { modo }): recibe el body ya validado por Zod
  *   ("crear" | "editar") y devuelve los datos a guardar, o lanza ValidationError.
- * - Datos del rubro (negocio/<rubro>/datos.js): recibeReservas, planDePagos,
+ * - Datos del rubro (negocio/<rubro>/datos.js): carrito (vende con carrito: solo
+ *   ese rubro crea pedidos de compra; precio-en-servidor D4), recibeReservas, planDePagos,
  *   transmisiones, alquilerPorHoras y marcas (capacidades), diseno { plantillaPorDefecto,
  *   secciones, layoutPorDefecto (lo que toda plantilla del rubro trae en su layout),
  *   rubroEnPlantillas (si el rubro de la tienda distingue plantillas), temaPorDefecto? }, configReservas (defaults), textoAviso (string o null) y
@@ -37,7 +38,7 @@ export const CONTRATO_RESERVAS = {
   /** Opcionales que son datos: si están, con este tipo. */
   datosOpcionales: { avisaAlNegocio: "boolean", notasIniciales: "object" }
 };
-export const CAPACIDADES = ["recibeReservas", "planDePagos", "transmisiones", "alquilerPorHoras", "marcas"];
+export const CAPACIDADES = ["carrito", "recibeReservas", "planDePagos", "transmisiones", "alquilerPorHoras", "marcas"];
 
 /** Lo que le falta a los datos de un rubro (negocio/<rubro>/datos.js). */
 export function faltantesDeDatos(d) {

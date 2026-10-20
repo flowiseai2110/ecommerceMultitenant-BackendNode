@@ -29,6 +29,9 @@ const GRUPO_POR_RUTA = {
   "reservas/reservas.emails.js": "correos",
   "reservas/correo.comun.js": "correos",
   "ordenes": "productos",
+  // Precio y cupón del pedido de compra (docs/specs/precio-en-servidor).
+  "precios": "productos",
+  "cupones": "productos",
   "pagos": "comun"
 };
 
@@ -68,7 +71,7 @@ export const PANTALLAS_SERVIDOR = {
     "Salidas de los tours": ["reservas/tours/textos-tour.js"],
     "Estados de la reserva": ["reservas/estados.js"],
     "Fechas": ["reservas/textos-fecha.js"],
-    "Pedidos": ["ordenes"],
+    "Pedidos": ["ordenes", "precios", "cupones"],
     "Pago en línea": ["pagos"]
   } }
 };

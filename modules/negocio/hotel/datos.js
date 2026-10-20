@@ -6,6 +6,7 @@ export const hotel = {
   gruposTextos: Object.freeze(["comun", "reservas", "hotel", "correos", "errores"]),
   // Cómo se llama su catálogo en Traducciones ("Tu contenido"; docs/specs/idiomas, diseno.md A1).
   nombreCatalogo: "Habitaciones",
+  carrito: false,
   recibeReservas: true,
   planDePagos: false,
   transmisiones: false,

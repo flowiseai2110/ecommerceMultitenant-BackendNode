@@ -34,18 +34,21 @@ export async function cotizarEnvios(tiendaId, { ubigeo = null, subtotal = 0 } = 
 }
 
 /**
- * Cotiza un método puntual dentro de una transacción (creación de pedido).
+ * Carga un método de envío activo de la tienda, con sus zonas y el mínimo del
+ * envío gratis, dentro de una transacción (creación de pedido). La cotización la
+ * hace la regla pura con el subtotal del servidor (precios/cotizacion-compra.js).
  * Devuelve null si el método no existe, no es de la tienda o está inactivo.
  */
-export async function cotizarMetodoEnvio(tx, tiendaId, metodoEnvioId, { ubigeo = null, subtotal = 0 } = {}) {
+export async function cargarMetodoEnvio(tx, tiendaId, metodoEnvioId) {
   const metodo = await tx.metodos_envio.findFirst({
     where: { id: metodoEnvioId, tiendaId, activo: true },
     select: { ...metodoSelect, nombre: true }
   });
   if (!metodo) return null;
-  const envioGratisMinimo = await envioGratisMinimoDe(tiendaId, tx);
-  return {
-    nombre: metodo.nombre,
-    ...cotizarMetodo(metodo, metodo.zonas, { ubigeo, subtotal, envioGratisMinimo })
-  };
+  return { metodo, envioGratisMinimo: await envioGratisMinimoDe(tiendaId, tx) };
+}
+
+/** ¿La tienda tiene métodos de envío activos? Si tiene, el pedido debe elegir uno. */
+export async function hayMetodosEnvio(tx, tiendaId) {
+  return (await tx.metodos_envio.count({ where: { tiendaId, activo: true } })) > 0;
 }

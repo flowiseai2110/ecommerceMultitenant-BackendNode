@@ -2,6 +2,66 @@
 
 > Bitácora para humanos. Una entrada por pieza, la más reciente arriba.
 
+## 2026-10-20 — Pieza 4 · cierre (A5.4, A5.6, A5.5, bugs, domicilio-picker) — SIN VERIFICAR
+**En una frase:** las ramas del pago pasan a `ESTRATEGIAS_PAGO` (`FrontendStore/src/app/features/checkout/pago/`); los textos por defecto de la ficha salen del template a `features/product/product-page/textos-por-defecto.ts` (traducibles y con tildes; mismo texto de ejemplo en Admin `pages/diseno/producto-opciones.component.ts`); se arreglan tres bugs con su test: doble clic al crear el pedido, el borrador que se volvía a guardar tras el pedido y el costo de envío del WhatsApp "Coordinar"; `domicilio-picker` baja de 584 a 290 líneas con `mapa-entrega.component.ts` (lógica movida, no cambiada; mapa y GPS no los cubre el e2e).
+
+**Estado:** los tests del checkout dieron 47/47, pero la verificación final (e2e, `npm test`, tsc, build, tabla de líneas) quedó pendiente: la funcionalidad precio-en-servidor está editando a la vez `services/checkout.service.ts`, `models/pedido.model.ts` y `estado/cupon.store.ts`, y hoy la app no compila (`estado/pedido.store.ts`: `metodoEnvio` ya no existe en `CreatePedidoParams`). Al terminar esa: confirmar que los arreglos a) y b) en `pedido.store.ts` siguen en pie, agregar al e2e el mock de `POST /store/pedidos/cotizar`, correr `npm run claves`, verificar y completar esta entrada.
+
+**Pendientes vistos:** "deposito" no pide comprobante; "Politica de devoluciones" sin tilde (cambia una clave); `product-page.component.ts` con 852 líneas.
+
+**Afecta al despliegue:** SQL y llaves: ninguno.
+
+## 2026-10-20 — Pieza 4 · tarea 4: un componente por paso y el store partido (A5.3)
+**En una frase:** la página del checkout (1282 líneas) queda como un orquestador de 73 líneas. Cada paso es un componente con su `.html`. El `CheckoutStore` (887 líneas) se parte por responsabilidad en seis partes y queda como fachada. Ningún archivo nuevo o tocado pasa de 400 líneas. El comprador no ve nada distinto.
+
+**Qué ve distinto el comprador:** nada. El e2e pasa 12 de 12 sin tocar aserciones ni selectores.
+
+**Dónde (FrontendStore, `src/app/features/checkout/`):**
+| Archivo | Qué hace |
+|---|---|
+| `checkout-page/checkout-page.component.{ts,html}` | Solo orquesta. Provee `PROVEEDORES_CHECKOUT`, elige qué paso se dibuja y sube el scroll cuando un paso emite `irAPaso`, `revisar` o `confirmar`. |
+| `pasos/paso-pedido` | Paso 1: inicio de sesión opcional, el `<form>`, el cupón en móvil y Continuar. Compone `pasos/datos-contacto` (nombre y teléfono, con los filtros de teclado y pegado) y `pasos/entrega` (zona, tipo y panel de la estrategia). |
+| `pasos/paso-pago` | Paso 2: compone `pasos/metodo-pago` (selector y datos para pagar) y `pasos/datos-comprobante` (boleta o factura). |
+| `pasos/paso-confirmar` | Paso 3: el resumen, el aviso para invitados, el error y la barra de Confirmar. |
+| `pasos/pedido-creado` | Paso 4: número, total, pago en línea, datos de pago, "¿Qué sigue?" y WhatsApp. |
+| `components/datos-pago`, `bloque-cupon`, `desglose-total`, `resumen-lateral`, `indicador-pasos` | Lo que antes eran `ng-template` usados en dos lugares (`#datosPago` con `#filaCopiar`, `#bloqueCupon`, `#desglose`), la columna del resumen y los tres pasos de arriba. |
+| `checkout.store.ts` | **Fachada** (180 líneas). Expone las partes (`checkout.contacto`, `.cupon`, `.pago`, `.envio`, `.pedido`) y tiene lo que cruza partes: el paso, `paso1Valido`/`paso2Valido`, `irAPaso`, `continuarAConfirmar`, `crearPedido`, `iniciar`, el borrador entre visitas, la precarga desde la cuenta y los dos efectos (autocompletar y re-cotizar). |
+| `estado/borrador.ts` | Lee, guarda y limpia el borrador en localStorage. No conoce a nadie: la fachada registra qué se guarda y cada parte llama a `guardar()`. |
+| `estado/contacto.store.ts` | Datos del comprador y su validez. |
+| `estado/cupon.store.ts` | Código, cupón aplicado, descuento, error, y si el campo está abierto (uno solo para los dos lugares del bloque). |
+| `estado/pago.store.ts` | Métodos de pago, el elegido, pasarela (`automatico`) y `requiresPagoAnticipado`. |
+| `estado/envio.store.ts` | Métodos de envío, tipo y método elegidos, zona, destino, cotización, contexto del panel, costo, `necesitaCoordinarEnvio`, carga y precarga del último destino (362 líneas). |
+| `estado/zona-destino.ts` | Funciones puras entre zona y destino (`conZona`, `zonaDesdeDestino`, `destinoSinEscribir`, `destinoConCampos`), sacadas del store del envío. |
+| `estado/pedido.store.ts` | Totales, comprobante, registro del pedido, cobro en línea y los tres WhatsApp. |
+| `estado/checkout-prueba.spec.ts` | No es un test: es el banco de pruebas compartido (fixtures, carrito falso, backend simulado). Lleva `.spec.ts` para quedar fuera de la app y de los scripts anti-ramas y anti-identidad. |
+| `checkout.store.spec.ts` y `estado/{envio,pedido,contacto}.store.spec.ts` | Los 17 tests de A5.2, repartidos por parte. Hay 21 porque el del pedido completo se partió en "lo que viaja al backend" (pedido) y "pasa a la confirmación" (fachada), y se sumaron 3 chicos. |
+| `scripts/claves-tienda.mjs` | "Datos y entrega" ahora apunta a `pasos`, `estado` y los cuatro componentes nuevos que tienen textos, y ya no a `checkout.store` (la fachada no tiene textos). `npm run claves` no cambia `claves-tienda.json` ni `pantallas-tienda.json`: los textos siguen en la misma sección. |
+
+**Decisiones que tomé y por qué:**
+- **Partición por responsabilidad, con dependencias en un solo sentido:** borrador → contacto, cupón y pago → envío (lee el contacto) → pedido (lee todas) → fachada. Ninguna parte conoce a la fachada, así que no hay ciclos ni `inject` diferido. Lo que necesita dos partes a la vez queda en la fachada: re-cotizar al cambiar el subtotal (carrito + cupón → envío), crear el pedido (paso + pedido) y la precarga desde la cuenta (contacto + envío + comprobante). El cupón y el pago van aparte del pedido porque cada uno tiene su servicio y su estado. Juntos, el pedido habría quedado cerca del límite y mezclado.
+- **El borrador se guarda en el mismo momento que antes, no en un efecto.** Un `effect` lo escribiría más tarde y cambiaría cuándo se guarda, y eso afecta al hallazgo 1. Por eso la fachada registra una función con lo que se guarda (`borrador.registrar`) y cada parte llama a `borrador.guardar()` donde antes llamaba a `guardarBorrador()`.
+- **Los componentes inyectan la fachada, no las partes.** Así se respeta "es la única API que ven los pasos" (spec A5.2): hay un solo punto de entrada y un solo `providers`. Además no hace falta reenviar unos 60 miembros: cada paso llega a lo suyo con `checkout.envio.…` o `checkout.pedido.…`. Las partes se pueden probar solas igual.
+- **Desvío de la spec A5.3 ("cada paso con `input()`/`output()`"):** por instrucción de esta tarea, los pasos leen y llaman al store inyectado y no reciben datos por `input()`. Si los recibieran, cada paso necesitaría decenas de inputs y habría estado duplicado. Los `output()` quedan solo para la navegación (`irAPaso`, `revisar`, `confirmar`), así la página sigue decidiendo el scroll. Las dos únicas entradas son de presentación: `enConfirmacion` (datos de pago) y `conTotal` (desglose).
+- **Estilos:** no había estilos de componente, solo Tailwind global, así que la encapsulación no cambia nada. Para que el DOM se acomode igual que antes, los hosts son `contents` (como `app-slot-rubro` y los paneles de envío). Hay dos excepciones:
+  - `metodo-pago` y `datos-comprobante` son `block`, porque están dentro del `space-y-4` del paso 2 y su tarjeta siempre se dibuja.
+  - En el paso 1, `datos-contacto` y `entrega` son `contents`, y sus bloques llevan `mb-5` explícito. Es el espacio que les daba el `space-y-5` del formulario cuando eran hijos directos. Con un host `block`, en una tienda de un solo tipo de entrega habría aparecido un espacio de más bajo el panel.
+- **`resumen-lateral` incluye su columna de la grilla:** su host es `contents` para que el `lg:sticky` de la tarjeta siga midiendo contra la fila completa.
+- **Estado de vista que se movió:** `showOrderItems` pasó al resumen, `showProductDetail` y `showPaymentInfo` a la confirmación, y "✓ Copiado" a `datos-pago`. Antes `selectMetodoPago` también cerraba `showPaymentInfo`. Ahora no hace falta: ese panel solo existe en el paso 4, que se crea de cero después del paso 2 y del que no se vuelve.
+- **El `ngModel` del paso 1 ya no se registra en el `NgForm`.** Está dentro de un componente hijo y `NgModel` busca su formulario solo con `@Host()`. Nada lo usaba: Continuar depende de `checkout.paso1Valido()` desde A5.2. La validación de cada campo (`required`, `pattern`, mensajes al tocarlo) y el Enter que envía el formulario funcionan igual.
+- **Los nombres de estado se conservaron** (`selectedMetodoEnvio`, `currentStep`…). En el cupón, los nombres pasan a su parte (`cupon.codigo`, `cupon.descuento`…).
+
+**Comportamiento idéntico, a propósito:** no arreglé el borrador que se vuelve a guardar después del pedido, ni el costo de envío del WhatsApp de la confirmación, ni el doble clic (van en la tarea siguiente). El efecto de re-cotizar lee el carrito y el cupón por separado, como antes, para disparar igual aunque el subtotal quede igual.
+
+**Lo que quedó pendiente / deuda:**
+- `components/domicilio-picker/domicilio-picker.component.ts` tiene **584 líneas** y es lo único del checkout sobre 400. No es de esta tarea: queda para la verificación final de la pieza 4.
+- Los hallazgos 1 y 2 de A5.2 y el doble clic (tarea siguiente). A5.4 y A5.6 sin empezar.
+
+**Afecta al despliegue:** nada. No hay llaves ni SQL.
+
+**Tests:** `npm run e2e` contra un `ng serve` nuevo en :4321 (config temporal con `baseURL` :4321, sin tocar el :4200) → **12 passed**. `npm test` → claves al día (1143 claves, 22 pantallas), textos OK, anti-identidad OK, anti-ramas-envio OK (0 ramas), Karma **308 SUCCESS** (incluye los tests sin commit de otros cambios del working tree). `npx tsc --noEmit -p tsconfig.app.json` y `-p tsconfig.spec.json` → 0 errores. `ng build --configuration development` OK (solo el aviso de antes de `CategoryPageComponent`).
+
+**Commits:** sin commit (pendiente de que Diego lo pida).
+
 ## 2026-10-19 — Pieza 4 · tarea 3: `CheckoutStore` (A5.2)
 **En una frase:** el estado y la lógica del checkout salen de la página y pasan a un `CheckoutStore` con signals, que se puede probar sin pantalla. La página solo dibuja y llama al store. El comprador no ve nada distinto.
 

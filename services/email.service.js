@@ -697,7 +697,7 @@ export async function sendTransmisionErrorSenalEmail({ to, tiendaNombre, evento,
 }
 
 /** Aviso a la plataforma (A1): por ejemplo, el almacenamiento de video casi lleno. */
-export async function sendTransmisionAlertaPlataformaEmail({ to, titulo, parrafos }) {
+export async function sendAlertaPlataformaEmail({ to, titulo, parrafos }) {
   if (!hasResendApiKey()) {
     logger.info(`📧 [DEV] Aviso a la plataforma para: ${to.join(", ")} · ${titulo}`);
     return { success: false, reason: "RESEND_API_KEY not configured" };
@@ -705,7 +705,10 @@ export async function sendTransmisionAlertaPlataformaEmail({ to, titulo, parrafo
   return deliverEmail({ to, subject: titulo, html: htmlAvisoSimple({ titulo, parrafos }) });
 }
 
+/** Nombre anterior (nació para transmisiones); se conserva como alias. */
+export const sendTransmisionAlertaPlataformaEmail = sendAlertaPlataformaEmail;
+
 export default {
   sendInvitationEmail, previewInvitationEmail, sendNewOrderEmail, sendConsumoIaAvisoEmail, sendTransactionalEmail, sendTransmisionAvisoFinEmail,
-  sendTransmisionGrabacionEmail, sendTransmisionErrorSenalEmail, sendTransmisionAlertaPlataformaEmail
+  sendTransmisionGrabacionEmail, sendTransmisionErrorSenalEmail, sendAlertaPlataformaEmail, sendTransmisionAlertaPlataformaEmail
 };
