@@ -134,3 +134,36 @@ describe("query de los endpoints admin", () => {
     expect(vistaPreviaQuerySchema.safeParse({}).success).toBe(false);
   });
 });
+
+describe("horas en la resolución (R3)", () => {
+  const conHoras = (extra = {}) => aniversario({ inicio: "2026-11-29", fin: "2026-12-01", horaInicio: "20:00", horaFin: "00:00", ...extra });
+
+  it("CA-3.9: la campaña que empieza a las 20:00 no sale a las 12:00 y sí a las 21:00", () => {
+    expect(resolverCampana([conHoras()], [], lima("2026-11-29T12:00"))).toBeNull();
+    expect(resolverCampana([conHoras()], [], lima("2026-11-29T21:00"))?.nombre).toBe("Aniversario");
+  });
+
+  it("entrega inicio y fin con la hora en ISO de Lima; el fin 00:00 es exclusivo", () => {
+    const c = resolverCampana([conHoras()], [], lima("2026-11-30T10:00"));
+    expect(c).toMatchObject({ inicio: "2026-11-29T20:00:00-05:00", fin: "2026-12-01T00:00:00-05:00", fechaClave: "2026-11-30T00:00:00-05:00" });
+    expect(resolverCampana([conHoras()], [], lima("2026-12-01T00:00"))).toBeNull();
+  });
+
+  it("CA-3.4: el efecto de un solo día termina con la campaña", () => {
+    const h = { ...conHoras({ inicio: "2026-10-31", fin: "2026-10-31", horaInicio: null, horaFin: "14:00", efecto: "confeti" }) };
+    expect(resolverCampana([h], [], lima("2026-10-31T13:59"))?.efecto?.tipo).toBe("confeti");
+    expect(resolverCampana([h], [], lima("2026-10-31T14:00"))).toBeNull();
+  });
+
+  it("una campaña sin horas se entrega idéntica a la de antes", () => {
+    const c = resolverCampana([aniversario()], [], lima("2026-12-11T10:00"));
+    expect(c).toMatchObject({ inicio: "2026-12-10T00:00:00-05:00", fechaClave: "2026-12-12T00:00:00-05:00", fin: "2026-12-13T00:00:00-05:00" });
+  });
+
+  it("el calendario trae ventanas[] y conserva inicio/fechaClave/fin", () => {
+    const fila = calendarioAnual([conHoras()], null, 2026).find((x) => x.nombre === "Aniversario");
+    expect(fila).toMatchObject({ inicio: "2026-11-29T20:00:00-05:00", fin: "2026-12-01T00:00:00-05:00", horaInicio: "20:00", horaFin: "00:00" });
+    expect(fila.ventanas).toHaveLength(1);
+    expect(fila.ventanas[0].fin).toBe(fila.fin);
+  });
+});

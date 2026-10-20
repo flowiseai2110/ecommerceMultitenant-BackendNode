@@ -140,3 +140,54 @@ describe("sugeridoPara (R2.5)", () => {
     }
   });
 });
+
+describe("horas de inicio y fin (R3)", () => {
+  const propia = (extra = {}) => ({ id: "p", inicio: "2026-11-20", fin: "2026-11-22", horaInicio: "10:00", horaFin: "22:00", ...extra });
+
+  it("CA-3.1: propia con horas, exacta al minuto", () => {
+    const c = [propia()];
+    expect(idVigente(c, "2026-11-20T09:59")).toBeNull();
+    expect(idVigente(c, "2026-11-20T10:00")).toBe("p");
+    expect(idVigente(c, "2026-11-22T21:59")).toBe("p");
+    expect(idVigente(c, "2026-11-22T22:00")).toBeNull();
+  });
+
+  it("CA-3.2: sin horas es idéntica a la de siempre", () => {
+    const v = ventana(propia({ horaInicio: null, horaFin: undefined }));
+    expect(aIsoLima(v.inicio)).toBe("2026-11-20T00:00:00-05:00");
+    expect(aIsoLima(v.fin)).toBe("2026-11-23T00:00:00-05:00");
+  });
+
+  it("solo la hora de inicio o solo la de fin: la otra queda en día completo (R3.5)", () => {
+    expect(aIsoLima(ventana(propia({ horaFin: null })).fin)).toBe("2026-11-23T00:00:00-05:00");
+    expect(aIsoLima(ventana(propia({ horaInicio: null })).inicio)).toBe("2026-11-20T00:00:00-05:00");
+  });
+
+  it("CA-3.3: catálogo, la hora de inicio vale el primer día y la de fin el último", () => {
+    const c = [{ ...preset("halloween"), horaInicio: "08:00", horaFin: "14:00", anticipacionDias: 16, despuesDias: 0 }];
+    expect(idVigente(c, "2026-10-15T07:59")).toBeNull();
+    expect(idVigente(c, "2026-10-15T08:00")).toBe(c[0].id);
+    expect(idVigente(c, "2026-10-31T13:59")).toBe(c[0].id);
+    expect(idVigente(c, "2026-10-31T14:00")).toBeNull();
+  });
+
+  it("CA-3.7: a igual prioridad gana la ventana más corta medida en horas", () => {
+    const A = propia({ id: "A" });
+    const B = propia({ id: "B", inicio: "2026-11-21", fin: "2026-11-21", horaInicio: null, horaFin: null });
+    expect(idVigente([A, B], "2026-11-21T12:00")).toBe("B");
+    expect(idVigente([A, B], "2026-11-20T12:00")).toBe("A");
+    expect(idVigente([A, B], "2026-11-22T12:00")).toBe("A");
+  });
+
+  it("CA-3.16: fin a las 00:00 es exclusivo, y el último día es el anterior (R3.14)", () => {
+    const c = propia({ inicio: "2026-11-30", fin: "2026-12-01", horaInicio: null, horaFin: "00:00" });
+    expect(idVigente([c], "2026-11-30T23:59")).toBe("p");
+    expect(idVigente([c], "2026-12-01T00:00")).toBeNull();
+    const v = ventana(c);
+    expect(aIsoLima(v.fechaClave)).toBe("2026-11-30T00:00:00-05:00");
+  });
+
+  it("una ventana vacía se descarta", () => {
+    expect(ventana(propia({ inicio: "2026-11-20", fin: "2026-11-20", horaInicio: "10:00", horaFin: "10:00" }))).toBeNull();
+  });
+});

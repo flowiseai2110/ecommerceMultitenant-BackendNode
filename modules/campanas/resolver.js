@@ -6,7 +6,7 @@
 // de Lima. Ver docs/specs/campanas-widgets (R3, R4.6, R6).
 
 import { CAMPANA_PRESETS, buscarPreset, sugeridoPara } from "./presets.js";
-import { aIsoLima, ventana, ventanaEfecto, vigente } from "./calendario.js";
+import { aIsoLima, ventanas, ventanaEfecto, vigente } from "./calendario.js";
 import { resolverTema } from "../diseno/resolver.js";
 
 const ANCLAS_ORDEN = ["hero-arriba-derecha", "hero-abajo-derecha", "hero-arriba-izquierda", "flotante-izquierda", "junto-logo"];
@@ -35,6 +35,9 @@ export function efectiva(c) {
           prioridad: preset.prioridad
         }
       : { inicio: c.inicio, fin: c.fin }),
+    // Horas (R3): null = día completo. Valen para el primer y el último día.
+    horaInicio: c.horaInicio ?? null,
+    horaFin: c.horaFin ?? null,
     // Contenido. Una campaña propia sin paleta mantiene los colores de la tienda.
     paleta: c.paleta ?? base.paleta ?? null,
     topBar: c.topBar ?? base.topBar ?? null,
@@ -78,16 +81,23 @@ export function mezclarWidgets(permanentes = [], deCampana = []) {
 }
 
 /**
+ * Campañas de la tienda que aplican, ya mezcladas con su preset. Punto único
+ * donde, a futuro, entra el contexto (p. ej. la sede, docs/specs/multi-sede);
+ * hoy no filtra por nada más que `activa`.
+ */
+export function campanasAplicables(campanasTienda = [], _contexto = {}) {
+  return (campanasTienda ?? [])
+    .filter((c) => c.activa)
+    .map(efectiva)
+    .filter(Boolean);
+}
+
+/**
  * Campaña vigente en `ahora` entre las activas de la tienda, lista para el
  * storefront, o null (R3.1, R3.3).
  */
 export function resolverCampana(campanasTienda = [], widgetsTienda = [], ahora) {
-  const activas = (campanasTienda ?? [])
-    .filter((c) => c.activa)
-    .map(efectiva)
-    .filter(Boolean);
-
-  const v = vigente(activas, ahora);
+  const v = vigente(campanasAplicables(campanasTienda), ahora);
   if (!v) return null;
 
   const { campana: c } = v;
@@ -136,7 +146,10 @@ export function calendarioAnual(campanasTienda = [], rubro, anio) {
   const presets = CAMPANA_PRESETS.map((preset) => {
     const propia = porPreset.get(preset.id);
     const ef = efectiva(propia ?? { id: null, presetId: preset.id });
-    const v = ventana(ef, anio);
+    // Si las horas dejaran la ventana vacía (el schema lo impide al guardar), se muestra sin horas.
+    const lista = ventanas(ef, anio);
+    const vs = lista.length ? lista : ventanas({ ...ef, horaInicio: null, horaFin: null }, anio);
+    const v = vs[0];
     return {
       presetId: preset.id,
       campanaId: propia?.id ?? null,
@@ -144,16 +157,14 @@ export function calendarioAnual(campanasTienda = [], rubro, anio) {
       activa: propia?.activa ?? false,
       personalizada: Boolean(propia),
       sugerida: sugeridoPara(preset, rubro),
-      inicio: aIsoLima(v.inicio),
-      fechaClave: aIsoLima(v.fechaClave),
-      fin: aIsoLima(v.fin),
+      ...datosVentana(vs, ef),
       ...datosEfecto(ef, v)
     };
   });
 
   const propias = (campanasTienda ?? [])
     .filter((c) => !c.presetId)
-    .map((c) => ({ c, v: ventana(c) }))
+    .map((c) => ({ c, v: ventanas(efectiva(c))[0] }))
     // Toca el año si empieza o termina en él (una liquidación 28 dic - 3 ene sale en ambos).
     .filter(({ v }) => v && [v.inicio, v.fechaClave].some((d) => aIsoLima(d).startsWith(`${anio}-`)))
     .map(({ c, v }) => ({
@@ -163,13 +174,20 @@ export function calendarioAnual(campanasTienda = [], rubro, anio) {
       activa: c.activa,
       personalizada: true,
       sugerida: false,
-      inicio: aIsoLima(v.inicio),
-      fechaClave: aIsoLima(v.fechaClave),
-      fin: aIsoLima(v.fin),
+      ...datosVentana([v], efectiva(c)),
       ...datosEfecto(efectiva(c), v)
     }));
 
   return [...presets, ...propias].sort((a, b) => a.inicio.localeCompare(b.inicio));
+}
+
+/**
+ * Fechas de una fila del calendario: `ventanas[]` y, para el Admin anterior,
+ * `inicio/fechaClave/fin` de la primera. Las horas viajan para mostrarlas.
+ */
+function datosVentana(vs, c) {
+  const iso = (v) => ({ inicio: aIsoLima(v.inicio), fechaClave: aIsoLima(v.fechaClave), fin: aIsoLima(v.fin) });
+  return { ...iso(vs[0]), horaInicio: c.horaInicio, horaFin: c.horaFin, ventanas: vs.map(iso) };
 }
 
 /** Efecto de una campaña en el calendario del admin (E4.1): días en que se ve. */

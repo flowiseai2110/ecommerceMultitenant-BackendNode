@@ -4,6 +4,7 @@ import {
   listaWidgetsSchema,
   prefijoWidgets,
   urlsDeWidgetsAjenas,
+  vistaPreviaQuerySchema,
   widgetSchema
 } from "../campanas.schema.js";
 import { updateDisenoSchema } from "../../../validators/tienda-diseno.validator.js";
@@ -150,5 +151,45 @@ describe("updateDisenoSchema", () => {
 
   it("un body vacío sigue siendo error", () => {
     expect(updateDisenoSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe("horas de inicio y fin (R3)", () => {
+  it("acepta HH:mm y rechaza formatos raros", () => {
+    expect(campanaTiendaSchema.safeParse(propia({ horaInicio: "10:00", horaFin: "22:30" })).success).toBe(true);
+    expect(campanaTiendaSchema.safeParse(propia({ horaInicio: null, horaFin: null })).success).toBe(true);
+    expect(campanaTiendaSchema.safeParse(propia({ horaInicio: "24:00" })).success).toBe(false);
+    expect(campanaTiendaSchema.safeParse(propia({ horaFin: "9:5" })).success).toBe(false);
+  });
+
+  it("CA-3.5: el mismo día, la hora de fin va después de la de inicio", () => {
+    const r = campanaTiendaSchema.safeParse(propia({ inicio: "2026-11-20", fin: "2026-11-20", horaInicio: "10:00", horaFin: "10:00" }));
+    expect(mensajes(r)).toContain("La fecha y hora de fin deben ser posteriores al inicio");
+    expect(campanaTiendaSchema.safeParse(propia({ inicio: "2026-11-20", fin: "2026-11-20", horaInicio: "10:00", horaFin: "10:01" })).success).toBe(true);
+  });
+
+  it("CA-3.6: 91 días se rechazan con o sin horas; fin a las 00:00 no cuenta el día siguiente", () => {
+    const largo = { inicio: "2026-09-01", fin: "2026-11-30" };
+    expect(mensajes(campanaTiendaSchema.safeParse(propia(largo)))).toContain("Una campaña puede durar hasta 90 días");
+    expect(mensajes(campanaTiendaSchema.safeParse(propia({ ...largo, horaInicio: "23:00", horaFin: "01:00" })))).toContain("Una campaña puede durar hasta 90 días");
+    // 1 sep 00:00 a 30 nov 00:00 toca 90 días.
+    expect(campanaTiendaSchema.safeParse(propia({ ...largo, horaFin: "00:00" })).success).toBe(true);
+  });
+
+  it("R7.3: en el catálogo no se ofrece 00:00 como fin", () => {
+    const r = campanaTiendaSchema.safeParse({ id: "00000000-0000-4000-8000-000000000001", presetId: "madre", activa: true, horaFin: "00:00" });
+    expect(r.success).toBe(false);
+    expect(campanaTiendaSchema.safeParse({ id: "00000000-0000-4000-8000-000000000001", presetId: "madre", activa: true, horaFin: "14:00" }).success).toBe(true);
+  });
+
+  it("catálogo: un solo día con la hora de fin antes de la de inicio queda vacío", () => {
+    const r = campanaTiendaSchema.safeParse({ id: "00000000-0000-4000-8000-000000000001", presetId: "madre", activa: true, anticipacionDias: 0, despuesDias: 0, horaInicio: "15:00", horaFin: "14:00" });
+    expect(mensajes(r).join(" ")).toContain("quedaría vacía");
+  });
+
+  it("la vista previa acepta hora opcional", () => {
+    expect(vistaPreviaQuerySchema.safeParse({ fecha: "2026-11-29", hora: "21:00" }).success).toBe(true);
+    expect(vistaPreviaQuerySchema.safeParse({ fecha: "2026-11-29" }).success).toBe(true);
+    expect(vistaPreviaQuerySchema.safeParse({ fecha: "2026-11-29", hora: "25:00" }).success).toBe(false);
   });
 });

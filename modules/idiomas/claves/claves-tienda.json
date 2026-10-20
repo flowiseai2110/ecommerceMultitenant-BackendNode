@@ -9366,6 +9366,33 @@
     ]
   },
   {
+    "clave": "Termina el {dia} a las {hora}",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "inicio/oferta"
+    ]
+  },
+  {
+    "clave": "Termina el {dia} a medianoche",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "inicio/oferta"
+    ]
+  },
+  {
+    "clave": "Terminando…",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "inicio/oferta"
+    ]
+  },
+  {
     "clave": "Tiempo restante de la oferta",
     "grupos": [
       "comun"

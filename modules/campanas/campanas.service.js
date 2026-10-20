@@ -4,7 +4,7 @@ import { getDiseno } from "../../services/tienda-diseno.service.js";
 import { calendarioAnual, disenoPublico } from "./resolver.js";
 import { CAMPANA_PRESETS } from "./presets.js";
 import { EFECTOS } from "./efectos.js";
-import { inicioDiaLima, parsearFecha } from "./calendario.js";
+import { horaAMs, inicioDiaLima, parsearFecha } from "./calendario.js";
 
 /**
  * Calendario de campañas de la tienda para un año (T3.3), con el catálogo
@@ -20,15 +20,15 @@ export async function getCalendario(tiendaId, anio) {
 }
 
 /**
- * Diseño como lo vería el storefront ese día (R6.1), al mediodía de Lima:
- * lejos de los límites de ventana (que caen a las 00:00).
- * `fecha` llega validada como "YYYY-MM-DD".
+ * Diseño como lo vería el storefront ese día (R6.1) a la `hora` pedida
+ * (R3.11) o, sin ella, al mediodía de Lima: lejos de los límites de ventana
+ * que caen a las 00:00. `fecha` ("YYYY-MM-DD") y `hora` ("HH:mm") llegan validadas.
  */
-export async function getVistaPrevia(tiendaId, fecha) {
+export async function getVistaPrevia(tiendaId, fecha, hora) {
   const [diseno, tienda] = await Promise.all([
     getDiseno(tiendaId),
     prisma.tiendas.findUnique({ where: { id: tiendaId }, select: { tipoNegocio: true } })
   ]);
-  const mediodia = new Date(inicioDiaLima(parsearFecha(fecha)).getTime() + 12 * 3_600_000);
-  return { fecha, ...disenoPublico(diseno, mediodia, tienda?.tipoNegocio) };
+  const momento = new Date(inicioDiaLima(parsearFecha(fecha)).getTime() + (horaAMs(hora) ?? 12 * 3_600_000));
+  return { fecha, ...(hora ? { hora } : {}), ...disenoPublico(diseno, momento, tienda?.tipoNegocio) };
 }

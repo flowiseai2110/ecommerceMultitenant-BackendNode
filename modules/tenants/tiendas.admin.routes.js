@@ -261,7 +261,7 @@ router.get(
   }
 );
 
-// GET /:id/diseno/vista-previa?fecha=YYYY-MM-DD — El diseño como lo vería el
+// GET /:id/diseno/vista-previa?fecha=YYYY-MM-DD[&hora=HH:mm] — El diseño como lo vería el
 // storefront ese día (con su campaña resuelta). Solo admin: el endpoint
 // público nunca acepta fechas simuladas.
 router.get(
@@ -271,7 +271,7 @@ router.get(
   resolveTiendaIdFromId,
   requireTiendaAccess("editor"),
   async (req, res) => {
-    const data = await getVistaPrevia(req.params.id, req.validatedQuery.fecha);
+    const data = await getVistaPrevia(req.params.id, req.validatedQuery.fecha, req.validatedQuery.hora);
     return apiResponse(res, { status: 200, type: "SUCCESS", code: "TIENDA_DISENO_VISTA_PREVIA", data });
   }
 );

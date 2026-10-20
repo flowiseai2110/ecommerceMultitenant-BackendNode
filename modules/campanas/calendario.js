@@ -51,30 +51,60 @@ export function fechaClave(regla, anio) {
   return { anio: d.getUTCFullYear(), mes: d.getUTCMonth() + 1, dia: d.getUTCDate() };
 }
 
+/** "HH:mm" → milisegundos desde las 00:00 (null si no hay hora). */
+export function horaAMs(hora) {
+  if (!hora) return null;
+  const [h, m] = hora.split(":");
+  return (+h * 60 + +m) * 60_000;
+}
+
 /**
- * Ventana [inicio, fin) de una campaña (R1.2): desde las 00:00 de
- * `fechaClave − anticipacionDias` hasta el final del día
- * `fechaClave + despuesDias` (fin exclusivo = 00:00 del día siguiente).
+ * Ventanas [inicio, fin) de una campaña (R1.2, R3): una LISTA (hoy de 0 o 1;
+ * la lista deja sitio a varias ediciones por año y a franjas semanales).
  *
- * `campana` es un preset (con `regla`) o una campaña propia con fechas
- * explícitas `inicio`/`fin` ("YYYY-MM-DD", ambas inclusive, sin repetición:
- * `anio` se ignora). Devuelve null si las fechas propias no son válidas.
+ * Catálogo (con `regla`): desde `fechaClave − anticipacionDias` hasta el
+ * día `fechaClave + despuesDias`. Propia: fechas explícitas `inicio`/`fin`
+ * ("YYYY-MM-DD", ambas inclusive, sin repetición: `anio` se ignora).
+ *
+ * `horaInicio` vale para el primer día y `horaFin` para el último (R3.3);
+ * sin hora, el inicio es a las 00:00 y el fin al terminar el día (R3.5).
+ * `fechaClave` de una propia es el día que contiene `fin − 1 ms`: con fin a
+ * las 00:00 es el día anterior (R3.14). Una ventana vacía se descarta.
  */
-export function ventana(campana, anio) {
+export function ventanas(campana, anio) {
+  const horaInicio = horaAMs(campana.horaInicio) ?? 0;
+  const horaFin = horaAMs(campana.horaFin);
+  const finDe = (dia) =>
+    horaFin === null ? inicioDiaLima(dia, 1) : new Date(inicioDiaLima(dia).getTime() + horaFin);
+
+  let v;
   if (!campana.regla) {
     const inicio = parsearFecha(campana.inicio);
     const fin = parsearFecha(campana.fin);
-    if (!inicio || !fin) return null;
-    return { campana, inicio: inicioDiaLima(inicio), fechaClave: inicioDiaLima(fin), fin: inicioDiaLima(fin, 1) };
+    if (!inicio || !fin) return [];
+    const finInstante = finDe(fin);
+    v = {
+      campana,
+      inicio: new Date(inicioDiaLima(inicio).getTime() + horaInicio),
+      fechaClave: inicioDiaLima(fechaCivilLima(new Date(finInstante.getTime() - 1))),
+      fin: finInstante
+    };
+  } else {
+    const clave = fechaClave(campana.regla, anio);
+    const ultimo = { anio: clave.anio, mes: clave.mes, dia: clave.dia + (campana.despuesDias ?? 0) };
+    v = {
+      campana,
+      inicio: new Date(inicioDiaLima(clave, -(campana.anticipacionDias ?? 0)).getTime() + horaInicio),
+      fechaClave: inicioDiaLima(clave),
+      fin: finDe(ultimo)
+    };
   }
+  return v.inicio < v.fin ? [v] : [];
+}
 
-  const clave = fechaClave(campana.regla, anio);
-  return {
-    campana,
-    inicio: inicioDiaLima(clave, -(campana.anticipacionDias ?? 0)),
-    fechaClave: inicioDiaLima(clave),
-    fin: inicioDiaLima(clave, (campana.despuesDias ?? 0) + 1)
-  };
+/** La primera ventana de la campaña en ese año, o null (campañas de una sola ventana). */
+export function ventana(campana, anio) {
+  return ventanas(campana, anio)[0] ?? null;
 }
 
 /**
@@ -107,9 +137,10 @@ export function vigente(campanas, ahora) {
   for (const campana of campanas) {
     const anios = campana.regla ? [anio - 1, anio, anio + 1] : [anio];
     for (const a of anios) {
-      const v = ventana(campana, a);
-      if (!v || ahora < v.inicio || ahora >= v.fin) continue;
-      if (!mejor || gana(v, mejor)) mejor = v;
+      for (const v of ventanas(campana, a)) {
+        if (ahora < v.inicio || ahora >= v.fin) continue;
+        if (!mejor || gana(v, mejor)) mejor = v;
+      }
     }
   }
   return mejor;
@@ -130,14 +161,12 @@ export function proximaVentana(campana, ahora) {
   const enCurso = vigente([campana], ahora);
   if (enCurso) return enCurso;
 
-  if (!campana.regla) {
-    const v = ventana(campana);
-    return v && ahora < v.inicio ? v : null;
-  }
+  if (!campana.regla) return ventanas(campana).find((v) => ahora < v.inicio) ?? null;
+
   const { anio } = fechaCivilLima(ahora);
   for (const a of [anio, anio + 1]) {
-    const v = ventana(campana, a);
-    if (ahora < v.inicio) return v;
+    const v = ventanas(campana, a).find((w) => ahora < w.inicio);
+    if (v) return v;
   }
   return null;
 }

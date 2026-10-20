@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { buscarPreset } from "./presets.js";
 import { EFECTOS, MODOS_EFECTO, MAX_SALUDO } from "./efectos.js";
-import { fechaCivilLima, parsearFecha, inicioDiaLima } from "./calendario.js";
+import { fechaCivilLima, parsearFecha, inicioDiaLima, ventanas } from "./calendario.js";
 
 /**
  * Schemas Zod de la configuración de campañas y widgets de una tienda
@@ -77,6 +77,9 @@ const paletaSchema = z.object({
 });
 
 const fechaSchema = z.string().refine((f) => parsearFecha(f) !== null, "Fecha inválida (YYYY-MM-DD)");
+// HH:mm de Lima, al minuto (R3.1). null/ausente = todo el día (R3.5).
+const HORA_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const horaSchema = z.string().regex(HORA_RE, "Hora en formato HH:mm").nullable().optional();
 const diasSchema = z.number().int().min(0).max(60).nullable().optional();
 
 export const campanaTiendaSchema = z
@@ -88,6 +91,8 @@ export const campanaTiendaSchema = z
     nombre: textoOpcional(60),
     inicio: fechaSchema.nullable().optional(),
     fin: fechaSchema.nullable().optional(),
+    horaInicio: horaSchema,
+    horaFin: horaSchema,
     anticipacionDias: diasSchema,
     despuesDias: diasSchema,
     paleta: paletaSchema.nullable().optional(),
@@ -118,9 +123,26 @@ export const campanaTiendaSchema = z
     const issue = (path, message) => ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message });
 
     if (c.presetId !== null) {
-      if (!buscarPreset(c.presetId)) issue("presetId", `No existe la campaña "${c.presetId}"`);
+      const preset = buscarPreset(c.presetId);
+      if (!preset) issue("presetId", `No existe la campaña "${c.presetId}"`);
       // Los presets se repiten cada año: sus fechas salen de la regla.
       if (c.inicio || c.fin) issue("inicio", "Las campañas del calendario no llevan fechas fijas; ajusta la anticipación");
+      // R7.3: para incluir el último día completo está "todo el día".
+      if (c.horaFin === "00:00") issue("horaFin", "Para incluir el último día completo elige «Todo el día»");
+      else if (preset?.regla && !c.inicio && !c.fin) {
+        // R3.6: ninguna combinación de días y horas deja la ventana vacía. El
+        // largo no depende del año: basta probar uno.
+        const probe = {
+          regla: preset.regla,
+          anticipacionDias: c.anticipacionDias ?? preset.anticipacionDias,
+          despuesDias: c.despuesDias ?? preset.despuesDias ?? 0,
+          horaInicio: c.horaInicio,
+          horaFin: c.horaFin
+        };
+        if (!ventanas(probe, 2026).length) {
+          issue("horaFin", "Con estos días y horas la campaña quedaría vacía. Ajusta las horas o los días.");
+        }
+      }
       return;
     }
 
@@ -134,9 +156,15 @@ export const campanaTiendaSchema = z
     const inicio = parsearFecha(c.inicio);
     const fin = parsearFecha(c.fin);
     if (inicio && fin) {
-      const dias = (inicioDiaLima(fin) - inicioDiaLima(inicio)) / 86_400_000 + 1;
-      if (dias < 1) issue("fin", "La fecha de fin no puede ser anterior al inicio");
-      else if (dias > MAX_DIAS_CAMPANA_PROPIA) issue("fin", `Una campaña puede durar hasta ${MAX_DIAS_CAMPANA_PROPIA} días`);
+      const [v] = ventanas({ inicio: c.inicio, fin: c.fin, horaInicio: c.horaInicio, horaFin: c.horaFin });
+      if (inicioDiaLima(fin) < inicioDiaLima(inicio)) issue("fin", "La fecha de fin no puede ser anterior al inicio");
+      else if (!v) issue("fin", "La fecha y hora de fin deben ser posteriores al inicio");
+      else {
+        // Días de calendario que toca [inicio, fin): con o sin horas (CA-3.6).
+        const ultimo = fechaCivilLima(new Date(v.fin.getTime() - 1));
+        const dias = (inicioDiaLima(ultimo) - inicioDiaLima(inicio)) / 86_400_000 + 1;
+        if (dias > MAX_DIAS_CAMPANA_PROPIA) issue("fin", `Una campaña puede durar hasta ${MAX_DIAS_CAMPANA_PROPIA} días`);
+      }
     }
   });
 
@@ -190,5 +218,7 @@ export const calendarioQuerySchema = z.object({
 }).transform((q) => ({ anio: q.anio ?? fechaCivilLima(new Date()).anio }));
 
 export const vistaPreviaQuerySchema = z.object({
-  fecha: fechaSchema
+  fecha: fechaSchema,
+  // R3.11: sin hora, mediodía de Lima.
+  hora: z.string().regex(HORA_RE, "Hora en formato HH:mm").optional()
 });

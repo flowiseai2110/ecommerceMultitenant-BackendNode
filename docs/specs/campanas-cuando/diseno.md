@@ -1,6 +1,6 @@
 # Diseño: Campañas, "el cuándo" (Fase 1: horas, fechas por año, ventana de uso)
 
-> Spec: [spec.md](spec.md) (aprobada 2026-10-19) · Estado: **borrador, por aprobar** · Alcance: Fase 1 (P1, P2, P3). La Fase 2 (R4, R5) no se diseña aquí.
+> Spec: [spec.md](spec.md) (aprobada 2026-10-19) · Estado: **aprobado 2026-10-19** (decisiones A–I; propuestas P1–P8 pasadas a la spec como R7) · Alcance: Fase 1 (P1, P2, P3). La Fase 2 (R4, R5) no se diseña aquí.
 > Prototipo: [v1-2026-10-19.html](../../disenos/campanas-cuando/v1-2026-10-19.html) (un solo scroll, sin toggles de vista, datos de ejemplo; las fechas del Cyber Wow no son oficiales).
 > Las notas "D1…D19" del prototipo explican cada detalle junto a la pantalla; las decisiones para aprobar están al final con letras (A–I).
 

@@ -9,7 +9,7 @@
 |---|---|---|---|---|
 | Multi-sede | [spec](specs/multi-sede/spec.md) | aprobado · pieza 1 sin empezar | Antes de la pieza 1: cerrar lo pendiente de reservas (tabla de abajo) | 2026-10-18 |
 | Antipatrones | [spec](specs/antipatrones/spec.md) | en desarrollo (piezas 1-2 hechas; pieza 4 · tarea 1, hallazgos del e2e, A5.1 y A5.2 listos) | Probar en navegador #2 y #3 · revisar A5.2 (`CheckoutStore`) y pasar a A5.3 · decidir si el store (887 líneas) se parte para la meta de 400 líneas · al desplegar, correr `antipatrones_claves_tildes.sql` en Supabase | 2026-10-19 |
-| Campañas: el cuándo (ventana de uso, fechas por año, horas; Fase 2: repetición y descuento) | [spec](specs/campanas-cuando/spec.md) · [diseño](specs/campanas-cuando/diseno.md) · [prototipo](disenos/campanas-cuando/v1-2026-10-19.html) | diseñado (Fase 1) | Aprobar el diseño: decisiones A–I y propuestas P1–P8 al final de `diseno.md` | 2026-10-19 |
+| Campañas: el cuándo (ventana de uso, fechas por año, horas; Fase 2: repetición y descuento) | [spec](specs/campanas-cuando/spec.md) · [diseño](specs/campanas-cuando/diseno.md) · [prototipo](disenos/campanas-cuando/v1-2026-10-19.html) · [impacto](specs/campanas-cuando/impacto.md) · [tareas](specs/campanas-cuando/tasks.md) | en desarrollo (piezas 0+1a listas, sin commit) | Probar 1a en el navegador y decidir commit; luego pieza 1b. Esta Fase 1 va antes que multi-sede | 2026-10-19 |
 | Precio y descuento calculados en el servidor (productos) — **bug crítico de seguridad** | [spec](specs/campanas-cuando/spec.md) (Q5, P-b) | sin empezar · falta spec propia | Decidir cuándo se aborda (va antes que cualquier descuento) | 2026-10-19 |
 
 ## Pendiente heredado (por verificar)
