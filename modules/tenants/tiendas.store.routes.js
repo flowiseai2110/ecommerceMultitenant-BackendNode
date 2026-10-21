@@ -15,6 +15,8 @@ import { FUENTES } from "../traducciones/fuentes.js";
 import { elegirIdioma, idiomasDePeticion } from "../idiomas/idiomas-tienda.js";
 import { getComunicadosPublicos } from "../comunicados/comunicados.service.js";
 import { edicionesParaResolver } from "../campanas/ediciones.service.js";
+import { contextoDePrecios } from "../precios/contexto.service.js";
+import { promocionesPublicas } from "../campanas/promocion.js";
 
 const tiendasRepository = new GenericRepository(prisma.tiendas, "Tienda");
 const tiendasService = new GenericService(tiendasRepository, {
@@ -23,6 +25,17 @@ const tiendasService = new GenericService(tiendasRepository, {
 const tiendasController = new GenericController(tiendasService, "Tienda");
 
 const router = Router();
+
+/** Lo público de las promociones vigentes, con nombre y slug de las categorías elegidas. */
+async function promocionesDeTienda(tiendaId, ahora) {
+  const { promociones } = await contextoDePrecios(prisma, tiendaId, { ahora, conCache: true });
+  if (promociones.length === 0) return [];
+  const ids = [...new Set(promociones.flatMap((p) => p.alcance.elegidas))];
+  const categorias = ids.length
+    ? await prisma.categorias.findMany({ where: { tiendaId, id: { in: ids } }, select: { id: true, nombre: true, slug: true } })
+    : [];
+  return promocionesPublicas(promociones, new Map(categorias.map((c) => [c.id, c])));
+}
 
 // GET / - Listar tiendas (público — para lookup por slug)
 router.get("/", validate({ query: paginationSchema }), async (req, res) => {
@@ -61,6 +74,9 @@ router.get("/", validate({ query: paginationSchema }), async (req, res) => {
     const cambio = proximoCambioDe(diseno.campanas, ahora, ediciones);
     data[0].proximoCambio = cambio ? aIsoLima(cambio) : null;
     if (cambio) ttlMs = cambio.getTime() - ahora.getTime();
+    // Promociones de campaña vigentes, para las condiciones (campanas-descuento R6.5). Sus
+    // fronteras ya están en `proximoCambio` (son las ventanas de las mismas campañas).
+    data[0].promociones = await promocionesDeTienda(data[0].id, ahora);
     // Comunicados vigentes, ya resueltos en hora de Lima (docs/specs/comunicados R2.1).
     data[0].comunicados = await getComunicadosPublicos(data[0].id);
     // Idiomas del selector y textos del diseño en el idioma pedido (docs/specs/idiomas D2, D5).

@@ -6,6 +6,9 @@
 > **Decisiones de arquitectura aprobadas por Diego (2026-10-20), que esta spec no repite ni contradice:** [ADR-0001, el precio lo calcula el servidor y las promociones no reescriben productos](../../adr/ADR-0001-precio-calculado-en-servidor.md) y [ADR-0002, la campaña en tres pasos](../../adr/ADR-0002-campana-en-tres-pasos.md) (reemplaza "Campañas es el cuándo; Diseño es el cómo").
 > Prerrequisito: [precio-en-servidor](../precio-en-servidor/) (el arquitecto la está planificando; ver R12). Relacionadas: [campanas-widgets](../campanas-widgets/spec.md), [reserva-hotel-mejoras](../reserva-hotel-mejoras/spec.md) (H3, pospuesto), [checkout-envio-pago](../checkout-envio-pago/).
 
+
+> **Nota 2026-10-20:** las fechas de uso de campanas-cuando quedaron ocultas (R1.11). La fase de reservas de esta spec las retoma dentro del paso 3 como "¿Para qué fechas vale la oferta?" ([Cualquier fecha] / [Desde … hasta …], con calendario), sin días relativos a la vista.
+
 ## Por qué
 
 1. **La campaña de hoy es solo un disfraz.** Cambia colores, portada y cinta, pero no cambia ningún precio. Un dueño que lanza "Black Friday -20 %" tiene que ir producto por producto bajando precios a mano el día de inicio, y subiéndolos de nuevo al terminar. Se olvida, se equivoca de hora, o deja un precio rebajado de más.

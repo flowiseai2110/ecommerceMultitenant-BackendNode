@@ -31,6 +31,7 @@ import traduccionesRoutes from "../../modules/traducciones/traducciones.admin.ro
 import idiomasRoutes from "../../modules/idiomas/idiomas.admin.routes.js";
 import parametrosRoutes from "../../modules/parametros/parametros.admin.routes.js";
 import campanaEdicionesRoutes from "../../modules/campanas/ediciones.admin.routes.js";
+import campanaPromocionRoutes from "../../modules/campanas/promocion.admin.routes.js";
 
 const router = Router();
 
@@ -41,6 +42,8 @@ router.use(authMiddleware);
 // (utils/store-cache.js). Tiendas → "envios": cotizar usa envioGratisMinimo.
 // Guardar NO traduce con IA: solo el dueño la activa en Traducciones (docs/specs/idiomas D3).
 router.use("/tiendas", invalidarAlEscribir("envios"), tiendasRoutes);
+// Paso 3 de una campaña: /tiendas/:id/campanas/:campanaId (docs/specs/campanas-descuento E2).
+router.use("/tiendas", campanaPromocionRoutes);
 router.use("/categorias", invalidarAlEscribir("categorias"), categoriasRoutes);
 router.use("/marcas", invalidarAlEscribir("marcas"), marcasRoutes);
 // "marcas": el filtro del store lista solo marcas con productos visibles.

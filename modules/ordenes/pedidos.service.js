@@ -6,6 +6,7 @@ import emailService from "../../services/email.service.js";
 import { logger } from "../../config/logger.js";
 import { reponerStock } from "../inventario/inventario.service.js";
 import { nivelDeAcceso, serializarRastreo } from "./rastreo.js";
+import { lineaDePedido } from "./linea-pedido.js";
 
 // Columnas del destino de entrega en `pedidos` (ver schema.prisma).
 export const CAMPOS_DESTINO = [
@@ -235,6 +236,8 @@ class PedidosService {
     // se capturan en el checkout, así que esos sí vienen de `clientes`.
     return {
       ...pedido,
+      // Regular, descuento y de dónde vino, por línea (campanas-descuento R8.3).
+      detalles: pedido.detalles.map(lineaDePedido),
       cliente: pedido.cliente
         ? {
             ...pedido.cliente,
@@ -445,7 +448,11 @@ class PedidosService {
             cantidad: true,
             precioUnitario: true,
             descuento: true,
-            total: true
+            total: true,
+            precioRegular: true,
+            precioOrigen: true,
+            campanaNombre: true,
+            promocionPorcentaje: true
           }
         },
         historialEstados: {

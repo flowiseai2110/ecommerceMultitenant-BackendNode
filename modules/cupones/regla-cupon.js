@@ -1,6 +1,9 @@
 import { clave } from "../idiomas/clave.js";
 import { aCentimos, redondearCentimos } from "../precios/precio-vigente.js";
 
+/** El cupón de una campaña fuera de su ventana (docs/specs/campanas-descuento R4.8, CA-4.7). */
+export const CUPON_CAMPANA_NO_VIGENTE = clave("Este cupón es de la campaña {nombre} y ya no está vigente");
+
 /**
  * Regla del cupón (docs/specs/precio-en-servidor): la usan el checkout para
  * mostrar el descuento (validarCupon) y la creación del pedido para cobrarlo.

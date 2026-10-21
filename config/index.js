@@ -208,6 +208,12 @@ export const config = {
     scratchBucket: process.env.STUDIO_SCRATCH_BUCKET || "studio-scratch"
   },
 
+  // Precio asegurado en el pago (docs/specs/campanas-descuento C6, R8.4): firma los
+  // precios que el cliente vio al entrar a pagar, válidos 15 minutos.
+  precios: {
+    tokenSecret: process.env.PRECIOS_TOKEN_SECRET
+  },
+
   // Reseñas de productos. El link de WhatsApp ("califica tu compra") lleva un
   // token firmado con este secreto: prueba que quien reseña recibió el pedido,
   // aunque haya comprado sin cuenta.
@@ -374,6 +380,13 @@ const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingVars.length > 0) {
   console.error(`❌ Variables de entorno faltantes: ${missingVars.join(", ")}`);
+  process.exit(1);
+}
+
+// Sin esta llave nadie podría llegar al pedido con el precio asegurado: mejor no arrancar
+// que descubrirlo en el paso de pago (campanas-descuento, impacto "Configuración").
+if (process.env.NODE_ENV === "production" && !config.precios.tokenSecret) {
+  console.error("❌ Variable de entorno faltante: PRECIOS_TOKEN_SECRET");
   process.exit(1);
 }
 

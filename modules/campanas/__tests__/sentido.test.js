@@ -55,3 +55,11 @@ describe("errorDeSentido (R8)", () => {
     expect(errorDeSentido([propia({ inicio: "2026-12-10", fin: "2026-12-12" }), bf()], [], ahora)).toBeNull();
   });
 });
+
+describe("errorDeSentido: fechas de uso ocultas (R1.11)", () => {
+  it("un uso ya guardado que no cambia no bloquea otros cambios de la campaña", () => {
+    const antes = propia({ inicio: "2026-10-15", fin: "2026-10-25", uso: { hasta: "2026-10-18" } });
+    const ahoraEditada = { ...antes, horaFin: "20:00" };
+    expect(errorDeSentido([ahoraEditada], [antes], ahora)).toBeNull();
+  });
+});

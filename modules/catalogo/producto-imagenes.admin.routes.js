@@ -1,17 +1,9 @@
-import { Router } from "express";
 import { uploadImage } from "../../middlewares/upload.middleware.js";
-import GenericController from "../../controllers/generic.controller.js";
-import GenericService from "../../services/generic.service.js";
-import GenericRepository from "../../repositories/generic.repository.js";
 import { prisma } from "../../config/prisma.js";
 import { validate } from "../../middlewares/validation.middleware.js";
-import {
-  authMiddleware,
-  requireTiendaAccess,
-  resolveTiendaId,
-  scopeReadToResourceTienda,
-  findActiveMembership
-} from "../../kernel/tenant/index.js";
+import { authMiddleware, findActiveMembership } from "../../kernel/tenant/index.js";
+import { crearCrud, tiendaDelPadre } from "../../kernel/crud/crear-crud.js";
+import { POLITICAS } from "../../kernel/crud/politicas.js";
 import { makeUploadImagen, deleteImagenWithCleanup } from "../../controllers/producto-imagenes.controller.js";
 import {
   generarImagenIA,
@@ -33,98 +25,37 @@ import { serializeImagenAdmin } from "./producto-imagenes.serializer.js";
 
 const uploadImagen = makeUploadImagen();
 
-// Crear instancias de las capas
-const imagenesRepository = new GenericRepository(prisma.producto_imagenes, "ProductoImagen");
-const imagenesService = new GenericService(imagenesRepository, {
-  enableAudit: true,
-  // producto_imagenes no tiene tiendaId propio → se scopa por la relación producto.
-  requireTiendaId: true,
-  tenantRelation: "producto",
-  allowedFilters: ["productoId", "esPrincipal"],
-  allowedOrderBy: ["orden", "fechaRegistro"]
+// Imágenes de producto (Admin). producto_imagenes no tiene tiendaId propio: la
+// tienda dueña es la del producto (al crear o subir, la del productoId del body).
+// El CRUD lo arma la política (kernel/crud, docs/specs/antipatrones A7); el
+// borrado usa su propio handler porque también limpia los archivos del storage.
+const imagenes = crearCrud({
+  modelo: prisma.producto_imagenes,
+  nombre: "ProductoImagen",
+  politica: POLITICAS.adminTienda,
+  serializer: serializeImagenAdmin,
+  schemas: { listado: paginationSchema, id: idParamSchema, crear: createImagenSchema, editar: updateImagenSchema },
+  tienda: tiendaDelPadre({ relacion: "producto", campo: "productoId", modelo: prisma.productos, nombre: "Producto" }),
+  servicio: {
+    allowedFilters: ["productoId", "esPrincipal"],
+    allowedOrderBy: ["orden", "fechaRegistro"]
+  },
+  acciones: { borrar: deleteImagenWithCleanup }
 });
-const imagenesController = new GenericController(imagenesService, "ProductoImagen", {
-  serialize: serializeImagenAdmin
-});
 
-// Repositorio de productos, solo para resolver el tiendaId del producto padre
-// al crear una imagen (req.body.productoId).
-const productosRepository = new GenericRepository(prisma.productos, "Producto");
+const router = imagenes.router;
 
-// producto_imagenes no tiene tiendaId propio: la tienda dueña se hereda
-// del producto padre. Resolvemos vía productoId (creación) o vía la
-// relación producto de la imagen existente (actualización/eliminación/lectura).
-const findImagenTiendaId = (req) => {
-  if (req.body?.productoId) {
-    return productosRepository.findTiendaIdById(req.body.productoId);
-  }
-  return imagenesRepository.findRelatedTiendaId(req.params.id, "producto");
-};
-
-const resolveImagenTiendaId = resolveTiendaId(findImagenTiendaId);
-
-// Para lectura (GET /:id): resuelve el tiendaId dueño SIEMPRE, ignorando
-// cualquier tiendaId que venga en query — ver mismo razonamiento en productos.
-const scopeImagenReadToOwner = scopeReadToResourceTienda(findImagenTiendaId);
-
-const router = Router();
-
-// GET - Listar imágenes de una tienda (admin)
-// Exige membresía en la tienda (?tiendaId=); el scope se aplica vía la relación
-// producto porque producto_imagenes no tiene tiendaId propio.
-router.get(
-  "/",
-  authMiddleware,
-  requireTiendaAccess("viewer"),
-  validate({ query: paginationSchema }),
-  imagenesController.findAll
-);
-
-// GET - Obtener imagen por ID
-router.get(
-  "/:id",
-  authMiddleware,
-  validate({ params: idParamSchema }),
-  scopeImagenReadToOwner,
-  requireTiendaAccess("viewer"),
-  imagenesController.findById
-);
+// Las rutas que no son CRUD usan el mismo acceso de la política: la tienda dueña
+// real (de la imagen, o del producto destino) y el rol en ella.
 
 // POST /upload - Subir archivo + procesar con Sharp + guardar en DB
-// multer corre primero para poblar req.body y req.file antes de resolveImagenTiendaId
+// multer corre primero para poblar req.body y req.file antes de resolver la tienda
 router.post(
   "/upload",
   authMiddleware,
   uploadImage.single("file"),
-  resolveImagenTiendaId,
-  requireTiendaAccess("editor"),
+  ...imagenes.acceso("editor", "padre"),
   uploadImagen
-);
-
-// POST - Crear imagen con URL ya existente (sin procesamiento)
-router.post(
-  "/",
-  authMiddleware,
-  resolveImagenTiendaId,
-  requireTiendaAccess("editor"),
-  validate({ body: createImagenSchema }),
-  imagenesController.create
-);
-
-// PUT - Actualizar imagen
-// producto_imagenes no tiene tiendaId propio (ver resolveImagenTiendaId), así
-// que se limpia para que GenericRepository.update no intente filtrar por una
-// columna inexistente. skipExistsCheck evita repetir la consulta de
-// existencia: resolveImagenTiendaId ya la hizo para resolver la tienda dueña
-// (era un round-trip extra en cada PUT, redundante con el que ya corrió arriba).
-router.put(
-  "/:id",
-  authMiddleware,
-  resolveImagenTiendaId,
-  requireTiendaAccess("editor"),
-  (req, _res, next) => { req.tiendaId = null; req.skipExistsCheck = true; next(); },
-  validate({ params: idParamSchema, body: updateImagenSchema }),
-  imagenesController.update
 );
 
 // ============================================
@@ -135,8 +66,7 @@ router.put(
 router.post(
   "/:id/generar-ia",
   authMiddleware,
-  resolveImagenTiendaId,
-  requireTiendaAccess("editor"),
+  ...imagenes.acceso("editor", "registro"),
   validate({ params: idParamSchema, body: generarIaSchema }),
   generarImagenIA
 );
@@ -169,20 +99,9 @@ router.get(
 router.post(
   "/generar-ia/:taskId/confirmar",
   authMiddleware,
-  resolveImagenTiendaId,
-  requireTiendaAccess("editor"),
+  ...imagenes.acceso("editor", "padre"),
   validate({ params: taskIdParamSchema, body: confirmarIaSchema }),
   confirmarImagenIA
-);
-
-// DELETE - Eliminar imagen y limpiar archivos de Supabase Storage
-router.delete(
-  "/:id",
-  authMiddleware,
-  resolveImagenTiendaId,
-  requireTiendaAccess("admin"),
-  validate({ params: idParamSchema }),
-  deleteImagenWithCleanup
 );
 
 export default router;

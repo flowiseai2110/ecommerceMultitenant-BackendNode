@@ -1,4 +1,4 @@
-import { precioVigente, aSoles } from "../precios/precio-vigente.js";
+import { precioPublico } from "../precios/precio-vigente.js";
 
 /**
  * El LLM no recibe ni escribe precios (docs/specs/agente-ventas/spec.md, R6).
@@ -9,9 +9,16 @@ import { precioVigente, aSoles } from "../precios/precio-vigente.js";
  * recibe precios, cualquier precio en su texto es inventado.
  */
 
-/** Precio que paga el cliente: la misma regla que cobra el pedido (precios/precio-vigente.js). */
+/**
+ * Precio del producto: el `precio` que ya trae de buscar_productos (con las
+ * promociones de campaña) o, si no, el de la misma regla que cobra el pedido
+ * (precios/precio-vigente.js).
+ */
+const precioDe = (p) => p.precio ?? precioPublico(p);
+
+/** Precio que paga el cliente, en soles. */
 export function precioEfectivo(p) {
-  return aSoles(precioVigente(p).unitario);
+  return precioDe(p).vigente;
 }
 
 /**
@@ -21,12 +28,14 @@ export function precioEfectivo(p) {
  * @returns {Map<string, {tiene_oferta:boolean, es_la_mas_economica:boolean, dentro_de_presupuesto?:boolean}>}
  */
 export function indicadoresPrecio(productos, precioMax = null) {
-  const efectivos = productos.map(precioEfectivo);
+  const precios = productos.map(precioDe);
+  const efectivos = precios.map((x) => x.vigente);
   const minimo = Math.min(...efectivos);
 
   return new Map(productos.map((p, i) => {
     const ind = {
-      tiene_oferta: efectivos[i] < Number(p.precioBase),
+      // Oferta propia o promoción de campaña: lo que se cobra es menor que el regular.
+      tiene_oferta: efectivos[i] < precios[i].regular,
       // Con un solo resultado no hay comparación que hacer.
       es_la_mas_economica: productos.length > 1 && efectivos[i] === minimo
     };

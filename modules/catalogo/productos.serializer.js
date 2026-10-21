@@ -15,6 +15,7 @@
 
 import { serializeVideoStore, serializeVideoAdmin } from "./video.js";
 import { serializeMarcaStore } from "./marcas.serializer.js";
+import { precioPublico } from "../precios/precio-vigente.js";
 
 /**
  * Imagen de producto tal como la ve el store.
@@ -84,12 +85,14 @@ function serializeRatingStore(row) {
 
 /**
  * Tarjeta de producto para listados públicos (GET / y GET /home).
- * `categoriaId` solo viene en el listado paginado; en /home llega undefined y
- * JSON lo omite, preservando la salida actual de cada endpoint.
+ * `precio` es lo que se cobra hoy (`precioVigente`, con las promociones de campaña
+ * del `contexto`; docs/specs/campanas-descuento R6.1): la tienda solo lo dibuja.
+ * `precioBase` y `precioOferta` siguen saliendo para la Tienda anterior.
  * @param {object} row - Fila proyectada del producto.
+ * @param {{ promociones?: object[] }} [contexto] - De contextoDePrecios.
  * @returns {object} DTO público de tarjeta.
  */
-export function serializeProductoCardStore(row) {
+export function serializeProductoCardStore(row, contexto = {}) {
   return {
     id: row.id,
     tiendaId: row.tiendaId,
@@ -103,6 +106,7 @@ export function serializeProductoCardStore(row) {
     sku: row.sku,
     precioBase: row.precioBase,
     precioOferta: row.precioOferta,
+    precio: precioPublico(row, null, contexto),
     stock: row.stock,
     activo: row.activo,
     destacado: row.destacado,
@@ -116,11 +120,14 @@ export function serializeProductoCardStore(row) {
 /**
  * Detalle completo de producto para el store (GET /:id): incluye descripción
  * larga, variantes activas e imágenes ordenadas. Sigue sin exponer precioCosto,
- * stockAlerta ni metadata.
+ * stockAlerta ni metadata. `precio` del producto y `precioVigente` de cada
+ * variante (cada una con su regular, R5.5); la variante conserva `precio` (su
+ * precio guardado) para la Tienda anterior.
  * @param {object} row - Fila del producto con variantes/imagenes embebidas.
+ * @param {{ promociones?: object[] }} [contexto] - De contextoDePrecios.
  * @returns {object} DTO público de detalle.
  */
-export function serializeProductoDetailStore(row) {
+export function serializeProductoDetailStore(row, contexto = {}) {
   return {
     id: row.id,
     tiendaId: row.tiendaId,
@@ -135,6 +142,7 @@ export function serializeProductoDetailStore(row) {
     sku: row.sku,
     precioBase: row.precioBase,
     precioOferta: row.precioOferta,
+    precio: precioPublico(row, null, contexto),
     stock: row.stock,
     activo: row.activo,
     destacado: row.destacado,
@@ -143,7 +151,9 @@ export function serializeProductoDetailStore(row) {
     ...serializeRatingStore(row),
     opciones: serializeOpcionesStore(row.opciones),
     video: serializeVideoStore(row.video),
-    variantes: Array.isArray(row.variantes) ? row.variantes.map(serializeVarianteStore) : [],
+    variantes: Array.isArray(row.variantes)
+      ? row.variantes.map((v) => ({ ...serializeVarianteStore(v), precioVigente: precioPublico(row, v, contexto) }))
+      : [],
     imagenes: Array.isArray(row.imagenes) ? row.imagenes.map(serializeImagenStore) : []
   };
 }

@@ -24,7 +24,7 @@ export async function cargarLineas(tx, tiendaId, detalles) {
 
   const productos = await tx.productos.findMany({
     where: { tiendaId, id: { in: productoIds } },
-    select: { id: true, nombre: true, precioBase: true, precioOferta: true, activo: true }
+    select: { id: true, nombre: true, categoriaId: true, precioBase: true, precioOferta: true, activo: true }
   });
   const variantes = varianteIds.length
     ? await tx.producto_variantes.findMany({

@@ -51,7 +51,8 @@ router.get("/hora", (_req, res) => {
 router.use("/textos", textosRoutes);              // textos fijos en el idioma pedido (docs/specs/idiomas D7); fija su propia caché
 router.use("/categorias", cache(300), cacheRespuesta("categorias"), categoriasRoutes);
 router.use("/marcas", cache(60), cacheRespuesta("marcas"), marcasRoutes);
-router.use("/productos", cache(60), productosRoutes);
+// Ni la caché HTTP pasa el próximo cambio de una promoción de campaña (campanas-descuento C3a).
+router.use("/productos", cache(60, { hasta: (body) => body?.meta?.proximoCambioPrecio }), productosRoutes);
 router.use("/metodos-pago", cache(300), cacheRespuesta("metodos-pago"), metodosPagoRoutes);
 router.use("/pagos", pasarelaRoutes);        // sin caché — crea cargos en la pasarela
 router.use("/metodos-envio", cache(300), cacheRespuesta("envios"), metodosEnvioRoutes);

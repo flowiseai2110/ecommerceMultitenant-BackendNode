@@ -1,40 +1,24 @@
-import { Router } from "express";
-import GenericController from "../../controllers/generic.controller.js";
-import GenericService from "../../services/generic.service.js";
-import GenericRepository from "../../repositories/generic.repository.js";
 import { prisma } from "../../config/prisma.js";
-import { validate } from "../../middlewares/validation.middleware.js";
-import { requireTienda, scopeQueryToTienda } from "../../kernel/tenant/index.js";
+import { crearCrud } from "../../kernel/crud/crear-crud.js";
+import { POLITICAS } from "../../kernel/crud/politicas.js";
 import { idParamSchema, paginationSchema } from "./categorias.schema.js";
 import { serializeCategoriaStore } from "./categorias.serializer.js";
 import { localizado } from "../traducciones/localizar.js";
 import { FUENTES } from "../traducciones/fuentes.js";
 
-const categoriasRepository = new GenericRepository(prisma.categorias, "Categoria");
-const categoriasService = new GenericService(categoriasRepository, {
-  searchFields: ["nombre", "slug"],
-  // Read-policy store: sin tiendaId (subdominio o ?tiendaId=) no se lista nada,
-  // en vez de devolver categorías de todas las tiendas.
-  requireTiendaId: true,
-  allowedFilters: ["activo", "categoriaPadreId"],
-  allowedOrderBy: ["orden", "nombre", "fechaRegistro"]
-});
-// El serializer del store define el contrato de salida campo por campo (excluye
-// auditoría en listado Y detalle), reemplazando el viejo excludeFieldsInList.
-// Nombre y descripción en el idioma del visitante (docs/specs/idiomas D5).
-const categoriasController = new GenericController(categoriasService, "Categoria", {
-  serialize: localizado(serializeCategoriaStore, FUENTES.categorias)
-});
-
-const router = Router();
-
-// GET / - Listar categorías (público — filtra por la tienda del subdominio,
-// o por ?tiendaId=&activo=true como fallback en dev/dominio genérico)
-router.get("/", validate({ query: paginationSchema }), scopeQueryToTienda, categoriasController.findAll);
-
-// GET /:id - Obtener categoría por ID (público). Exige la tienda del subdominio
-// (o ?tienda=): con ella en el contexto, el auto-scope de Prisma deja fuera las
-// categorías de otras tiendas (docs/specs/antipatrones A1.8).
-router.get("/:id", validate({ params: idParamSchema }), requireTienda, categoriasController.findById);
-
-export default router;
+// Categorías de la vitrina (público): listado de la tienda del subdominio (o
+// ?tiendaId= en desarrollo) y detalle que exige la tienda (docs/specs/antipatrones
+// A1.8, A7). El serializer del store deja fuera la auditoría; nombre y descripción
+// van en el idioma del visitante (docs/specs/idiomas D5).
+export default crearCrud({
+  modelo: prisma.categorias,
+  nombre: "Categoria",
+  politica: POLITICAS.vitrinaPublica,
+  serializer: localizado(serializeCategoriaStore, FUENTES.categorias),
+  schemas: { listado: paginationSchema, id: idParamSchema },
+  servicio: {
+    searchFields: ["nombre", "slug"],
+    allowedFilters: ["activo", "categoriaPadreId"],
+    allowedOrderBy: ["orden", "nombre", "fechaRegistro"]
+  }
+}).router;

@@ -7,6 +7,7 @@ import { EFECTOS } from "./efectos.js";
 import { horaAMs, inicioDiaLima, parsearFecha } from "./calendario.js";
 import { datosDe } from "../negocio/datos.js";
 import { edicionesParaResolver } from "./ediciones.service.js";
+import { conPromociones } from "./promocion.service.js";
 
 /**
  * Calendario de campañas de la tienda para un año (T3.3), con el catálogo
@@ -18,7 +19,9 @@ export async function getCalendario(tiendaId, anio) {
   if (!tienda) throw new NotFoundError("Tienda no encontrada");
 
   const [{ campanas }, ediciones] = await Promise.all([getDiseno(tiendaId), edicionesParaResolver()]);
-  return { anio, rubro: tienda.rubro ?? null, presets: CAMPANA_PRESETS, efectos: EFECTOS, campanas: calendarioAnual(campanas, tienda.rubro, anio, ediciones, datosDe(tienda.tipoNegocio).recibeReservas) };
+  const filas = calendarioAnual(campanas, tienda.rubro, anio, ediciones, datosDe(tienda.tipoNegocio).recibeReservas);
+  // Cada campaña con su promoción (campanas-descuento T3b.6): chips y estado del paso 3.
+  return { anio, rubro: tienda.rubro ?? null, presets: CAMPANA_PRESETS, efectos: EFECTOS, campanas: await conPromociones(tiendaId, filas, campanas) };
 }
 
 /**

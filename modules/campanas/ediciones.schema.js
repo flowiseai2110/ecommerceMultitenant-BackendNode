@@ -45,3 +45,9 @@ export const presetParamsSchema = z.object({ presetId: z.string().min(1).max(60)
 export const anioQuerySchema = z.object({
   anio: z.coerce.number().int().min(2020).max(2100).optional()
 });
+
+// La edición que se va a cambiar, para contar sus promociones confirmadas (campanas-descuento T3b.10).
+export const tiendasQuerySchema = z.object({
+  anio: z.coerce.number().int().min(2020).max(2100).optional(),
+  clave: z.string().regex(/^[a-z0-9-]{1,30}$/, "Clave inválida").optional()
+});

@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { facetasOpciones, whereOpciones } from "./filtro-opciones.js";
-import GenericController from "../../controllers/generic.controller.js";
 import GenericService from "../../services/generic.service.js";
 import GenericRepository from "../../repositories/generic.repository.js";
 import { prisma } from "../../config/prisma.js";
+import config from "../../config/index.js";
+import { logger } from "../../config/logger.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import { validate } from "../../middlewares/validation.middleware.js";
 import { scopeQueryToTienda } from "../../kernel/tenant/index.js";
@@ -20,8 +21,11 @@ import {
   getProductoDetail,
   setProductoDetail
 } from "./productos.cache.js";
-import { localizado, localizar } from "../traducciones/localizar.js";
+import { localizar } from "../traducciones/localizar.js";
 import { FUENTES } from "../traducciones/fuentes.js";
+import { contextoDePrecios } from "../precios/contexto.service.js";
+import { aIsoLima } from "../campanas/calendario.js";
+import { MAX_FILAS_POR_PRECIO, ordenarPorPrecio, pedidoPorPrecio, sinPrecio } from "./listado-por-precio.js";
 
 // Proyección de campos para listados públicos
 const productosListSelect = {
@@ -96,18 +100,77 @@ const productosService = new GenericService(productosRepository, {
     stock: [{ id: "asc" }]
   }
 });
-// El serializer del store define el contrato de salida campo por campo: nunca
-// expone precioCosto, stockAlerta, metadata ni auditoría al público.
-// Nombre y descripción en el idioma del visitante (docs/specs/idiomas D5).
-const productosController = new GenericController(productosService, "Producto", {
-  serialize: localizado(serializeProductoCardStore, FUENTES.productos)
-});
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Promociones de campaña vigentes de la tienda (docs/specs/campanas-descuento C3a),
+ * con la caché de la vitrina. Sin una tienda válida, sin promociones: el listado
+ * igual responde el error de siempre.
+ */
+const contextoVitrina = (tiendaId) =>
+  contextoDePrecios(prisma, UUID.test(String(tiendaId ?? "")) ? tiendaId : null, { conCache: true });
+
+/** Hasta cuándo vale el precio calculado: la caché HTTP (`hasta`) y la de memoria no lo pasan. */
+const metaPrecio = (contexto) => ({ proximoCambioPrecio: contexto.proximoCambio ? aIsoLima(contexto.proximoCambio) : null });
+const ttlPrecio = (contexto) => (contexto.proximoCambio ? contexto.proximoCambio.getTime() - Date.now() : undefined);
+
+/**
+ * Listado ordenado o filtrado por el precio que se cobra (listado-por-precio.js,
+ * E4): proyección liviana con el mismo `where` del genérico, cálculo con
+ * `precioVigente` en memoria y lectura de la página con el `listSelect` de siempre.
+ * Sobre el tope de filas se ordena por precio regular en la BD y queda en la bitácora.
+ */
+async function listarPorPrecio(query, pedido, contexto) {
+  const { orderBy, include: _include, fields: _fields, ...filtros } = sinPrecio(query);
+  if (!filtros.tiendaId) return productosService.findAll(query); // lanza "Se requiere tiendaId"
+
+  const filas = await prisma.productos.findMany({
+    where: { AND: [productosService.buildWhereClause(filtros), productosService.baseWhere] },
+    orderBy: productosService.parseOrderBy(orderBy) || { id: "desc" },
+    select: { id: true, categoriaId: true, precioBase: true, precioOferta: true },
+    take: MAX_FILAS_POR_PRECIO + 1
+  });
+  if (filas.length > MAX_FILAS_POR_PRECIO) {
+    logger.warn(`Catálogo de ${filtros.tiendaId} con más de ${MAX_FILAS_POR_PRECIO} productos: se ordena por precio regular`);
+    return productosService.findAll(query);
+  }
+
+  const page = parseInt(query.page) || config.pagination.defaultPage;
+  const limit = Math.min(parseInt(query.limit) || config.pagination.defaultLimit, config.pagination.maxLimit);
+  const { ids, total } = ordenarPorPrecio(filas, pedido, contexto, { page, limit });
+  const leidas = ids.length
+    ? await prisma.productos.findMany({ where: { id: { in: ids } }, select: productosListSelect })
+    : [];
+  const porId = new Map(leidas.map((p) => [p.id, p]));
+  const totalPages = Math.ceil(total / limit);
+  return {
+    data: ids.map((id) => porId.get(id)).filter(Boolean),
+    meta: { total, page, limit, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1 }
+  };
+}
 
 const router = Router();
 
 // GET / - Listar productos (público — filtra por la tienda del subdominio,
-// o por ?tiendaId=&activo=true&categoriaId= como fallback en dev/dominio genérico)
-router.get("/", validate({ query: paginationSchema }), scopeQueryToTienda, productosController.findAll);
+// o por ?tiendaId=&activo=true&categoriaId= como fallback en dev/dominio genérico).
+// El serializer del store define el contrato de salida campo por campo: nunca
+// expone precioCosto, stockAlerta, metadata ni auditoría al público.
+// Nombre y descripción en el idioma del visitante (docs/specs/idiomas D5); `precio`
+// con las promociones de campaña vigentes (campanas-descuento C3a).
+router.get("/", validate({ query: paginationSchema }), scopeQueryToTienda, async (req, res) => {
+  const query = req.validatedQuery || req.query;
+  const contexto = await contextoVitrina(query.tiendaId);
+  const pedido = pedidoPorPrecio(query);
+  const { data, meta } = pedido ? await listarPorPrecio(query, pedido, contexto) : await productosService.findAll(query);
+
+  return apiResponse(res, {
+    status: 200,
+    type: "SUCCESS",
+    code: "PRODUCTO_LIST",
+    data: data.map((row) => serializeProductoCardStore(localizar(FUENTES.productos, row, req.idioma), contexto)),
+    meta: { ...meta, ...metaPrecio(contexto) }
+  });
+});
 
 // GET /opciones?tiendaId=&categoriaId=a,b - Facetas de talla, color… para el panel de filtros (plantillas-por-rubro E9).
 // Debe ir ANTES de /:id.
@@ -131,6 +194,7 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res) => {
   if (cached) {
     return apiResponse(res, cached);
   }
+  const contexto = await contextoVitrina(tiendaId);
 
   // Una sola query (UNION ALL + LATERAL JOIN para la imagen principal) en vez de
   // 2 findMany + 2 sub-queries de relación: con la latencia de red a Supabase
@@ -140,6 +204,7 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res) => {
   const rows = await prisma.$queryRaw`
     (
       SELECT 'destacados' AS grupo, p.id, p.tienda_id AS "tiendaId", p.nombre, p.slug,
+             p.categoria_id AS "categoriaId",
              p.descripcion_corta AS "descripcionCorta", p.traducciones, p.sku, p.precio_base AS "precioBase",
              p.precio_oferta AS "precioOferta", p.stock, p.activo, p.destacado,
              p.es_servicio AS "esServicio", p.etiquetas,
@@ -163,6 +228,7 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res) => {
     UNION ALL
     (
       SELECT 'recientes' AS grupo, p.id, p.tienda_id AS "tiendaId", p.nombre, p.slug,
+             p.categoria_id AS "categoriaId",
              p.descripcion_corta AS "descripcionCorta", p.traducciones, p.sku, p.precio_base AS "precioBase",
              p.precio_oferta AS "precioOferta", p.stock, p.activo, p.destacado,
              p.es_servicio AS "esServicio", p.etiquetas,
@@ -198,12 +264,14 @@ router.get("/home", validate({ query: homeQuerySchema }), async (req, res) => {
       imagenes: row.imagenId
         ? [{ id: row.imagenId, url: row.imagenUrl, textoAlternativo: row.imagenAlt }]
         : []
-    });
+    }, contexto);
     (row.grupo === "destacados" ? destacados : recientes).push(producto);
   }
 
-  const responsePayload = { status: 200, type: "SUCCESS", code: "PRODUCTO_HOME", data: { destacados, recientes } };
-  setProductosHome(cacheKey, responsePayload);
+  const responsePayload = {
+    status: 200, type: "SUCCESS", code: "PRODUCTO_HOME", data: { destacados, recientes }, meta: metaPrecio(contexto)
+  };
+  setProductosHome(cacheKey, responsePayload, ttlPrecio(contexto));
 
   return apiResponse(res, responsePayload);
 });
@@ -256,10 +324,11 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res) => {
   if (!rows[0]) {
     throw new NotFoundError("Producto");
   }
-  const producto = serializeProductoDetailStore(localizar(FUENTES.productos, rows[0], req.idioma));
+  const contexto = await contextoVitrina(rows[0].tiendaId);
+  const producto = serializeProductoDetailStore(localizar(FUENTES.productos, rows[0], req.idioma), contexto);
 
-  const responsePayload = { status: 200, type: "SUCCESS", code: "PRODUCTO_FOUND", data: producto };
-  setProductoDetail(id, req.idioma.codigo, responsePayload);
+  const responsePayload = { status: 200, type: "SUCCESS", code: "PRODUCTO_FOUND", data: producto, meta: metaPrecio(contexto) };
+  setProductoDetail(id, req.idioma.codigo, responsePayload, ttlPrecio(contexto));
 
   return apiResponse(res, responsePayload);
 });

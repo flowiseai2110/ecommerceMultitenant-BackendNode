@@ -17,12 +17,18 @@ export const ALCANCE = Object.freeze({
   marcas: "tienda",
   productos: "tienda",
   producto_atributos: "tienda",
+  producto_precio_historial: "tienda",
 
   // Clientes, pedidos y pagos
   clientes: "tienda",
   pedidos: "tienda",
   pagos: "tienda",
   cupones: "tienda",
+  // Promoción de una campaña (docs/specs/campanas-descuento C3a)
+  campana_promociones: "tienda",
+  campana_promocion_categorias: "tienda",
+  campana_promocion_productos: "tienda",
+  campana_promocion_confirmaciones: "tienda",
   metodos_pago: "tienda",
   tienda_pasarela_config: "tienda",
   metodos_envio: "tienda",

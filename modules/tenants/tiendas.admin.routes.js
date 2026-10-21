@@ -11,6 +11,8 @@ import { uploadLogo, uploadBanner, deleteLogo, deleteBanner } from "../../contro
 import { seedMetodosPagoParaTienda } from "../../services/metodos-pago-seed.service.js";
 import { seedMetodosEnvioParaTienda } from "../../services/metodos-envio-seed.service.js";
 import { disenoAdmin, saveDiseno } from "../../services/tienda-diseno.service.js";
+import { invalidarContexto } from "../precios/contexto.cache.js";
+import { clear as limpiarCatalogo } from "../catalogo/productos.cache.js";
 import { aplicarPlantilla, copiaDePlantilla, deshacerEstructura, getDisenoAdmin, validarEstructuraDeTienda } from "../diseno/diseno.service.js";
 import { aplicarPlantillaSchema } from "../diseno/secciones.schema.js";
 import { getPlantillasWhatsapp, savePlantillasWhatsapp } from "../../services/tienda-plantillas-whatsapp.service.js";
@@ -26,7 +28,7 @@ import {
 } from "./tiendas.schema.js";
 import { updateDisenoSchema } from "../../validators/tienda-diseno.validator.js";
 import { calendarioQuerySchema, vistaPreviaQuerySchema } from "../campanas/campanas.schema.js";
-import { validarCampanasDeTienda } from "../campanas/campanas.validacion.js";
+import { validarCampanasDeTienda, validarPromocionesDelDiseno } from "../campanas/campanas.validacion.js";
 import { getCalendario, getVistaPrevia } from "../campanas/campanas.service.js";
 import { updatePlantillasWhatsappSchema } from "../../validators/tienda-plantillas-whatsapp.validator.js";
 import { listTiendasForUser } from "./tiendas.service.js";
@@ -59,6 +61,9 @@ function invalidateTiendasListCache(req, res, next) {
   res.on("finish", () => {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       invalidateTiendasCaches();
+      // Encender o apagar una campaña cambia precios (campanas-descuento C3a, R8.6).
+      invalidarContexto(req.params.id);
+      limpiarCatalogo();
     }
   });
   next();
@@ -196,6 +201,7 @@ router.put(
     // Solo secciones y layout del tipo de negocio de la tienda (diseno-por-rubro H3,
     // layout-por-rubro RU8): se guarda la estructura ya normalizada a su rubro.
     await validarCampanasDeTienda(req.params.id, req.body.campanas);
+    await validarPromocionesDelDiseno(req.params.id, req.body.campanas);
     const estructura = await validarEstructuraDeTienda(req.params.id, req.body.estructura);
     const body = req.body.estructura ? { ...req.body, estructura } : req.body;
     const diseno = disenoAdmin(await saveDiseno(req.params.id, body, req.user));

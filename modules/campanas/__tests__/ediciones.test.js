@@ -259,8 +259,19 @@ describe("guardar / eliminar (R2.7)", () => {
   });
 
   it("cuenta las tiendas con la campaña activa y devuelve solo el número (R7.7)", async () => {
-    prisma.$queryRaw.mockResolvedValue([{ total: 14 }]);
-    expect(await svc.tiendasConCampana("cyber-wow")).toEqual({ total: 14 });
+    // La segunda cuenta son las que tienen una promoción confirmada (campanas-descuento T3b.10).
+    prisma.$queryRaw.mockResolvedValueOnce([{ total: 14 }]).mockResolvedValueOnce([{ total: 3 }]);
+    expect(await svc.tiendasConCampana("cyber-wow")).toEqual({ total: 14, conPromocion: 3 });
+  });
+
+  it("con la edición, cuenta solo las promociones cuyas ventanas tocan sus fechas (T3b.10)", async () => {
+    prisma.campana_ediciones.findMany.mockResolvedValue([fila()]);
+    prisma.$queryRaw.mockResolvedValueOnce([{ total: 14 }]).mockResolvedValueOnce([{ total: 2 }]);
+    expect(await svc.tiendasConCampana("cyber-wow", { anio: 2026, clave: "noviembre" })).toEqual({ total: 14, conPromocion: 2 });
+    const valores = prisma.$queryRaw.mock.calls.at(-1).slice(1);
+    // Del 2 nov 00:00 al 6 nov 00:00 (fin exclusivo), hora de Lima.
+    expect(valores.some((v) => v instanceof Date && v.getTime() === lima("2026-11-02T00:00").getTime())).toBe(true);
+    expect(valores.some((v) => v instanceof Date && v.getTime() === lima("2026-11-06T00:00").getTime())).toBe(true);
   });
 
   it("la pantalla del año trae lo cargado, lo que falta y el historial por edición", async () => {

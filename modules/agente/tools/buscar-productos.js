@@ -15,6 +15,8 @@ import { prisma, Prisma } from "../../../config/prisma.js";
 import MemoryCache from "../../../utils/memory-cache.js";
 import { expandirConsulta } from "../glosario.js";
 import { conPrecioSql } from "../../catalogo/productos.vitrina.js";
+import { contextoDePrecios } from "../../precios/contexto.service.js";
+import { precioPublico } from "../../precios/precio-vigente.js";
 
 // Tope del texto libre que manda el modelo (spec: 100 caracteres).
 const MAX_CARACTERES_QUERY = 100;
@@ -271,14 +273,19 @@ export async function ejecutarBuscarProductos({ tiendaId, input, facetas }) {
   // Por defecto solo mostramos con stock; el modelo puede pedir lo contrario.
   const soloConStock = input?.soloConStock !== false;
 
+  // Promociones de campaña vigentes (docs/specs/campanas-descuento C3a), con la caché de la vitrina.
+  const contexto = await contextoDePrecios(prisma, tiendaId, { conCache: true });
+
   // $queryRaw no pasa por el auto-scope de Prisma: el tienda_id va explícito.
   const filtros = [Prisma.sql`p.tienda_id = ${tiendaId}::uuid`, Prisma.sql`p.activo = true`, conPrecioSql()];
-  // Contra lo que paga el cliente (la oferta si es menor), igual que
-  // precioEfectivo() en precios.js: una zapatilla de 250 en oferta a 180 entra
-  // en un presupuesto de 200.
+  // Presupuesto contra lo que paga el cliente: una zapatilla de 250 en oferta a 180
+  // entra en un presupuesto de 200. El SQL NO es la regla, solo una cota que deja
+  // pasar de más (el base con el mayor % vigente, o la oferta); el filtro exacto
+  // se hace abajo con precioVigente (hallazgo H3 de precio-en-servidor).
   if (precioMax !== null) {
-    filtros.push(Prisma.sql`(CASE WHEN p.precio_oferta > 0 AND p.precio_oferta < p.precio_base
-      THEN p.precio_oferta ELSE p.precio_base END) <= ${precioMax}`);
+    const mayorPorcentaje = Math.max(0, ...contexto.promociones.map((p) => p.porcentaje));
+    filtros.push(Prisma.sql`(p.precio_base * (100 - ${mayorPorcentaje}) / 100 <= ${precioMax}
+      OR (p.precio_oferta > 0 AND p.precio_oferta <= ${precioMax}))`);
   }
   // productos.stock es la suma de sus variantes, pero productos con variantes
   // viejas pueden tener un stock propio que no cuadra: basta una variante con stock.
@@ -367,7 +374,7 @@ export async function ejecutarBuscarProductos({ tiendaId, input, facetas }) {
       ) t
       WHERE ${Prisma.join(filtros, " AND ")}
     )
-    SELECT p.id, p.nombre, p.slug, p.precio_base AS "precioBase",
+    SELECT p.id, p.nombre, p.slug, p.categoria_id AS "categoriaId", p.precio_base AS "precioBase",
            p.precio_oferta AS "precioOferta", p.stock,
            p.descripcion_corta AS "descripcionCorta", cat.nombre AS categoria, marca.nombre AS marca, p.colores,
            img.url AS "imagenUrl", img.texto_alternativo AS "imagenAlt",
@@ -393,14 +400,18 @@ export async function ejecutarBuscarProductos({ tiendaId, input, facetas }) {
     ) var ON true
     WHERE ${coincide}
     ORDER BY s.fts + ${PESO_TYPO} * s.typo DESC, p.destacado DESC, p.fecha_registro DESC
-    LIMIT ${MAX_RESULTADOS}
+    LIMIT ${precioMax !== null ? MAX_RESULTADOS * 2 : MAX_RESULTADOS}
   `;
 
   return {
-    productos: productos.map(p => ({
-      ...p,
-      variantesDisponibles: (p.variantesDisponibles ?? []).slice(0, MAX_VARIANTES_RESULTADO)
-    }))
+    productos: productos
+      .map(p => ({
+        ...p,
+        precio: precioPublico(p, null, contexto),
+        variantesDisponibles: (p.variantesDisponibles ?? []).slice(0, MAX_VARIANTES_RESULTADO)
+      }))
+      .filter(p => precioMax === null || p.precio.vigente <= precioMax)
+      .slice(0, MAX_RESULTADOS)
   };
 }
 

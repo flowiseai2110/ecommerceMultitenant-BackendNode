@@ -2,6 +2,18 @@
 
 > Bitácora para humanos. Una entrada por pieza, la más reciente arriba.
 
+## 2026-10-20 — Fechas de uso ocultas (R1.11)
+
+Hecho en la sesión principal, sin agentes. El código y los datos se conservan; solo se apaga lo visible.
+
+| Repo | Archivo | Qué cambió |
+|---|---|---|
+| Admin | `pages/campanas/campanas.component.ts` | `FECHAS_DE_USO_VISIBLES = false`: `usoDelRubro()` da null, así que no se ve la sección ni se valida (`errorUso`). |
+| Tienda | `state/diseno.state.ts` (+ spec) | `FUNCIONES_CAMPANA.fechasDeUso = false`: `usoCampana()` da null, sin línea en la portada ni rombo en los calendarios. Los tests de uso la encienden; un test nuevo comprueba que apagada no se ve nada. |
+| Backend | `modules/campanas/sentido.js` (+ test) | R8.3 y R8.4 solo si el uso cambia en ese guardado. |
+
+Tests: Backend 1723/1723; Admin 209/209 con anti-identidad y `ng build` ok; Tienda 341/341 con anti-identidad.
+
 ## 2026-10-20 — Validaciones de sentido común (R8)
 
 Hecho en la sesión principal, sin agentes.

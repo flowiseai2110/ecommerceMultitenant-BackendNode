@@ -2,14 +2,175 @@
 
 > Bitácora para humanos. Una entrada por pieza, la más reciente arriba.
 
-## 2026-10-20 — Pieza 4 · cierre (A5.4, A5.6, A5.5, bugs, domicilio-picker) — SIN VERIFICAR
-**En una frase:** las ramas del pago pasan a `ESTRATEGIAS_PAGO` (`FrontendStore/src/app/features/checkout/pago/`); los textos por defecto de la ficha salen del template a `features/product/product-page/textos-por-defecto.ts` (traducibles y con tildes; mismo texto de ejemplo en Admin `pages/diseno/producto-opciones.component.ts`); se arreglan tres bugs con su test: doble clic al crear el pedido, el borrador que se volvía a guardar tras el pedido y el costo de envío del WhatsApp "Coordinar"; `domicilio-picker` baja de 584 a 290 líneas con `mapa-entrega.component.ts` (lógica movida, no cambiada; mapa y GPS no los cubre el e2e).
+## 2026-10-20 — Pieza 5: CRUD con Composition Root (A7)
+**En una frase:** los CRUD del catálogo (categorías, marcas, atributos, variantes e imágenes) ya no arman sus capas ni su acceso a mano: los compone `crearCrud` con una política con nombre. Desde afuera se ve igual, salvo que se cierra un agujero de aislamiento en variantes e imágenes.
 
-**Estado:** los tests del checkout dieron 47/47, pero la verificación final (e2e, `npm test`, tsc, build, tabla de líneas) quedó pendiente: la funcionalidad precio-en-servidor está editando a la vez `services/checkout.service.ts`, `models/pedido.model.ts` y `estado/cupon.store.ts`, y hoy la app no compila (`estado/pedido.store.ts`: `metodoEnvio` ya no existe en `CreatePedidoParams`). Al terminar esa: confirmar que los arreglos a) y b) en `pedido.store.ts` siguen en pie, agregar al e2e el mock de `POST /store/pedidos/cotizar`, correr `npm run claves`, verificar y completar esta entrada.
+**El agujero que se cerró (importante):** en variantes e imágenes, un usuario con acceso a una tienda A (cualquier dueño de tienda de la plataforma) podía leer, editar, borrar y crear variantes e imágenes de **otra** tienda B. Bastaba con mandar `?tiendaId=A` (o `tiendaId` en el body) junto con el id de la fila de B. Esos ids salen en la tienda pública. El acceso se verificaba contra A y, como esas tablas no tienen `tienda_id`, ni el repositorio ni el auto-scope de la pieza 1 las filtraban. Con `productoId` de un producto propio en el body de un PUT pasaba lo mismo. Los 20 ataques (8 en variantes y 12 en imágenes, incluidas subir, IA y confirmar IA) daban 200/201 y ahora dan 404/403. Las demás tablas ya estaban a salvo por el repositorio y el auto-scope. **Conviene desplegar pronto.**
 
-**Pendientes vistos:** "deposito" no pide comprobante; "Politica de devoluciones" sin tilde (cambia una clave); `product-page.component.ts` con 852 líneas.
+**Dónde (BackendNode):**
+| Archivo | Qué hace |
+|---|---|
+| `kernel/crud/crear-crud.js` (nuevo) | A7.1, Composition Root: el único `new` de `GenericRepository`/`Service`/`Controller` de estos recursos. Arma las rutas de la política, más `requiere` (guardas tras el acceso), `antesDeGuardar` (reglas con la entrada ya validada) y `acciones` (otro handler). `tiendaPropia` / `tiendaDelPadre(...)` dicen dónde está la tienda dueña. Devuelve `acceso(rol, "registro" \| "padre")` para las rutas que no son CRUD. |
+| `kernel/crud/politicas.js` (nuevo) | A7.2, `POLITICAS.adminTienda`: rol por operación (viewer, viewer, editor, editor, admin), `exigirTiendaDuena` en cada `/:id` y al crear una fila hija, y el listado con la tienda verificada. `POLITICAS.vitrinaPublica`: solo listar y ver, con la tienda del subdominio. |
+| `modules/catalogo/categorias.admin.routes.js`, `categorias.store.routes.js`, `marcas.admin.routes.js`, `producto-atributos.admin.routes.js`, `producto-variantes.admin.routes.js`, `producto-imagenes.admin.routes.js` | A7.3: cada uno es una llamada a `crearCrud`. Imágenes agrega subir, IA y confirmar IA sobre el router, con `imagenes.acceso(...)`. Mismas rutas, mismo orden de middlewares y mismos exports: `routes/admin` y `routes/store` no cambian. |
+| `modules/catalogo/__tests__/crud.fixtures.js`, `crud.casos.js`, `crud.test.js` (nuevos) | BD en memoria con el mismo auto-scope de `config/prisma.js`, sesión y membresías fijas. 201 casos de rutas y respuestas, contenido y paginación, y 48 ataques de A contra B, con y sin auto-scope. |
+| `kernel/crud/__tests__/composition-root.test.js` (nuevo) | Fitness: los seis archivos usan `crearCrud` con una política y no tienen `new Generic…` ni `resolveTiendaId`/`scopeReadToResourceTienda`/`requireTiendaAccess(` a mano. Las dos políticas están congeladas. |
 
-**Afecta al despliegue:** SQL y llaves: ninguno.
+**Cómo se verificó la equivalencia:** copia `*.tmp.js` de cada archivo viejo y un test temporal que montaba los dos routers lado a lado. Para cada caso comparaba la respuesta completa (status, code, data, meta y mensaje de error) y la BD después de la petición. Primero corrieron los 201 casos contra las copias. Después se migró recurso por recurso: categorías del Admin, de la tienda, marcas, atributos, variantes e imágenes, y tras cada uno se repitió la comparación. Al final se borraron las copias y el test temporal. Los mismos casos quedan fijados en `crud.test.js`. Contra las rutas viejas, ese test falla en 47 ataques; contra las nuevas pasa entero.
+
+**Decisiones que tomé y por qué:**
+- **La política verifica la dueña real (`exigirTiendaDuena`) en vez de confiar en la tienda que manda el cliente.** Es lo que pide A7.2 ("olvidar el scope deja de ser posible") y es lo único que protege a las filas hijas. Va justo después de `requireTiendaAccess`. Si no coinciden, da el mismo 404 que ya daba el repositorio en las filas con `tiendaId` propio. Si la fila no existe, sigue de largo y el 404 lo da el repositorio, como antes.
+- **La dueña se busca con `runUnscoped`.** Con la tienda del cliente ya en el contexto, el auto-scope escondía el producto de B y la dueña salía `null`, justo el caso que hay que rechazar. Se busca una vez por request (memo).
+- **En `/:id` la dueña sale siempre de la fila; el `productoId` del body solo cuenta al crear.** Antes, un PUT con `productoId` de un producto propio resolvía la tienda por ese producto.
+- **El listado usa la tienda verificada.** Antes, con `tiendaId` en el body y otra en la query, el acceso miraba una y el listado otra. En las tablas propias lo salvaba el auto-scope; en las hijas, no.
+- **La vitrina también verifica la dueña en el detalle**, aunque en categorías ya la cubre el auto-scope: la política no depende de él. Es una consulta por clave en una ruta con caché HTTP.
+- **Dos puntos de extensión con nombre (`requiere`, `antesDeGuardar`) y no "middlewares extra" sueltos:** la capacidad `marcas` va donde estaba (tras el acceso, antes de validar) y la guarda de precio de promoción (R10.5) también (con la entrada validada). Los casos "primero la capacidad y después la entrada" y "precio inválido antes que la promoción" lo fijan.
+- **Las políticas no se parametrizan por recurso:** lo propio de cada uno (orden, filtros, búsqueda, dónde está la tienda) va en la llamada a `crearCrud`. Así una política nueva o un cambio de rol se hace en un solo lugar.
+- **Fuera de la fábrica:** `marcas.store.routes.js` (SQL propio con `EXISTS` de productos visibles, no es un CRUD) y el polling de la IA (`GET /generar-ia/:taskId`: la tienda sale de la tarea, no de una fila).
+- **`producto-variantes.admin.routes.js` tenía sin commit la guarda de precio de campañas-descuento** (import de `promocion.guardas.js`, que también está sin commit). La conservé en `antesDeGuardar.editar`. El archivo queda con los dos cambios: hay que commitear campañas-descuento antes o junto con esta pieza.
+
+**Diferencias de comportamiento (todas en casos de ataque o de borde):**
+- Los 20 ataques de arriba: de 200/201 a 404/403.
+- Crear una variante o imagen sin `productoId`: antes la búsqueda de la dueña llegaba a Prisma con `id` vacío. Ahora no consulta, y responde 403 "Se requiere tiendaId" (o 400 si mandó la tienda).
+- Imágenes: las rutas no cambian, pero el `DELETE /:id` ahora se registra antes que `/upload` y las de IA. No se pisan: son otros métodos u otro número de segmentos.
+
+**Lo que quedó pendiente / deuda:**
+- **PUT parcial pisa `orden` y `activo`** en categorías, variantes e imágenes: los schemas de edición tienen `.default(0)` y `.default(true)`, así que un PUT con solo `{ nombre }` deja `orden: 0` y `activo: true`. Un PUT `{}` da 200 en vez de 400. Pasa desde antes; el Admin manda el objeto completo y no se nota. Lo fija el caso "edita sin campos". Arreglarlo cambia el schema, no la fábrica.
+- Una imagen puede apuntar (`varianteId`) a una variante de otro producto o de otra tienda: el schema no lo verifica.
+- Siguen sin `crearCrud` los demás CRUD (productos, clientes, métodos de pago/envío…): A7.3 empieza por el catálogo. Cada uno se suma a `MIGRADOS` del fitness.
+
+**Afecta al despliegue:** nada (ni SQL ni llaves). Solo código del backend. Por el agujero de aislamiento, conviene desplegarlo pronto.
+
+**Tests:** `npm test` (BackendNode) → **137 suites, 2149 tests OK** (antes 135 / 1834; +301 de `crud.test.js` y +14 del fitness). Pieza 1: `kernel/tenant/__tests__/auto-scope.test.js` y `alcance.test.js` → 23 OK. `anti-identidad` y `errores-async` OK. Los seis routers importan sin error con el Prisma real, con las mismas rutas y métodos.
+
+**Commits:** pendiente (sin commit, como se pidió).
+
+## 2026-10-20 — Pieza 4 · cierre (A5.4, A5.6, A5.5, bugs, domicilio-picker)
+**En una frase:** el pago también va por estrategias, los textos por defecto de la ficha del producto salen de la plantilla, se arreglan tres bugs del checkout (cada uno con un test que fallaba antes del arreglo) y `domicilio-picker` se parte en dos. Con esto la pieza 4 queda lista: el mismo e2e pasa, hay 0 ramas por tipo de envío y ningún archivo del checkout pasa de 400 líneas.
+
+**Qué ve distinto el comprador:**
+- **Doble clic en "Confirmar pedido":** el segundo clic ya no registra un segundo pedido.
+- **La compra siguiente en el mismo navegador empieza limpia.** Antes arrancaba con el nombre, el teléfono y la dirección del pedido anterior: el borrador se volvía a guardar después del pedido. Con sesión iniciada, los datos se siguen precargando desde la cuenta.
+- **El WhatsApp "Coordinar … por WhatsApp" de la confirmación lleva el envío del pedido creado.** Antes, con envío gratis desde cierto monto, podía decir "Envío: S/ 10" en un pedido con envío gratis.
+- **Ficha del producto:** los textos por defecto de "Envío y entrega" y "Política de devoluciones" llevan tildes (vía, envío, según, ubicación, días) y se traducen. El inglés de la plataforma ya está en `en.json`.
+- **Paso 2:** el tipo "Efectivo" también se traduce.
+
+**Dónde (FrontendStore salvo que diga otra cosa):**
+| Archivo | Qué hace |
+|---|---|
+| `features/checkout/pago/estrategia-pago.ts`, `estrategias-pago.ts` (nuevos) | A5.4: `ESTRATEGIAS_PAGO: Record<TipoPago, EstrategiaPago>`. Cada tipo declara `etiqueta`, `pagoAnticipado`, `aviso` (frase en lugar de los datos para pagar) y `necesitaCarrito`. `estrategiaPago(tipo)` y `etiquetaPago(tipo)`: un tipo desconocido ("deposito" del Admin) es un pago manual que se nombra tal cual, como antes. |
+| `components/datos-pago`, `pasos/metodo-pago`, `estado/pago.store.ts` | El `@switch (mp.tipo)`, la tabla `formatTipoMetodo` y la lista de `requiresPagoAnticipado` pasan a preguntar a la estrategia. |
+| `features/store/components/store-footer` | Filtra con `!estrategiaPago(m.tipo).necesitaCarrito` cuando el rubro no tiene carrito. Es filtrar datos por una capacidad, no un slot. |
+| `features/product/product-page/textos-por-defecto.ts` (nuevo), `product-page.component.ts` | A5.6: `TEXTOS_POR_DEFECTO_PRODUCTO` con `clave()`, más `textoEnvioDe` / `textoDevolucionesDe`, que devuelven el texto de la tienda o el por defecto traducido. |
+| FrontendAdmin `pages/diseno/producto-opciones.component.ts` | El texto de ejemplo del editor es el mismo de la tienda, con tildes. |
+| `estado/pedido.store.ts`, `checkout.store.ts` | a) `crearPedido` y `registrar` ignoran otra llamada mientras `sending()`. c) El WhatsApp del pedido usa `pedido.costoEnvio`. |
+| `estado/borrador.ts` | b) `cerrar()` en lugar de `limpiar()`: borra el borrador y no lo vuelve a escribir en esa visita. |
+| `components/domicilio-picker/mapa-entrega.component.ts` (nuevo, 352) y `domicilio-picker.component.ts` (584 → 290) | El mapa Leaflet, el pantalla completa, Escape y el GPS del mapa ampliado se **movieron sin cambiar la lógica**. El mapa recibe `lat`/`lng`/`distrito` y avisa con `posicionChange`. El picker mueve la cámara con `moverPin`. El host es `block` porque va en el `space-y-3` del picker. |
+| Tests nuevos | `pago/estrategias-pago.spec.ts` (7), `estado/pago.store.spec.ts` (3), `estado/cupon.store.spec.ts` (3); en la fachada, 2 de bugs, 2 con sesión (precarga desde la cuenta, también después de un pedido) y 1 de borrador corrupto; en el pedido, 1 del WhatsApp. |
+| `scripts/claves-tienda.mjs` | "Datos y entrega" incluye `features/checkout/pago`. `npm run claves` no deja diff pendiente. Las claves nuevas son "Efectivo" y los dos textos por defecto, más las de precio-en-servidor. |
+| `e2e/checkout/fixtures.ts`, `mock-api.ts`, `checkout-envio.spec.ts` | Mock de `POST /store/pedidos/cotizar` (`cotizarCompra`: precio del catálogo del e2e, cupón y envío "fijo", como `crear-pedido.js`). El pedido creado sale de esa cotización. |
+
+**A5.5, qué faltaba:** ya estaban las estrategias de envío (23 tests), las partes del store y la fachada (21). Faltaban las estrategias de pago, el `PagoCheckout` (carga, comprobante y pasarela), los casos del cupón que no cubría el pedido, la precarga con sesión y el borrador corrupto.
+
+**Bugs: probado que fallan sin el arreglo.** Antes del arreglo los tres tests nuevos dieron "Expected 2 to be 1" (dos POST), el borrador con `"paso":4` y "Envío: S/ 10" en el mensaje.
+
+**Aserciones del e2e que cambiaron, y por qué:** solo por precio-en-servidor, no por los arreglos. El body del pedido ya no lleva `metodoEnvio`, `costoEnvio`, `descuentoMonto` ni precios en `detalles`: los pone el servidor. Cada caso ahora fija `totalEsperado` (115, 100, 110, 100, 100, 90, 110: el total que vio el comprador) y que esos campos ya no viajan. Las aserciones de pantalla no cambiaron.
+
+**Decisiones que tomé y por qué:**
+- **Registro de datos, no un archivo por tipo:** cada estrategia de pago son cuatro valores sin lógica. El pago en línea (Culqi) no es un tipo de método: lo decide el modo de pago de la tienda. **No lo toqué** (`pago-en-linea.component.ts`, `tokenizadores.ts`).
+- **"Efectivo" pasa a ser clave:** antes era texto fijo sin traducir.
+- **Los textos de la ficha quedan junto a la página del producto, no en el perfil:** solo los usa productos, y en el perfil los seis rubros tendrían que declararlos. Se escribieron con tildes porque son claves nuevas: no hay traducciones que migrar.
+- **El borrador se cierra en vez de dejar de re-cotizar:** es lo mínimo que arregla el bug y deja igual el resto del paso 4.
+- **No agregué un fitness "anti-ramas-pago":** no estaba en el plan. Hoy no queda ningún literal de tipo de pago fuera del registro.
+
+**Lo que quedó pendiente / deuda:**
+- "deposito" (Admin) no pide comprobante en la confirmación, igual que antes. Habría que agregarlo a `TipoPago` con `pagoAnticipado: true`.
+- "Politica de devoluciones" (título de la ficha) no lleva tilde. Corregirlo cambia una clave existente y necesita migrar traducciones.
+- `product-page.component.ts` tiene 852 líneas (A6).
+- En el `ng serve`, el SSR registra "Store not loaded" en `PagoCheckout.cargar` (el servidor no conoce la tienda) y el aviso NG01354 del `ngModel` en hijos (decisión de A5.3). No afectan al e2e.
+
+**Afecta al despliegue:** nada nuevo. No hay SQL ni llaves. El `en.json` del backend se despliega con el backend.
+
+**Tests:** `npm run e2e` contra un `ng serve` nuevo en :4321 (config temporal, ya borrada; el :4200 no se tocó) → **12 passed**. `npm test` → claves al día (1151 claves, 22 pantallas), 7 tests de scripts OK, textos OK, anti-identidad OK, **anti-ramas-envio 0**, Karma **340 SUCCESS**. `npx tsc --noEmit -p tsconfig.app.json` y `-p tsconfig.spec.json` → 0 errores. `ng build --configuration development` OK (solo el aviso de siempre de `CategoryPageComponent`).
+
+**Líneas de `features/checkout/` (las más largas; ninguna pasa de 400):**
+| Archivo | Líneas |
+|---|---|
+| `estado/envio.store.ts` | 369 |
+| `components/domicilio-picker/mapa-entrega.component.ts` | 352 |
+| `components/domicilio-picker/domicilio-picker.component.ts` | 290 |
+| `estado/pedido.store.ts` | 283 |
+| `services/checkout.service.ts` | 266 |
+| `pasos/pedido-creado/pedido-creado.component.html` | 231 |
+| `checkout.store.spec.ts` | 231 |
+| `estado/pedido.store.spec.ts` | 214 |
+| `checkout.store.ts` | 193 |
+| `pasos/paso-confirmar/paso-confirmar.component.html` | 183 |
+
+**Commits:** Diego ya incluyó el código en `025069b` ("mejora en la campaña v1"). Queda sin commit lo de este cierre: el e2e en FrontendStore y los documentos en BackendNode.
+## 2026-10-20 — Pieza 4 · cierre (A5.4, A5.6, A5.5, bugs, domicilio-picker)
+**En una frase:** el pago también va por estrategias, los textos por defecto de la ficha del producto salen de la plantilla, se arreglan tres bugs del checkout (cada uno con un test que fallaba antes del arreglo) y `domicilio-picker` se parte en dos. Con esto la pieza 4 queda lista: el mismo e2e pasa, hay 0 ramas por tipo de envío y ningún archivo del checkout pasa de 400 líneas.
+
+**Qué ve distinto el comprador:**
+- **Doble clic en "Confirmar pedido":** el segundo clic ya no registra un segundo pedido.
+- **La compra siguiente en el mismo navegador empieza limpia.** Antes arrancaba con el nombre, el teléfono y la dirección del pedido anterior: el borrador se volvía a guardar después del pedido. Con sesión iniciada, los datos se siguen precargando desde la cuenta.
+- **El WhatsApp "Coordinar … por WhatsApp" de la confirmación lleva el envío del pedido creado.** Antes, con envío gratis desde cierto monto, podía decir "Envío: S/ 10" en un pedido con envío gratis.
+- **Ficha del producto:** los textos por defecto de "Envío y entrega" y "Política de devoluciones" llevan tildes (vía, envío, según, ubicación, días) y se traducen. El inglés de la plataforma ya está en `en.json`.
+- **Paso 2:** el tipo "Efectivo" también se traduce.
+
+**Dónde (FrontendStore salvo que diga otra cosa):**
+| Archivo | Qué hace |
+|---|---|
+| `features/checkout/pago/estrategia-pago.ts`, `estrategias-pago.ts` (nuevos) | A5.4: `ESTRATEGIAS_PAGO: Record<TipoPago, EstrategiaPago>`. Cada tipo declara `etiqueta`, `pagoAnticipado`, `aviso` (frase en lugar de los datos para pagar) y `necesitaCarrito`. `estrategiaPago(tipo)` y `etiquetaPago(tipo)`: un tipo desconocido ("deposito" del Admin) es un pago manual que se nombra tal cual, como antes. |
+| `components/datos-pago`, `pasos/metodo-pago`, `estado/pago.store.ts` | El `@switch (mp.tipo)`, la tabla `formatTipoMetodo` y la lista de `requiresPagoAnticipado` pasan a preguntar a la estrategia. |
+| `features/store/components/store-footer` | Filtra con `!estrategiaPago(m.tipo).necesitaCarrito` cuando el rubro no tiene carrito. Es filtrar datos por una capacidad, no un slot. |
+| `features/product/product-page/textos-por-defecto.ts` (nuevo), `product-page.component.ts` | A5.6: `TEXTOS_POR_DEFECTO_PRODUCTO` con `clave()`, más `textoEnvioDe` / `textoDevolucionesDe`, que devuelven el texto de la tienda o el por defecto traducido. |
+| FrontendAdmin `pages/diseno/producto-opciones.component.ts` | El texto de ejemplo del editor es el mismo de la tienda, con tildes. |
+| `estado/pedido.store.ts`, `checkout.store.ts` | a) `crearPedido` y `registrar` ignoran otra llamada mientras `sending()`. c) El WhatsApp del pedido usa `pedido.costoEnvio`. |
+| `estado/borrador.ts` | b) `cerrar()` en lugar de `limpiar()`: borra el borrador y no lo vuelve a escribir en esa visita. |
+| `components/domicilio-picker/mapa-entrega.component.ts` (nuevo, 352) y `domicilio-picker.component.ts` (584 → 290) | El mapa Leaflet, el pantalla completa, Escape y el GPS del mapa ampliado se **movieron sin cambiar la lógica**. El mapa recibe `lat`/`lng`/`distrito` y avisa con `posicionChange`. El picker mueve la cámara con `moverPin`. El host es `block` porque va en el `space-y-3` del picker. |
+| Tests nuevos | `pago/estrategias-pago.spec.ts` (7), `estado/pago.store.spec.ts` (3), `estado/cupon.store.spec.ts` (3); en la fachada, 2 de bugs, 2 con sesión (precarga desde la cuenta, también después de un pedido) y 1 de borrador corrupto; en el pedido, 1 del WhatsApp. |
+| `scripts/claves-tienda.mjs` | "Datos y entrega" incluye `features/checkout/pago`. `npm run claves` no deja diff pendiente. Las claves nuevas son "Efectivo" y los dos textos por defecto, más las de precio-en-servidor. |
+| `e2e/checkout/fixtures.ts`, `mock-api.ts`, `checkout-envio.spec.ts` | Mock de `POST /store/pedidos/cotizar` (`cotizarCompra`: precio del catálogo del e2e, cupón y envío "fijo", como `crear-pedido.js`). El pedido creado sale de esa cotización. |
+
+**A5.5, qué faltaba:** ya estaban las estrategias de envío (23 tests), las partes del store y la fachada (21). Faltaban las estrategias de pago, el `PagoCheckout` (carga, comprobante y pasarela), los casos del cupón que no cubría el pedido, la precarga con sesión y el borrador corrupto.
+
+**Bugs: probado que fallan sin el arreglo.** Antes del arreglo los tres tests nuevos dieron "Expected 2 to be 1" (dos POST), el borrador con `"paso":4` y "Envío: S/ 10" en el mensaje.
+
+**Aserciones del e2e que cambiaron, y por qué:** solo por precio-en-servidor, no por los arreglos. El body del pedido ya no lleva `metodoEnvio`, `costoEnvio`, `descuentoMonto` ni precios en `detalles`: los pone el servidor. Cada caso ahora fija `totalEsperado` (115, 100, 110, 100, 100, 90, 110: el total que vio el comprador) y que esos campos ya no viajan. Las aserciones de pantalla no cambiaron.
+
+**Decisiones que tomé y por qué:**
+- **Registro de datos, no un archivo por tipo:** cada estrategia de pago son cuatro valores sin lógica. El pago en línea (Culqi) no es un tipo de método: lo decide el modo de pago de la tienda. **No lo toqué** (`pago-en-linea.component.ts`, `tokenizadores.ts`).
+- **"Efectivo" pasa a ser clave:** antes era texto fijo sin traducir.
+- **Los textos de la ficha quedan junto a la página del producto, no en el perfil:** solo los usa productos, y en el perfil los seis rubros tendrían que declararlos. Se escribieron con tildes porque son claves nuevas: no hay traducciones que migrar.
+- **El borrador se cierra en vez de dejar de re-cotizar:** es lo mínimo que arregla el bug y deja igual el resto del paso 4.
+- **No agregué un fitness "anti-ramas-pago":** no estaba en el plan. Hoy no queda ningún literal de tipo de pago fuera del registro.
+
+**Lo que quedó pendiente / deuda:**
+- "deposito" (Admin) no pide comprobante en la confirmación, igual que antes. Habría que agregarlo a `TipoPago` con `pagoAnticipado: true`.
+- "Politica de devoluciones" (título de la ficha) no lleva tilde. Corregirlo cambia una clave existente y necesita migrar traducciones.
+- `product-page.component.ts` tiene 852 líneas (A6).
+- En el `ng serve`, el SSR registra "Store not loaded" en `PagoCheckout.cargar` (el servidor no conoce la tienda) y el aviso NG01354 del `ngModel` en hijos (decisión de A5.3). No afectan al e2e.
+
+**Afecta al despliegue:** nada nuevo. No hay SQL ni llaves. El `en.json` del backend se despliega con el backend.
+
+**Tests:** `npm run e2e` contra un `ng serve` nuevo en :4321 (config temporal, ya borrada; el :4200 no se tocó) → **12 passed**. `npm test` → claves al día (1151 claves, 22 pantallas), 7 tests de scripts OK, textos OK, anti-identidad OK, **anti-ramas-envio 0**, Karma **340 SUCCESS**. `npx tsc --noEmit -p tsconfig.app.json` y `-p tsconfig.spec.json` → 0 errores. `ng build --configuration development` OK (solo el aviso de siempre de `CategoryPageComponent`).
+
+**Líneas de `features/checkout/` (las más largas; ninguna pasa de 400):**
+| Archivo | Líneas |
+|---|---|
+| `estado/envio.store.ts` | 369 |
+| `components/domicilio-picker/mapa-entrega.component.ts` | 352 |
+| `components/domicilio-picker/domicilio-picker.component.ts` | 290 |
+| `estado/pedido.store.ts` | 283 |
+| `services/checkout.service.ts` | 266 |
+| `pasos/pedido-creado/pedido-creado.component.html` | 231 |
+| `checkout.store.spec.ts` | 231 |
+| `estado/pedido.store.spec.ts` | 214 |
+| `checkout.store.ts` | 193 |
+| `pasos/paso-confirmar/paso-confirmar.component.html` | 183 |
+
+**Commits:** Diego ya incluyó el código en `025069b` ("mejora en la campaña v1"). Queda sin commit lo de este cierre: el e2e en FrontendStore y los documentos en BackendNode.
 
 ## 2026-10-20 — Pieza 4 · tarea 4: un componente por paso y el store partido (A5.3)
 **En una frase:** la página del checkout (1282 líneas) queda como un orquestador de 73 líneas. Cada paso es un componente con su `.html`. El `CheckoutStore` (887 líneas) se parte por responsabilidad en seis partes y queda como fachada. Ningún archivo nuevo o tocado pasa de 400 líneas. El comprador no ve nada distinto.

@@ -14,6 +14,7 @@
 
 import { timingSafeEqual } from "node:crypto";
 import { AppError } from "../../utils/errors.js";
+import { lineaDePedido } from "./linea-pedido.js";
 
 export const NIVEL = Object.freeze({ PUBLICO: "publico", COMPLETO: "completo" });
 
@@ -70,7 +71,9 @@ export function serializarRastreo(pedido, nivel) {
   const puedeVerificar = ultimos4Digitos(clienteWhatsapp) !== null;
 
   if (nivel === NIVEL.COMPLETO) {
-    return { ...resto, detalleCompleto: true, puedeVerificar };
+    // Regular, descuento y de dónde vino, por línea (campanas-descuento R8.3).
+    const detalles = resto.detalles?.map(lineaDePedido);
+    return { ...resto, ...(detalles && { detalles }), detalleCompleto: true, puedeVerificar };
   }
 
   return {

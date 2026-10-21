@@ -83,7 +83,9 @@ export const createPedidoSchema = z.object({
   codigoCupon: z.string().max(50).optional().nullable(),
   comprobante: comprobanteSchema.nullish(),
   // Total que vio el cliente. No se usa para calcular: si el real es mayor, 409 PRECIO_CAMBIO (D1).
-  totalEsperado: z.coerce.number().min(0).nullish()
+  totalEsperado: z.coerce.number().min(0).nullish(),
+  // Precio asegurado al entrar al pago (campanas-descuento R8.4). Inválido o vencido: se ignora.
+  tokenPrecio: z.string().max(40000).nullish()
 });
 
 // Cotizar el carrito (POST /store/pedidos/cotizar, pieza 4): lo mismo que define
@@ -94,7 +96,11 @@ export const cotizarPedidoSchema = createPedidoSchema.pick({
   detalles: true,
   metodoEnvioId: true,
   ubigeoCode: true,
-  codigoCupon: true
+  codigoCupon: true,
+  tokenPrecio: true
+}).extend({
+  // Al entrar al pago: asegura los precios de ahora por 15 minutos (R8.4).
+  congelar: z.boolean().optional()
 });
 
 // Schema para actualizar estado del pedido

@@ -23,7 +23,11 @@ const PATRON = new RegExp(
 );
 
 /** archivo → [cuántas, motivo] */
-const NO_ES_RUBRO = {};
+const NO_ES_RUBRO = {
+  // Alcance de una promoción de campaña ("tienda" | "categorias" | "productos"), no el rubro.
+  "modules/campanas/promocion.js": [1, "alcance.tipo de la promoción"],
+  "modules/precios/precio-vigente.js": [1, "alcance.tipo de la promoción"]
+};
 
 /** archivo → cuántas. Vacía desde la pieza 3b: una comparación nueva por rubro no entra aquí, va a su rubro. */
 const DEUDA = {};

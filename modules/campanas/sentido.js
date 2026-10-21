@@ -39,6 +39,7 @@ function ventanasFuturas(c, ahora, ediciones) {
  */
 export function errorDeSentido(campanas = [], anteriores = [], ahora = new Date(), ediciones = null) {
   const activas = campanas.filter((c) => c.activa);
+  const usoAntes = new Map((anteriores ?? []).map((c) => [c.id, JSON.stringify(c.uso ?? null)]));
   for (const c of tocadas(campanas, anteriores)) {
     const nombre = efectiva(c)?.nombre ?? "La campaña";
 
@@ -53,7 +54,10 @@ export function errorDeSentido(campanas = [], anteriores = [], ahora = new Date(
       }
     }
 
-    if (!c.presetId && c.uso?.hasta) {
+    // Las fechas de uso están ocultas en el Admin (R1.11): se revisan solo si cambian en este
+    // guardado, para que un dato que el dueño ya no ve no le bloquee otros cambios.
+    const usoCambio = usoAntes.get(c.id) !== JSON.stringify(c.uso ?? null);
+    if (!c.presetId && c.uso?.hasta && usoCambio) {
       const hasta = parsearFecha(c.uso.hasta);
       const inicio = parsearFecha(c.inicio);
       if (hasta && inicio && inicioDiaLima(hasta) < inicioDiaLima(inicio)) {

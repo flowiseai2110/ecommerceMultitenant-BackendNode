@@ -2,11 +2,14 @@ import MemoryCache from "../../utils/memory-cache.js";
 import { logger } from "../../config/logger.js";
 import { NotFoundError, ValidationError } from "../../utils/errors.js";
 import { invalidateTiendasStoreCache } from "../tenants/tiendas.cache.js";
+import { invalidarTodo as invalidarContextosDePrecios } from "../precios/contexto.cache.js";
+import { clear as limpiarCatalogo } from "../catalogo/productos.cache.js";
 import { CAMPANA_PRESETS, buscarPreset } from "./presets.js";
 import { fechaCivilLima, horaAMs, inicioDiaLima, parsearFecha } from "./calendario.js";
 import {
   borrarEdicion, contarTiendasConCampana, guardarEdicion, listarEdiciones, listarHistorial
 } from "./ediciones.repository.js";
+import { contarTiendasConPromocionConfirmada } from "./promocion.repository.js";
 
 /**
  * Fechas por año de las campañas del catálogo (docs/specs/campanas-cuando R2):
@@ -162,11 +165,29 @@ export async function eliminar({ presetId, anio, clave }, user) {
 function alEscribir(que, usuario) {
   invalidarEdiciones();
   invalidateTiendasStoreCache();
+  // Una edición cambia la ventana de las promociones de esa campaña (campanas-descuento C3a).
+  invalidarContextosDePrecios();
+  limpiarCatalogo();
   logger.info(`Fechas por año: ${usuario} ${que}`);
 }
 
-/** Cuántas tiendas tienen activada la campaña (R7.7): solo el número. */
-export async function tiendasConCampana(presetId) {
+/**
+ * Cuántas tiendas tienen activada la campaña (R7.7) y cuántas tienen además
+ * una promoción confirmada que aún no termina (campanas-descuento T3b.10): al
+ * cambiar las fechas de una edición, esas promociones dejan de aplicar hasta
+ * que cada dueño confirme de nuevo. Con `anio` y `clave`, solo las de esa
+ * edición (ventanas que tocan sus fechas). Solo los números.
+ */
+export async function tiendasConCampana(presetId, { anio, clave } = {}) {
   presetPorAnio(presetId);
-  return { total: await contarTiendasConCampana(presetId) };
+  let rango = {};
+  if (anio && clave) {
+    const edicion = (await listarEdiciones()).find((e) => e.presetId === presetId && e.anio === anio && e.clave === clave);
+    if (edicion) rango = { desde: inicioDiaLima(parsearFecha(edicion.inicio)), hasta: inicioDiaLima(parsearFecha(edicion.fin), 1) };
+  }
+  const [total, conPromocion] = await Promise.all([
+    contarTiendasConCampana(presetId),
+    contarTiendasConPromocionConfirmada(presetId, rango)
+  ]);
+  return { total, conPromocion };
 }

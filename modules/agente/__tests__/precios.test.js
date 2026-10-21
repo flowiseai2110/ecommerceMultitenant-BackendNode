@@ -38,6 +38,13 @@ describe("indicadoresPrecio", () => {
     expect(indicadoresPrecio([p("solo", 100)]).get("solo").es_la_mas_economica).toBe(false);
   });
 
+  it("usa el `precio` que trae buscar_productos (promoción de campaña, campanas-descuento C3a)", () => {
+    const enPromo = { ...p("promo", 100), precio: { vigente: 80, regular: 100, origen: "campana", porcentaje: 20, campana: null } };
+    const ind = indicadoresPrecio([enPromo, p("otra", 90)], 85);
+    expect(ind.get("promo")).toEqual({ tiene_oferta: true, es_la_mas_economica: true, dentro_de_presupuesto: true });
+    expect(precioEfectivo(enPromo)).toBe(80);
+  });
+
   it("los precios no viajan en los indicadores", () => {
     const valores = Object.values(indicadoresPrecio(productos, 200).get("cara"));
     expect(valores.every(v => typeof v === "boolean")).toBe(true);

@@ -20,6 +20,9 @@ import { sincronizarVariantesSchema } from "./producto-opciones.js";
 import { sincronizarVariantes, opcionesUsadasPorTienda } from "./producto-opciones.service.js";
 import { serializeVarianteAdmin } from "./producto-variantes.serializer.js";
 import { metadataConVideo } from "./video.js";
+import { z } from "zod";
+import { guardaPrecioProducto, guardaPrecioVariantes } from "../campanas/promocion.guardas.js";
+import { idsParaSeleccion, promocionesDeProductoId } from "../campanas/promocion.service.js";
 import {
   createProductoSchema,
   updateProductoSchema,
@@ -192,6 +195,39 @@ router.get(
   }
 );
 
+// GET /ids?search=&categoriaId= - Ids de todos los resultados, para "Seleccionar
+// los N resultados" del paso 3 de una campaña (campanas-descuento A5b), con tope.
+// Antes de /:id para que "ids" no se valide como UUID.
+const idsQuerySchema = z.object({
+  search: z.string().trim().max(100).optional(),
+  categoriaId: z.string().uuid().optional()
+}).passthrough();
+router.get(
+  "/ids",
+  authMiddleware,
+  requireTiendaAccess("viewer"),
+  validate({ query: idsQuerySchema }),
+  async (req, res) => {
+    const { search, categoriaId } = req.validatedQuery;
+    const data = await idsParaSeleccion(req.tiendaId, { search, categoriaId });
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PRODUCTOS_IDS", data });
+  }
+);
+
+// GET /:id/promociones - Promociones confirmadas que cubren al producto, en curso
+// o que empiezan en 30 días (campanas-descuento R10.3, R10.5): aviso y bloqueo del formulario.
+router.get(
+  "/:id/promociones",
+  authMiddleware,
+  validate({ params: idParamSchema }),
+  scopeProductoReadToOwner,
+  requireTiendaAccess("viewer"),
+  async (req, res) => {
+    const data = await promocionesDeProductoId(req.params.id);
+    return apiResponse(res, { status: 200, type: "SUCCESS", code: "PRODUCTO_PROMOCIONES", data });
+  }
+);
+
 // GET - Obtener producto por ID
 router.get(
   "/:id",
@@ -224,6 +260,7 @@ router.put(
   prepararProductoDelRubro("editar"),
   validarMarca,
   fusionarVideo("editar"),
+  guardaPrecioProducto, // R10.5: no sube el precio regular durante una promoción en curso
   invalidateProductoCacheOnSuccess,
   productosController.update
 );
@@ -237,6 +274,7 @@ router.put(
   resolveProductoTiendaId,
   requireTiendaAccess("editor"),
   validate({ params: idParamSchema, body: sincronizarVariantesSchema }),
+  guardaPrecioVariantes, // R10.5
   invalidateProductoCacheOnSuccess,
   async (req, res) => {
     const resultado = await sincronizarVariantes({

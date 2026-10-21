@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // Un cupón de porcentaje no pasa de 100 % (precio-en-servidor C4: un 150 % dejaba el total negativo).
 export const PORCENTAJE_MAXIMO = 100;
-const porcentajeValido = (data, ctx) => {
+export const porcentajeValido = (data, ctx) => {
   if (data.tipo === "porcentaje" && data.valor > PORCENTAJE_MAXIMO) {
     ctx.addIssue({ code: "custom", path: ["valor"], message: `El porcentaje no puede pasar de ${PORCENTAJE_MAXIMO}` });
   }

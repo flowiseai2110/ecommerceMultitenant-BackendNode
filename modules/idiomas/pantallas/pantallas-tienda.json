@@ -194,6 +194,13 @@
         "grupos": [
           "productos"
         ]
+      },
+      {
+        "id": "precio-y-promocion",
+        "nombre": "Precio y promoción",
+        "grupos": [
+          "comun"
+        ]
       }
     ]
   },
@@ -258,6 +265,13 @@
       {
         "id": "carrito-lateral",
         "nombre": "Carrito lateral",
+        "grupos": [
+          "comun"
+        ]
+      },
+      {
+        "id": "cambios-de-precio",
+        "nombre": "Cambios de precio",
         "grupos": [
           "comun"
         ]

@@ -8,6 +8,8 @@ import MemoryCache from "../../utils/memory-cache.js";
  *
  * TTL corto (60s): el storefront tolera unos segundos de desfase; el admin
  * invalida el detalle puntualmente al editar/borrar para reflejar el cambio ya.
+ * Con promociones de campaña la entrada vive `min(60 s, próximo cambio de precio)`
+ * (docs/specs/campanas-descuento C3a): nunca se sirve un precio pasada su frontera.
  *
  * En despliegues multi-instancia, reemplazar MemoryCache por Redis manteniendo
  * este mismo contrato de funciones.
@@ -27,12 +29,17 @@ export function getProductosHome(key) {
   return homeCache.get(key);
 }
 
+/** Vida de una entrada: nunca más de `maximo` ni más allá del próximo cambio de precio. */
+const vida = (maximo, ttlMs) => Math.min(maximo, ttlMs ?? maximo);
+
 /**
  * @param {string} key - Clave del home (`${tiendaId}|${take}`).
  * @param {*} payload - Respuesta a cachear.
+ * @param {number} [ttlMs] - Hasta el próximo cambio de precio (`proximoCambio − ahora`).
  */
-export function setProductosHome(key, payload) {
-  homeCache.set(key, payload, HOME_TTL_MS);
+export function setProductosHome(key, payload, ttlMs) {
+  const ttl = vida(HOME_TTL_MS, ttlMs);
+  if (ttl > 0) homeCache.set(key, payload, ttl);
 }
 
 /**
@@ -50,9 +57,11 @@ export function getProductoDetail(id, idioma) {
  * @param {string} id - ID del producto.
  * @param {string} idioma - código del idioma de la petición.
  * @param {*} payload - Respuesta del detalle a cachear.
+ * @param {number} [ttlMs] - Hasta el próximo cambio de precio (`proximoCambio − ahora`).
  */
-export function setProductoDetail(id, idioma, payload) {
-  detailCache.set(id, { ...(detailCache.get(id) ?? {}), [idioma]: payload }, DETAIL_TTL_MS);
+export function setProductoDetail(id, idioma, payload, ttlMs) {
+  const ttl = vida(DETAIL_TTL_MS, ttlMs);
+  if (ttl > 0) detailCache.set(id, { ...(detailCache.get(id) ?? {}), [idioma]: payload }, ttl);
 }
 
 /** Limpia el home de todas las tiendas (p. ej. al guardar una traducción de un producto). */
@@ -67,4 +76,13 @@ export function invalidateProductosHome() {
  */
 export function invalidateProductoDetailCache(id) {
   detailCache.delete(id);
+}
+
+/**
+ * Limpia home y detalle de todas las tiendas: al guardar el diseño (una campaña
+ * encendida o apagada cambia precios) o una edición de la plataforma.
+ */
+export function clear() {
+  homeCache.clear();
+  detailCache.clear();
 }

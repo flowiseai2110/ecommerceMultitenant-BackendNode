@@ -56,15 +56,20 @@
 - [x] `ESTRATEGIAS_ENVIO` exhaustivo para `courier`, `delivery_propio` y `recojo_tienda` (A5.1): `FrontendStore/src/app/features/checkout/envio/`, panel por `NgComponentOutlet`, 23 tests sin DOM, fitness `scripts/anti-ramas-envio.mjs` en `npm test`; e2e 12 en verde (ver [cambios.md](cambios.md))
 - [x] `CheckoutStore` con signals (A5.2): `FrontendStore/src/app/features/checkout/checkout.store.ts`, provisto en el componente; textos de cotización en `envio/textos-cotizacion.ts` y comprobante en `checkout/comprobante.ts`; 17 tests sin DOM; e2e 12 en verde (ver [cambios.md](cambios.md))
 - [x] Un componente por paso con su `.html` (A5.3): `FrontendStore/src/app/features/checkout/pasos/` y `components/`, página como orquestador; store partido en `checkout/estado/` (borrador, contacto, cupón, pago, envío, pedido) con `CheckoutStore` como fachada; 21 tests sin DOM; e2e 12 en verde (ver [cambios.md](cambios.md))
-- [ ] Revisar las ramas del pago (A5.4)
-- [ ] Textos por defecto de envío y devoluciones fuera del template (A5.6)
-- [ ] Tests de estrategias y `CheckoutStore` sin DOM (A5.5)
-- [ ] Verificar: el mismo e2e pasa; 0 ramas por tipo de envío; ningún archivo del checkout pasa de 400 líneas
+- [x] Revisar las ramas del pago (A5.4): `ESTRATEGIAS_PAGO` en `FrontendStore/src/app/features/checkout/pago/` (paso 2, confirmación y pie de la tienda); 0 literales de tipo de pago fuera del registro (ver [cambios.md](cambios.md))
+- [x] Textos por defecto de envío y devoluciones fuera del template (A5.6): `features/product/product-page/textos-por-defecto.ts`, traducibles y con tildes; mismo ejemplo en Admin
+- [x] Tests de estrategias y `CheckoutStore` sin DOM (A5.5): estrategias de pago, `PagoCheckout`, cupón, precarga con sesión y borrador corrupto
+- [x] Bugs de A5.2: doble clic al crear el pedido, borrador que se volvía a guardar tras el pedido, costo de envío del WhatsApp "Coordinar"; cada uno con un test que fallaba antes
+- [x] `domicilio-picker` (584 → 290) partido con `mapa-entrega.component.ts` (lógica movida, sin cambios)
+- [x] Verificar: el mismo e2e pasa (12/12, con el mock de `POST /store/pedidos/cotizar`); 0 ramas por tipo de envío; ningún archivo del checkout pasa de 400 líneas (máx. 369); Karma 340; tsc y build OK
+- [ ] **Usuario:** probar el checkout en el navegador, con el mapa y el GPS a mano (el e2e no los cubre)
 
 ## Pieza 5 — CRUD con Composition Root (Backend, nada visible)
-- [ ] `crearCrud` y `POLITICAS` (A7.1, A7.2)
-- [ ] Migrar categorías, marcas, atributos, variantes e imágenes (A7.3)
-- [ ] Verificar: mismas rutas y respuestas; tests negativos de la pieza 1 siguen OK
+- [x] `crearCrud` y `POLITICAS` (A7.1, A7.2): `kernel/crud/crear-crud.js` y `kernel/crud/politicas.js`; `adminTienda` (rol por operación, dueña real en cada `/:id`) y `vitrinaPublica` (solo lectura); fitness `kernel/crud/__tests__/composition-root.test.js` (ver [cambios.md](cambios.md))
+- [x] Migrar categorías (Admin y tienda), marcas, atributos, variantes e imágenes (A7.3), uno a uno contra copias `*.tmp.js`: 201 casos con la respuesta completa y la BD iguales; copias borradas. Marcas de la tienda se queda fuera (no es un CRUD: SQL propio)
+- [x] Bug de aislamiento cerrado por la política: en variantes e imágenes, un usuario de la tienda A que mandaba su tienda en la query o el body leía, editaba y borraba filas de la tienda B (20 ataques: 8 en variantes, 12 en imágenes; ver [cambios.md](cambios.md))
+- [x] Verificar: mismas rutas y respuestas; tests negativos de la pieza 1 siguen OK (`auto-scope` y `alcance`, 23); test negativo por recurso, con y sin auto-scope (`modules/catalogo/__tests__/crud.test.js`); `npm test` 137 suites / 2149
+- [ ] **Usuario:** probar en el Admin según "Cómo probar" del issue FrontendStore#6
 
 ## Pieza 6 — Contratos generados + núcleo compartido (los tres, nada visible)
 - [ ] Decidir el mecanismo del núcleo compartido (pregunta abierta)

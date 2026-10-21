@@ -903,6 +903,15 @@
     ]
   },
   {
+    "clave": "Este cupón es de la campaña {nombre} y ya no está vigente",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
+    ]
+  },
+  {
     "clave": "Este tour no se ofrece en ese idioma",
     "grupos": [
       "tours"
@@ -1351,6 +1360,15 @@
     ],
     "ubicaciones": [
       "correos/reserva-confirmada"
+    ]
+  },
+  {
+    "clave": "Los productos en promoción no admiten cupones.",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "sistema/pedidos"
     ]
   },
   {

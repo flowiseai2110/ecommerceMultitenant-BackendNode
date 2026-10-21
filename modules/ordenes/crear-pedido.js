@@ -5,6 +5,9 @@ import { validarYBloquearStock, descontarStock } from "../inventario/inventario.
 import { cargarMetodoEnvio, hayMetodosEnvio } from "../envios/cotizacion.service.js";
 import { cargarLineas } from "../precios/cotizacion-compra.service.js";
 import { cotizarCompra } from "../precios/cotizacion-compra.js";
+import { contextoDePrecios } from "../precios/contexto.service.js";
+import { nombreCampanaDelCupon } from "../campanas/cupon-campana.service.js";
+import { firmar as firmarPrecioAsegurado, verificar as verificarPrecioAsegurado } from "../precios/precio-congelado.token.js";
 import { aCentimos } from "../precios/precio-vigente.js";
 import { datosFactura } from "../sunat/ruc.service.js";
 import { tiendaDe } from "../negocio/rubros.cache.js";
@@ -27,13 +30,15 @@ const ENVIO_POR_COORDINAR = "Por coordinar";
  *
  * Todo en una sola transacción:
  * 1. Carga las líneas (producto y variante de la tienda) y el método de envío
- * 2. Cupón y usos del cliente; cotiza
+ * 2. Cupón y usos del cliente; cotiza. Con un precio asegurado válido (`tokenPrecio`,
+ *    campanas-descuento R8.4) cada línea cobra el menor entre lo asegurado y lo de ahora
  * 3. Si el cliente vio un total menor al real (`totalEsperado`): 409 PRECIO_CAMBIO,
  *    antes de escribir nada (D1). Si vio uno igual o mayor, o no lo manda, sigue.
  * 4. Comprobante (boleta desde S/ 700, factura solo si la tienda la emite)
  * 5. Valida y bloquea stock (Inventario); upsert del cliente
  * 6. Uso del cupón condicional al tope (dos pedidos con el último uso: uno falla)
- * 7. Número de pedido, pedido con snapshot por línea, stock y estadísticas del cliente
+ * 7. Número de pedido, pedido con snapshot por línea (regular, origen y campaña), stock
+ *    y estadísticas del cliente
  *
  * `authUserId` viene del JWT verificado (nunca del body): si el comprador
  * inició sesión en el storefront, el pedido queda en su "Mis pedidos".
@@ -151,6 +156,10 @@ export async function crearPedido(data, { authUserId = null, idioma = IDIOMA_BAS
               precioUnitario: l.precioUnitario,
               precioRegular: l.precioRegular,
               precioOrigen: l.precioOrigen,
+              // De qué campaña vino el descuento (campanas-descuento R8.3): una foto, sin FK.
+              campanaId: l.campana?.id ?? null,
+              campanaNombre: l.campana?.nombre ?? null,
+              promocionPorcentaje: l.campana?.porcentaje ?? null,
               // El cupón va a nivel de pedido (descuentoMonto), no se reparte por línea.
               descuento: 0,
               total: l.total
@@ -201,14 +210,22 @@ export async function crearPedido(data, { authUserId = null, idioma = IDIOMA_BAS
  * muestran lo que se va a cobrar. A diferencia de crear: sin método de envío
  * cotiza sin envío, y un cupón que ya no aplica (p. ej. bajó el subtotal) no
  * corta la cotización: se cotiza sin él y se avisa en `cuponRechazado`.
+ *
+ * `congelar` (al entrar al pago, campanas-descuento R8.4): además firma los precios
+ * de ahora por 15 minutos y los devuelve en `precioAsegurado: { token, vence }`.
  */
 export async function cotizarPedido(data) {
   await exigirCarrito(data.tiendaId);
-  const { cotizacion, cuponRechazado } = await cargarYCotizar(prisma, data, { paraCrear: false, ahora: new Date() });
+  const ahora = new Date();
+  const { cotizacion, cuponRechazado } = await cargarYCotizar(prisma, data, { paraCrear: false, ahora });
+  const precioAsegurado = data.congelar
+    ? await firmarPrecioAsegurado({ tiendaId: data.tiendaId, lineas: cotizacion.precios }, { ahora })
+    : null;
   return {
     ...cotizacionPublica(cotizacion),
     envio: cotizacion.envio,
-    cuponRechazado: cuponRechazado ?? null
+    cuponRechazado: cuponRechazado ?? null,
+    precioAsegurado
   };
 }
 
@@ -227,12 +244,19 @@ async function exigirCarrito(tiendaId) {
  * tiene que llegar al destino y el cupón tiene que aplicar. Sin él (cotizar),
  * nada de eso corta: el cupón que no aplica vuelve en `cuponRechazado`.
  *
+ * Precio asegurado (`tokenPrecio`): uno inválido, vencido o de otra tienda se ignora.
+ * Al pedir uno nuevo (`congelar`) el anterior no cuenta: se asegura el precio de ahora,
+ * así un precio asegurado no se renueva para siempre.
+ *
  * @param {object} db - Cliente Prisma (transaccional al crear).
  */
 async function cargarYCotizar(db, data, { paraCrear, ahora }) {
-  const { tiendaId, detalles, metodoEnvioId = null, codigoCupon = null } = data;
+  const { tiendaId, detalles, metodoEnvioId = null, codigoCupon = null, tokenPrecio = null } = data;
+  const congelado = data.congelar ? null : await verificarPrecioAsegurado(tokenPrecio, tiendaId, { ahora });
 
   const lineas = await cargarLineas(db, tiendaId, detalles);
+  // Promociones de campaña vigentes: lectura fresca, sin la caché de la vitrina (campanas-descuento R5.2).
+  const contexto = await contextoDePrecios(db, tiendaId, { ahora, conCache: false });
   let envio = null;
   if (metodoEnvioId) {
     const cargado = await cargarMetodoEnvio(db, tiendaId, metodoEnvioId);
@@ -249,7 +273,11 @@ async function cargarYCotizar(db, data, { paraCrear, ahora }) {
     cupon = await db.cupones.findFirst({ where: { tiendaId, codigo: codigoNorm } });
     if (!cupon) {
       if (paraCrear) throw errorConClave(ValidationError, clave("Cupón no válido"));
-      return conCuponRechazado(lineas, envio, ahora, { clave: clave("Cupón no válido") });
+      return conCuponRechazado(lineas, { envio, ahora, contexto, congelado }, { clave: clave("Cupón no válido") });
+    }
+    // El cupón de una campaña vence con ella (R4.8): su nombre, para decirlo si ya no vale.
+    if (cupon.campanaPromocionId) {
+      cupon = { ...cupon, campanaNombre: await nombreCampanaDelCupon(db, tiendaId, cupon.campanaPromocionId) };
     }
     // Los usos por cliente se cuentan solo al crear: al cotizar todavía no se sabe quién compra.
     const whatsapp = data.cliente?.whatsappNumero;
@@ -264,7 +292,7 @@ async function cargarYCotizar(db, data, { paraCrear, ahora }) {
     }
   }
 
-  const cotizacion = cotizarCompra(lineas, { cupon, usosCliente, envio, ahora, cuponInvalido: paraCrear ? "lanzar" : "omitir" });
+  const cotizacion = cotizarCompra(lineas, { cupon, usosCliente, envio, ahora, contexto, congelado, cuponInvalido: paraCrear ? "lanzar" : "omitir" });
   if (paraCrear && cotizacion.envio && !cotizacion.envio.disponible) {
     throw errorConClave(ValidationError, clave("{metodo} no llega a tu distrito. Elige otro método de envío."), { metodo: cotizacion.envio.nombre });
   }
@@ -276,11 +304,11 @@ async function cargarYCotizar(db, data, { paraCrear, ahora }) {
   };
 }
 
-function conCuponRechazado(lineas, envio, ahora, cuponRechazado) {
-  return { cotizacion: cotizarCompra(lineas, { envio, ahora }), cupon: null, codigoNorm: null, cuponRechazado };
+function conCuponRechazado(lineas, opciones, cuponRechazado) {
+  return { cotizacion: cotizarCompra(lineas, opciones), cupon: null, codigoNorm: null, cuponRechazado };
 }
 
 /** Lo que el 409 y la cotización le cuentan a la tienda: precios, nombres y totales; nunca costo ni stock. */
-function cotizacionPublica({ lineas, subtotal, descuentoCupon, costoEnvio, total }) {
-  return { lineas, subtotal, descuentoCupon, costoEnvio, total };
+function cotizacionPublica({ lineas, subtotal, descuentoCupon, costoEnvio, total, avisos }) {
+  return { lineas, subtotal, descuentoCupon, costoEnvio, total, avisos };
 }

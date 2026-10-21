@@ -13,6 +13,9 @@ const P_AJENO = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const V_RELOJ_ORO = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const M_DELIVERY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 
+// Firma del precio asegurado (campanas-descuento C6): config la lee al importar.
+process.env.PRECIOS_TOKEN_SECRET = "secreto-de-prueba-del-precio-asegurado-0123456789";
+
 let bd;
 let tipoNegocio;
 function bdInicial() {
@@ -74,11 +77,16 @@ const validarYBloquearStock = jest.fn(async () => { bd.escrituras.push("stock-lo
 jest.unstable_mockModule("../../inventario/inventario.service.js", () => ({
   validarYBloquearStock, descontarStock: async () => { bd.escrituras.push("stock"); }, reponerStock: async () => {}
 }));
+// Promociones de campaña vigentes (campanas-descuento C3a): el cargador real se prueba aparte.
+let promociones = [];
+const contextoDePrecios = jest.fn(async (_db, _tiendaId, { ahora }) => ({ ahora, promociones, proximoCambio: null }));
+jest.unstable_mockModule("../../precios/contexto.service.js", () => ({ contextoDePrecios }));
 jest.unstable_mockModule("../../sunat/ruc.service.js", () => ({ datosFactura: async () => null }));
 jest.unstable_mockModule("../pedidos-pendientes-cache.js", () => ({ invalidatePendientesCount: () => {} }));
 
 const { crearPedido, cotizarPedido } = await import("../crear-pedido.js");
 const { createPedidoSchema, cotizarPedidoSchema } = await import("../pedidos.schema.js");
+const { firmar } = await import("../../precios/precio-congelado.token.js");
 
 const cliente = { nombre: "Ana", whatsappNumero: "987654321" };
 // Pasa por el schema real, como en la ruta: lo que no declara se descarta.
@@ -89,6 +97,7 @@ const fallo = async (p) => { try { await p; } catch (e) { return e; } throw new 
 beforeEach(() => {
   bd = bdInicial();
   tipoNegocio = "productos";
+  promociones = [];
   jest.clearAllMocks();
 });
 
@@ -99,7 +108,8 @@ describe("crearPedido: el precio lo pone el servidor", () => {
     });
     expect(pedido.detalles.createMany.data).toEqual([{
       productoId: P_CAMISA, varianteId: null, productoNombre: "Camisa", varianteNombre: null, cantidad: 2,
-      precioUnitario: 80, precioRegular: 100, precioOrigen: "oferta", descuento: 0, total: 160
+      precioUnitario: 80, precioRegular: 100, precioOrigen: "oferta", descuento: 0, total: 160,
+      campanaId: null, campanaNombre: null, promocionPorcentaje: null
     }]);
     expect(pedido).toMatchObject({ subtotal: 160, descuentoMonto: 0, costoEnvio: 0, total: 160, metodoEnvio: "Por coordinar" });
   });
@@ -136,6 +146,127 @@ describe("crearPedido: el precio lo pone el servidor", () => {
     expect(e.statusCode).toBe(400);
     expect(e.details.clave).toBe("Esta tienda no vende con carrito");
     expect(tx.productos.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("crearPedido: promoción de campaña (campanas-descuento C3a)", () => {
+  const promo = (porcentaje) => ({
+    campanaId: "c-bf", nombre: "Black Friday", porcentaje, orden: 0, hasta: new Date("2026-12-01T05:00:00Z"),
+    permitirCupones: false, permitirEnvioGratis: false,
+    alcance: { tipo: "tienda", elegidas: [], categoriaIds: new Set(), productoIds: new Set() }
+  });
+
+  it("cobra el precio con la promoción vigente, leída sin caché (R5.2)", async () => {
+    promociones = [promo(20)];
+    const pedido = await crear({ detalles: [{ productoId: P_RELOJ, cantidad: 1 }] });
+    expect(pedido.detalles.createMany.data[0]).toMatchObject({ precioUnitario: 400, precioRegular: 500, precioOrigen: "campana" });
+    expect(contextoDePrecios).toHaveBeenCalledWith(expect.anything(), TIENDA, expect.objectContaining({ conCache: false }));
+  });
+
+  it("empate con la oferta del producto → gana la oferta (E8)", async () => {
+    promociones = [promo(20)];
+    const pedido = await crear();
+    expect(pedido.detalles.createMany.data[0]).toMatchObject({ precioUnitario: 80, precioOrigen: "oferta" });
+  });
+
+  it("cotizar usa la misma lectura fresca", async () => {
+    promociones = [promo(10)];
+    const { lineas } = await cotizarPedido(cotizarPedidoSchema.parse({ tiendaId: TIENDA, detalles: [{ productoId: P_RELOJ, cantidad: 2 }] }));
+    expect(lineas[0]).toMatchObject({ precioUnitario: 450, precioOrigen: "campana", total: 900 });
+    expect(contextoDePrecios).toHaveBeenCalledWith(expect.anything(), TIENDA, expect.objectContaining({ conCache: false }));
+  });
+});
+
+describe("precio asegurado mientras se paga (campanas-descuento C6, R8.4)", () => {
+  const promo = (porcentaje) => ({
+    campanaId: "c-bf", nombre: "Black Friday", porcentaje, orden: 0, hasta: new Date("2026-11-30T03:00:00Z"),
+    permitirCupones: false, permitirEnvioGratis: false,
+    alcance: { tipo: "tienda", elegidas: [], categoriaIds: new Set(), productoIds: new Set() }
+  });
+  const reloj = [{ productoId: P_RELOJ, cantidad: 1 }];
+  // Hora de Lima (UTC−5); la promoción termina a las 22:00.
+  const a = (hora) => jest.setSystemTime(new Date(`2026-11-29T${hora}:00-05:00`));
+  const entrarAlPago = async () => {
+    a("21:50");
+    promociones = [promo(20)];
+    return cotizarPedido(cotizarPedidoSchema.parse({ tiendaId: TIENDA, detalles: reloj, congelar: true }));
+  };
+
+  beforeEach(() => jest.useFakeTimers({ doNotFake: ["nextTick", "setImmediate", "queueMicrotask"] }));
+  afterEach(() => jest.useRealTimers());
+
+  it("al entrar al pago la cotización asegura el precio 15 minutos", async () => {
+    const cotizacion = await entrarAlPago();
+    expect(cotizacion.lineas[0]).toMatchObject({
+      precioUnitario: 400, precioRegular: 500, precioOrigen: "campana", campana: { id: "c-bf", nombre: "Black Friday", porcentaje: 20 }
+    });
+    expect(cotizacion.precioAsegurado.vence).toBe("2026-11-30T03:05:00.000Z");
+    expect(cotizacion).not.toHaveProperty("precios");
+  });
+
+  it("CA-8.3: entra 21:50, la promoción termina 22:00, confirma 22:05 → S/ 400 y la foto de la campaña", async () => {
+    const { precioAsegurado } = await entrarAlPago();
+    a("22:05");
+    promociones = [];
+    const pedido = await crear({ detalles: reloj, tokenPrecio: precioAsegurado.token, totalEsperado: 400 });
+    expect(pedido.detalles.createMany.data[0]).toMatchObject({
+      precioUnitario: 400, precioRegular: 500, precioOrigen: "campana",
+      campanaId: "c-bf", campanaNombre: "Black Friday", promocionPorcentaje: 20
+    });
+    expect(pedido.total).toBe(400);
+  });
+
+  it("CA-8.3: confirma 22:30 (token vencido) → se recalcula a S/ 500 y 409 sin crear nada", async () => {
+    const { precioAsegurado } = await entrarAlPago();
+    a("22:30");
+    promociones = [];
+    const error = await fallo(crear({ detalles: reloj, tokenPrecio: precioAsegurado.token, totalEsperado: 400 }));
+    expect(error.code).toBe("PRECIO_CAMBIO");
+    expect(error.details.cotizacion.total).toBe(500);
+    expect(bd.escrituras).toEqual([]);
+  });
+
+  it("R8.6: la campaña se apaga con el token vigente → S/ 400", async () => {
+    const { precioAsegurado } = await entrarAlPago();
+    a("21:55");
+    promociones = [];
+    const { lineas } = await cotizarPedido(cotizarPedidoSchema.parse({ tiendaId: TIENDA, detalles: reloj, tokenPrecio: precioAsegurado.token }));
+    expect(lineas[0]).toMatchObject({ precioUnitario: 400, precioOrigen: "campana" });
+  });
+
+  it("si el precio bajó mientras pagaba, cobra el menor", async () => {
+    const { precioAsegurado } = await entrarAlPago();
+    promociones = [promo(30)];
+    const pedido = await crear({ detalles: reloj, tokenPrecio: precioAsegurado.token });
+    expect(pedido.detalles.createMany.data[0]).toMatchObject({ precioUnitario: 350, promocionPorcentaje: 30 });
+  });
+
+  it("token de otra tienda o alterado → se ignora (precio de ahora)", async () => {
+    a("21:55");
+    promociones = [];
+    const ajeno = await firmar({ tiendaId: OTRA, lineas: [{ productoId: P_RELOJ, varianteId: null, unitario: 100, regular: 50000, origen: "campana", campana: null }] });
+    const { precioAsegurado } = await entrarAlPago();
+    promociones = [];
+    const alterado = precioAsegurado.token.slice(0, -2) + (precioAsegurado.token.endsWith("AA") ? "BB" : "AA");
+    for (const tokenPrecio of [ajeno.token, alterado, "basura"]) {
+      const pedido = await crear({ detalles: reloj, tokenPrecio });
+      expect(pedido.detalles.createMany.data[0]).toMatchObject({ precioUnitario: 500, precioOrigen: "regular", campanaId: null });
+    }
+  });
+
+  it("pedir un precio asegurado nuevo no renueva el anterior: asegura el de ahora", async () => {
+    const { precioAsegurado } = await entrarAlPago();
+    a("22:04");
+    promociones = [];
+    const nuevo = await cotizarPedido(cotizarPedidoSchema.parse({ tiendaId: TIENDA, detalles: reloj, tokenPrecio: precioAsegurado.token, congelar: true }));
+    expect(nuevo.lineas[0]).toMatchObject({ precioUnitario: 500, precioOrigen: "regular", campana: null });
+  });
+
+  it("CA-8.1: el navegador manda S/ 10 → cobra S/ 400 (precio vigente)", async () => {
+    a("21:50");
+    promociones = [promo(20)];
+    const pedido = await crear({ detalles: [{ productoId: P_RELOJ, cantidad: 1, precioUnitario: 10 }] });
+    expect(pedido.detalles.createMany.data[0].precioUnitario).toBe(400);
   });
 });
 

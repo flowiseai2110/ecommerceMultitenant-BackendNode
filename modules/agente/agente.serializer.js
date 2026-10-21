@@ -20,6 +20,8 @@ export function serializeProductoCardChat(p) {
     slug: p.slug,
     precioBase: p.precioBase,
     precioOferta: p.precioOferta ?? null,
+    // Lo que se cobra hoy, con el regular y la campaña (campanas-descuento C3a): el chat solo lo dibuja.
+    precio: p.precio ?? null,
     // Bandera de disponibilidad en vez del stock exacto: el frontend solo
     // necesita saber si mostrar "disponible" / "agotado".
     disponible: (p.stock ?? 0) > 0,

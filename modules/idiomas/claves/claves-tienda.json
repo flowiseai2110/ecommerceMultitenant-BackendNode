@@ -737,6 +737,15 @@
     ]
   },
   {
+    "clave": "{n} productos seleccionados",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
     "clave": "{n} reseñas",
     "grupos": [
       "reservas"
@@ -837,6 +846,15 @@
     ]
   },
   {
+    "clave": "{nombre} · −{n} % en {donde} · hasta {fecha}",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
     "clave": "{opcion} (agotado)",
     "grupos": [
       "productos"
@@ -891,6 +909,61 @@
     ]
   },
   {
+    "clave": "−{monto}, solo sobre {productos}",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
+    "clave": "−{monto}, solo sobre los productos sin promoción",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
+    "clave": "−{n} %",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/tarjetas-de-producto",
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
+    "clave": "−{n} % sobre el precio regular, en {donde}.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
+    "clave": "−{n} % sobre el precio regular, en las categorías {donde} y sus subcategorías.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
+    "clave": "−{n} % sobre el precio regular, en toda la categoría {donde} y sus subcategorías.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
     "clave": "0 a 17 años",
     "grupos": [
       "hotel"
@@ -898,6 +971,15 @@
     "ubicaciones": [
       "habitaciones/buscador-de-fechas",
       "habitacion/ficha"
+    ]
+  },
+  {
+    "clave": "1 producto seleccionado",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
     ]
   },
   {
@@ -1255,6 +1337,24 @@
     ],
     "ubicaciones": [
       "compra/datos-y-entrega"
+    ]
+  },
+  {
+    "clave": "Ahorras {monto}",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "producto/ficha"
+    ]
+  },
+  {
+    "clave": "Ahorras {monto} con {campana}",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "producto/ficha"
     ]
   },
   {
@@ -1718,6 +1818,15 @@
     ]
   },
   {
+    "clave": "Buenas noticias: el total bajó",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "compra/datos-y-entrega"
+    ]
+  },
+  {
     "clave": "buscando…",
     "grupos": [
       "productos"
@@ -1801,6 +1910,18 @@
     ],
     "ubicaciones": [
       "tours/buscador"
+    ]
+  },
+  {
+    "clave": "c/u",
+    "grupos": [
+      "comun",
+      "productos"
+    ],
+    "ubicaciones": [
+      "carrito/carrito",
+      "carrito/carrito-lateral",
+      "pedido/seguimiento"
     ]
   },
   {
@@ -2514,6 +2635,15 @@
     ]
   },
   {
+    "clave": "Condiciones de la promoción",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
     "clave": "Confirmación",
     "grupos": [
       "hotel"
@@ -2565,6 +2695,15 @@
     ],
     "ubicaciones": [
       "habitaciones/buscador-de-fechas"
+    ]
+  },
+  {
+    "clave": "Confirmar pedido",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "compra/datos-y-entrega"
     ]
   },
   {
@@ -3093,10 +3232,12 @@
   {
     "clave": "Desde {precio}",
     "grupos": [
+      "comun",
       "hotel",
       "tours"
     ],
     "ubicaciones": [
+      "catalogo/precio-y-promocion",
       "habitaciones/lista-de-habitaciones",
       "tours/lista-de-tours"
     ]
@@ -3606,6 +3747,15 @@
     ]
   },
   {
+    "clave": "El envío gratis no aplica a pedidos con productos en promoción.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
     "clave": "El evento quedó suspendido por fuerza mayor. Lo que pagaste queda como saldo a favor para elegir una fecha nueva. El local se pondrá en contacto contigo.",
     "grupos": [
       "reservas"
@@ -3741,12 +3891,48 @@
     ]
   },
   {
+    "clave": "El precio de {producto} cambió: la promoción empezó. Antes {antes}, ahora {ahora}",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "carrito/cambios-de-precio"
+    ]
+  },
+  {
+    "clave": "El precio de {producto} cambió: la promoción terminó. Antes {antes}, ahora {ahora}",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "carrito/cambios-de-precio"
+    ]
+  },
+  {
+    "clave": "El precio de {producto} cambió. Antes {antes}, ahora {ahora}",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "carrito/cambios-de-precio"
+    ]
+  },
+  {
     "clave": "El precio del envío se confirma por WhatsApp.",
     "grupos": [
       "productos"
     ],
     "ubicaciones": [
       "compra/datos-y-entrega"
+    ]
+  },
+  {
+    "clave": "El precio que ves es el precio final; el envío se muestra antes de pagar.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
     ]
   },
   {
@@ -6953,6 +7139,15 @@
     ]
   },
   {
+    "clave": "No pudimos confirmar el precio.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "carrito/cambios-de-precio"
+    ]
+  },
+  {
     "clave": "No pudimos dividir el pago.",
     "grupos": [
       "reservas"
@@ -7085,6 +7280,33 @@
     ],
     "ubicaciones": [
       "compra/datos-y-entrega"
+    ]
+  },
+  {
+    "clave": "No se combina con cupones de la tienda ni con envío gratis por monto mínimo.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
+    "clave": "No se combina con cupones de la tienda.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
+    "clave": "No se combina con envío gratis por monto mínimo.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
     ]
   },
   {
@@ -7383,6 +7605,15 @@
     ],
     "ubicaciones": [
       "habitaciones/disponible-ahora"
+    ]
+  },
+  {
+    "clave": "Oferta del producto",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "pedido/seguimiento"
     ]
   },
   {
@@ -8317,6 +8548,15 @@
     ]
   },
   {
+    "clave": "Precio asegurado mientras pagas (15 min)",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "compra/datos-y-entrega"
+    ]
+  },
+  {
     "clave": "Precio por noche",
     "grupos": [
       "hotel"
@@ -8332,6 +8572,15 @@
     ],
     "ubicaciones": [
       "habitaciones/buscador-de-fechas"
+    ]
+  },
+  {
+    "clave": "Precio regular",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
     ]
   },
   {
@@ -8850,6 +9099,7 @@
       "reservas"
     ],
     "ubicaciones": [
+      "carrito/cambios-de-precio",
       "compra/factura-ruc",
       "cuenta/mis-reservas",
       "cuenta/mis-pedidos-inicio"
@@ -9131,6 +9381,15 @@
     ],
     "ubicaciones": [
       "compra/envio-a-agencia"
+    ]
+  },
+  {
+    "clave": "Se combina con cupones de la tienda y con envío gratis por monto mínimo.",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
     ]
   },
   {
@@ -9697,6 +9956,15 @@
     ]
   },
   {
+    "clave": "toda la tienda",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
     "clave": "Todas",
     "grupos": [
       "productos"
@@ -10137,6 +10405,15 @@
     ]
   },
   {
+    "clave": "Vale hasta {fecha} (hora de Lima).",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
     "clave": "Varios días",
     "grupos": [
       "tours"
@@ -10206,6 +10483,15 @@
     ],
     "ubicaciones": [
       "carrito/carrito-lateral"
+    ]
+  },
+  {
+    "clave": "Ver condiciones",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
     ]
   },
   {
@@ -10682,6 +10968,25 @@
       "productos"
     ],
     "ubicaciones": [
+      "compra/datos-y-entrega"
+    ]
+  },
+  {
+    "clave": "y|une dos nombres",
+    "grupos": [
+      "comun"
+    ],
+    "ubicaciones": [
+      "catalogo/precio-y-promocion"
+    ]
+  },
+  {
+    "clave": "Ya incluye −{monto} de {campana}",
+    "grupos": [
+      "productos"
+    ],
+    "ubicaciones": [
+      "carrito/carrito",
       "compra/datos-y-entrega"
     ]
   },

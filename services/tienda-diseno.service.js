@@ -45,7 +45,15 @@ export async function saveDiseno(tiendaId, data, user) {
     throw new ValidationError(message, { message });
   }
 
-  await prisma.$transaction(claves.map((clave) => upsertClave(tiendaId, clave, data[clave], usuario)));
+  const escrituras = claves.map((clave) => upsertClave(tiendaId, clave, data[clave], usuario));
+  // Una campaña que ya no está en el arreglo se lleva su promoción en la misma
+  // transacción (campanas-descuento T3b.7): no queda una promoción huérfana.
+  if (Array.isArray(data.campanas)) {
+    escrituras.push(prisma.campana_promociones.deleteMany({
+      where: { tiendaId, campanaId: { notIn: data.campanas.map((c) => c.id) } }
+    }));
+  }
+  await prisma.$transaction(escrituras);
 
   return getDiseno(tiendaId);
 }
