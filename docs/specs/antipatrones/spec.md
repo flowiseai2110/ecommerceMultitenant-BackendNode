@@ -1,6 +1,6 @@
 # Spec: corrección de antipatrones (los tres repos)
 
-> Estado (2026-10-17): **aprobada** para las piezas 1–5. El mecanismo del núcleo compartido (A8.5) se decide al empezar la pieza 6. Tareas: [tasks.md](tasks.md).
+> Estado (2026-10-17): **aprobada** para las piezas 1–5. Pieza 6: mecanismo decidido por Diego el 2026-10-20 (monorepo + patrones estratégicos de DDD, ver "Decisiones tomadas" y [ADR-0003](../../adr/ADR-0003-monorepo-y-contratos-generados.md)); plan en [impacto.md](impacto.md), por aprobar. Tareas: [tasks.md](tasks.md).
 > Base: [perfil-negocio](../perfil-negocio/spec.md) (capacidades, no identidad), [layout-por-rubro](../layout-por-rubro/spec.md) (slots y registro de piezas), [multi-sede](../multi-sede/spec.md) S2 (registro `ALCANCE`).
 > Repos: BackendNode, FrontendAdmin, FrontendStore.
 
@@ -180,14 +180,17 @@ En las operaciones por clave, Prisma exige que la clave quede en la raíz del `w
 
 **Patrones:** *fuente única de verdad* con *contract-first y generación de código* (el backend publica un *lenguaje publicado*) y un *núcleo compartido* (*shared kernel*) para el código de front que no es contrato.
 
-- **A8.1** Cada serializer del backend (`serializeCategoriaAdmin`, `serializeCategoriaStore`…) tiene su **esquema Zod de salida**. Un test valida que la salida del serializer cumple su esquema.
-- **A8.2** `npm run contratos` en el backend:
-  1. Zod 3 → JSON Schema (`zod-to-json-schema`);
-  2. JSON Schema → TypeScript (`json-schema-to-typescript`);
-  3. escribe `src/app/contratos/*.generado.ts` en los dos fronts, con un aviso de "no editar".
-- **A8.3** Cada front genera los tipos de **su** serializer: las diferencias legítimas entre Admin y Store salen solas.
-- **A8.4** CI de cada front: si los contratos generados no coinciden con los del backend en `main`, falla.
-- **A8.5** El código de front que es igual en los dos (`calendario.core.ts`, `senal-envivo.ts`, `texto-rico.ts`, `grilla-mes`, `fechas.ts`) pasa a un paquete compartido. Ver la pregunta abierta sobre el mecanismo.
+- **A8.1** Cada serializer del backend (`serializeCategoriaAdmin`, `serializeCategoriaStore`…) tiene su **esquema Zod de salida**, en `<contexto>.contrato.js` junto al serializer, y entra al registro `CONTRATOS` (`kernel/contratos/registro.js`). El esquema describe **lo que viaja por la red**, no la fila de Prisma: un `Decimal` es texto, una fecha es texto ISO y un `BigInt` es texto. Por eso el test valida `JSON.parse(JSON.stringify(salida))` contra el esquema estricto, con filas de ejemplo que cubren los `null`. Un serializer sin contrato falla el test, salvo que esté en `DEUDA` (lista que solo baja).
+- **A8.2** `npm run contratos` (en la raíz; corre el script del backend):
+  1. Zod → JSON Schema con `z.toJSONSchema()` de la API v4 (`zod/v4`, ya incluida en el zod 3.25 instalado; sin dependencias nuevas). `zod-to-json-schema` se descarta: su autor lo dejó sin mantenimiento en noviembre de 2025 y archivó el repo en junio de 2026.
+  2. JSON Schema → TypeScript con `json-schema-to-typescript`.
+  3. Escribe `paquetes/contratos/src/<audiencia>/<recurso>.ts` (`tienda/` o `admin/`), con el aviso "GENERADO, no editar". El backend sigue sin una línea de TypeScript (`docs/ARQUITECTURA.md`, "Restricción dura"): genera el archivo, igual que Prisma genera su cliente.
+- **A8.3** Cada front usa los tipos de **su** audiencia: la Tienda importa solo `@ecompyme/contratos/tienda/*` y el Admin solo `@ecompyme/contratos/admin/*` (lo vigila A8.9). Las diferencias legítimas entre Admin y Tienda salen solas, porque vienen de serializers distintos.
+- **A8.4** Contratos al día: `npm run contratos -- --check` regenera en memoria y falla si los archivos del paquete no coinciden con los esquemas. Corre en el `npm test` del backend y en la Action de CI del monorepo. Como backend y fronts están en el mismo commit, "coincidir con `main` del backend" pasa a ser "coincidir en el mismo commit".
+- **A8.5** El código de front que es igual en los dos pasa al paquete `paquetes/compartido` (`@ecompyme/compartido`) del monorepo (ver A8.10): `calendario.core.ts`, `senal-envivo.ts` y `texto-rico.ts` tal cual (con sus specs), y `grilla-mes` con lo distinto inyectado (A8.7). **`fechas.ts` no se mueve:** la de la Tienda (107 líneas) toma los nombres del diccionario de idiomas y la del Admin (26 líneas) usa `Intl` en español. Son dos implementaciones de la misma interfaz, y justamente esa interfaz es el `PROVEEDOR_FECHAS` de A8.7. Corrección del 2026-10-20: la versión anterior de esta spec la contaba entre los archivos iguales.
+  - El paquete se consume **desde el código fuente** (`paths` del `tsconfig` de cada app), sin compilarlo aparte. Es lo que hace Nx con sus librerías Angular por defecto (`buildable: false`). La guía de Angular (`ng generate library`) pide compilar la librería antes de usarla y no apuntar `paths` al fuente, pero esa guía apunta a librerías que se publican. Aquí no se publica nada, los dos `tsconfig` tienen las mismas opciones de compilación y así se evita un paso de compilación (y un `--watch`) en cada cambio.
+  - Cada app declara la dependencia en su `package.json` (`"@ecompyme/compartido": "*"`). Así Vercel sabe que, si cambia el paquete, tiene que volver a construir la app.
+  - Tailwind de cada app lee las clases del paquete (`@source` en su `styles.css`).
 - **A8.7** **Lo que cambia entre Store y Admin no se copia: se inyecta.** El código compartido es uno solo, y cada app aporta lo suyo. Ejemplo: `grilla-mes` tiene hoy 28 líneas distintas entre las dos copias, de tres tipos:
 
   | Variación | Ejemplo en `grilla-mes` | Patrón |
@@ -197,7 +200,40 @@ En las operaciones por clave, Prisma exige que la clave quede en la raíz del `w
   | Función opcional | El punto de "destacado" solo en Store | **Opción** por `input()` (`marcarDestacados`) |
 
   Es el mismo patrón que los rubros (código común + lo distinto inyectado), con la app en el lugar del rubro. Un archivo sin variaciones (`texto-rico.ts`, `calendario.core.ts`, `senal-envivo.ts`) se mueve tal cual. Un `if (esAdmin)` dentro del código compartido está prohibido, igual que `esHotel()`.
-- **A8.6** Se migra un recurso a la vez, empezando por `categoria` (chico) y terminando por `reserva` (el más divergente).
+  En `grilla-mes` (medido el 2026-10-20) la variación ya no es solo la de la tabla: la Tienda agregó la marca de campaña (`c.campana`, `etiquetaCampana`) y el tono `primary-tint`. Las dos son opciones por `input()` y tokens, como "destacado".
+- **A8.6** Se migra un recurso a la vez, empezando por `categoria` (chico) y terminando por `reserva` (el más divergente). Un recurso cuyo endpoint hoy **no tiene serializer** (tienda, métodos de envío y de pago, cupón, pedido, entre otros: devuelven la fila de Prisma) necesita primero su serializer, con un test de equivalencia que pruebe que la respuesta no cambia.
+- **A8.8** **Capa anticorrupción en cada front.** El contrato es el lenguaje del backend. Cada front tiene su propio modelo, y lo traduce en un solo lugar:
+  - El DTO generado entra solo por la capa **data-access** (servicio HTTP, store de datos y su traductor `<recurso>DesdeApi(dto)` y, si envía datos, `<recurso>HaciaApi(modelo)`).
+  - El **modelo de pantalla** (`models/<recurso>.model.ts`) es del front. Puede diferir del DTO: números en vez de los `Decimal` en texto, campos derivados (el árbol `subcategorias` de la Tienda, `productosCount` del Admin) o nombres propios.
+  - Componentes, páginas y perfiles de rubro solo ven el modelo de pantalla, nunca el DTO. Si el backend cambia un campo, se toca el traductor y el error de compilación aparece ahí, no en las plantillas.
+  - Antecedente: `FrontendStore/src/app/models/monto.ts` y los `…DesdeApi` del checkout (pieza 4). Cuando se migra cada recurso, su traductor pasa de `models/` a data-access, porque `models/` no puede importar contratos (A8.9).
+- **A8.9** **Tipos de librería con reglas de dependencia** (como los tipos de Nx, pero sin Nx). Cada carpeta de cada front tiene un tipo, declarado en una sola tabla (`herramientas/fitness/dependencias.cjs`):
+
+  | Tipo | Tienda | Admin | Puede importar |
+  |---|---|---|---|
+  | `feature` | `features/**` (salvo `services/`), `negocio/**` | `pages/**`, `dashboard/**`, `negocio/**` | todo, menos los contratos |
+  | `ui` | `shared/components/**` | `shared/**` (componentes) | `ui`, `util` |
+  | `data-access` | `core/services/**`, `features/*/services/**`, `state/**`, `features/*/estado/**` | `services/**`, `store/**` | `data-access`, `util`, **contratos** |
+  | `util` | `shared/utils/**`, `core/utils/**`, `models/**` | `shared/**` (no componentes), `models/**` | `util` |
+
+  Reglas que se vigilan siempre: una app no importa de otra; un paquete no importa de una app; `paquetes/compartido` no importa contratos ni pregunta qué app es (`if (esAdmin)` prohibido, como `esHotel()`); cada front importa solo los contratos de su audiencia (A8.3).
+  - Fitness function con `dependency-cruiser` (resuelve `paths`, imports dinámicos de `loadComponent` y rutas relativas; un script con expresiones regulares tendría que reimplementarlo). Corre en `npm test` de la raíz y en CI.
+  - Lo que hoy rompe una regla queda en su línea base de violaciones conocidas (`--ignore-known`), que solo puede bajar, igual que `DEUDA` en anti-identidad.
+  - El nombre del tipo y la carpeta pueden cambiar. La regla no: el DTO solo lo ve data-access.
+- **A8.10** **Monorepo** (decisión del 2026-10-20). Los tres repos pasan a uno con npm workspaces, sin Nx:
+
+  ```
+  ecompyme/                      (nombre por confirmar, ver impacto.md P1)
+    apps/backend  apps/tienda  apps/admin
+    paquetes/contratos  paquetes/compartido
+    docs/            (sale de BackendNode: specs, proceso y tablero son de los tres)
+    herramientas/    (plugin ecommerce-proceso, fitness de dependencias)
+    .github/workflows/
+  ```
+
+  - Se conserva el historial de los tres: cada uno se reescribe en su carpeta (`git filter-repo --to-subdirectory-filter`) y se une con `merge --allow-unrelated-histories`. Los repos viejos se archivan, no se borran.
+  - **Cambios de contrato en dos tiempos.** El monorepo deja el cambio en un commit atómico, pero el backend (Railway) y los fronts (Vercel) se siguen desplegando por separado (highlight.io lo advierte en su propio caso). Un campo que se quita o se renombra se hace en dos despliegues: primero el backend manda lo viejo y lo nuevo, y los fronts pasan a lo nuevo; después se quita lo viejo. Agregar un campo es seguro, si el backend sale antes que los fronts (el orden de siempre).
+  - **Contract testing (Pact) descartado:** un solo equipo y un solo commit. El test de A8.1 más el `--check` de A8.4 cubren lo mismo, sin un broker.
 
 ### A9. Menores
 
@@ -218,7 +254,11 @@ En las operaciones por clave, Prisma exige que la clave quede en la raíz del `w
 | 3b | Rubro por capacidades en correos, serializer y service de reservas | A3 (resto) | Backend | No |
 | 4 | Checkout por estrategias | A5 | Store | No |
 | 5 | CRUD con Composition Root | A7 | Backend | No |
-| 6 | Contratos generados + núcleo compartido | A8 | Los tres | No |
+| 6a | Monorepo: mover los tres repos sin cambiar código y reconectar despliegues | A8.10 | Los tres | No |
+| 6b | Contratos generados: mecanismo + `categoria` + capa anticorrupción de `categoria` | A8.1–A8.4, A8.8 | Los tres | No |
+| 6c | Reglas de dependencia (fitness) | A8.9 | Fronts + paquetes | No |
+| 6d | Núcleo compartido (`calendario.core`, `senal-envivo`, `texto-rico`, `grilla-mes`) | A8.5, A8.7 | Fronts + paquetes | No |
+| 6e–6h | Recurso por recurso hasta `reserva` | A8.6, A8.8 | Los tres | No |
 | — | Partir archivos grandes y menores | A6, A9 | Los tres | No, continuo: al tocar cada archivo |
 
 **Por qué este orden:** la pieza 1 es la única con riesgo de fuga de datos. La 2 es mecánica y sin riesgo. La 3 hace cumplir reglas ya escritas. La 6 es la más grande y va por partes, un recurso a la vez.
@@ -226,6 +266,11 @@ En las operaciones por clave, Prisma exige que la clave quede en la raíz del `w
 ## Decisiones tomadas
 
 - **Registro `ALCANCE` (2026-10-17, aprobada):** nace en esta spec (pieza 1) con `tienda` y `global`, y multi-sede lo extiende. Así no hay dos listas, y multi-sede S2.1, S2.2, S2.5 y S2.6 se cierran aquí.
+- **Mecanismo de la pieza 6 (2026-10-20, decisión de Diego tras investigar; cierra las dos preguntas abiertas):**
+  - **Monorepo con npm workspaces, sin Nx** (A8.10). Un solo equipo, mucho código que cambia junto y la necesidad de commits atómicos entre backend y fronts. Con repos separados, el front queda atrasado cuando cambia la API: copiar tipos o publicarlos como paquete privado no evita que las versiones se separen (highlight.io, *The power of the monorepo: keep your fullstack app in sync*). Vercel soporta varios proyectos sobre un mismo repo, cada uno con su Root Directory y con salto de builds sin cambios (Vercel, *Using Monorepos*). Nx se descarta: con dos apps Angular y un backend, npm workspaces + `dependency-cruiser` cubre lo que se necesita sin otra herramienta que aprender.
+  - **Patrones estratégicos de DDD, no DDD táctico completo:** *lenguaje publicado* (el backend es dueño de los contratos, A8.1–A8.4); *núcleo compartido* chico (solo lo idéntico de verdad, A8.5 y A8.7; los `reserva.model.ts` no entran porque son DTO distintos); *capa anticorrupción* en cada front (A8.8); tipos de librería con reglas de dependencia (A8.9). Referencias: Evans, *Domain-Driven Design Reference* (Shared Kernel, Published Language, Anticorruption Layer); Angular, *Creating libraries* (`ng generate library`).
+  - **Tipos por generación (JSON Schema → TS), no por inferencia directa de Zod en un paquete:** el backend es JavaScript y no puede tener TypeScript. Inferir con `z.infer` desde un paquete obligaría a los fronts a leer JS con `allowJs` o a generar `.d.ts`, y los ataría a la versión de Zod del backend. El archivo generado es TypeScript plano, sin código en tiempo de ejecución, y cada cambio de contrato se ve en el diff del mismo commit. OpenAPI (`zod-to-openapi` + `openapi-typescript` / `ng-openapi-gen`) queda para después: exige declarar cada ruta, y `ng-openapi-gen` genera servicios que se saltarían la capa anticorrupción. El JSON Schema de hoy es el mismo que usaría OpenAPI 3.1, así que no es un camino cerrado.
+  - Detalle y alternativas: [ADR-0003](../../adr/ADR-0003-monorepo-y-contratos-generados.md) e [impacto.md](impacto.md).
 
 ## Riesgos
 
@@ -234,6 +279,8 @@ En las operaciones por clave, Prisma exige que la clave quede en la raíz del `w
 - **Jobs (A1.6):** si un job pasa a tener contexto y antes no lo tenía, puede procesar de menos. Cada job se prueba antes y después con datos de dos tiendas.
 - **Codemod A2:** quitar un `catch` que hacía algo más. Mitigación: A2.2 (solo cuerpo `next(error)`) y revisar el diff.
 - **Trabajo sin commit en los mismos archivos** (reservas, hotel, checkout): cerrar y commitear antes de cada pieza.
+- **Pieza 6a, el despliegue de la mudanza:** al reconectar Vercel y Railway al repo nuevo se despliega el último commit de `main`. Si `main` tiene algo sin desplegar que pide SQL antes, saldría sin ese SQL. Mitigación: antes de 6a, lo desplegado es igual a `main` en los tres repos. Detalle, riesgos y reversa de cada paso en [impacto.md](impacto.md).
+- **Versiones que se mueven al unir tres lockfiles en uno** (163 paquetes de primer nivel tienen versión distinta entre los tres; Tailwind 4.1.18 en la Tienda y 4.3.3 en el Admin). Mitigación: comparar las dependencias directas antes y después y fijar las que cambien.
 
 ## Fuera de alcance
 
@@ -243,13 +290,8 @@ En las operaciones por clave, Prisma exige que la clave quede en la raíz del `w
 
 ## Preguntas abiertas
 
-- **Mecanismo del núcleo compartido (A8.5):**
-  1. Repo propio publicado como paquete npm privado: versionado, pero hay que publicar en cada cambio.
-  2. Dependencia por git (`"@tienda/compartido": "github:…#v1.2"`): sin registro, versionado por tag.
-  3. Monorepo con los tres repos: la opción más limpia a largo plazo, pero cambia despliegues (Vercel, Railway) y el historial.
-
-  **Recomendación:** la 2 ahora (no cambia despliegues), y evaluar la 3 si el núcleo compartido crece.
-- **Contratos (A8.2):** ¿los fronts copian los tipos generados con un script, o los consumen del mismo paquete de A8.5? Propuesta: del mismo paquete, para tener un solo mecanismo.
+- ~~**Mecanismo del núcleo compartido (A8.5):** paquete npm privado, dependencia por git o monorepo.~~ **Cerrada el 2026-10-20: monorepo** (ver "Decisiones tomadas"). La recomendación anterior (dependencia por git) se descartó: igual exige publicar un tag por cada cambio y deja al front atrasado cuando cambia la API.
+- ~~**Contratos (A8.2):** ¿los fronts copian los tipos generados o los consumen de un paquete?~~ **Cerrada el 2026-10-20:** de un paquete del monorepo (`paquetes/contratos`), separado del núcleo compartido. Los contratos son el lenguaje del backend y el núcleo es código de front, y tienen reglas de dependencia distintas (A8.9).
 
 ## Para el manual
 
